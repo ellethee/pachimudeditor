@@ -1,0 +1,26 @@
+[project]
+name = "pachimudeditor-adapter-basedmud"
+version = "0.1.0"
+description = "Adapter basedmud / ROM di pachimudeditor: file area .are (libreria rom_lib inclusa)"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.14"
+authors = [{ name = "IlPachi" }]
+classifiers = ["Private :: Do Not Upload"]
+dependencies = [
+    "pachimudeditor>=0.1.0,<0.2",
+]
+
+[project.entry-points."pachimudeditor.adapters"]
+basedmud = "pachimudeditor_adapter_basedmud.plugin:plugin"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pachimudeditor_adapter_basedmud"]
+
+[tool.uv.sources]
+pachimudeditor = { workspace = true }

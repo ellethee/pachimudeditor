@@ -1,0 +1,110 @@
+[project]
+name = "pachimudeditor"
+version = "0.1.0"
+description = "Editor web di MUD (pachimud, basedmud, ROM/dikumod e altri tramite adapter): backend pachifast con frontend Quasar incluso"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.14"
+authors = [{ name = "IlPachi" }]
+classifiers = ["Private :: Do Not Upload"]
+dependencies = [
+    "pachifast>=0.16.0",
+    "typer>=0.27.2",
+    "uvicorn[standard]>=0.34.0",
+]
+
+[project.optional-dependencies]
+# Gli adapter sono pacchetti a parte nello stesso monorepo (cartella `adapters/`), scoperti con gli entry point
+# del gruppo `pachimudeditor.adapters`. Le sorgenti di sviluppo sono in `[tool.uv.sources]`.
+pachimud = ["pachimudeditor-adapter-pachimud>=0.1.0"]
+basedmud = ["pachimudeditor-adapter-basedmud>=0.1.0"]
+dikumod = ["pachimudeditor-adapter-dikumod>=0.1.0"]
+mapping = ["pachimudeditor-adapter-mapping>=0.1.0"]
+all = [
+    "pachimudeditor-adapter-pachimud>=0.1.0",
+    "pachimudeditor-adapter-basedmud>=0.1.0",
+    "pachimudeditor-adapter-dikumod>=0.1.0",
+    "pachimudeditor-adapter-mapping>=0.1.0",
+]
+
+[project.scripts]
+pachimudeditor = "pachimudeditor.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pachimudeditor"]
+# La SPA buildata e' git-ignored: `artifacts` la include comunque (dati del pacchetto: mapping, locale, static).
+artifacts = ["src/pachimudeditor/static/**"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/frontend",
+    "/e2e",
+    "/docs",
+    "/scripts",
+    "/migrations",
+    "/*.md",
+    "/LICENSE",
+    "/pachimudeditor.yaml",
+    "/pachimudeditor.service",
+    "/pachifast.schema.json",
+    "/.env.example",
+]
+exclude = ["node_modules", ".quasar", "frontend/dist", "e2e/.tmp", "__pycache__"]
+artifacts = ["src/pachimudeditor/static/**"]
+
+[tool.uv.workspace]
+members = ["adapters/*"]
+
+[tool.uv.sources]
+pachimudeditor-adapter-pachimud = { workspace = true }
+pachimudeditor-adapter-basedmud = { workspace = true }
+pachimudeditor-adapter-dikumod = { workspace = true }
+pachimudeditor-adapter-mapping = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pachimudeditor-adapter-pachimud",
+    "pachimudeditor-adapter-basedmud",
+    "pachimudeditor-adapter-dikumod",
+    "pachimudeditor-adapter-mapping",
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ipdb>=0.13.13",
+]
+ruff = ["ruff>=0.17.1"]
+docs = [
+    "mkdocs>=1.6,<2",
+    "mkdocs-material>=9.5",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+filterwarnings = ["ignore:The noload\\(\\) option is deprecated:DeprecationWarning"]
+
+[tool.ruff]
+line-length = 140
+target-version = "py314"
+extend-exclude = ["frontend", "e2e", "migrations", "adapters/*/src/*/dikumod_lib", "adapters/*/src/*/rom_lib"]
+
+[tool.ruff.lint]
+# Set ristretto: errori di sintassi (E9) e pyflakes (F).
+select = ["E9", "F"]
+
+# Le fixture riesportate da un altro conftest e usate come argomenti sembrano ridefinizioni (F811).
+per-file-ignores = { "tests/**/conftest.py" = ["F811"] }
+
+[tool.ruff.format]
+# Generati/vendor: le librerie standalone (dikumod_lib/rom_lib) restano come sono; frontend, e2e, migrations, static fuori.
+exclude = ["src/pachimudeditor/static", "frontend", "e2e", "migrations", "adapters/*/src/*/dikumod_lib", "adapters/*/src/*/rom_lib", "adapters/*/src/*/data"]

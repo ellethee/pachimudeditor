@@ -1,0 +1,4 @@
+// Variabili Sass di Quasar dell'app (compile-time): definire PRIMA gli override, poi importare i default
+// del tema Pachi (valori `!default`, quindi non sovrascrivono quelli già definiti qui).
+//   (esempio) $primary: #7c3aed;
+@import '@ilpachi/pachifastquasar/scss/quasar-variables';

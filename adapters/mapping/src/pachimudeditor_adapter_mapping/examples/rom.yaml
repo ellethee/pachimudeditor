@@ -1,0 +1,351 @@
+# yaml-language-server: $schema=../mapping.schema.json
+#
+# Mappatura dei file area `.are` di ROM 2.4 / QuickMUD / basedmud (un file per zona, elencato in area.lst).
+#
+# Mondo di esempio:
+#   - {id: rom, kind: mapping, name: ROM, mapping: <questo file>, path: /percorso/a/basedmud/area}
+#
+# Riproduce in forma dichiarativa quello che `rom_lib` + l'adapter basedmud fanno a mano
+# (il test `tests/mapping/test_rom_equivalence.py` confronta i due su tutte le aree reali).
+name: ROM .are
+version: 1
+description: File area di ROM 2.4 / QuickMUD / basedmud (sezioni #AREADATA, #MOBILES, #OBJECTS, #ROOMS, #RESETS, ...).
+
+hooks: [rom_credits_min_level, rom_credits_max_level, rom_credits_builder]
+
+# --------------------------------------------------------------------------- layout
+layout:
+  mode: zone_files              # un file per zona
+  zone_file: area
+  glob: "*.are"                 # i file non elencati in area.lst sono zone `enabled: false`
+  index: {file: area.lst, comment: "#", end: "$"}
+  new_zone: {style: AREADATA, file: "{slug}.are"}
+  zone_range:                   # range di vnum dai campi dell'intestazione (0-0 per `XX00 XX99`)
+    mode: fields
+    bottom: {expr: "min_vnum or 0", to: {min_vnum: value}}
+    top: {expr: "max_vnum or 0", to: {max_vnum: value}}
+
+# --------------------------------------------------------------------------- tabelle
+tables:
+  room_flags: {file: rom_tables.yaml, name: room_flags, expose: romRoomFlags}
+  mob_flags: {file: rom_tables.yaml, name: mob_flags, expose: romMobFlags}
+  affect_flags: {file: rom_tables.yaml, name: affect_flags, expose: romAffectFlags}
+  off_flags: {file: rom_tables.yaml, name: off_flags, expose: romOffFlags}
+  res_flags: {file: rom_tables.yaml, name: res_flags, expose: romResFlags}
+  form_flags: {file: rom_tables.yaml, name: form_flags, expose: romFormFlags}
+  part_flags: {file: rom_tables.yaml, name: part_flags, expose: romPartFlags}
+  extra_flags: {file: rom_tables.yaml, name: extra_flags, expose: romExtraFlags}
+  wear_flags: {file: rom_tables.yaml, name: wear_flags, expose: romWearFlags}
+  container_flags: {file: rom_tables.yaml, name: container_flags, expose: romContainerFlags}
+  weapon_flags: {file: rom_tables.yaml, name: weapon_flags, expose: romWeaponFlags}
+  sector_types: {file: rom_tables.yaml, name: sector_types, expose: romSectorType}
+  item_types: {file: rom_tables.yaml, name: item_types, expose: romItemType}
+  sex_types: {file: rom_tables.yaml, name: sex_types, expose: romSex}
+  size_types: {file: rom_tables.yaml, name: size_types, expose: romSize}
+  position_types: {file: rom_tables.yaml, name: position_types, expose: romPosition}
+  affect_apply_types: {file: rom_tables.yaml, name: affect_apply_types, expose: romAffectApply}
+  wear_loc_types: {file: rom_tables.yaml, name: wear_loc_types, expose: romWearLoc}
+  weapon_types: {file: rom_tables.yaml, name: weapon_types, expose: romWeaponType}
+  door_resets: {file: rom_tables.yaml, name: door_resets, expose: romDoorReset}
+
+# --------------------------------------------------------------------------- grammatica
+grammar:
+  files:
+    area:
+      end: "$"                  # `#$` chiude il file; il testo dopo e' conservato
+      unknown_sections: raw     # #HELPS, #SOCIALS, #MOBOLD ... riemesse identiche
+      sections:
+        - {header: AREADATA, record: zone_data, entity: zone, single: true}
+        - {header: AREA, record: zone_old, entity: zone, single: true}
+        - {header: MOBILES, record: mob, entity: mob, until: {field: vnum, in: [0]}, tail: "#0\n\n"}
+        - {header: OBJECTS, record: object, entity: object, until: {field: vnum, in: [0]}, tail: "#0\n\n"}
+        - {header: ROOMS, record: room, entity: room, until: {field: vnum, in: [0]}, tail: "#0\n\n"}
+        - {header: RESETS, record: reset, entity: reset, until: {field: cmd, in: [S]}, tail: "S\n\n"}
+        - {header: SHOPS, record: shop, entity: shop, until: {field: keeper, in: [0]}, tail: "0\n\n"}
+        - {header: SPECIALS, record: special, entity: special, until: {field: cmd, in: [S]}, tail: "S\n\n"}
+        - {header: MOBPROGS, record: mobprog, entity: mobprog, until: {field: vnum, in: [0]}, tail: "#0\n\n"}
+
+  records:
+    # `#AREADATA`: coppie chiave/valore terminate da `End` (chiavi sconosciute conservate in `extra_lines`)
+    zone_data:
+      blank_after: 1
+      steps:
+        - tagged:
+            end: End
+            ignore_case: true
+            tag_field: key
+            tags:
+              Name: {inline: true, steps: [name: string_tilde]}
+              Builders: {inline: true, steps: [builders: string_tilde]}
+              VNUMs: {inline: true, steps: [line: [min_vnum: number, max_vnum: number]]}
+              Credits: {inline: true, steps: [credits: string_tilde]}
+              Security: {inline: true, steps: [security: number]}
+              "?": {into: extra_lines, inline: true, steps: [value: line_text]}
+
+    # `#AREA` (formato vecchio): tre stringhe e il range (numeri oppure due parole come `XX00 XX99`)
+    zone_old:
+      blank_after: 1
+      steps:
+        - filename: string_tilde
+        - name: string_tilde
+        - credits: string_tilde
+        - line:
+            - min_vnum: {type: number, optional: true}
+            - max_vnum: {type: number, optional: true}
+            - when: "min_vnum is None"
+              then: [vnum_a: word, vnum_b: word]
+
+    mob:
+      key: vnum
+      steps:
+        - &vnum_head
+          line: [{literal: "#", glue: true}, vnum: number]
+        - name: string_tilde
+        - short_descr: string_tilde
+        - long_descr: string_tilde
+        - description: string_tilde
+        - race: string_tilde
+        - line: [act: {type: flags, table: mob_flags}, affected_by: {type: flags, table: affect_flags}, alignment: number, group: number]
+        - line: [level: number, hitroll: number, hit: dice, mana: dice, damage: dice, dam_type: word]
+        - ac: {type: number, count: 4}
+        - line: [off_flags: {type: flags, table: off_flags}, imm_flags: {type: flags, table: res_flags}, res_flags: {type: flags, table: res_flags}, vuln_flags: {type: flags, table: res_flags}]
+        - line: [start_pos: word, default_pos: word, sex: word, wealth: number]
+        - line: [form: {type: flags, table: form_flags}, parts: {type: flags, table: part_flags}, size: word, material: word]
+        - tagged:
+            end: other
+            tags:
+              F: {into: flag_removals, inline: true, steps: [line: [word: word, value: flags]]}
+              M: {into: mprogs, inline: true, steps: [line: [trigger: word, vnum: number, phrase: string_tilde]]}
+
+    object:
+      key: vnum
+      steps:
+        - *vnum_head
+        - name: string_tilde
+        - short_descr: string_tilde
+        - description: string_tilde
+        - material: string_tilde
+        - line: [item_type: word, extra_flags: {type: flags, table: extra_flags}, wear_flags: {type: flags, table: wear_flags}]
+        - values: {type: word, count: 5}
+        - line: [level: number, weight: number, cost: number, condition: tag]
+        - tagged:
+            end: other
+            tags:
+              A: {into: affects, steps: [line: [location: number, modifier: number]]}
+              F: {into: flag_affects, steps: [line: [where: tag, location: number, modifier: number, bits: flags]]}
+              E: {into: extra_descs, steps: [keyword: string_tilde, description: string_tilde]}
+
+    room:
+      key: vnum
+      steps:
+        - *vnum_head
+        - name: string_tilde
+        - description: string_tilde
+        - line: [area_number: number, room_flags: {type: flags, table: room_flags}, sector: number]
+        - tagged:
+            end: S
+            tags:
+              D: {into: exits, glue: true, steps: [door: number, desc: string_tilde, keyword: string_tilde, line: [locks: number, key: number, to_vnum: number]]}
+              E: {into: extra_descs, steps: [keyword: string_tilde, description: string_tilde]}
+              O: {inline: true, write_if: owner, steps: [owner: {type: string_tilde, default: ""}]}
+              M: {inline: true, write_if: "mana_rate != 100", steps: [mana_rate: {type: number, default: 100}]}
+              H: {inline: true, write_if: "heal_rate != 100", steps: [heal_rate: {type: number, default: 100}]}
+              C: {inline: true, write_if: clan, steps: [clan: {type: string_tilde, default: ""}]}
+
+    reset:
+      steps:
+        - line:
+            - cmd: tag
+            - switch: cmd
+              cases:
+                "*": [text: {type: line_text, raw: true}]
+                M: [if_flag: number, mob: {type: number, width: 5}, limit: {type: number, width: 3}, room: {type: number, width: 5}, room_limit: {type: number, width: 2}, comment: line_text]
+                O: [if_flag: number, obj: {type: number, width: 5}, limit: {type: number, width: 3}, room: {type: number, width: 5}, comment: line_text]
+                P: [if_flag: number, obj: {type: number, width: 5}, limit: {type: number, width: 3}, container: {type: number, width: 5}, count: {type: number, width: 2}, comment: line_text]
+                G: [if_flag: number, obj: {type: number, width: 5}, limit: {type: number, width: 3}, comment: line_text]
+                E: [if_flag: number, obj: {type: number, width: 5}, limit: {type: number, width: 3}, wear: {type: number, width: 5}, comment: line_text]
+                D: [if_flag: number, room: {type: number, width: 5}, door: {type: number, width: 3}, state: {type: number, width: 5}, comment: line_text]
+                R: [if_flag: number, room: {type: number, width: 5}, doors: {type: number, width: 3}, comment: line_text]
+
+    shop:
+      steps:
+        - line: [keeper: {type: number, width: 5}, buy_types: {type: number, count: 5, width: 2}, profit_buy: number, profit_sell: number, open_hour: number, close_hour: number, comment: line_text]
+
+    special:
+      steps:
+        - line:
+            - cmd: tag
+            - switch: cmd
+              cases:
+                "*": [text: {type: line_text, raw: true}]
+                M: [mob_vnum: {type: number, width: 5}, function: word, comment: line_text]
+
+    mobprog:
+      key: vnum
+      steps:
+        - *vnum_head
+        - code: string_tilde
+
+# --------------------------------------------------------------------------- modello neutro
+model:
+  zone:
+    entity: zone
+    id: bottom                  # id/vnum di zona = vnum minimo (senza range univoco: -(posizione))
+    resets: {section: RESETS}
+    defaults: {name: "", builders: "", min_vnum: 0, max_vnum: 0, credits: "", security: 9}
+    fields:
+      name: {from: name}
+      builder: {hook: rom_credits_builder}      # `Builders`, oppure l'autore nei credits
+      min_level: {hook: rom_credits_min_level}  # blocco `{ min max }` dei credits
+      max_level: {hook: rom_credits_max_level}
+      lifespan_minutes: {const: 15, soft: true}  # ROM non ha il campo
+      reset_mode: {const: EMPTY, soft: true}
+
+  room:
+    entity: room
+    exits: exits
+    extra_descriptions: extra_descs
+    defaults: {area_number: 0, owner: "", clan: "", heal_rate: 100, mana_rate: 100}
+    fields:
+      name: {from: name}
+      description: {from: description}
+      sector_type:              # approssimazione sulla enum pachimud; il settore ROM vero resta in extra.sector
+        from: sector
+        in_extra: true
+        unmapped: INSIDE
+        map: {0: INSIDE, 1: CITY, 2: FIELD, 3: FOREST, 4: HILLS, 5: MOUNTAIN, 6: WATER_SWIM, 7: WATER_NOSWIM, 8: UNDERWATER, 9: FLYING, 10: FIELD}
+      flags: {from: room_flags}
+      heal_rate: {from: heal_rate}
+      mana_rate: {from: mana_rate}
+      clan_id: {from: clan, null_if: ""}
+      owner: {from: owner, null_if: ""}
+
+  exit:
+    direction_field: door
+    target_field: to_vnum
+    no_target: -1
+    key_field: key
+    door_state: resets          # `isOpen`/`isLocked` vivono nei reset `D` della zona
+    defaults: {desc: "", keyword: "", locks: 0, key: -1, to_vnum: -1}
+    fields:
+      direction: {from: door}
+      description: {from: desc, null_if: ""}
+      keywords: {from: keyword, null_if: ""}
+      door_flag: {from: locks, map: {0: NONE, 1: CLOSABLE, 2: PICKPROOF, 3: CLOSABLE, 4: PICKPROOF}}
+      key_vnum: {expr: "key if key > 0 else None", to: {key: "value if value is not None else -1"}}
+
+  extra_description:
+    fields:
+      keywords: {from: keyword}
+      text: {from: description}
+
+  mob:
+    entity: mob
+    defaults:
+      race: ""
+      act: 1                    # npc
+      level: 1
+      mana: {n: 1, t: 1, b: 100}
+      dam_type: none
+      start_pos: stand
+      default_pos: stand
+      sex: none
+      size: medium
+      material: "0"
+    fields:
+      keywords: {from: name}
+      short_description: {from: short_descr}
+      long_description: {from: long_descr}
+      detailed_description: {from: description}
+      level: {from: level}
+      thac0: {expr: "20 - hitroll", to: {hitroll: "20 - value"}}
+      armor_class: {from: ac.0, in_extra: true}   # AC pierce; i 4 valori restano in extra.ac
+      hp_dice_count: {from: hit.n}
+      hp_die_size: {from: hit.t}
+      hp_bonus: {from: hit.b}
+      damage_dice_count: {from: damage.n}
+      damage_die_size: {from: damage.t}
+      damage_bonus: {from: damage.b}
+      gold: {from: wealth}
+      sex: {from: sex, map: {none: NEUTRAL, neutral: NEUTRAL, male: MALE, female: FEMALE, either: BOTH, random: BOTH}, unmapped: NEUTRAL}
+      flags: {from: act}
+      race_id: {from: race, null_if: ""}
+      alignment: {from: alignment}
+
+  object:
+    entity: object
+    defaults: {material: unknown, item_type: trash, condition: P, level: 0}
+    fields:
+      keywords: {from: name}
+      short_description: {from: short_descr}
+      long_description: {from: description}
+      object_type:
+        from: item_type
+        in_extra: true
+        unmapped: OTHER
+        map: {light: LIGHT, weapon: WEAPON, armor: ARMOR, container: CONTAINER, drink: LIQUID_CONTAINER, treasure: TREASURE, trash: TRASH, key: KEY, food: FOOD, money: MONEY, potion: POTION, scroll: SCROLL, wand: WAND, staff: STAFF, fountain: FOUNTAIN, none: OTHER}
+      weight: {from: weight}
+      cost: {from: cost}
+      value_0: &value {expr: "int_or_none(values[0])", to: {values.0: "str(value) if value is not None else '0'"}, in_extra: true}
+      value_1: {expr: "int_or_none(values[1])", to: {values.1: "str(value) if value is not None else '0'"}, in_extra: true}
+      value_2: {expr: "int_or_none(values[2])", to: {values.2: "str(value) if value is not None else '0'"}, in_extra: true}
+      value_3: {expr: "int_or_none(values[3])", to: {values.3: "str(value) if value is not None else '0'"}, in_extra: true}
+      extra_flags: {from: extra_flags}
+      wear_flags: {from: wear_flags}
+      affects: {pairs: {list: affects, key: location, value: modifier, table: affect_apply_types}}
+
+  reset:
+    command_field: cmd
+    comments: ["*"]
+    new_defaults: {comment: ""}
+    commands:
+      M:
+        type: LOAD_MOB
+        if_flag: &if_flag {expr: "if_flag != 0", to: {if_flag: "1 if value else 0"}}
+        arg1: {from: mob}
+        arg2: {expr: "max(limit, 0)", to: {limit: "value if value is not None else 1"}}
+        arg3: {from: room}
+        arg4: {expr: "max(room_limit, 0)", to: {room_limit: "value if value is not None else 1"}}
+      O:
+        type: LOAD_OBJECT
+        if_flag: *if_flag
+        arg1: {from: obj}
+        arg2: {expr: "max(limit, 0)", to: {limit: "value if value is not None else 1"}}
+        arg3: {from: room}
+      P:
+        type: PUT_OBJECT
+        if_flag: *if_flag
+        arg1: {from: obj}
+        arg2: &limit_opt {expr: "limit if limit >= 0 else None", to: {limit: "value if value is not None else -1"}}
+        arg3: {from: container}
+        arg4: {expr: "max(count, 0)", to: {count: "value if value is not None else 1"}}
+      G:
+        type: GIVE_OBJECT
+        if_flag: *if_flag
+        arg1: {from: obj}
+        arg2: *limit_opt
+      E:
+        type: EQUIP_OBJECT
+        if_flag: *if_flag
+        arg1: {from: obj}
+        arg2: *limit_opt
+        arg_str: {from: wear, map: wear_loc_types}
+      D:
+        type: SET_DOOR_STATE
+        if_flag: *if_flag
+        arg1: {from: room}
+        arg2: {from: door}
+        arg_str: {from: state, map: {0: OPEN, 1: CLOSED, 2: LOCKED}}
+      R:
+        type: RANDOMIZE_EXITS
+        if_flag: *if_flag
+        arg1: {from: room}
+        arg2: {expr: "max(doors, 0)", to: {doors: "value if value is not None else 0"}}
+
+rules:
+  vnum_range_check: true
+  zone_alignment: 100
+  exit_id_stride: 10
+  extra_id_stride: 1000
+
+meta: {}

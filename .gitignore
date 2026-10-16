@@ -1,0 +1,26 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.env
+!.env.example
+*.sqlite3
+*.db
+dist/
+.pytest_cache/
+.ruff_cache/
+*.log
+# Frontend buildato e copiato nel pacchetto (output di `pachimudeditor build-frontend`)
+src/pachimudeditor/static/
+node_modules/
+.venv/
+# Cartelle di lavoro locali
+.workdir/
+*.sqlite3.before-*
+*.sqlite3-shm
+*.sqlite3-wal
+site/
+pachimudeditor.local.yaml
+
+# Icone generate in locale dal logo (non referenziate: le favicon in uso sono in frontend/public/)
+frontend/public/icons/

@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - run: uv run --frozen --only-group ruff ruff check .
+      - run: uv run --frozen --only-group ruff ruff format --check .
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Il gioco `pachimud` non e' installato in CI: i test che lo richiedono si saltano in raccolta.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.14"
+      - run: uv sync --all-packages --frozen
+      - run: uv run --frozen pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.node-version
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm build
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.node-version
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.14"
+      # Il CLI builda la SPA e la copia in src/pachimudeditor/static (inclusa nel wheel del core).
+      - run: uv sync --frozen --no-dev
+      - run: (cd frontend && pnpm install --frozen-lockfile)
+      - run: uv run --frozen --no-dev pachimudeditor build-frontend --skip-install
+      - name: Build di core e adapter
+        run: |
+          for pkg in pachimudeditor pachimudeditor-adapter-pachimud pachimudeditor-adapter-basedmud pachimudeditor-adapter-dikumod pachimudeditor-adapter-mapping; do
+            uv build --package "$pkg" --out-dir dist
+          done
+      - run: uvx twine check --strict dist/*
+      - name: Contenuto dei pacchetti (la SPA nel wheel del core)
+        run: |
+          unzip -l dist/pachimudeditor-*.whl | grep -q 'pachimudeditor/static/index.html'
+          for pkg in pachimudeditor pachimudeditor-adapter-pachimud pachimudeditor-adapter-basedmud pachimudeditor-adapter-dikumod pachimudeditor-adapter-mapping; do
+            python3 scripts/release_check.py wheel "$pkg" dist
+          done

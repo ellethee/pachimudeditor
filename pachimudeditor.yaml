@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=./pachifast.schema.json
+# Optional project configuration. Environment variables (PACHIFAST_*, also from .env) take
+# precedence over the values in this file. Keys are the setting names, case-insensitive.
+
+# Address of the development server (`pachifast dev`; --host/--port override it).
+server:
+  host: 127.0.0.1 # solo locale: per l'accesso da altre macchine usare un reverse proxy
+  port: 8123
+  envelope_enabled: true # ogni 2xx JSON e' {success, message, data}
+database:
+  database_url: "sqlite+aiosqlite:///pachimudeditor.sqlite3"
+  dbdebug: true
+  db_pool_size: 5
+  db_max_overflow: 10
+  db_pool_recycle: 1800
+  db_pool_timeout: 30
+  auto_create_auth_schema: true
+
+# Examples (keys are grouped in sections: server, app, auth, events, database, ...; see pachifast.schema.json):
+# server:
+#   debug: true                    # off by default; on shows the traceback page to clients: development only
+#   docs_enabled: true
+# auth:
+#   access_token_expire_minutes: 30
+# app:
+#   default_locale: it             # language of the API error messages (en, it); every error also has a stable `code`
+#   use_accept_language: true      # pick the language from the Accept-Language header of each request
+# routes:
+#   disable_core_routers: [permissions]
+#   disable_core_routes: [/user/settings]
+
+# Keep secrets (secret_key, database URLs with passwords) in .env, not here.
+
+# Esempio generico: copia in pachimudeditor.local.yaml (ignorato da git) e punta PACHIFAST_CONFIG_FILE a quel file nel .env.
+# Sostituisci i path /percorso/... con quelli reali; i mondi con path inesistente vanno rimossi o commentati.
+app:
+  project_name: Pachimud Editor
+  default_locale: it # messaggi di errore in italiano (ogni errore ha comunque un `code` stabile)
+  use_accept_language: true # oppure la lingua scelta dal browser (it/en)
+
+# Sicurezza: password lunghe e blocco dopo tentativi falliti (valori espliciti, non i default della libreria).
+auth:
+  password_min_length: 12
+  registration_enabled: false # niente auto-registrazione: gli utenti si creano con `pachifast init`/admin
+  login_max_attempts: 5
+  login_lockout_minutes: 15
+events:
+  broadcast_enabled: true
+
+webeditor_worlds:
+  # - {
+  #     id: basedmud,
+  #     kind: basedmud,
+  #     name: BasedMud,
+  #     path: /percorso/a/basedmud/area,
+  #     read_only: true,
+  #   }
+  # - {
+  #     id: tba,
+  #     kind: mapping,
+  #     name: tbaMUD,
+  #     mapping: /percorso/a/tba.mapping.yaml,
+  #     path: /percorso/a/mymud/lib,
+  #   }
+  # - {
+  #     id: dikumod2,
+  #     kind: dikumod,
+  #     name: "Diku Modificato",
+  #     path: /percorso/a/dikumod2,
+  #     params: { variant: dikumod2 },
+  #   } # sola lettura
+  # - {
+  #     id: dikumod2-rw,
+  #     kind: dikumod,
+  #     path: /percorso/a/dikumod2/lib,
+  #     read_only: false,
+  #   } # scrittura abilitata
+
+webeditor_default_world: pachimud # facoltativo: altrimenti "pachimud" se presente, o il primo
+

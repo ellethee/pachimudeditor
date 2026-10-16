@@ -1,0 +1,41 @@
+{% extends "main.html" %}
+{% block tabs %}{{ super() }}{% endblock %}
+{% block content %}
+<section class="pf-hero">
+  <img class="pf-hero-logo" src="{{ 'assets/logo.svg' | url }}" alt="pachimudeditor" width="180" height="180">
+  <h1>pachimudeditor</h1>
+  <p class="pf-version">versione {{ config.extra.version }}</p>
+  <p>Editor web di zone, stanze, mob e oggetti per pachimud e, tramite adapter, per altri MUD: backend pachifast,
+     frontend Quasar gia' incluso, un unico pacchetto Python.</p>
+  <div class="pf-badges"><span>pachifast</span><span>Quasar</span><span>Adapter</span><span>basedmud / ROM</span><span>Diku Modificato</span><span>MIT</span></div>
+  <div class="pf-actions">
+    <a class="pf-btn pf-btn--primary" href="guide/installation/">Installazione</a>
+    <a class="pf-btn pf-btn--ghost" href="guide/configuration/">Configurazione dei mondi</a>
+    <a class="pf-btn pf-btn--ghost" href="adapters/">Adapter</a>
+  </div>
+  <div class="pf-code"><span class="c"># l'editor in tre comandi</span><br>
+<span class="p">$ </span>uv tool install 'pachimudeditor[all]'<br>
+<span class="p">$ </span>pachimudeditor init --workdir ~/pachimudeditor<br>
+<span class="p">$ </span>pachimudeditor serve --workdir ~/pachimudeditor --open</div>
+</section>
+<div class="pf-section">
+  <h2>Guida</h2>
+  <div class="pf-grid">
+    <a class="pf-card" href="guide/installation/"><strong>Installazione</strong><span>Pacchetti, extra e requisiti.</span></a>
+    <a class="pf-card" href="guide/cli/"><strong>Avvio e comandi</strong><span>Il comando <code>pachimudeditor</code> e le sue opzioni.</span></a>
+    <a class="pf-card" href="guide/configuration/"><strong>Configurazione dei mondi</strong><span>Mondi, adapter e cartella di lavoro.</span></a>
+    <a class="pf-card" href="frontend/"><strong>Frontend</strong><span>Le pagine dell'editor e le capability dei mondi.</span></a>
+    <a class="pf-card" href="conversion/"><strong>Conversione</strong><span>Passare contenuti da un mondo a un altro.</span></a>
+    <a class="pf-card" href="formats/dikumod/"><strong>Diku Modificato</strong><span>Il formato dati.</span></a>
+  </div>
+  <h2>Riferimento</h2>
+  <div class="pf-grid">
+    <a class="pf-card" href="backend/"><strong>Backend</strong><span>Il contratto delle API.</span></a>
+    <a class="pf-card" href="adapters/sdk/"><strong>SDK degli adapter</strong><span>Scrivere un adapter per un nuovo MUD.</span></a>
+    <a class="pf-card" href="adapters/mapping-guide/"><strong>Guida alla mappatura</strong><span>Descrivere un MUD su file con un YAML.</span></a>
+    <a class="pf-card" href="releasing/"><strong>Rilasci</strong><span>Come si pubblicano i pacchetti.</span></a>
+    <a class="pf-card" href="contributing/"><strong>Contribuire</strong><span>Sviluppo, test e rilasci.</span></a>
+    <a class="pf-card" href="changelog/"><strong>Changelog</strong><span>Cosa cambia a ogni rilascio.</span></a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,272 @@
+{
+  "errors": {
+    "codes": {
+      "access": {
+        "permissions_missing": "Permessi mancanti: {permissions}",
+        "staff_required": "Accesso riservato allo staff",
+        "superuser_required": "Accesso riservato ai superuser"
+      },
+      "admin": {
+        "action_not_found": "L'azione '{name}' non esiste per questo modello.",
+        "integrity_error": "La modifica è in conflitto con dati esistenti (duplicato o righe collegate).",
+        "model_not_found": "Il modello '{app}.{model}' non è amministrato.",
+        "object_not_found": "Riga {pk} non trovata.",
+        "text": {
+          "action": {
+            "delete_selected": "Elimina selezionati"
+          },
+          "deleted_selected": "{count} eliminati"
+        }
+      },
+      "api": {
+        "invalid_order_by": "Campo '{field}' non valido per l'ordinamento."
+      },
+      "auth": {
+        "invalid_credentials": "Credenziali non valide",
+        "not_authenticated": "Non autenticato",
+        "password_incorrect": "La password attuale non è corretta",
+        "password_too_short": "Password troppo corta (minimo {min_length} caratteri).",
+        "refresh_token_invalid": "Refresh token non valido o scaduto",
+        "refresh_token_revoked": "Refresh token revocato (logout, cambio password o riuso)",
+        "refresh_user_invalid": "Utente non valido o disabilitato",
+        "registration_disabled": "La registrazione è disabilitata",
+        "token_invalid": "Token non valido.",
+        "token_no_subject": "Token privo di soggetto.",
+        "token_revoked": "Token revocato: la password è stata modificata.",
+        "token_wrong_type": "Tipo di token non valido.",
+        "too_many_attempts": "Troppi tentativi falliti, riprova più tardi",
+        "username_taken": "Username già in uso"
+      },
+      "common": {
+        "editor": {
+          "constraint_violation": "Operazione non consentita dai vincoli del database.",
+          "duplicate": "Esiste già un elemento con gli stessi valori univoci.",
+          "in_use": "Impossibile eliminare: l'elemento è ancora usato da altri dati.",
+          "invalid_reference": "Riferimento non valido: l'elemento collegato non esiste."
+        }
+      },
+      "content": {
+        "class_in_use": "Impossibile eliminare la classe «{id}»: è usata da {count} prototipi di mob. Cambia prima la loro classe oppure disattivala.",
+        "id_mismatch": "L'id nel corpo («{body_id}») non coincide con quello del percorso («{id}»): l'id non è modificabile.",
+        "id_taken": "Esiste già un contenuto con id «{id}».",
+        "invalid": "Contenuto non valido: {detail}",
+        "invalid_id": "Id «{id}» non valido: usa solo minuscole, cifre e underscore (max 64 caratteri).",
+        "not_found": "Contenuto «{id}» non trovato.",
+        "race_in_use": "Impossibile eliminare la razza «{id}»: è usata da {count} prototipi di mob. Cambia prima la loro razza oppure disattivala."
+      },
+      "group": {
+        "not_found": "Gruppo non trovato"
+      },
+      "instances": {
+        "charges_not_allowed": "Le cariche valgono solo per bacchette e bastoni.",
+        "container_full": "Il contenitore #{id} è pieno (capacità {capacity}).",
+        "container_in_container": "Un contenitore non può essere messo dentro un altro contenitore.",
+        "container_nested": "Il contenitore #{id} sta già dentro un altro contenitore.",
+        "container_not_found": "Contenitore inesistente: {id}",
+        "container_self": "Un oggetto non può contenere sé stesso.",
+        "holder_not_found": "Bersaglio della posizione inesistente ({kind} {id})",
+        "hp_exceeds_max": "I punti ferita attuali non possono superare i massimi.",
+        "hp_min": "I punti ferita devono essere almeno 1.",
+        "invalid_contents_policy": "Valore non valido per contents: {value} (ammessi: destroy, drop).",
+        "invalid_location_kind": "Tipo di posizione non valido: {kind}.",
+        "liquid_not_allowed": "Quantità, tipo e veleno del liquido valgono solo per i contenitori di liquido.",
+        "location_empty": "La posizione non può essere vuota.",
+        "mob_not_found": "Istanza di mob non trovata",
+        "mob_prototype_not_found": "Prototipo di mob inesistente: {id}",
+        "negative_value": "Il valore di {field} non può essere negativo.",
+        "not_a_container": "L'oggetto #{id} non è un contenitore.",
+        "object_not_found": "Istanza di oggetto non trovata",
+        "object_prototype_not_found": "Prototipo di oggetto inesistente: {id}",
+        "room_not_found": "Stanza inesistente: {id}",
+        "slot_invalid": "Slot «{slot}» non valido per questo oggetto (posizioni possibili: {allowed}).",
+        "slot_not_allowed": "Solo un oggetto di un mob o di un personaggio può essere indossato.",
+        "slot_taken": "Lo slot «{slot}» è già occupato."
+      },
+      "mfa": {
+        "already_enabled": "MFA già attivo: disattivalo (con la password) prima di configurarlo di nuovo",
+        "challenge_not_found": "Challenge non trovato o già usato",
+        "code_invalid": "Codice non valido",
+        "no_email": "Nessun indirizzo email sull'account",
+        "no_totp_setup": "Nessun setup TOTP in corso",
+        "not_active": "MFA non attivo",
+        "not_configured": "MFA non configurato",
+        "password_incorrect": "Password non corretta",
+        "token_invalid": "Token MFA non valido o scaduto",
+        "too_many_attempts": "Troppi tentativi falliti",
+        "totp_invalid": "Codice TOTP non valido"
+      },
+      "mobs": {
+        "has_instances": "Impossibile eliminare: esistono {count} istanze vive del mob.",
+        "in_reset_usage": "Impossibile eliminare: il mob è referenziato da {count} comandi di reset ({zones}). Aggiornali o rimuovili prima.",
+        "not_found": "Mob non trovato",
+        "vnum_in_use": "Impossibile cambiare il vnum: il mob è referenziato da {count} comandi di reset ({zones}).",
+        "vnum_taken": "Esiste già un mob con vnum {vnum}."
+      },
+      "objects": {
+        "has_instances": "Impossibile eliminare: esistono {count} istanze vive dell'oggetto.",
+        "in_exit_key_usage": "Impossibile eliminare: l'oggetto è la chiave di {count} uscite ({zones}).",
+        "in_reset_usage": "Impossibile eliminare: l'oggetto è referenziato da {count} comandi di reset ({zones}). Aggiornali o rimuovili prima.",
+        "not_found": "Oggetto non trovato",
+        "vnum_in_use": "Impossibile cambiare il vnum: l'oggetto è usato {count} volte (reset o chiavi di uscite) in: {zones}.",
+        "vnum_taken": "Esiste già un oggetto con vnum {vnum}."
+      },
+      "permission": {
+        "not_found": "Permesso non trovato"
+      },
+      "players": {
+        "account_has_characters": "Impossibile eliminare: l'account ha {count} personaggi. Eliminali prima oppure usa l'eliminazione a cascata.",
+        "account_not_found": "Account non trovato",
+        "character_has_items": "Impossibile eliminare: il personaggio possiede {count} oggetti. Svuota l'inventario oppure usa l'eliminazione a cascata.",
+        "character_not_found": "Personaggio non trovato",
+        "email_taken": "Esiste già un account con email «{email}».",
+        "invalid_account": "L'account {id} non esiste.",
+        "invalid_class": "La classe «{id}» non esiste nelle definizioni.",
+        "invalid_prototype": "Prototipo di oggetto non trovato.",
+        "invalid_race": "La razza «{id}» non esiste nelle definizioni.",
+        "invalid_room": "La stanza {id} non esiste.",
+        "item_in_container": "L'oggetto è dentro un contenitore: non può essere equipaggiato.",
+        "item_not_found": "Oggetto non presente nell'inventario del personaggio",
+        "name_taken": "Esiste già un personaggio di nome «{name}».",
+        "prototype_required": "Indica prototypeId oppure vnum.",
+        "username_taken": "Esiste già un account con username «{username}»."
+      },
+      "rooms": {
+        "exit_direction_taken": "Esiste già un'uscita verso {direction} da questa stanza.",
+        "exit_door_state_invalid": "Un'uscita senza porta non può essere chiusa o serrata.",
+        "exit_key_unknown": "L'oggetto chiave con vnum {vnum} non esiste.",
+        "exit_locked_needs_key": "Un'uscita serrata richiede un keyVnum.",
+        "exit_not_found": "Uscita non trovata",
+        "exit_not_in_room": "L'uscita non appartiene a questa stanza.",
+        "exit_self_loop": "Un'uscita non può portare alla stessa stanza.",
+        "extra_not_found": "Extra description non trovata",
+        "extra_not_in_room": "L'extra description non appartiene a questa stanza.",
+        "has_instances": "Impossibile eliminare: la stanza contiene {mobs} mob, {objects} oggetti ed è l'ultima stanza di {players} personaggi.",
+        "in_reset_usage": "Impossibile eliminare: la stanza è referenziata da {count} comandi di reset ({zones}). Aggiornali o rimuovili prima.",
+        "not_found": "Stanza non trovata",
+        "vnum_in_use": "Impossibile cambiare il vnum: la stanza è referenziata da {count} comandi di reset ({zones}).",
+        "vnum_taken": "Esiste già una stanza con vnum {vnum}."
+      },
+      "transfer": {
+        "confirm_required": "Per importare davvero servono dryRun=false e confirm=true.",
+        "file_too_large": "«{file}» supera il limite di {max_mb} MB.",
+        "invalid_archive": "«{file}» non è uno zip valido.",
+        "invalid_file": "File «{file}» non valido: {detail}",
+        "multiple_zones": "Il caricamento contiene {count} zone: importane una alla volta.",
+        "no_files": "Nessun file caricato.",
+        "unsupported_file": "File «{file}» non riconosciuto: servono uno zip oppure zone.yaml, rooms.yaml, mobs.yaml, objects.yaml, resets.yaml.",
+        "vnum_conflict": "Import bloccato: {count} vnum appartengono ad altre zone ({vnums}).",
+        "zone_missing": "Nel caricamento manca zone.yaml.",
+        "zone_not_found": "Zona non trovata"
+      },
+      "user": {
+        "cannot_delete_self": "Non puoi eliminare il tuo stesso account",
+        "cannot_demote_self": "Non puoi disattivare o declassare il tuo stesso account",
+        "disabled": "Utente disabilitato",
+        "email_exists": "Email già in uso.",
+        "inactive": "Utente non attivo",
+        "not_found": "Utente non trovato",
+        "settings_category_invalid": "'{category}' non è una sezione di impostazioni valida.",
+        "settings_key_invalid": "L'impostazione '{key}' non esiste nella sezione '{category}'.",
+        "settings_value_invalid": "Il valore dell'impostazione '{key}' nella sezione '{category}' non è valido.",
+        "username_or_email_exists": "Username o email già esistente."
+      },
+      "world": {
+        "empty_query": "Il testo di ricerca non può essere vuoto.",
+        "invalid_types": "Tipi di ricerca sconosciuti: {types}. Usa zone, room, mob, object."
+      },
+      "zones": {
+        "invalid_level_range": "Il livello minimo ({min}) non può superare il livello massimo ({max}).",
+        "invalid_vnum_range": "Il vnum minimo ({bottom}) non può superare il vnum massimo ({top}).",
+        "not_empty": "Impossibile eliminare la zona: contiene ancora {rooms} stanze, {mobs} mob e {objects} oggetti. Eliminali o spostali prima.",
+        "not_found": "Zona non trovata",
+        "range_overlap": "Il range di vnum si sovrappone a quello della zona «{zone}» (vnum {zone_vnum}).",
+        "reset_arg_str_not_allowed": "argStr non è ammesso per questo tipo di comando.",
+        "reset_container_not_loaded": "Comando {index}: il contenitore {vnum} non è caricato da un comando precedente.",
+        "reset_exit_without_door": "Comando {index}: l'uscita {direction} della stanza {vnum} non ha una porta.",
+        "reset_if_flag_first": "Comando {index}: «solo se il precedente è riuscito» sul primo comando non ha un precedente.",
+        "reset_invalid_direction": "Direzione non valida ({value}): deve essere tra 0 e 5.",
+        "reset_invalid_door_state": "Stato della porta non valido («{value}»): usa OPEN, CLOSED o LOCKED.",
+        "reset_max_high": "Comando {index}: il massimo esistente ({max}) è insolitamente alto.",
+        "reset_max_zero": "Comando {index}: il massimo esistente è 0, non verrà caricato nulla.",
+        "reset_missing_arg": "Argomento obbligatorio mancante: {arg}.",
+        "reset_negative_arg": "L'argomento {arg} non può essere negativo ({value}).",
+        "reset_no_mob_before": "Comando {index}: nessun LOAD_MOB lo precede, non c'è un mob a cui dare/equipaggiare l'oggetto.",
+        "reset_no_such_exit": "Comando {index}: la stanza {vnum} non ha un'uscita verso {direction}.",
+        "reset_room_cap_above_max": "Comando {index}: il limite per stanza ({room_cap}) supera il massimo globale ({max}).",
+        "reset_slot_required": "Per equipaggiare un oggetto serve lo slot (argStr).",
+        "reset_unknown_mob": "Comando {index}: il mob con vnum {vnum} non esiste.",
+        "reset_unknown_object": "Comando {index}: l'oggetto con vnum {vnum} non esiste.",
+        "reset_unknown_room": "Comando {index}: la stanza con vnum {vnum} non esiste.",
+        "vnum_taken": "Esiste già una zona con vnum {vnum}."
+      }
+    }
+  },
+  "settings": {
+    "appearance": {
+      "accent": {
+        "label": "Colore di risalto",
+        "options": {
+          "amber": "Ambra",
+          "coral": "Corallo",
+          "indigo": "Indaco",
+          "teal": "Verde acqua",
+          "violet": "Viola"
+        }
+      },
+      "density": {
+        "label": "Densità",
+        "options": {
+          "comf": "Comoda",
+          "compact": "Compatta"
+        }
+      },
+      "font_scale": {
+        "label": "Dimensione del testo",
+        "options": {
+          "lg": "Grande",
+          "md": "Media",
+          "sm": "Piccola"
+        }
+      },
+      "reduce_motion": {
+        "label": "Riduci le animazioni"
+      },
+      "theme": {
+        "label": "Tema",
+        "options": {
+          "auto": "Automatico",
+          "dark": "Scuro",
+          "light": "Chiaro"
+        }
+      },
+      "title": "Aspetto"
+    },
+    "audit": {
+      "disable_activity_log": {
+        "label": "Disabilita log attività (solo per sviluppo/debug)"
+      },
+      "title": "Audit & Debug"
+    },
+    "preferences": {
+      "date_format": {
+        "label": "Formato data",
+        "options": {
+          "auto": "Automatico",
+          "dmy": "Giorno/mese/anno",
+          "mdy": "Mese/giorno/anno",
+          "ymd": "Anno-mese-giorno"
+        }
+      },
+      "locale": {
+        "label": "Lingua"
+      },
+      "table_page_size": {
+        "label": "Righe per pagina"
+      },
+      "timezone": {
+        "label": "Fuso orario"
+      },
+      "title": "Preferenze"
+    }
+  }
+}

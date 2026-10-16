@@ -1,0 +1,27 @@
+"""Messaggi di instances in it: codice stabile -> testo."""
+
+MESSAGES: dict[str, str] = {
+    "instances.mob_not_found": "Istanza di mob non trovata",
+    "instances.object_not_found": "Istanza di oggetto non trovata",
+    "instances.mob_prototype_not_found": "Prototipo di mob inesistente: {id}",
+    "instances.object_prototype_not_found": "Prototipo di oggetto inesistente: {id}",
+    "instances.room_not_found": "Stanza inesistente: {id}",
+    "instances.holder_not_found": "Bersaglio della posizione inesistente ({kind} {id})",
+    "instances.container_not_found": "Contenitore inesistente: {id}",
+    "instances.not_a_container": "L'oggetto #{id} non è un contenitore.",
+    "instances.container_self": "Un oggetto non può contenere sé stesso.",
+    "instances.container_nested": "Il contenitore #{id} sta già dentro un altro contenitore.",
+    "instances.container_in_container": "Un contenitore non può essere messo dentro un altro contenitore.",
+    "instances.container_full": "Il contenitore #{id} è pieno (capacità {capacity}).",
+    "instances.invalid_location_kind": "Tipo di posizione non valido: {kind}.",
+    "instances.location_empty": "La posizione non può essere vuota.",
+    "instances.slot_not_allowed": "Solo un oggetto di un mob o di un personaggio può essere indossato.",
+    "instances.slot_invalid": "Slot «{slot}» non valido per questo oggetto (posizioni possibili: {allowed}).",
+    "instances.slot_taken": "Lo slot «{slot}» è già occupato.",
+    "instances.hp_min": "I punti ferita devono essere almeno 1.",
+    "instances.hp_exceeds_max": "I punti ferita attuali non possono superare i massimi.",
+    "instances.negative_value": "Il valore di {field} non può essere negativo.",
+    "instances.charges_not_allowed": "Le cariche valgono solo per bacchette e bastoni.",
+    "instances.liquid_not_allowed": "Quantità, tipo e veleno del liquido valgono solo per i contenitori di liquido.",
+    "instances.invalid_contents_policy": "Valore non valido per contents: {value} (ammessi: destroy, drop).",
+}

@@ -1,0 +1,24 @@
+"""Messages of the Diku Modificato adapter in en: stable code -> text."""
+
+MESSAGES: dict[str, str] = {
+    "dikumod.unsafe_text": "Text cannot be written to Diku Modificato files: {reason}.",
+    "dikumod.unknown_flag": 'Unknown flag "{name}" in table {table}.',
+    "dikumod.extra_unknown": 'Unknown extra key "{key}" (known: {known}).',
+    "dikumod.extra_invalid": 'Invalid value for extra "{key}".',
+    "dikumod.extra_readonly": 'Extra key "{key}" is read-only.',
+    "dikumod.field_unsupported": 'The field "{field}" does not exist in Diku Modificato: only the neutral value is accepted.',
+    "dikumod.unknown_race": 'Unknown race "{name}".',
+    "dikumod.hp_not_dice": 'For this mob kind hit points are "level d8 + bonus" (level {level}): the dice cannot be edited.',
+    "dikumod.kind_change": 'Mob kind "{kind}" is not allowed (switching from/to kind S is not supported).',
+    "dikumod.too_many_affects": "A Diku Modificato object has at most 5 affects.",
+    "dikumod.reset_invalid_slot": 'Command {loc}: unknown equipment slot "{slot}".',
+    "dikumod.record_corrupted": "Record {vnum} is corrupted in the file ({reason}) and cannot be edited here.",
+    "dikumod.vnum_out_of_range": "Vnum {vnum} does not belong to the zone (range {bottom}-{top}).",
+    "dikumod.zone_derived": "The zone of Diku Modificato content is derived from the vnum: vnum {vnum} belongs to zone {expected}.",
+    "dikumod.zone_bottom_derived": "The lowest vnum of a Diku Modificato zone is the previous zone's top + 1 (expected {expected}, requested {bottom}).",
+    "dikumod.zone_top_order": "The top must stay between the previous zone's ({prev}) and the next zone's ({next}).",
+    "dikumod.zone_range_has_content": "Changing the top would move {count} rooms/mobs/objects to another zone.",
+    "dikumod.zone_index_in_use": "Deleting the zone would shift the indexes of per-zone files (zones/<n>.zon).",
+    "dikumod.override_vnum_locked": "Vnum {vnum} has a per-vnum file (rooms/ or objects/): the file name is its identity, it cannot be changed here.",
+    "dikumod.no_shop_file": "The world has no {file}: cannot create a shop.",
+}

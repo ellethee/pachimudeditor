@@ -1,0 +1,40 @@
+@zone
+Foresta Oscura~
+100 199 5 20
+
+@rooms
+#100
+Sentiero nel bosco~
+Un sentiero stretto tra gli alberi.~
+AB 3
+X 0 101
+S
+#101
+Radura~
+Una radura illuminata dalla luna.~
+B 2
+X 2 100
+S
+#0
+
+@mobs
+#100
+orco~
+un orco~
+Un orco ti guarda con aria torva.~
+5 1d8+2 2d4+0 1
+#0
+
+@objects
+#100
+spada~
+una spada~
+5 100
+#0
+
+@resets
+M 100 101
+O 100 100
+S
+
+@end

@@ -1,0 +1,272 @@
+{
+  "errors": {
+    "codes": {
+      "access": {
+        "permissions_missing": "Missing permissions: {permissions}",
+        "staff_required": "Staff access required",
+        "superuser_required": "Superuser access required"
+      },
+      "admin": {
+        "action_not_found": "The action '{name}' does not exist for this model.",
+        "integrity_error": "The change conflicts with existing data (duplicate or linked rows).",
+        "model_not_found": "Model '{app}.{model}' is not administered.",
+        "object_not_found": "Row {pk} was not found.",
+        "text": {
+          "action": {
+            "delete_selected": "Delete selected"
+          },
+          "deleted_selected": "{count} deleted"
+        }
+      },
+      "api": {
+        "invalid_order_by": "Invalid field '{field}' for ordering."
+      },
+      "auth": {
+        "invalid_credentials": "Invalid credentials",
+        "not_authenticated": "Not authenticated",
+        "password_incorrect": "The current password is incorrect",
+        "password_too_short": "Password too short (minimum {min_length} characters).",
+        "refresh_token_invalid": "Refresh token invalid or expired",
+        "refresh_token_revoked": "Refresh token revoked (logout, password change or reuse)",
+        "refresh_user_invalid": "User invalid or disabled",
+        "registration_disabled": "Registration is disabled",
+        "token_invalid": "Invalid token.",
+        "token_no_subject": "Token without a subject.",
+        "token_revoked": "Token revoked: the password was changed.",
+        "token_wrong_type": "Invalid token type.",
+        "too_many_attempts": "Too many failed attempts, try again later",
+        "username_taken": "Username already in use"
+      },
+      "common": {
+        "editor": {
+          "constraint_violation": "Operation not allowed by the database constraints.",
+          "duplicate": "An item with the same unique values already exists.",
+          "in_use": "Cannot delete: the item is still used by other data.",
+          "invalid_reference": "Invalid reference: the linked item does not exist."
+        }
+      },
+      "content": {
+        "class_in_use": "Cannot delete class «{id}»: it is used by {count} mob prototypes. Change their class first or disable it.",
+        "id_mismatch": "The body id («{body_id}») differs from the path id («{id}»): the id cannot be changed.",
+        "id_taken": "A content item with id «{id}» already exists.",
+        "invalid": "Invalid content: {detail}",
+        "invalid_id": "Invalid id «{id}»: use only lowercase letters, digits and underscores (max 64 characters).",
+        "not_found": "Content «{id}» not found.",
+        "race_in_use": "Cannot delete race «{id}»: it is used by {count} mob prototypes. Change their race first or disable it."
+      },
+      "group": {
+        "not_found": "Group not found"
+      },
+      "instances": {
+        "charges_not_allowed": "Charges only apply to wands and staffs.",
+        "container_full": "Container #{id} is full (capacity {capacity}).",
+        "container_in_container": "A container cannot be put inside another container.",
+        "container_nested": "Container #{id} is already inside another container.",
+        "container_not_found": "Container does not exist: {id}",
+        "container_self": "An object cannot contain itself.",
+        "holder_not_found": "Location target does not exist ({kind} {id})",
+        "hp_exceeds_max": "Current hit points cannot exceed the maximum.",
+        "hp_min": "Hit points must be at least 1.",
+        "invalid_contents_policy": "Invalid value for contents: {value} (allowed: destroy, drop).",
+        "invalid_location_kind": "Invalid location kind: {kind}.",
+        "liquid_not_allowed": "Liquid amount, type and poison only apply to liquid containers.",
+        "location_empty": "The location cannot be empty.",
+        "mob_not_found": "Mob instance not found",
+        "mob_prototype_not_found": "Mob prototype does not exist: {id}",
+        "negative_value": "The value of {field} cannot be negative.",
+        "not_a_container": "Object #{id} is not a container.",
+        "object_not_found": "Object instance not found",
+        "object_prototype_not_found": "Object prototype does not exist: {id}",
+        "room_not_found": "Room does not exist: {id}",
+        "slot_invalid": "Slot \"{slot}\" is not valid for this object (possible slots: {allowed}).",
+        "slot_not_allowed": "Only an object held by a mob or a character can be worn.",
+        "slot_taken": "Slot \"{slot}\" is already occupied."
+      },
+      "mfa": {
+        "already_enabled": "MFA is already enabled: disable it (with the password) before setting it up again",
+        "challenge_not_found": "Challenge not found or already used",
+        "code_invalid": "Invalid code",
+        "no_email": "The account has no email address",
+        "no_totp_setup": "No TOTP setup in progress",
+        "not_active": "MFA not active",
+        "not_configured": "MFA not configured",
+        "password_incorrect": "Incorrect password",
+        "token_invalid": "MFA token invalid or expired",
+        "too_many_attempts": "Too many failed attempts",
+        "totp_invalid": "Invalid TOTP code"
+      },
+      "mobs": {
+        "has_instances": "Cannot delete: {count} live instances of the mob exist.",
+        "in_reset_usage": "Cannot delete: the mob is referenced by {count} reset commands ({zones}). Update or remove them first.",
+        "not_found": "Mob not found",
+        "vnum_in_use": "Cannot change the vnum: the mob is referenced by {count} reset commands ({zones}).",
+        "vnum_taken": "A mob with vnum {vnum} already exists."
+      },
+      "objects": {
+        "has_instances": "Cannot delete: {count} live instances of the object exist.",
+        "in_exit_key_usage": "Cannot delete: the object is the key of {count} exits ({zones}).",
+        "in_reset_usage": "Cannot delete: the object is referenced by {count} reset commands ({zones}). Update or remove them first.",
+        "not_found": "Object not found",
+        "vnum_in_use": "Cannot change the vnum: the object is used {count} times (resets or exit keys) in: {zones}.",
+        "vnum_taken": "An object with vnum {vnum} already exists."
+      },
+      "permission": {
+        "not_found": "Permission not found"
+      },
+      "players": {
+        "account_has_characters": "Cannot delete: the account has {count} characters. Delete them first or use cascade delete.",
+        "account_not_found": "Account not found",
+        "character_has_items": "Cannot delete: the character owns {count} items. Empty the inventory or use cascade delete.",
+        "character_not_found": "Character not found",
+        "email_taken": "An account with email \"{email}\" already exists.",
+        "invalid_account": "Account {id} does not exist.",
+        "invalid_class": "Class \"{id}\" does not exist in the definitions.",
+        "invalid_prototype": "Object prototype not found.",
+        "invalid_race": "Race \"{id}\" does not exist in the definitions.",
+        "invalid_room": "Room {id} does not exist.",
+        "item_in_container": "The item is inside a container: it cannot be equipped.",
+        "item_not_found": "Item not in the character's inventory",
+        "name_taken": "A character named \"{name}\" already exists.",
+        "prototype_required": "Provide prototypeId or vnum.",
+        "username_taken": "An account with username \"{username}\" already exists."
+      },
+      "rooms": {
+        "exit_direction_taken": "An exit towards {direction} already exists from this room.",
+        "exit_door_state_invalid": "An exit without a door cannot be closed or locked.",
+        "exit_key_unknown": "The key object with vnum {vnum} does not exist.",
+        "exit_locked_needs_key": "A locked exit requires a keyVnum.",
+        "exit_not_found": "Exit not found",
+        "exit_not_in_room": "The exit does not belong to this room.",
+        "exit_self_loop": "An exit cannot lead to the same room.",
+        "extra_not_found": "Extra description not found",
+        "extra_not_in_room": "The extra description does not belong to this room.",
+        "has_instances": "Cannot delete: the room holds {mobs} mobs, {objects} objects and is the last room of {players} characters.",
+        "in_reset_usage": "Cannot delete: the room is referenced by {count} reset commands ({zones}). Update or remove them first.",
+        "not_found": "Room not found",
+        "vnum_in_use": "Cannot change the vnum: the room is referenced by {count} reset commands ({zones}).",
+        "vnum_taken": "A room with vnum {vnum} already exists."
+      },
+      "transfer": {
+        "confirm_required": "A real import needs dryRun=false and confirm=true.",
+        "file_too_large": "«{file}» exceeds the {max_mb} MB limit.",
+        "invalid_archive": "«{file}» is not a valid zip.",
+        "invalid_file": "Invalid file «{file}»: {detail}",
+        "multiple_zones": "The upload contains {count} zones: import one at a time.",
+        "no_files": "No file uploaded.",
+        "unsupported_file": "File «{file}» not recognised: expected a zip or zone.yaml, rooms.yaml, mobs.yaml, objects.yaml, resets.yaml.",
+        "vnum_conflict": "Import blocked: {count} vnums belong to other zones ({vnums}).",
+        "zone_missing": "The upload has no zone.yaml.",
+        "zone_not_found": "Zone not found"
+      },
+      "user": {
+        "cannot_delete_self": "You cannot delete your own account",
+        "cannot_demote_self": "You cannot deactivate or demote your own account",
+        "disabled": "User disabled",
+        "email_exists": "Email already exists.",
+        "inactive": "User not active",
+        "not_found": "User not found",
+        "settings_category_invalid": "Category '{category}' is not a valid settings section.",
+        "settings_key_invalid": "Setting '{key}' does not exist in section '{category}'.",
+        "settings_value_invalid": "Value of setting '{key}' in section '{category}' is not valid.",
+        "username_or_email_exists": "Username or email already exists."
+      },
+      "world": {
+        "empty_query": "The search text cannot be empty.",
+        "invalid_types": "Unknown search types: {types}. Use zone, room, mob, object."
+      },
+      "zones": {
+        "invalid_level_range": "The minimum level ({min}) cannot exceed the maximum level ({max}).",
+        "invalid_vnum_range": "The minimum vnum ({bottom}) cannot exceed the maximum vnum ({top}).",
+        "not_empty": "Cannot delete the zone: it still contains {rooms} rooms, {mobs} mobs and {objects} objects. Delete or move them first.",
+        "not_found": "Zone not found",
+        "range_overlap": "The vnum range overlaps zone \"{zone}\" (vnum {zone_vnum}).",
+        "reset_arg_str_not_allowed": "argStr is not allowed for this command type.",
+        "reset_container_not_loaded": "Command {index}: container {vnum} is not loaded by a previous command.",
+        "reset_exit_without_door": "Command {index}: the {direction} exit of room {vnum} has no door.",
+        "reset_if_flag_first": "Command {index}: \"only if previous succeeded\" on the first command has no predecessor.",
+        "reset_invalid_direction": "Invalid direction ({value}): must be between 0 and 5.",
+        "reset_invalid_door_state": "Invalid door state (\"{value}\"): use OPEN, CLOSED or LOCKED.",
+        "reset_max_high": "Command {index}: max existing ({max}) is unusually high.",
+        "reset_max_zero": "Command {index}: max existing is 0, nothing will be loaded.",
+        "reset_missing_arg": "Missing required argument: {arg}.",
+        "reset_negative_arg": "Argument {arg} cannot be negative ({value}).",
+        "reset_no_mob_before": "Command {index}: no LOAD_MOB precedes it, there is no mob to give/equip the object to.",
+        "reset_no_such_exit": "Command {index}: room {vnum} has no exit towards {direction}.",
+        "reset_room_cap_above_max": "Command {index}: the per-room limit ({room_cap}) exceeds the global maximum ({max}).",
+        "reset_slot_required": "Equipping an object requires the slot (argStr).",
+        "reset_unknown_mob": "Command {index}: mob with vnum {vnum} does not exist.",
+        "reset_unknown_object": "Command {index}: object with vnum {vnum} does not exist.",
+        "reset_unknown_room": "Command {index}: room with vnum {vnum} does not exist.",
+        "vnum_taken": "A zone with vnum {vnum} already exists."
+      }
+    }
+  },
+  "settings": {
+    "appearance": {
+      "accent": {
+        "label": "Accent color",
+        "options": {
+          "amber": "Amber",
+          "coral": "Coral",
+          "indigo": "Indigo",
+          "teal": "Teal",
+          "violet": "Violet"
+        }
+      },
+      "density": {
+        "label": "Density",
+        "options": {
+          "comf": "Comfortable",
+          "compact": "Compact"
+        }
+      },
+      "font_scale": {
+        "label": "Font size",
+        "options": {
+          "lg": "Large",
+          "md": "Medium",
+          "sm": "Small"
+        }
+      },
+      "reduce_motion": {
+        "label": "Reduce motion"
+      },
+      "theme": {
+        "label": "Theme",
+        "options": {
+          "auto": "Automatic",
+          "dark": "Dark",
+          "light": "Light"
+        }
+      },
+      "title": "Appearance"
+    },
+    "audit": {
+      "disable_activity_log": {
+        "label": "Disable activity log (development/debug only)"
+      },
+      "title": "Audit & Debug"
+    },
+    "preferences": {
+      "date_format": {
+        "label": "Date format",
+        "options": {
+          "auto": "Automatic",
+          "dmy": "Day/month/year",
+          "mdy": "Month/day/year",
+          "ymd": "Year-month-day"
+        }
+      },
+      "locale": {
+        "label": "Language"
+      },
+      "table_page_size": {
+        "label": "Rows per page"
+      },
+      "timezone": {
+        "label": "Time zone"
+      },
+      "title": "Preferences"
+    }
+  }
+}

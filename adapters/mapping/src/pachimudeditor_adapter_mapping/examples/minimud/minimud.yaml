@@ -1,0 +1,155 @@
+# yaml-language-server: $schema=../../mapping.schema.json
+#
+# Esempio guidato (docs/adapters/mapping-guide.md): "MiniMUD", un MUD inventato con un file `.mini` per zona.
+# Tutto cio' che serve per far leggere e scrivere i suoi file all'editor sta in questo YAML, nessun codice.
+name: MiniMUD
+version: 1
+description: Un file .mini per zona; sezioni @zone @rooms @mobs @objects @resets, file chiuso da @end.
+
+hooks: []
+
+layout:
+  mode: zone_files
+  zone_file: mini
+  glob: "*.mini"                 # nessun file indice: ogni file .mini e' una zona abilitata
+  new_zone: {style: zone, file: "{slug}.mini"}
+  zone_range:                    # il range di vnum e' scritto nell'intestazione
+    mode: fields
+    bottom: {from: bottom}
+    top: {from: top}
+
+tables:
+  room_flags: {dark: 1, outdoor: 2, nomob: 4, safe: 8}      # flag a lettere nei file: A=1, B=2, C=4, D=8
+  sectors: [inside, city, field, forest]
+
+grammar:
+  files:
+    mini:
+      header_prefix: "@"
+      end: end                   # `@end` chiude il file
+      sections:
+        - {header: zone, record: zone, entity: zone, single: true}
+        - {header: rooms, record: room, entity: room, until: {field: vnum, in: [0]}, tail: "#0\n\n"}
+        - {header: mobs, record: mob, entity: mob, until: {field: vnum, in: [0]}, tail: "#0\n\n"}
+        - {header: objects, record: object, entity: object, until: {field: vnum, in: [0]}, tail: "#0\n\n"}
+        - {header: resets, record: reset, entity: reset, until: {field: cmd, in: [S]}, tail: "S\n\n"}
+  records:
+    zone:
+      blank_after: 1
+      steps:
+        - name: string_tilde
+        - line: [bottom: number, top: number, min_level: number, max_level: number]
+    room:
+      key: vnum
+      steps:
+        - &head
+          line: [{literal: "#", glue: true}, vnum: number]
+        - name: string_tilde
+        - description: string_tilde
+        - line: [flags: {type: flags, table: room_flags}, sector: number]
+        - tagged:
+            end: S
+            tags:
+              X: {into: exits, inline: true, steps: [line: [door: number, to: number]]}
+    mob:
+      key: vnum
+      steps:
+        - *head
+        - name: string_tilde
+        - short: string_tilde
+        - long: string_tilde
+        - line: [level: number, hp: dice, damage: dice, sex: number]
+    object:
+      key: vnum
+      steps:
+        - *head
+        - name: string_tilde
+        - short: string_tilde
+        - line: [kind: number, cost: number]
+    reset:
+      steps:
+        - line:
+            - cmd: tag
+            - switch: cmd
+              cases:
+                M: [mob: number, room: number]
+                O: [obj: number, room: number]
+
+model:
+  zone:
+    entity: zone
+    id: bottom
+    resets: {section: resets}
+    defaults: {name: "", bottom: 0, top: 0, min_level: 1, max_level: 60}
+    fields:
+      name: {from: name}
+      builder: {const: "", soft: true}
+      min_level: {from: min_level}
+      max_level: {from: max_level}
+      lifespan_minutes: {const: 15, soft: true}
+      reset_mode: {const: EMPTY, soft: true}
+  room:
+    entity: room
+    exits: exits                  # niente extra description: la capability resta spenta
+    defaults: {flags: 0, sector: 0}
+    fields:
+      name: {from: name}
+      description: {from: description}
+      flags: {from: flags}
+      sector_type: {from: sector, map: {0: INSIDE, 1: CITY, 2: FIELD, 3: FOREST}, unmapped: INSIDE}
+      heal_rate: {const: 100, soft: true}
+      mana_rate: {const: 100, soft: true}
+  exit:
+    direction_field: door
+    target_field: to
+    no_target: -1
+    door_state: fields
+    defaults: {to: -1}
+    fields:
+      direction: {from: door}
+      description: {const: null, soft: true}
+      keywords: {const: null, soft: true}
+      door_flag: {const: NONE, soft: true}
+      is_open: {const: true, soft: true}
+      is_locked: {const: false, soft: true}
+      key_vnum: {const: null, soft: true}
+  extra_description:
+    fields: {}
+  mob:
+    entity: mob
+    defaults: {level: 1, hp: {n: 1, t: 8, b: 0}, damage: {n: 1, t: 4, b: 0}, sex: 0}
+    fields:
+      keywords: {from: name}
+      short_description: {from: short}
+      long_description: {from: long}
+      level: {from: level}
+      hp_dice_count: {from: hp.n}
+      hp_die_size: {from: hp.t}
+      hp_bonus: {from: hp.b}
+      damage_dice_count: {from: damage.n}
+      damage_die_size: {from: damage.t}
+      damage_bonus: {from: damage.b}
+      sex: {from: sex}
+  object:
+    entity: object
+    defaults: {kind: 6, cost: 0}
+    fields:
+      keywords: {from: name}
+      short_description: {from: short}
+      object_type: {from: kind}
+      cost: {from: cost}
+  reset:
+    command_field: cmd
+    commands:
+      M:
+        type: LOAD_MOB
+        arg1: {from: mob}
+        arg3: {from: room}
+        arg2: {const: 1, soft: true}
+      O:
+        type: LOAD_OBJECT
+        arg1: {from: obj}
+        arg3: {from: room}
+        arg2: {const: 1, soft: true}
+
+meta: {}

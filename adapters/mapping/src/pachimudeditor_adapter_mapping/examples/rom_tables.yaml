@@ -1,0 +1,522 @@
+# Tabelle ROM/basedmud per rom.yaml (generate da rom_lib.tables, a loro volta da basedmud/json/meta).
+# Flag: nome -> bit. Tipi: lista di nomi (l'indice e' il valore numerico).
+
+mob_flags:
+  npc: 1
+  sentinel: 2
+  scavenger: 4
+  unused_act_1: 8
+  unused_act_2: 16
+  aggressive: 32
+  stay_area: 64
+  wimpy: 128
+  pet: 256
+  train: 512
+  practice: 1024
+  unused_act_3: 2048
+  unused_act_4: 4096
+  unused_act_5: 8192
+  undead: 16384
+  unused_act_6: 32768
+  cleric: 65536
+  mage: 131072
+  thief: 262144
+  warrior: 524288
+  noalign: 1048576
+  nopurge: 2097152
+  outdoors: 4194304
+  unused_act_7: 8388608
+  indoors: 16777216
+  unused_act_8: 33554432
+  healer: 67108864
+  gain: 134217728
+  update_always: 268435456
+  changer: 536870912
+plr_flags:
+  '!npc!': 1
+  unused_plr_1: 2
+  autoassist: 4
+  autoexit: 8
+  autoloot: 16
+  autosac: 32
+  autogold: 64
+  autosplit: 128
+  unused_plr_2: 256
+  unused_plr_3: 512
+  unused_plr_4: 1024
+  unused_plr_5: 2048
+  unused_plr_6: 4096
+  holylight: 8192
+  unused_plr_7: 16384
+  can_loot: 32768
+  nosummon: 65536
+  nofollow: 131072
+  unused_plr_8: 262144
+  colour: 524288
+  permit: 1048576
+  unused_plr_9: 2097152
+  log: 4194304
+  deny: 8388608
+  freeze: 16777216
+  thief: 33554432
+  killer: 67108864
+affect_flags:
+  blind: 1
+  invisible: 2
+  detect_evil: 4
+  detect_invis: 8
+  detect_magic: 16
+  detect_hidden: 32
+  detect_good: 64
+  sanctuary: 128
+  faerie_fire: 256
+  infrared: 512
+  curse: 1024
+  unused_aff_1: 2048
+  poison: 4096
+  protect_evil: 8192
+  protect_good: 16384
+  sneak: 32768
+  hide: 65536
+  sleep: 131072
+  charm: 262144
+  flying: 524288
+  pass_door: 1048576
+  haste: 2097152
+  calm: 4194304
+  plague: 8388608
+  weaken: 16777216
+  dark_vision: 33554432
+  berserk: 67108864
+  swim: 134217728
+  regeneration: 268435456
+  slow: 536870912
+off_flags:
+  area_attack: 1
+  backstab: 2
+  bash: 4
+  berserk: 8
+  disarm: 16
+  dodge: 32
+  fade: 64
+  fast: 128
+  kick: 256
+  dirt_kick: 512
+  parry: 1024
+  rescue: 2048
+  tail: 4096
+  trip: 8192
+  crush: 16384
+  assist_all: 32768
+  assist_align: 65536
+  assist_race: 131072
+  assist_players: 262144
+  assist_guard: 524288
+  assist_vnum: 1048576
+form_flags:
+  edible: 1
+  poison: 2
+  magical: 4
+  instant_decay: 8
+  other: 16
+  unused_form_1: 32
+  animal: 64
+  sentient: 128
+  undead: 256
+  construct: 512
+  mist: 1024
+  intangible: 2048
+  biped: 4096
+  centaur: 8192
+  insect: 16384
+  spider: 32768
+  crustacean: 65536
+  worm: 131072
+  blob: 262144
+  unused_form_2: 524288
+  unused_form_3: 1048576
+  mammal: 2097152
+  bird: 4194304
+  reptile: 8388608
+  snake: 16777216
+  dragon: 33554432
+  amphibian: 67108864
+  fish: 134217728
+  cold_blood: 268435456
+part_flags:
+  head: 1
+  arms: 2
+  legs: 4
+  heart: 8
+  brains: 16
+  guts: 32
+  hands: 64
+  feet: 128
+  fingers: 256
+  ear: 512
+  eye: 1024
+  long_tongue: 2048
+  eyestalks: 4096
+  tentacles: 8192
+  fins: 16384
+  wings: 32768
+  tail: 65536
+  unused_part_1: 131072
+  unused_part_2: 262144
+  unused_part_3: 524288
+  claws: 1048576
+  fangs: 2097152
+  horns: 4194304
+  scales: 8388608
+  tusks: 16777216
+comm_flags:
+  quiet: 1
+  deaf: 2
+  nowiz: 4
+  noclangossip: 8
+  nogossip: 16
+  noquestion: 32
+  nomusic: 64
+  noclan: 128
+  noquote: 256
+  shoutsoff: 512
+  unused_comm_1: 1024
+  compact: 2048
+  brief: 4096
+  prompt: 8192
+  combine: 16384
+  telnet_ga: 32768
+  show_affects: 65536
+  nograts: 131072
+  unused_comm_2: 262144
+  noemote: 524288
+  noshout: 1048576
+  notell: 2097152
+  nochannels: 4194304
+  unused_comm_3: 8388608
+  snoop_proof: 16777216
+  afk: 33554432
+mprog_flags:
+  act: 1
+  bribe: 2
+  death: 4
+  entry: 8
+  fight: 16
+  give: 32
+  greet: 64
+  grall: 128
+  kill: 256
+  hpcnt: 512
+  random: 1024
+  speech: 2048
+  exit: 4096
+  exall: 8192
+  delay: 16384
+  surrender: 32768
+area_flags:
+  changed: 1
+  added: 2
+  loading: 4
+exit_flags:
+  door: 1
+  closed: 2
+  locked: 4
+  unused_exit_1: 8
+  unused_exit_2: 16
+  pickproof: 32
+  nopass: 64
+  easy: 128
+  hard: 256
+  infuriating: 512
+  noclose: 1024
+  nolock: 2048
+room_flags:
+  dark: 1
+  unused_room_1: 2
+  no_mob: 4
+  indoors: 8
+  unused_room_2: 16
+  unused_room_3: 32
+  unused_room_4: 64
+  unused_room_5: 128
+  unused_room_6: 256
+  private: 512
+  safe: 1024
+  solitary: 2048
+  pet_shop: 4096
+  no_recall: 8192
+  imp_only: 16384
+  gods_only: 32768
+  heroes_only: 65536
+  newbies_only: 131072
+  law: 262144
+  nowhere: 524288
+extra_flags:
+  glow: 1
+  hum: 2
+  dark: 4
+  lock: 8
+  evil: 16
+  invis: 32
+  magic: 64
+  nodrop: 128
+  bless: 256
+  antigood: 512
+  antievil: 1024
+  antineutral: 2048
+  noremove: 4096
+  inventory: 8192
+  nopurge: 16384
+  rotdeath: 32768
+  visdeath: 65536
+  unused_extra_1: 131072
+  nonmetal: 262144
+  nolocate: 524288
+  meltdrop: 1048576
+  hadtimer: 2097152
+  sellextract: 4194304
+  unused_extra_2: 8388608
+  burnproof: 16777216
+  nouncurse: 33554432
+  corroded: 67108864
+wear_flags:
+  take: 1
+  finger: 2
+  neck: 4
+  body: 8
+  head: 16
+  legs: 32
+  feet: 64
+  hands: 128
+  arms: 256
+  shield: 512
+  about: 1024
+  waist: 2048
+  wrist: 4096
+  wield: 8192
+  hold: 16384
+  nosac: 32768
+  wearfloat: 65536
+container_flags:
+  closeable: 1
+  pickproof: 2
+  closed: 4
+  locked: 8
+  puton: 16
+weapon_flags:
+  flaming: 1
+  frost: 2
+  vampiric: 4
+  sharp: 8
+  vorpal: 16
+  twohands: 32
+  shocking: 64
+  poison: 128
+res_flags:
+  summon: 1
+  charm: 2
+  magic: 4
+  weapon: 8
+  bash: 16
+  pierce: 32
+  slash: 64
+  fire: 128
+  cold: 256
+  lightning: 512
+  acid: 1024
+  poison: 2048
+  negative: 4096
+  holy: 8192
+  energy: 16384
+  mental: 32768
+  disease: 65536
+  drowning: 131072
+  light: 262144
+  sound: 524288
+  unused_res_1: 1048576
+  unused_res_2: 2097152
+  unused_res_3: 4194304
+  wood: 8388608
+  silver: 16777216
+  iron: 33554432
+gate_flags:
+  normal_exit: 1
+  no_curse: 2
+  go_with: 4
+  buggy: 8
+  random: 16
+furniture_flags:
+  stand_at: 1
+  stand_on: 2
+  stand_in: 4
+  sit_at: 8
+  sit_on: 16
+  sit_in: 32
+  rest_at: 64
+  rest_on: 128
+  rest_in: 256
+  sleep_at: 512
+  sleep_on: 1024
+  sleep_in: 2048
+  put_at: 4096
+  put_on: 8192
+  put_in: 16384
+  put_inside: 32768
+sex_types:
+  - neutral
+  - male
+  - female
+  - random
+affect_apply_types:
+  - 'none'
+  - strength
+  - dexterity
+  - intelligence
+  - wisdom
+  - constitution
+  - sex
+  - class
+  - level
+  - age
+  - height
+  - weight
+  - mana
+  - hp
+  - moves
+  - gold
+  - experience
+  - 'armor class'
+  - 'hit roll'
+  - 'damage roll'
+  - saves
+  - 'save vs rod'
+  - 'save vs petrification'
+  - 'save vs breath'
+  - 'save vs spell'
+  - 'spell affect'
+wear_loc_phrases:
+  - 'as a light'
+  - 'on the left finger'
+  - 'on the right finger'
+  - 'around the neck (1)'
+  - 'around the neck (2)'
+  - 'on the body'
+  - 'over the head'
+  - 'on the legs'
+  - 'on the feet'
+  - 'on the hands'
+  - 'on the arms'
+  - 'as a shield'
+  - 'about the shoulders'
+  - 'around the waist'
+  - 'on the left wrist'
+  - 'on the right wrist'
+  - wielded
+  - 'held in the hands'
+  - 'floating nearby'
+  - 'in the inventory'
+wear_loc_types:
+  - light
+  - lfinger
+  - rfinger
+  - neck1
+  - neck2
+  - body
+  - head
+  - legs
+  - feet
+  - hands
+  - arms
+  - shield
+  - about
+  - waist
+  - lwrist
+  - rwrist
+  - wielded
+  - hold
+  - floating
+  - 'none'
+ac_types:
+  - pierce
+  - bash
+  - slash
+  - magic
+size_types:
+  - tiny
+  - small
+  - medium
+  - large
+  - huge
+  - giant
+weapon_types:
+  - exotic
+  - sword
+  - dagger
+  - spear
+  - mace
+  - axe
+  - flail
+  - whip
+  - polearm
+position_types:
+  - dead
+  - mortal
+  - incap
+  - stunned
+  - sleeping
+  - resting
+  - sitting
+  - fighting
+  - standing
+sector_types:
+  - inside
+  - city
+  - field
+  - forest
+  - hills
+  - mountain
+  - swim
+  - noswim
+  - unused
+  - air
+  - desert
+item_types:
+  - 'none'
+  - light
+  - scroll
+  - wand
+  - staff
+  - weapon
+  - unused_item_1
+  - unused_item_2
+  - treasure
+  - armor
+  - potion
+  - clothing
+  - furniture
+  - trash
+  - unused_item_3
+  - container
+  - unused_item_4
+  - drink
+  - key
+  - food
+  - money
+  - unused_item_5
+  - boat
+  - npc_corpse
+  - pc_corpse
+  - fountain
+  - pill
+  - protect
+  - map
+  - portal
+  - warp_stone
+  - room_key
+  - gem
+  - jewelry
+  - jukebox
+door_resets:
+  - 'open and unlocked'
+  - 'closed and unlocked'
+  - 'closed and locked'

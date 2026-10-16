@@ -1,0 +1,82 @@
+# Changelog
+
+Un solo file per i cinque pacchetti. Le release sono sezioni `## <pacchetto> X.Y.Z - data` (vedi Rilasci); le modifiche in corso stanno sotto "Non rilasciato".
+
+## Non rilasciato
+
+- Licenza MIT (espressione SPDX `license = "MIT"` e `LICENSE` in `pachimudeditor` e nei 4 adapter `-pachimud`, `-basedmud`, `-dikumod`, `-mapping`); email rimossa dagli `authors`; path personali sostituiti da segnaposto e default relativi ai checkout fratelli (`../basedmud`). `pachimudeditor.yaml` e' un esempio generico (la versione personale va in `pachimudeditor.local.yaml`, ignorato). Il classificatore `Private :: Do Not Upload` resta finche' non si decide di pubblicare su PyPI.
+
+- Il progetto vive in un repository proprio (storia di `webeditor2/` e `pachimudeditor/` mantenuta). Il gioco `pachimud` non e' una dipendenza del progetto (nemmeno di sviluppo): per i test di equivalenza lo si installa a mano nel venv (`uv pip install -e ../pachimud`); senza, la CI salta i test che lo richiedono.
+
+- Il core rifiuta un plugin con `sdk_version` di major diversa da `SDK_VERSION` (kind in errore, non crash); i 4 adapter dichiarano `sdk_version="1.0"`.
+
+### Adapter come pacchetti separati (plugin)
+
+- Il monorepo ora produce piu' pacchetti: `pachimudeditor` (core generico) e `pachimudeditor-adapter-pachimud`, `-basedmud`,
+  `-dikumod`, `-mapping` (cartella `adapters/`, uv workspace). Il core non importa mai gli adapter: li scopre con gli entry point
+  del gruppo `pachimudeditor.adapters` (`AdapterPlugin`: kind, factory, moduli API, sapore di conversione, validazione,
+  esempio di config) e li espone come extras (`pachimudeditor[pachimud|basedmud|dikumod|mapping|all]`).
+- Caricamento lazy: un kind non configurato non importa nulla di pesante; i moduli API di un adapter (es. world/players/
+  instances/transfer/content del gioco) si registrano solo se esiste un mondo di quel kind. Un plugin che non si importa e'
+  segnalato (log, `adapters list`) senza far cadere il core; un mondo con kind non installato da' un errore che indica
+  l'extra da installare.
+- Nuovo `pachimudeditor.sdk`: API pubblica per gli adapter esterni (`SDK_VERSION` 1.0); verificata da un test AST
+  (`tests/core/test_boundaries.py`: il core non importa adapter, gli adapter usano solo l'API pubblica).
+- Spostati negli adapter: SQLAlchemy riflessivo, moduli e helper del gioco (`apps/{world,players,instances,transfer,content}`,
+  `common/editor/{crud,db,reset_usage,instances,pagination}`), messaggi `world.not_pachimud|unavailable|field_unsupported` e
+  `common.editor.*`, `rom_lib` (ex `adapters_rom_lib`), `dikumod_lib` (ex `adapters_dikumod_lib`), esempi e schema del mapping.
+  Il core non dichiara piu' `sqlalchemy`, `aiosqlite`, `argon2-cffi`, `pyyaml`, `ruamel-yaml` (sqlalchemy e aiosqlite restano
+  installati perche' li richiede pachifast per il DB di autenticazione).
+- Conversione: le regole stanno nell'adapter del mondo (un `Flavor` per kind, `AdapterPlugin.flavor`); nel core restano
+  `Flavor`/`ComposedConverter`, helper e tabelle del pivot. Le coppie si compongono dai plugin installati.
+- CLI: `pachimudeditor adapters list`; `info`, `worlds list|check` mostrano i kind disponibili e quelli da installare;
+  `init` genera un `pachimudeditor.yaml` con l'esempio commentato di ogni adapter installato.
+- Test: `tests/core/` gira senza adapter (adapter fittizi con entry point sintetici); lo stack completo richiede gli adapter e `pachimud`.
+- `scripts/build_package.sh` costruisce core (con la SPA) e ogni adapter; `create_editor_app(extra_kinds=...)`.
+
+### Mondo pachimud senza il pacchetto del gioco
+
+Il mondo pachimud non dipende piu' dal pacchetto del gioco (`pachimud`): schema-on-read con SQLAlchemy.
+
+- `adapters/pachimud` riscritto: apre il database di gioco indicato dai parametri del mondo
+  (`params.database_url`, `params.definitions_path`, `params.config_path` opzionale) con SQLAlchemy async e riflette le
+  tabelle reali (`MetaData.reflect`) invece di importare i modelli ORM del gioco. Engine e sessioni sono dell'adapter
+  (per mondo, creati al primo uso, chiusi allo spegnimento); i pragma SQLite sono quelli del game server.
+- Nessun `import pachimud` in `src/pachimudeditor` (test di scansione AST + processo `python -I` con l'import bloccato),
+  niente `sys.path`/`python_path`. `pachimud` resta una dipendenza di solo sviluppo (schema del DB di prova ed equivalenza).
+- I moduli `world/players/instances/transfer/content` si registrano quando e' configurato un mondo `kind: pachimud` (senza
+  controllo di importabilita') e usano il database del mondo scelto dalla richiesta (`X-World`): `common/editor/db.py` espone
+  `SessionDep`/`PachimudDep` che risolvono l'adapter attivo (409 `world.not_pachimud` se il mondo e' di un altro tipo).
+  L'API pubblica (rotte, payload, codici) e' invariata.
+- Controllo di compatibilita' dello schema: lettura di `alembic_version`, tabella delle revisioni note
+  (`64f2026e1334` .. `9d4aa2f29079`) e delle colonne attese. Revisione ignota/colonne assenti: avvisi nel log e in
+  `worlds check`; colonne non essenziali assenti (`race_id`, `class_id`, `arg_str`, `heal_rate`, ...) = campi `unsupported` in
+  `describe()` (422 `world.field_unsupported` se si scrive un valore non neutro); tabelle opzionali assenti spengono le
+  capability collegate; schema incompatibile = 503 `world.unavailable` solo per quel mondo.
+- Nuovi codici di errore: `world.not_pachimud`, `world.unavailable`, `world.field_unsupported` (it/en).
+- Enum e flag in tabelle dati dell'editor (`common/enums.py`, `adapters/pachimud/race_enums.py`); razze/classi con modelli
+  Pydantic propri (`adapters/pachimud/definitions.py`); hash Argon2id con `argon2-cffi` (dipendenza ora dichiarata, come
+  `sqlalchemy`, `aiosqlite`, `pyyaml`), identico a quello del gioco.
+- Export/import YAML di zona (`adapters/pachimud/transfer/`) riscritto: stessi file e stessa semantica upsert dell'importer del
+  gioco (verificata dai test di equivalenza nei due versi).
+- Rimossa la logica di `PACHIMUD_CONFIG_PATH` da `common/editor/db.py`; resta come ripiego documentato di `config_path`
+  (`adapters/pachimud/params.py`). `pachimudeditor info` non mostra piu' la versione di `pachimud`.
+- `worlds check`: per i mondi pachimud mostra revisione e stato dello schema.
+- Test: nuova suite `tests/test_equivalence.py` (hash, trasferimento zone, enum/schemi/colonne/revisioni vs gioco, saltata
+  senza `pachimud`), `tests/test_bootstrap.py` (nessun import del gioco, app completa con `pachimud` bloccato),
+  `tests/test_schema_check.py` (degrado su schemi vecchi/ignoti).
+
+## 0.1.0
+
+Prima versione distribuibile: il webeditor (ex `webeditor2/`) diventa il pacchetto Python `pachimudeditor`.
+
+- Backend pachifast come pacchetto reale (`src/pachimudeditor`: `apps/`, `common/`, `adapters/`,
+  `adapters_rom_lib/`, `adapters_dikumod_lib/`), factory `pachimudeditor.app:create_editor_app`, moduli in
+  `pachimudeditor.modules`.
+- Frontend Quasar buildato e incluso nel wheel (`pachimudeditor/static`), servito dallo stesso processo.
+- CLI `pachimudeditor`: `init`, `serve`, `users`, `worlds`, `build-frontend`, `info`, `--version`.
+- Cartella di lavoro (`.env`, `pachimudeditor.yaml`, DB di autenticazione, migration) generata da `init`.
+- Nessun mondo implicito; `pachimud` (gioco) non e' una dipendenza: mondi pachimud e moduli collegati attivi solo se
+  il pacchetto e' importabile. Config del game server: `config_path` del mondo, `PACHIMUD_CONFIG_PATH` o `pachimud.yaml`
+  in cwd; i path relativi si risolvono rispetto alla cartella di quel file.
+- Alias `PACHIMUDEDITOR_WORLDS` / `PACHIMUDEDITOR_DEFAULT_WORLD` (restano validi `WEBEDITOR_*`).

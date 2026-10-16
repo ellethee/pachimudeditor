@@ -1,0 +1,22 @@
+// Stili dell'app (dopo gli stili della shell, caricati da quasar.config.ts > css).
+// Token CSS della shell: ridefinirli qui, es. `body.body--dark { --pachi-accent: #f59e0b; }`.
+
+// Workaround per pachi-table2 (v2.1.3): il contenitore ha l'altezza calcolata sul viewport ma la tabella
+// interna e' `.fit` (height: 100%) e ignora la toolbar sopra di lei, quindi la riga di paginazione
+// finisce fuori dal viewport. Qui il contenitore diventa una colonna flex e la tabella prende il resto.
+.pachi-table2--container {
+  display: flex;
+  flex-direction: column;
+
+  > .q-table__container {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto !important;
+  }
+}
+
+// Dialog di un record bloccato (corrotto nel file originale): niente pulsante di salvataggio.
+.pachi-record-locked button[aria-label='Salva modifiche'],
+.pachi-record-locked button[aria-label='Save changes'] {
+  display: none;
+}

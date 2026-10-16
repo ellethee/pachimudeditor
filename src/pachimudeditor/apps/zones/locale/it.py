@@ -1,0 +1,27 @@
+"""Messaggi di zones in it: codice stabile -> testo."""
+
+MESSAGES: dict[str, str] = {
+    "zones.not_found": "Zona non trovata",
+    "zones.vnum_taken": "Esiste già una zona con vnum {vnum}.",
+    "zones.not_empty": "Impossibile eliminare la zona: contiene ancora {rooms} stanze, {mobs} mob e {objects} oggetti. Eliminali o spostali prima.",
+    "zones.invalid_vnum_range": "Il vnum minimo ({bottom}) non può superare il vnum massimo ({top}).",
+    "zones.invalid_level_range": "Il livello minimo ({min}) non può superare il livello massimo ({max}).",
+    "zones.range_overlap": "Il range di vnum si sovrappone a quello della zona «{zone}» (vnum {zone_vnum}).",
+    "zones.reset_negative_arg": "L'argomento {arg} non può essere negativo ({value}).",
+    "zones.reset_missing_arg": "Argomento obbligatorio mancante: {arg}.",
+    "zones.reset_invalid_direction": "Direzione non valida ({value}): deve essere tra 0 e 5.",
+    "zones.reset_slot_required": "Per equipaggiare un oggetto serve lo slot (argStr).",
+    "zones.reset_invalid_door_state": "Stato della porta non valido («{value}»): usa OPEN, CLOSED o LOCKED.",
+    "zones.reset_arg_str_not_allowed": "argStr non è ammesso per questo tipo di comando.",
+    "zones.reset_unknown_mob": "Comando {index}: il mob con vnum {vnum} non esiste.",
+    "zones.reset_unknown_object": "Comando {index}: l'oggetto con vnum {vnum} non esiste.",
+    "zones.reset_unknown_room": "Comando {index}: la stanza con vnum {vnum} non esiste.",
+    "zones.reset_if_flag_first": "Comando {index}: «solo se il precedente è riuscito» sul primo comando non ha un precedente.",
+    "zones.reset_no_mob_before": "Comando {index}: nessun LOAD_MOB lo precede, non c'è un mob a cui dare/equipaggiare l'oggetto.",
+    "zones.reset_container_not_loaded": "Comando {index}: il contenitore {vnum} non è caricato da un comando precedente.",
+    "zones.reset_no_such_exit": "Comando {index}: la stanza {vnum} non ha un'uscita verso {direction}.",
+    "zones.reset_exit_without_door": "Comando {index}: l'uscita {direction} della stanza {vnum} non ha una porta.",
+    "zones.reset_max_zero": "Comando {index}: il massimo esistente è 0, non verrà caricato nulla.",
+    "zones.reset_max_high": "Comando {index}: il massimo esistente ({max}) è insolitamente alto.",
+    "zones.reset_room_cap_above_max": "Comando {index}: il limite per stanza ({room_cap}) supera il massimo globale ({max}).",
+}

@@ -1,0 +1,71 @@
+/** Messaggi italiani della feature (lingua di riferimento). */
+export default {
+  transfer: {
+    title: 'Trasferimento zone',
+    description: 'Esporta e importa zone nel formato YAML del game server',
+    export: {
+      title: 'Esporta zona',
+      description: 'Scarica uno zip con zone.yaml, rooms.yaml, mobs.yaml, objects.yaml e resets.yaml, pronto per definitions/zones/.',
+      zone: 'Zona',
+      download: 'Scarica zip',
+      done: 'Scaricato {name}.',
+    },
+    import: {
+      title: 'Importa zona',
+      description: 'Carica uno zip (o i singoli file YAML) di una zona. Prima vedi l’anteprima, poi confermi l’import.',
+      files: 'File da importare',
+      filesHint: 'Uno zip, oppure zone.yaml (obbligatorio) con rooms/mobs/objects/resets.yaml',
+      preview: 'Anteprima (nessuna modifica)',
+      noDeletes: 'L’import aggiorna o crea per vnum e non cancella mai nulla; i reset e le extra description delle stanze vengono sostituiti per intero.',
+      confirm: 'Confermo: applica l’import al database',
+      apply: 'Importa',
+      applied: 'Import eseguito.',
+      done: 'Zona «{name}» (vnum {vnum}) importata.',
+    },
+    actions: { create: 'Nuova', update: 'Da aggiornare', unchanged: 'Invariata' },
+    preview: {
+      kind: 'Contenuto',
+      create: 'Nuovi',
+      update: 'Aggiornati',
+      unchanged: 'Invariati',
+      kept: 'Nel DB, non nel file',
+      replaced: 'Sostituiti',
+      resetsSummary: '{inFile} nel file, {inDb} nel DB',
+      kinds: { rooms: 'Stanze', mobs: 'Mob', objects: 'Oggetti', resets: 'Reset' },
+    },
+    kind: { room: 'stanza', mob: 'mob', object: 'oggetto' },
+    conflicts: {
+      title: 'Import bloccato: alcuni vnum appartengono ad altre zone',
+      item: '{kind} {vnum} appartiene alla zona «{zone}» (vnum {zoneVnum})',
+    },
+    warnings: {
+      title: '{count} segnalazioni (non bloccanti)',
+      codes: {
+        out_of_range: 'La {kind} {vnum} è fuori dal range di vnum della zona.',
+        invalid_range: 'Range di vnum incoerente: {bottom} > {top}.',
+        dangling_exit: 'Stanza {room}: l’uscita {direction} punta a una stanza inesistente ({target}).',
+        unknown_reset_ref: 'Reset {index}: {kind} con vnum {vnum} inesistente.',
+        unknown_key: 'Stanza {room}: la chiave dell’uscita {direction} (oggetto {vnum}) non esiste.',
+        unknown_race: 'Mob {mob}: razza «{id}» sconosciuta.',
+        unknown_class: 'Mob {mob}: classe «{id}» sconosciuta.',
+        range_overlap: 'Il range si sovrappone a quello della zona «{zone}» (vnum {zone_vnum}).',
+      },
+    },
+  },
+  errors: {
+    codes: {
+      transfer: {
+        zone_not_found: 'Zona non trovata',
+        no_files: 'Nessun file caricato.',
+        unsupported_file: 'File «{file}» non riconosciuto: servono uno zip oppure zone.yaml, rooms.yaml, mobs.yaml, objects.yaml, resets.yaml.',
+        invalid_archive: '«{file}» non è uno zip valido.',
+        file_too_large: '«{file}» supera il limite di {max_mb} MB.',
+        zone_missing: 'Nel caricamento manca zone.yaml.',
+        multiple_zones: 'Il caricamento contiene {count} zone: importane una alla volta.',
+        invalid_file: 'File «{file}» non valido: {detail}',
+        confirm_required: 'Per importare davvero servono dryRun=false e confirm=true.',
+        vnum_conflict: 'Import bloccato: {count} vnum appartengono ad altre zone ({vnums}).',
+      },
+    },
+  },
+}

@@ -1,0 +1,24 @@
+[Unit]
+Description=Pachimud Webeditor (pachimudeditor)
+After=network.target
+
+[Service]
+Type=simple
+# Adatta utente e path all'installazione reale. Installazione e primo avvio:
+#   uv tool install pachimudeditor         # (o: uv pip install nel venv scelto), wheel con la SPA inclusa
+#   pachimudeditor init --workdir /var/lib/pachimudeditor   # .env, pachimudeditor.yaml, DB auth, primo superuser
+User=pachimud
+WorkingDirectory=/var/lib/pachimudeditor
+Environment=PACHIMUD_CONFIG_PATH=/opt/pachimud/pachimud.yaml
+# I segreti (PACHIFAST_SECRET_KEY, ecc.) stanno in .env della cartella di lavoro, mai nel file di unit.
+# `pachimudeditor serve` legge .env dalla cartella di lavoro: EnvironmentFile non serve.
+ExecStart=/usr/local/bin/pachimudeditor serve --workdir /var/lib/pachimudeditor --host 127.0.0.1 --port 8123
+Restart=on-failure
+RestartSec=2
+
+# Ascolta solo su localhost: per l'accesso da altre macchine metti davanti un reverse proxy con TLS
+# (serve la radice del dominio: la SPA usa path assoluti, non e' montabile sotto un prefisso).
+# L'editor ha un'autenticazione propria (JWT, utenti creati con `pachimudeditor users create`).
+
+[Install]
+WantedBy=multi-user.target

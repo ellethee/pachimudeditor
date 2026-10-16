@@ -1,0 +1,1767 @@
+{
+  "$defs": {
+    "EntityModel": {
+      "additionalProperties": false,
+      "description": "Mappatura di un'entita' (zona, stanza, mob, oggetto) sui campi del DTO.",
+      "properties": {
+        "entity": {
+          "title": "Entity",
+          "type": "string"
+        },
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/FieldMap"
+          },
+          "title": "Fields",
+          "type": "object"
+        },
+        "defaults": {
+          "additionalProperties": true,
+          "title": "Defaults",
+          "type": "object"
+        },
+        "extra": {
+          "$ref": "#/$defs/ExtraSpec"
+        }
+      },
+      "required": [
+        "entity"
+      ],
+      "title": "EntityModel",
+      "type": "object"
+    },
+    "ExitModel": {
+      "additionalProperties": false,
+      "description": "Uscita (dict dentro la lista `exits` della stanza).",
+      "properties": {
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/FieldMap"
+          },
+          "title": "Fields",
+          "type": "object"
+        },
+        "defaults": {
+          "additionalProperties": true,
+          "title": "Defaults",
+          "type": "object"
+        },
+        "direction_field": {
+          "title": "Direction Field",
+          "type": "string"
+        },
+        "target_field": {
+          "title": "Target Field",
+          "type": "string"
+        },
+        "no_target": {
+          "default": -1,
+          "title": "No Target"
+        },
+        "key_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Key Field"
+        },
+        "door_state": {
+          "default": "fields",
+          "enum": [
+            "fields",
+            "resets"
+          ],
+          "title": "Door State",
+          "type": "string"
+        },
+        "sort_by_direction": {
+          "default": true,
+          "title": "Sort By Direction",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "direction_field",
+        "target_field"
+      ],
+      "title": "ExitModel",
+      "type": "object"
+    },
+    "ExtraDescModel": {
+      "additionalProperties": false,
+      "description": "Extra description di stanza.",
+      "properties": {
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/FieldMap"
+          },
+          "title": "Fields",
+          "type": "object"
+        },
+        "defaults": {
+          "additionalProperties": true,
+          "title": "Defaults",
+          "type": "object"
+        }
+      },
+      "required": [
+        "fields"
+      ],
+      "title": "ExtraDescModel",
+      "type": "object"
+    },
+    "ExtraSpec": {
+      "additionalProperties": false,
+      "description": "Quali campi del record non mappati finiscono in `extra` (default: tutti, cosi' il round trip e' completo).",
+      "properties": {
+        "include": {
+          "anyOf": [
+            {
+              "enum": [
+                "all",
+                "none"
+              ],
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "default": "all",
+          "title": "Include"
+        },
+        "exclude": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclude",
+          "type": "array"
+        }
+      },
+      "title": "ExtraSpec",
+      "type": "object"
+    },
+    "FieldMap": {
+      "additionalProperties": false,
+      "description": "Come un campo del DTO neutro si ricava dal record (lettura) e vi si riscrive (scrittura).",
+      "properties": {
+        "from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "From"
+        },
+        "expr": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expr"
+        },
+        "to": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To"
+        },
+        "map": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Map"
+        },
+        "unmapped": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unmapped"
+        },
+        "null_if": {
+          "default": null,
+          "title": "Null If"
+        },
+        "const": {
+          "default": null,
+          "title": "Const"
+        },
+        "soft": {
+          "default": false,
+          "title": "Soft",
+          "type": "boolean"
+        },
+        "hook": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hook"
+        },
+        "pairs": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PairsSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "in_extra": {
+          "default": false,
+          "title": "In Extra",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMap",
+      "type": "object"
+    },
+    "FieldStep": {
+      "additionalProperties": false,
+      "description": "Un campo tipizzato letto/scritto dal record.",
+      "properties": {
+        "kind": {
+          "const": "field",
+          "default": "field",
+          "title": "Kind",
+          "type": "string"
+        },
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "number",
+            "float",
+            "word",
+            "string_tilde",
+            "line_text",
+            "flags",
+            "dice",
+            "tag",
+            "enum"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "table": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Count"
+        },
+        "optional": {
+          "default": false,
+          "title": "Optional",
+          "type": "boolean"
+        },
+        "same_line": {
+          "default": false,
+          "title": "Same Line",
+          "type": "boolean"
+        },
+        "default": {
+          "default": null,
+          "title": "Default"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Width"
+        },
+        "quote": {
+          "default": "auto",
+          "enum": [
+            "auto",
+            "always"
+          ],
+          "title": "Quote",
+          "type": "string"
+        },
+        "lead": {
+          "default": "ws",
+          "enum": [
+            "ws",
+            "eol"
+          ],
+          "title": "Lead",
+          "type": "string"
+        },
+        "write": {
+          "default": "letters",
+          "enum": [
+            "letters",
+            "number"
+          ],
+          "title": "Write",
+          "type": "string"
+        },
+        "as": {
+          "default": "number",
+          "enum": [
+            "number",
+            "word"
+          ],
+          "title": "As",
+          "type": "string"
+        },
+        "raw": {
+          "default": false,
+          "title": "Raw",
+          "type": "boolean"
+        },
+        "tolerant": {
+          "default": false,
+          "title": "Tolerant",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "field",
+        "type"
+      ],
+      "title": "FieldStep",
+      "type": "object"
+    },
+    "FileGrammar": {
+      "additionalProperties": false,
+      "description": "Struttura di un tipo di file: sezioni in ordine canonico, terminatore di file, sezioni sconosciute.",
+      "properties": {
+        "header_prefix": {
+          "default": "#",
+          "title": "Header Prefix",
+          "type": "string"
+        },
+        "sections": {
+          "items": {
+            "$ref": "#/$defs/SectionSpec"
+          },
+          "title": "Sections",
+          "type": "array"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End"
+        },
+        "unknown_sections": {
+          "default": "raw",
+          "enum": [
+            "raw",
+            "error"
+          ],
+          "title": "Unknown Sections",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sections"
+      ],
+      "title": "FileGrammar",
+      "type": "object"
+    },
+    "Grammar": {
+      "additionalProperties": false,
+      "description": "`files` (tipi di file) e `records` (grammatiche dei record).",
+      "properties": {
+        "files": {
+          "additionalProperties": {
+            "$ref": "#/$defs/FileGrammar"
+          },
+          "title": "Files",
+          "type": "object"
+        },
+        "records": {
+          "additionalProperties": {
+            "$ref": "#/$defs/RecordGrammar"
+          },
+          "title": "Records",
+          "type": "object"
+        }
+      },
+      "required": [
+        "files",
+        "records"
+      ],
+      "title": "Grammar",
+      "type": "object"
+    },
+    "IndexSpec": {
+      "additionalProperties": false,
+      "description": "File indice con l'elenco dei file di zona abilitati (`area.lst`).",
+      "properties": {
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "comment": {
+          "default": "#",
+          "title": "Comment",
+          "type": "string"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "$",
+          "title": "End"
+        }
+      },
+      "required": [
+        "file"
+      ],
+      "title": "IndexSpec",
+      "type": "object"
+    },
+    "Layout": {
+      "additionalProperties": false,
+      "description": "Dove vivono i file di dati e come si delimitano le zone.",
+      "properties": {
+        "mode": {
+          "enum": [
+            "zone_files",
+            "type_files"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "encoding": {
+          "default": "auto",
+          "title": "Encoding",
+          "type": "string"
+        },
+        "newline": {
+          "default": "auto",
+          "enum": [
+            "auto",
+            "lf",
+            "crlf"
+          ],
+          "title": "Newline",
+          "type": "string"
+        },
+        "zone_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zone File"
+        },
+        "glob": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Glob"
+        },
+        "index": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IndexSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "files": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Files",
+          "type": "object"
+        },
+        "zone_range": {
+          "$ref": "#/$defs/ZoneRange"
+        },
+        "new_zone": {
+          "$ref": "#/$defs/NewZone"
+        },
+        "insert": {
+          "default": "append",
+          "enum": [
+            "append",
+            "by_vnum"
+          ],
+          "title": "Insert",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "zone_range"
+      ],
+      "title": "Layout",
+      "type": "object"
+    },
+    "LineStep": {
+      "additionalProperties": false,
+      "description": "Gruppo di passi scritti sulla stessa riga (in lettura non cambia nulla: i token sono separati da spazi).",
+      "properties": {
+        "kind": {
+          "const": "line",
+          "default": "line",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/AnyStep"
+          },
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "steps"
+      ],
+      "title": "LineStep",
+      "type": "object"
+    },
+    "LiteralStep": {
+      "additionalProperties": false,
+      "description": "Un token fisso (es. `#`, `S`, `H`).",
+      "properties": {
+        "kind": {
+          "const": "literal",
+          "default": "literal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "literal": {
+          "title": "Literal",
+          "type": "string"
+        },
+        "optional": {
+          "default": false,
+          "title": "Optional",
+          "type": "boolean"
+        },
+        "glue": {
+          "default": false,
+          "title": "Glue",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "literal"
+      ],
+      "title": "LiteralStep",
+      "type": "object"
+    },
+    "Meta": {
+      "additionalProperties": false,
+      "description": "Razze/classi esposte da `races()`/`classes()`: liste di nomi o nome di una tabella.",
+      "properties": {
+        "races": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Races"
+        },
+        "classes": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Classes"
+        }
+      },
+      "title": "Meta",
+      "type": "object"
+    },
+    "Model": {
+      "additionalProperties": false,
+      "description": "Sezione `model`.",
+      "properties": {
+        "zone": {
+          "$ref": "#/$defs/ZoneModel"
+        },
+        "room": {
+          "$ref": "#/$defs/RoomModel"
+        },
+        "mob": {
+          "$ref": "#/$defs/EntityModel"
+        },
+        "object": {
+          "$ref": "#/$defs/EntityModel"
+        },
+        "exit": {
+          "$ref": "#/$defs/ExitModel"
+        },
+        "extra_description": {
+          "$ref": "#/$defs/ExtraDescModel"
+        },
+        "reset": {
+          "$ref": "#/$defs/ResetModel"
+        }
+      },
+      "required": [
+        "zone",
+        "room",
+        "mob",
+        "object",
+        "exit",
+        "extra_description",
+        "reset"
+      ],
+      "title": "Model",
+      "type": "object"
+    },
+    "NewZone": {
+      "additionalProperties": false,
+      "description": "Valori per le zone create dall'editor.",
+      "properties": {
+        "style": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Style"
+        },
+        "file": {
+          "default": "{slug}.dat",
+          "title": "File",
+          "type": "string"
+        }
+      },
+      "title": "NewZone",
+      "type": "object"
+    },
+    "PairsSpec": {
+      "additionalProperties": false,
+      "description": "Lista di elementi `{chiave, valore}` del record vista come dict (`affects: {nome_apply: somma}`).",
+      "properties": {
+        "list": {
+          "title": "List",
+          "type": "string"
+        },
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        },
+        "table": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table"
+        }
+      },
+      "required": [
+        "list",
+        "key",
+        "value"
+      ],
+      "title": "PairsSpec",
+      "type": "object"
+    },
+    "RecordGrammar": {
+      "additionalProperties": false,
+      "description": "Grammatica di un record: sequenza di passi, chiave (vnum) e hook di parsing/scrittura opzionale.",
+      "properties": {
+        "key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Key"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/AnyStep"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "parser": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parser"
+        },
+        "blank_after": {
+          "default": 0,
+          "title": "Blank After",
+          "type": "integer"
+        }
+      },
+      "title": "RecordGrammar",
+      "type": "object"
+    },
+    "ResetCommandModel": {
+      "additionalProperties": false,
+      "description": "Un comando di reset del MUD (una lettera) e come i suoi campi diventano `arg1..arg4`/`argStr` neutri.",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "if_flag": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldMap"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "arg1": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldMap"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "arg2": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldMap"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "arg3": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldMap"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "arg4": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldMap"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "arg_str": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldMap"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "defaults": {
+          "additionalProperties": true,
+          "title": "Defaults",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ResetCommandModel",
+      "type": "object"
+    },
+    "ResetModel": {
+      "additionalProperties": false,
+      "description": "Script di reset: campo con la lettera, commenti ignorati, comandi mappati.",
+      "properties": {
+        "command_field": {
+          "title": "Command Field",
+          "type": "string"
+        },
+        "comments": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Comments",
+          "type": "array"
+        },
+        "commands": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ResetCommandModel"
+          },
+          "title": "Commands",
+          "type": "object"
+        },
+        "new_defaults": {
+          "additionalProperties": true,
+          "title": "New Defaults",
+          "type": "object"
+        }
+      },
+      "required": [
+        "command_field",
+        "commands"
+      ],
+      "title": "ResetModel",
+      "type": "object"
+    },
+    "ResetsSource": {
+      "additionalProperties": false,
+      "description": "Dove vive lo script di reset di una zona: una sezione del file o una lista dentro il record di zona.",
+      "properties": {
+        "section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field"
+        }
+      },
+      "title": "ResetsSource",
+      "type": "object"
+    },
+    "RoomModel": {
+      "additionalProperties": false,
+      "description": "Stanza: dove sono uscite ed extra description.",
+      "properties": {
+        "entity": {
+          "title": "Entity",
+          "type": "string"
+        },
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/FieldMap"
+          },
+          "title": "Fields",
+          "type": "object"
+        },
+        "defaults": {
+          "additionalProperties": true,
+          "title": "Defaults",
+          "type": "object"
+        },
+        "extra": {
+          "$ref": "#/$defs/ExtraSpec"
+        },
+        "exits": {
+          "title": "Exits",
+          "type": "string"
+        },
+        "extra_descriptions": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extra Descriptions"
+        }
+      },
+      "required": [
+        "entity",
+        "exits"
+      ],
+      "title": "RoomModel",
+      "type": "object"
+    },
+    "Rules": {
+      "additionalProperties": false,
+      "description": "Convenzioni di id e opzioni di integrita'.",
+      "properties": {
+        "vnum_range_check": {
+          "default": true,
+          "title": "Vnum Range Check",
+          "type": "boolean"
+        },
+        "zone_alignment": {
+          "default": 100,
+          "minimum": 1,
+          "title": "Zone Alignment",
+          "type": "integer"
+        },
+        "exit_id_stride": {
+          "default": 10,
+          "title": "Exit Id Stride",
+          "type": "integer"
+        },
+        "extra_id_stride": {
+          "default": 1000,
+          "title": "Extra Id Stride",
+          "type": "integer"
+        }
+      },
+      "title": "Rules",
+      "type": "object"
+    },
+    "SectionSpec": {
+      "additionalProperties": false,
+      "description": "Una sezione di un file: intestazione opzionale (`#MOBILES`), record di un'entita', terminatore.",
+      "properties": {
+        "header": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Header"
+        },
+        "record": {
+          "title": "Record",
+          "type": "string"
+        },
+        "entity": {
+          "title": "Entity",
+          "type": "string"
+        },
+        "until": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Until"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "single": {
+          "default": false,
+          "title": "Single",
+          "type": "boolean"
+        },
+        "tail": {
+          "default": "",
+          "title": "Tail",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record",
+        "entity"
+      ],
+      "title": "SectionSpec",
+      "type": "object"
+    },
+    "SwitchStep": {
+      "additionalProperties": false,
+      "description": "Sceglie i passi in base al valore di un campo gia' letto (es. lettera del comando).",
+      "properties": {
+        "kind": {
+          "const": "switch",
+          "default": "switch",
+          "title": "Kind",
+          "type": "string"
+        },
+        "switch": {
+          "title": "Switch",
+          "type": "string"
+        },
+        "cases": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/AnyStep"
+            },
+            "type": "array"
+          },
+          "title": "Cases",
+          "type": "object"
+        },
+        "default": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AnyStep"
+          },
+          "title": "Default"
+        }
+      },
+      "required": [
+        "switch",
+        "cases"
+      ],
+      "title": "SwitchStep",
+      "type": "object"
+    },
+    "TableSpec": {
+      "additionalProperties": false,
+      "description": "Tabella di nomi: flag (nome -> bit), enum (nome -> valore) o lista di tipi (indice = valore).",
+      "properties": {
+        "values": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "type": "object"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Values"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "expose": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expose"
+        }
+      },
+      "title": "TableSpec",
+      "type": "object"
+    },
+    "TagSpec": {
+      "additionalProperties": false,
+      "description": "Un elemento introdotto da una lettera dentro un blocco `tagged`.",
+      "properties": {
+        "into": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Into"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/AnyStep"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "write_if": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Write If"
+        },
+        "inline": {
+          "default": false,
+          "title": "Inline",
+          "type": "boolean"
+        },
+        "glue": {
+          "default": false,
+          "title": "Glue",
+          "type": "boolean"
+        }
+      },
+      "title": "TagSpec",
+      "type": "object"
+    },
+    "TaggedStep": {
+      "additionalProperties": false,
+      "description": "Elementi introdotti da una lettera (prima lettera del prossimo token), in qualunque ordine.",
+      "properties": {
+        "kind": {
+          "const": "tagged",
+          "default": "tagged",
+          "title": "Kind",
+          "type": "string"
+        },
+        "end": {
+          "default": "other",
+          "title": "End",
+          "type": "string"
+        },
+        "end_before": {
+          "items": {
+            "type": "string"
+          },
+          "title": "End Before",
+          "type": "array"
+        },
+        "tag_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tag Field"
+        },
+        "ignore_case": {
+          "default": false,
+          "title": "Ignore Case",
+          "type": "boolean"
+        },
+        "tags": {
+          "additionalProperties": {
+            "$ref": "#/$defs/TagSpec"
+          },
+          "title": "Tags",
+          "type": "object"
+        }
+      },
+      "required": [
+        "tags"
+      ],
+      "title": "TaggedStep",
+      "type": "object"
+    },
+    "Until": {
+      "additionalProperties": false,
+      "description": "Come finisce una sezione di record.",
+      "properties": {
+        "field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field"
+        },
+        "in": {
+          "items": {},
+          "title": "In",
+          "type": "array"
+        },
+        "peek_not": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Peek Not"
+        },
+        "tail_starts_with": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tail Starts With"
+        }
+      },
+      "title": "Until",
+      "type": "object"
+    },
+    "WhenStep": {
+      "additionalProperties": false,
+      "description": "Blocco condizionale: `when` e' un'espressione sui campi gia' letti (anche in scrittura).",
+      "properties": {
+        "kind": {
+          "const": "when",
+          "default": "when",
+          "title": "Kind",
+          "type": "string"
+        },
+        "when": {
+          "title": "When",
+          "type": "string"
+        },
+        "then": {
+          "items": {
+            "$ref": "#/$defs/AnyStep"
+          },
+          "title": "Then",
+          "type": "array"
+        },
+        "else": {
+          "items": {
+            "$ref": "#/$defs/AnyStep"
+          },
+          "title": "Else",
+          "type": "array"
+        }
+      },
+      "required": [
+        "when",
+        "then"
+      ],
+      "title": "WhenStep",
+      "type": "object"
+    },
+    "ZoneModel": {
+      "additionalProperties": false,
+      "description": "Zona: `id` e script di reset.",
+      "properties": {
+        "entity": {
+          "title": "Entity",
+          "type": "string"
+        },
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/FieldMap"
+          },
+          "title": "Fields",
+          "type": "object"
+        },
+        "defaults": {
+          "additionalProperties": true,
+          "title": "Defaults",
+          "type": "object"
+        },
+        "extra": {
+          "$ref": "#/$defs/ExtraSpec"
+        },
+        "id": {
+          "default": "bottom",
+          "enum": [
+            "bottom",
+            "top",
+            "position"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "resets": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResetsSource"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "entity"
+      ],
+      "title": "ZoneModel",
+      "type": "object"
+    },
+    "ZoneRange": {
+      "additionalProperties": false,
+      "description": "Come si ricava il range di vnum di una zona.",
+      "properties": {
+        "mode": {
+          "enum": [
+            "fields",
+            "top",
+            "hook"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "bottom": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldMap"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "top": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldMap"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "hook": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hook"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "ZoneRange",
+      "type": "object"
+    },
+    "AnyStep": {
+      "description": "Un passo della grammatica: forma estesa o compatta (`- nome: tipo`, `- nome: {type: .., ..}`).",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FieldStep"
+        },
+        {
+          "$ref": "#/$defs/LiteralStep"
+        },
+        {
+          "type": "object",
+          "required": [
+            "line"
+          ],
+          "properties": {
+            "line": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/AnyStep"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/WhenStep"
+        },
+        {
+          "$ref": "#/$defs/SwitchStep"
+        },
+        {
+          "type": "object",
+          "required": [
+            "tagged"
+          ],
+          "properties": {
+            "tagged": {
+              "$ref": "#/$defs/TaggedStep"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Campo in sintassi compatta: `nome: tipo` oppure `nome: {type: tipo, ...opzioni}`.",
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 1,
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "enum": [
+                  "number",
+                  "float",
+                  "word",
+                  "string_tilde",
+                  "line_text",
+                  "flags",
+                  "dice",
+                  "tag",
+                  "enum"
+                ]
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "number",
+                      "float",
+                      "word",
+                      "string_tilde",
+                      "line_text",
+                      "flags",
+                      "dice",
+                      "tag",
+                      "enum"
+                    ]
+                  },
+                  "table": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Table"
+                  },
+                  "count": {
+                    "anyOf": [
+                      {
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Count"
+                  },
+                  "optional": {
+                    "default": false,
+                    "title": "Optional",
+                    "type": "boolean"
+                  },
+                  "same_line": {
+                    "default": false,
+                    "title": "Same Line",
+                    "type": "boolean"
+                  },
+                  "default": {
+                    "default": null,
+                    "title": "Default"
+                  },
+                  "width": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Width"
+                  },
+                  "quote": {
+                    "default": "auto",
+                    "enum": [
+                      "auto",
+                      "always"
+                    ],
+                    "title": "Quote",
+                    "type": "string"
+                  },
+                  "lead": {
+                    "default": "ws",
+                    "enum": [
+                      "ws",
+                      "eol"
+                    ],
+                    "title": "Lead",
+                    "type": "string"
+                  },
+                  "write": {
+                    "default": "letters",
+                    "enum": [
+                      "letters",
+                      "number"
+                    ],
+                    "title": "Write",
+                    "type": "string"
+                  },
+                  "as": {
+                    "default": "number",
+                    "enum": [
+                      "number",
+                      "word"
+                    ],
+                    "title": "As",
+                    "type": "string"
+                  },
+                  "raw": {
+                    "default": false,
+                    "title": "Raw",
+                    "type": "boolean"
+                  },
+                  "tolerant": {
+                    "default": false,
+                    "title": "Tolerant",
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "description": "Radice del file di mappatura.",
+  "properties": {
+    "$schema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "$Schema"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "layout": {
+      "$ref": "#/$defs/Layout"
+    },
+    "grammar": {
+      "$ref": "#/$defs/Grammar"
+    },
+    "tables": {
+      "additionalProperties": {
+        "$ref": "#/$defs/TableSpec"
+      },
+      "title": "Tables",
+      "type": "object"
+    },
+    "model": {
+      "$ref": "#/$defs/Model"
+    },
+    "hooks": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Hooks",
+      "type": "array"
+    },
+    "rules": {
+      "$ref": "#/$defs/Rules"
+    },
+    "meta": {
+      "$ref": "#/$defs/Meta"
+    }
+  },
+  "required": [
+    "name",
+    "layout",
+    "grammar",
+    "model"
+  ],
+  "title": "Mappatura MappingAdapter (pachimudeditor)",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

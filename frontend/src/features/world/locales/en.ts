@@ -1,0 +1,96 @@
+import type { PachiMessages } from '@ilpachi/pachi-i18n'
+import type it from './it'
+
+/** English messages of the feature: same keys as `it.ts`. */
+const en: PachiMessages<typeof it> = {
+  world: {
+    title: 'Overview',
+    description: 'World status, data quality and search',
+    errorTitle: 'Loading error',
+    errorDescription: 'The data could not be loaded.',
+    retry: 'Retry',
+    reload: 'Reload',
+    open: 'Open',
+    searchPlaceholder: 'Search zones, rooms, mobs, objects (vnum or name)',
+    type: {
+      zone: 'Zones',
+      room: 'Rooms',
+      mob: 'Mobs',
+      object: 'Objects',
+    },
+    dir: {
+      0: 'north',
+      1: 'east',
+      2: 'south',
+      3: 'west',
+      4: 'up',
+      5: 'down',
+    },
+    counts: {
+      zones: 'Zones',
+      zonesDetail: '{enabled} enabled, {disabled} disabled',
+      rooms: 'Rooms',
+      mobs: 'Mobs',
+      objects: 'Objects',
+      mobInstances: 'Mob instances',
+      objectInstances: 'Object instances',
+      accounts: 'Accounts',
+      characters: 'Characters',
+    },
+    zonesTable: {
+      title: 'Zones',
+      vnum: 'Vnum',
+      name: 'Name',
+      rooms: 'Rooms',
+      mobs: 'Mobs',
+      objects: 'Objects',
+      range: 'Vnum range',
+      usage: 'Range usage',
+      unassigned: 'unassigned',
+      resets: 'Resets',
+      disabled: 'disabled',
+      empty: 'No zones.',
+    },
+    warnings: {
+      title: 'Data quality',
+      none: 'No issues found.',
+      truncated: 'Showing {shown} of {total}.',
+      kind: {
+        room_empty_description: 'Rooms with an empty description',
+        exit_without_target: 'Exits without a target',
+        zone_empty_reset_script: 'Zones with an empty reset script',
+        vnum_out_of_range: 'Vnums outside the zone range',
+        mob_never_loaded: 'Mobs never loaded by a reset',
+        object_never_loaded: 'Objects never loaded by a reset',
+      },
+      item: {
+        exit_without_target: '{direction} exit',
+        vnum_out_of_range: 'zone range {bottom}-{top}',
+      },
+    },
+    graph: {
+      title: 'Zone graph',
+      description: 'Links between zones through exits',
+      hint: 'An edge is the number of exits crossing the zone boundary; click a zone to open its rooms.',
+      fit: 'Fit',
+      isolated: 'Isolated zones (no exits to other zones)',
+      noneIsolated: 'No isolated zones.',
+      empty: 'No zones.',
+      edgeLabel: '{count}',
+      nodeRooms: '{count} rooms',
+    },
+    search: {
+      title: 'Search',
+      description: 'Global search by vnum or name',
+      label: 'Text to search',
+      types: 'Types',
+      submit: 'Search',
+      minChars: 'Type a vnum or part of a name to search.',
+      noResults: 'No results.',
+      total: '{shown} of {total}',
+      inZone: 'zone {zone}',
+    },
+  },
+}
+
+export default en

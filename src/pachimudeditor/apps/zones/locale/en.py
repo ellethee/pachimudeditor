@@ -1,0 +1,27 @@
+"""Messages of zones in en: stable code -> text."""
+
+MESSAGES: dict[str, str] = {
+    "zones.not_found": "Zone not found",
+    "zones.vnum_taken": "A zone with vnum {vnum} already exists.",
+    "zones.not_empty": "Cannot delete the zone: it still contains {rooms} rooms, {mobs} mobs and {objects} objects. Delete or move them first.",
+    "zones.invalid_vnum_range": "The minimum vnum ({bottom}) cannot exceed the maximum vnum ({top}).",
+    "zones.invalid_level_range": "The minimum level ({min}) cannot exceed the maximum level ({max}).",
+    "zones.range_overlap": 'The vnum range overlaps zone "{zone}" (vnum {zone_vnum}).',
+    "zones.reset_negative_arg": "Argument {arg} cannot be negative ({value}).",
+    "zones.reset_missing_arg": "Missing required argument: {arg}.",
+    "zones.reset_invalid_direction": "Invalid direction ({value}): must be between 0 and 5.",
+    "zones.reset_slot_required": "Equipping an object requires the slot (argStr).",
+    "zones.reset_invalid_door_state": 'Invalid door state ("{value}"): use OPEN, CLOSED or LOCKED.',
+    "zones.reset_arg_str_not_allowed": "argStr is not allowed for this command type.",
+    "zones.reset_unknown_mob": "Command {index}: mob with vnum {vnum} does not exist.",
+    "zones.reset_unknown_object": "Command {index}: object with vnum {vnum} does not exist.",
+    "zones.reset_unknown_room": "Command {index}: room with vnum {vnum} does not exist.",
+    "zones.reset_if_flag_first": 'Command {index}: "only if previous succeeded" on the first command has no predecessor.',
+    "zones.reset_no_mob_before": "Command {index}: no LOAD_MOB precedes it, there is no mob to give/equip the object to.",
+    "zones.reset_container_not_loaded": "Command {index}: container {vnum} is not loaded by a previous command.",
+    "zones.reset_no_such_exit": "Command {index}: room {vnum} has no exit towards {direction}.",
+    "zones.reset_exit_without_door": "Command {index}: the {direction} exit of room {vnum} has no door.",
+    "zones.reset_max_zero": "Command {index}: max existing is 0, nothing will be loaded.",
+    "zones.reset_max_high": "Command {index}: max existing ({max}) is unusually high.",
+    "zones.reset_room_cap_above_max": "Command {index}: the per-room limit ({room_cap}) exceeds the global maximum ({max}).",
+}

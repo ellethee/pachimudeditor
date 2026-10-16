@@ -1,0 +1,335 @@
+# yaml-language-server: $schema=../mapping.schema.json
+#
+# Mappatura del formato Diku classico "un file per tipo" come lo usa il Diku Modificato (famiglia Diku):
+# dikumoddata.wld (stanze), .mob, .obj, .zon (zone + reset), .shp (negozi). Fonte: docs/formats/dikumod.md.
+#
+# Mondo di esempio:
+#   - {id: dikumod-map, kind: mapping, name: Diku Modificato (mapping), mapping: <questo file>, path: /percorso/a/dikumod2/lib}
+#
+# Seconda prova del MappingAdapter (la prima e' rom.yaml, un file per zona): qui le zone sono i record del `.zon` e
+# un'entita' appartiene alla zona il cui range di vnum la contiene (`top` a catena). Irregolarita' di Diku Modificato che questa
+# mappatura NON esprime senza hook: vedi la sezione "Limiti" di docs/adapters/mapping-guide.md.
+name: Diku classico
+version: 1
+description: Un file per tipo (.wld .mob .obj .zon .shp); zone a catena sul campo `top`; stringhe terminate da `~`.
+
+layout:
+  mode: type_files
+  encoding: latin-1             # i dati Diku Modificato sono ASCII puro: latin-1 e' lossless
+  files: {zon: dikumoddata.zon, wld: dikumoddata.wld, mob: dikumoddata.mob, obj: dikumoddata.obj, shp: dikumoddata.shp}
+  insert: by_vnum               # i record nuovi stanno ordinati per vnum (come il `.wld`)
+  zone_range:                   # una zona ha solo `top`; bottom = top della precedente + 1
+    mode: top
+    top: {from: top}
+
+hooks: []
+
+tables:
+  room_flags: {dark: 1, death: 2, no_mob: 4, indoors: 8, peaceful: 16, no_steal: 32, no_summon: 64, no_magic: 128, tunnel: 256, private: 512, silence: 1024, large: 2048, no_death: 4096, save_room: 8192, no_track: 16384, no_mind: 32768, desertic: 65536, artic: 131072, underground: 262144, hot: 524288, wet: 1048576, cold: 2097152, dry: 4194304, bright: 8388608, no_astral: 16777216, no_regain: 33554432}
+  act_flags: {nochase: 1, sentinel: 2, scavenger: 4, isnpc: 8, nice_thief: 16, aggressive: 32, stay_zone: 64, wimpy: 128, annoying: 256, hateful: 512, afraid: 1024, immortal: 2048, hunting: 4096, deadly: 8192, polyself: 16384, meta_agg: 32768, guardian: 65536, illusion: 131072, huge: 262144, script: 524288, greet: 1048576, magic_user: 2097152, warrior: 4194304, cleric: 8388608, thief: 16777216, druid: 33554432, monk: 67108864, barbarian: 134217728, paladin: 268435456, ranger: 536870912, psi: 1073741824, archer: 2147483648}
+  affected_flags: {blind: 1, invisible: 2, detect_evil: 4, detect_invisible: 8, detect_magic: 16, sense_life: 32, life_prot: 64, sanctuary: 128, dragon_ride: 256, growth: 512, curse: 1024, flying: 2048, poison: 4096, tree_travel: 8192, paralysis: 16384, infravision: 32768, waterbreath: 65536, sleep: 131072, travelling: 262144, sneak: 524288, hide: 1048576, silence: 2097152, charm: 4194304, follow: 8388608, protect_from_evil: 16777216, true_sight: 33554432, scrying: 67108864, fireshield: 134217728, group: 268435456, telepathy: 536870912}
+  extra_flags: {glow: 1, hum: 2, metal: 4, mineral: 8, organic: 16, invisible: 32, magic: 64, nodrop: 128, bless: 256, anti_good: 512, anti_evil: 1024, anti_neutral: 2048, anti_cleric: 4096, anti_mage: 8192, anti_thief: 16384, anti_fighter: 32768, brittle: 65536, resistant: 131072, immune: 262144, anti_men: 524288, anti_women: 1048576, anti_sun: 2097152, anti_barbarian: 4194304, anti_ranger: 8388608, anti_paladin: 16777216, anti_psi: 33554432, anti_monk: 67108864, anti_druid: 134217728, only_class: 268435456, dig: 536870912, scythe: 1073741824}
+  wear_flags: {take: 1, finger: 2, neck: 4, body: 8, head: 16, legs: 32, feet: 64, hands: 128, arms: 256, shield: 512, about: 1024, waist: 2048, wrist: 4096, wield: 8192, hold: 16384, throw: 32768, back: 131072, ear: 262144, eye: 524288}
+  apply_location: [none, str, dex, int, wis, con, chr, sex, level, age, char_weight, char_height, mana, hit, move, gold, exp, ac, hitroll, damroll, saving_para, saving_rod, saving_petri, saving_breath, saving_spell, save_all, immune, susc, m_immune, spell, weapon_spell, eat_spell, backstab, kick, sneak, hide, bash, pick, steal, track, hitndam, spellfail, attacks, haste, slow, bv2, find_traps, ride, race_slayer, align_slayer, mana_regen, hit_regen, move_regen, mod_thirst, mod_hunger, mod_drunk]
+  wear_pos: [light, finger_r, finger_l, neck_1, neck_2, body, head, legs, feet, hands, arms, shield, about, waist, wrist_r, wrist_l, wield, hold, back, ear_r, ear_l, eyes, loaded_weapon]
+  races: [halfbreed, human, elven, dwarf, halfling, gnome, reptile, special, lycanth, dragon, undead, orc, insect, arachnid, dinosaur, fish, bird, giant, predator, parasite, slime, demon, snake, herbiv, tree, veggie, element, planar, devil, ghost, goblin, troll, vegman, mflayer, primate, enfan, drow, golem, skexie, trogman, patryn, labrat, sartan, tytan, smurf, roo, horse, draagdim, astral, god, giant_hill, giant_frost, giant_fire, giant_cloud, giant_storm, giant_stone, dragon_red, dragon_black, dragon_green, dragon_white, dragon_blue, dragon_silver, dragon_gold, dragon_bronze, dragon_copper, dragon_brass, undead_vampire, undead_lich, undead_wight, undead_ghast, undead_spectre, undead_zombie, undead_skeleton, undead_ghoul, half_elven, half_ogre, half_orc, half_giant, lizardman, dark_dwarf, deep_gnome, gnoll, gold_elf, wild_elf, sea_elf]
+
+meta: {races: races}
+
+grammar:
+  files:
+    zon:
+      sections:                 # `#<n>` nome~ top lifespan mode, reset, `S`; chiude il record `#9999999` / `$~`
+        - {record: zone, entity: zone, until: {field: name, in: ["$"]}}
+    wld:
+      sections:
+        - {record: room, entity: room}          # nessun terminatore: fino a fine file
+    mob:
+      sections:
+        - {record: mob, entity: mob, until: {peek_not: "#", tail_starts_with: "%%"}}    # finisce alla riga `%%` (conservata come coda)
+    obj:
+      sections:
+        - {record: object, entity: object, until: {peek_not: "#", tail_starts_with: "%%"}}
+    shp:
+      sections:
+        - {record: shop, entity: shop, until: {field: id, in: ["$"]}}   # `$~` chiude il file
+
+  records:
+    zone:
+      key: znum
+      steps:
+        - line: [{literal: "#", glue: true}, znum: number]
+        - name: string_tilde
+        - line: [top: number, lifespan: number, reset_mode: number]
+        - tagged:
+            end: S
+            end_before: ["#"]         # tolleranza: zona senza `S` finale (il record successivo inizia con `#`)
+            tag_field: cmd
+            tags:
+              M: {into: resets, inline: true, steps: [line: [if_flag: number, mob: number, limit: number, room: number, comment: line_text]]}
+              C: {into: resets, inline: true, steps: [line: [if_flag: number, mob: number, limit: number, act_bits: number, comment: line_text]]}
+              O: {into: resets, inline: true, steps: [line: [if_flag: number, obj: number, limit: number, room: number, {field: room_limit, type: number, optional: true, same_line: true, default: 0}, comment: line_text]]}   # `O` letto con 4 numeri (431 casi): un editor deve scrivere sempre 5 numeri
+              P: {into: resets, inline: true, steps: [line: [if_flag: number, obj: number, limit: number, container: number, comment: line_text]]}
+              G: {into: resets, inline: true, steps: [line: [if_flag: number, obj: number, limit: number, comment: line_text]]}
+              E: {into: resets, inline: true, steps: [line: [if_flag: number, obj: number, limit: number, {field: wear, type: number, optional: true, same_line: true}, comment: line_text]]}   # un E dei dati reali ha solo 3 argomenti
+              D: {into: resets, inline: true, steps: [line: [if_flag: number, room: number, door: number, state: number, comment: line_text]]}
+              H: {into: resets, inline: true, steps: [line: [if_flag: number, kind: number, value: number, comment: line_text]]}
+              F: {into: resets, inline: true, steps: [line: [if_flag: number, kind: number, value: number, comment: line_text]]}
+              Z: {into: resets, inline: true, steps: [line: [if_flag: number, zone: number, one: number, comment: line_text]]}
+              "*": {into: resets, glue: true, steps: [text: {type: line_text, raw: true}]}
+              "$": {into: resets, glue: true, steps: [text: {type: line_text, raw: true}]}   # righe `$` vaganti tra i comandi (ignorate dal motore)
+
+    room:
+      key: vnum
+      steps:
+        - line: [{literal: "#", glue: true}, vnum: number]
+        - name: {type: string_tilde, lead: eol}
+        - description: {type: string_tilde, lead: eol}
+        - line:                          # tutto sulla stessa riga: `zona flags settore [teletrasporto] [fiume] [tunnel]`
+            - zone_ignored: number
+            - room_flags: {type: flags, write: number, table: room_flags}
+            - sector: number
+            - when: "sector == -1"           # stanza teletrasporto
+              then:
+                - tele_time: number
+                - tele_target: number
+                - tele_mask: number
+                - when: "has_flag(tele_mask, 2)"     # TELE_COUNT
+                  then: [tele_count: number]
+                - real_sector: number
+            - when: "(real_sector if sector == -1 else sector) in [7, 9]"      # fiume (acqua non nuotabile / sott'acqua)
+              then: [river_speed: number, river_dir: number]
+            - when: "has_flag(room_flags, 256)"                               # TUNNEL
+              then: [moblim: number]
+        - tagged:
+            end: S
+            tags:
+              D: {into: exits, glue: true, steps: [door: number, desc: {type: string_tilde, lead: ws}, keyword: {type: string_tilde, lead: ws}, line: [exit_info: number, key: number, to_room: number, {field: open_cmd, type: number, optional: true, same_line: true}]]}
+              E: {into: extra_descs, steps: [keyword: {type: string_tilde, lead: eol}, description: {type: string_tilde, lead: eol}]}
+              L: {into: lights, steps: [night: {type: string_tilde, lead: eol}, day: {type: string_tilde, lead: eol}]}
+              C: {into: comments, inline: true, steps: [text: line_text]}
+
+    mob:
+      key: vnum
+      steps:
+        - line: [{literal: "#", glue: true}, vnum: number]
+        - name: {type: string_tilde, lead: eol}
+        - short_descr: {type: string_tilde, lead: eol}
+        - long_descr: {type: string_tilde, lead: eol}
+        - description: {type: string_tilde, lead: eol}
+        - line:
+            - act: {type: flags, write: number, table: act_flags}
+            - affected: {type: flags, write: number, table: affected_flags}
+            - alignment: number
+            - mtype: tag                                  # S, A, N, B, L (D non supportato)
+            - when: "mtype in ['A', 'B', 'L']"
+              then: [multi_attack: number]
+        - switch: mtype
+          cases:
+            S: [line: [level: number, thac0: number, ac: number, hp: {type: dice, tolerant: true}, damage: {type: dice, tolerant: true}]]
+            A: &mob_extended [line: [level: number, thac0: number, ac: number, hp_bonus: number, damage: {type: dice, tolerant: true}]]
+            N: *mob_extended
+            B: *mob_extended
+            L: *mob_extended
+        - line:                                           # `<gold|-1> [<gold> <exp> <race>]` oppure `<gold> <exp>`
+            - gold: number
+            - when: "gold == -1"
+              then: [gold_real: number, exp: number, race: number]
+              else: [exp: number]
+        - line:
+            - position: number
+            - default_pos: number
+            - sex_code: number
+            - when: "sex_code >= 3 and sex_code <= 5"      # codice sesso+3: seguono tre maschere
+              then: [immune: number, m_immune: number, susc: number]
+            - {field: junk, type: line_text, optional: true, same_line: true}   # tolleranza: numeri in piu' a fine riga (ignorati dal motore)
+        - when: "mtype == 'L'"
+          then:
+            - sound: {type: string_tilde, lead: eol}
+            - distant_sound: {type: string_tilde, lead: eol}
+
+    object:
+      key: vnum
+      steps:
+        - line: [{literal: "#", glue: true}, vnum: number]
+        - name: {type: string_tilde, lead: eol}
+        - short_descr: {type: string_tilde, lead: eol}
+        - description: {type: string_tilde, lead: eol}
+        - action_desc: {type: string_tilde, lead: eol}
+        - line: [item_type: number, extra_flags: {type: flags, write: number, table: extra_flags}, wear_flags: {type: flags, write: number, table: wear_flags}]
+        - values: {type: number, count: 4}
+        - line: [weight: number, cost: number, rent: number]
+        - tagged:                    # il loader legge E*, poi A*, poi P (l'ordine di scrittura segue `tags`)
+            end: other
+            tags:
+              E: {into: extra_descs, steps: [keyword: {type: string_tilde, lead: eol}, description: {type: string_tilde, lead: eol}]}
+              A: {into: affects, steps: [line: [location: number, modifier: number]]}
+              P: {write_if: "wear_to_char is not None", steps: [wear_to_char: {type: string_tilde, lead: eol}, wear_to_room: {type: string_tilde, lead: eol}]}
+
+    shop:
+      steps:                         # un valore per riga nel file reale; qui tutti i campi sono letti token per token
+        - id: string_tilde
+        - products: {type: number, count: 5}
+        - profit_buy: float
+        - profit_sell: float
+        - types: {type: number, count: 5}
+        - no_such_item1: string_tilde
+        - no_such_item2: string_tilde
+        - do_not_buy: string_tilde
+        - missing_cash1: string_tilde
+        - missing_cash2: string_tilde
+        - message_buy: string_tilde
+        - message_sell: string_tilde
+        - line: [temper1: number, temper2: number, keeper: number, with_who: number, shop_room: number, open1: number, close1: number, open2: number, close2: number]
+
+model:
+  zone:
+    entity: zone
+    id: top                      # l'id di una zona e' il suo `top` (il numero `#N` non e' un'identita')
+    resets: {field: resets}      # lo script di reset e' dentro il record di zona
+    defaults: {znum: 0, name: "", top: 0, lifespan: 15, reset_mode: 2}
+    fields:
+      name: {from: name}
+      builder: {const: "", soft: true}
+      min_level: {const: 1, soft: true}
+      max_level: {const: 60, soft: true}
+      lifespan_minutes: {from: lifespan}
+      reset_mode: {from: reset_mode, map: {0: NEVER, 1: EMPTY, 2: ALWAYS}, unmapped: ALWAYS}
+
+  room:
+    entity: room
+    exits: exits
+    extra_descriptions: extra_descs
+    defaults: {zone_ignored: 0, room_flags: 0, sector: 0}
+    fields:
+      name: {from: name}
+      description: {from: description}
+      sector_type:               # `real_sector` se la stanza e' un teletrasporto (sector == -1)
+        expr: "real_sector if sector == -1 else sector"
+        to: {sector: "sector if sector == -1 else value", real_sector: "value if sector == -1 else real_sector"}
+        map: {0: INSIDE, 1: CITY, 2: FIELD, 3: FOREST, 4: HILLS, 5: MOUNTAIN, 6: WATER_SWIM, 7: WATER_NOSWIM, 8: FLYING, 9: UNDERWATER, 10: FIELD, 11: FOREST, 12: CITY}
+        unmapped: INSIDE
+      flags: {from: room_flags}
+      heal_rate: {const: 100, soft: true}
+      mana_rate: {const: 100, soft: true}
+
+  exit:
+    direction_field: door
+    target_field: to_room
+    no_target: -1
+    key_field: key
+    door_state: fields           # lo stato iniziale e' nei bit CLOSED/LOCKED di `exit_info` (i reset `D` lo riforzano a runtime)
+    defaults: {desc: "", keyword: "", exit_info: 0, key: -1, to_room: -1}
+    fields:
+      direction: {from: door}
+      description: {from: desc, null_if: ""}
+      keywords: {from: keyword, null_if: ""}
+      door_flag:                 # 1 ISDOOR, 32 PICKPROOF
+        expr: "'PICKPROOF' if exit_info & 32 else ('CLOSABLE' if exit_info & 1 else 'NONE')"
+        to: {exit_info: "(exit_info & ~33) | (33 if value == 'PICKPROOF' else (1 if value == 'CLOSABLE' else 0))"}
+      is_open:                   # 2 CLOSED
+        expr: "not (exit_info & 2)"
+        to: {exit_info: "(exit_info & ~2) if value else (exit_info | 2)"}
+      is_locked:                 # 4 LOCKED
+        expr: "bool(exit_info & 4)"
+        to: {exit_info: "(exit_info | 4) if value else (exit_info & ~4)"}
+      key_vnum: {expr: "key if key > 0 else None", to: {key: "value if value is not None else -1"}}
+
+  extra_description:
+    fields:
+      keywords: {from: keyword}
+      text: {from: description}
+
+  mob:
+    entity: mob
+    defaults: {act: 8, affected: 0, alignment: 0, mtype: N, level: 1, thac0: 20, ac: 0, hp_bonus: 0, damage: {n: 1, t: 4, b: 0}, gold: 0, exp: 0, position: 8, default_pos: 8, sex_code: 0}
+    fields:
+      keywords: {from: name}
+      short_description: {from: short_descr}
+      long_description: {from: long_descr}
+      detailed_description: {from: description}
+      level: {from: level}
+      thac0: {from: thac0}
+      armor_class: {from: ac}
+      hp_dice_count: {expr: "level if hp is None else hp['n']"}    # i mob A/N/B/L hanno `level`d8 + bonus; S ha un dado esplicito
+      hp_die_size: {expr: "8 if hp is None else hp['t']"}
+      hp_bonus: {expr: "hp_bonus if hp is None else hp['b']", to: {hp_bonus: "value"}}
+      damage_dice_count: {from: damage.n}
+      damage_die_size: {from: damage.t}
+      damage_bonus: {from: damage.b}
+      gold: {expr: "gold_real if gold == -1 else gold", to: {gold: "gold if gold == -1 else value", gold_real: "value if gold == -1 else gold_real"}}
+      experience: {from: exp}
+      sex: {from: sex_code, map: {0: NEUTRAL, 1: MALE, 2: FEMALE, 3: NEUTRAL, 4: MALE, 5: FEMALE}, unmapped: NEUTRAL}
+      flags: {from: act}
+      race_id: {from: race, map: races}
+      alignment: {from: alignment}
+
+  object:
+    entity: object
+    defaults: {item_type: 12, extra_flags: 0, wear_flags: 0, weight: 0, cost: 0, rent: 0}
+    fields:
+      keywords: {from: name}
+      short_description: {from: short_descr}
+      long_description: {from: description}
+      action_description: {from: action_desc, null_if: ""}
+      object_type:
+        from: item_type
+        in_extra: true
+        unmapped: OTHER
+        map: {1: LIGHT, 2: SCROLL, 3: WAND, 4: STAFF, 5: WEAPON, 8: TREASURE, 9: ARMOR, 10: POTION, 12: OTHER, 13: TRASH, 15: CONTAINER, 17: LIQUID_CONTAINER, 18: KEY, 19: FOOD, 20: MONEY}
+      weight: {from: weight}
+      cost: {from: cost}
+      rent: {from: rent}
+      value_0: {from: values.0}
+      value_1: {from: values.1}
+      value_2: {from: values.2}
+      value_3: {from: values.3}
+      extra_flags: {from: extra_flags}
+      wear_flags: {from: wear_flags}
+      affects: {pairs: {list: affects, key: location, value: modifier, table: apply_location}}
+
+  reset:
+    command_field: cmd
+    comments: ["*", "$"]
+    commands:
+      M:
+        type: LOAD_MOB
+        if_flag: &if_flag {expr: "if_flag > 0", to: {if_flag: "1 if value else 0"}}
+        arg1: {from: mob}
+        arg2: {from: limit}
+        arg3: {from: room}
+      O:
+        type: LOAD_OBJECT
+        if_flag: *if_flag
+        arg1: {from: obj}
+        arg2: {from: limit}
+        arg3: {from: room}
+        arg4: {expr: "room_limit or 0", to: {room_limit: "value if value is not None else 0"}}   # il quinto numero va sempre riscritto
+      P:
+        type: PUT_OBJECT
+        if_flag: *if_flag
+        arg1: {from: obj}
+        arg2: {from: limit}
+        arg3: {from: container}
+      G:
+        type: GIVE_OBJECT
+        if_flag: *if_flag
+        arg1: {from: obj}
+        arg2: {from: limit}
+      E:
+        type: EQUIP_OBJECT
+        if_flag: *if_flag
+        arg1: {from: obj}
+        arg2: {from: limit}
+        arg_str: {from: wear, map: wear_pos}
+      D:
+        type: SET_DOOR_STATE
+        if_flag: *if_flag
+        arg1: {from: room}
+        arg2: {from: door}
+        arg_str: {from: state, map: {0: OPEN, 1: CLOSED, 2: LOCKED}}
+
+rules:
+  vnum_range_check: true
+  exit_id_stride: 10
+  extra_id_stride: 1000

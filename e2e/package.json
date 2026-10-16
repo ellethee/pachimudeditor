@@ -1,0 +1,21 @@
+{
+  "name": "pachimud-webeditor-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Test end-to-end del webeditor pachimud (Chromium gia' avviato, connectOverCDP)",
+  "scripts": {
+    "test": "tsx run.ts",
+    "stack": "tsx serve.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "playwright-core": "^1.63.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
