@@ -12,16 +12,20 @@ theme:
   custom_dir: overrides
   language: it
   font: false
-  logo: assets/logo.png
-  favicon: assets/logo.png
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
+      primary: indigo
+      accent: indigo
       toggle:
         icon: material/weather-night
         name: Passa al tema scuro
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
+      primary: indigo
+      accent: indigo
       toggle:
         icon: material/weather-sunny
         name: Passa al tema chiaro
