@@ -18,9 +18,9 @@ uv run pachimudeditor serve --workdir . --reload    # porta 8123 (pachimudeditor
 ```
 
 Produzione: vedi `README.md` (wheel installato, `pachimudeditor serve`). La SPA e' servita se esiste
+`src/pachimudeditor/static` (`pachimudeditor build-frontend`).
 
 Sicurezza: `PACHIFAST_SECRET_KEY` (almeno 32 caratteri) e' obbligatoria anche in debug: pachifast rifiuta l'avvio senza (verificato in `pachifast.config.settings`), quindi `serve` non fa un controllo proprio.
-`src/pachimudeditor/static` (`pachimudeditor build-frontend`).
 
 ## Utenti
 
