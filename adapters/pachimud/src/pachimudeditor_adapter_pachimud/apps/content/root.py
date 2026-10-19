@@ -20,9 +20,9 @@ from pachimudeditor_adapter_pachimud.definitions import LoaderClass, LoaderRace,
 from pachimudeditor_adapter_pachimud.schema import models_of
 from pachimudeditor_adapter_pachimud.apps.content.yaml_store import StoredFile, YamlDirStore
 from pachimudeditor.sdk import require_capability
-from pachimudeditor_adapter_pachimud.editor.db import PachimudDep, SessionDep
+from pachimudeditor_adapter_pachimud.editor.db import PachimudDep, ReadOnlyGuard, SessionDep
 
-router = get_router(deps=[Depends(require_capability("supports_content_races"))])
+router = get_router(deps=[Depends(require_capability("supports_content_races")), ReadOnlyGuard])
 
 STAT_NAMES: tuple[str, ...] = tuple(Stats.model_fields)
 """Nomi delle sei caratteristiche (`strength`, ...)."""

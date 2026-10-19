@@ -10,7 +10,7 @@ Il database di autenticazione di pachifast (utenti dell'editor) e' un altro e no
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from pachifast.i18n import api_error
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,3 +37,16 @@ async def get_db(adapter: PachimudDep) -> AsyncIterator[AsyncSession]:
 
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
 """Da usare come `session: SessionDep` nelle firme delle route (le classi mappate: `models_of(session)`)."""
+
+
+def reject_writes_if_read_only(request: Request, adapter: PachimudDep) -> None:
+    """Dipendenza di router: 409 `world.read_only` su ogni metodo non sicuro se il mondo e' in sola lettura.
+
+    Da mettere su interi router (players, instances, content) cosi' una nuova rotta di scrittura non resta scoperta.
+    """
+    if request.method not in ("GET", "HEAD", "OPTIONS"):
+        adapter.ensure_writable()
+
+
+ReadOnlyGuard = Depends(reject_writes_if_read_only)
+"""`get_router(deps=[..., ReadOnlyGuard])`."""

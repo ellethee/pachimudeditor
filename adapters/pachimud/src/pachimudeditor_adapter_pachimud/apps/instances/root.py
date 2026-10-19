@@ -31,10 +31,10 @@ from pachimudeditor_adapter_pachimud.apps.instances.schemas import (
     ObjectPatch,
 )
 from pachimudeditor_adapter_pachimud.editor import crud
-from pachimudeditor_adapter_pachimud.editor.db import SessionDep
+from pachimudeditor_adapter_pachimud.editor.db import ReadOnlyGuard, SessionDep
 from pachimudeditor.sdk import conflict
 
-router = get_router(deps=[Depends(require_capability("supports_instances"))])
+router = get_router(deps=[Depends(require_capability("supports_instances")), ReadOnlyGuard])
 
 
 class MobInstanceParams(PageParams):
