@@ -10,7 +10,7 @@ authors = [{ name = "IlPachi" }]
 classifiers = ["Private :: Do Not Upload"]
 dependencies = [
     "pachimudeditor>=0.1.0,<0.2",
-    # Il database di gioco si legge con SQLAlchemy async (nessuna dipendenza dal pacchetto `pachimud`).
+    # Il database di gioco si legge con SQLAlchemy async (nessuna dipendenza dal pacchetto `pachimud`; i modelli ORM sono copiati in `game_models/`).
     "sqlalchemy[asyncio]>=2.0.40",
     "aiosqlite>=0.20.0",
     "argon2-cffi>=23.1.0", # hash delle password degli account di gioco (stessi parametri del gioco)

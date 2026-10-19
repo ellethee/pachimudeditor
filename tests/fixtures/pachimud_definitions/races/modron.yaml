@@ -1,0 +1,33 @@
+---
+race_id: modron
+name: Modron
+description: A rigidly logical construct, built for a single purpose and immune to persuasion.
+mob_only: true
+who_name: Modron
+offensive_flags:
+  - ASSIST_RACE
+  - ASSIST_ALIGN
+immunity:
+  - CHARM
+  - DISEASE
+  - MENTAL
+  - HOLY
+  - NEGATIVE
+resistance:
+  - FIRE
+  - COLD
+  - ACID
+affected_by:
+  - INFRARED
+form:
+  - SENTIENT
+# Parts era "PARTS_HUMANOID & ~(PARTS_ALIVE, PART_FINGERS)": HUMANOID meno
+# (HEART, BRAINS, GUTS, FINGERS) — elencato esplicito qui sotto.
+parts:
+  - HEAD
+  - ARMS
+  - LEGS
+  - FEET
+  - EAR
+  - EYE
+  - HANDS

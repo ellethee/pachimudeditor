@@ -17,8 +17,6 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 export const ROOT = resolve(HERE, '..', '..')
 /** Cartella da cui girano python/uvicorn (contiene `.venv`, `tests/`, `pachimudeditor.yaml`). */
 export const BACKEND = ROOT
-/** Radice del repo del gioco, fratello `../pachimud` (contiene `definitions/`). */
-export const REPO_ROOT = resolve(ROOT, '..', 'pachimud')
 /** Sorgente di basedmud (default: checkout fratello `../basedmud`; override con `E2E_BASEDMUD`) da cui si copia l'area (solo lettura: i test lavorano su una copia temporanea). */
 export const BASEDMUD_SRC = process.env.E2E_BASEDMUD ?? resolve(ROOT, '..', 'basedmud')
 /** `lib/` del Diku Modificato (solo `E2E_DIKUMOD`, nessun default) da cui si copiano i dati (solo lettura: i test lavorano su copie temporanee). */
@@ -49,7 +47,7 @@ export interface Stack {
 }
 
 /**
- * Isola i dati che i test possono modificare oltre al DB di gioco: copia le `definitions/` (razze/classi YAML)
+ * Isola i dati che i test possono modificare oltre al DB di gioco: copia le definizioni di esempio (`tests/fixtures/pachimud_definitions`, razze/classi YAML)
  * nella cartella temporanea e punta la config li', copia l'area di basedmud (+ `src/tables.c` per razze/classi)
  * e configura i mondi del webeditor: `pachimud` (default), `basedmud` (scrivibile), `basedmud-ro` (stessa copia,
  * sola lettura), e, solo se `E2E_DIKUMOD` e' impostata, `dikumod` (copia di quella `lib/`, sola lettura) e `dikumod-rw` (seconda copia scrivibile).
@@ -89,7 +87,7 @@ function prepareExtras(workdir: string, pachimud: { databaseUrl: string; definit
  */
 export async function startStack(port = Number(process.env.E2E_PORT ?? 8124), options: { noWorlds?: boolean } = {}): Promise<Stack> {
   const python = join(BACKEND, '.venv', 'bin', 'python')
-  if (!existsSync(python)) throw new Error('Manca .venv: esegui `uv sync --all-packages && uv pip install -e ../pachimud`')
+  if (!existsSync(python)) throw new Error('Manca .venv: esegui `uv sync --all-packages`')
   if (!existsSync(join(ROOT, 'src', 'pachimudeditor', 'static', 'index.html'))) {
     throw new Error('Manca src/pachimudeditor/static: esegui `uv run pachimudeditor build-frontend`')
   }

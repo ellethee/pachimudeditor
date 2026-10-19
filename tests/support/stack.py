@@ -1,9 +1,9 @@
 """Ambiente di test isolato: database di gioco e di autenticazione temporanei, config e utente.
 
 Usato sia dalla suite pytest sia dal setup e2e (`python -m tests.support.stack <cartella>`).
-Non tocca MAI `pachimud.db` reale: il mondo `pachimud` ha `database_url` assoluto verso un file nella cartella di
-lavoro temporanea e `definitions_path` verso una copia delle definizioni. Il pacchetto `pachimud` (il gioco) e' una
-dipendenza di SOLO sviluppo: qui serve per creare lo schema e seminare i dati come farebbe il gioco.
+Non tocca MAI un `pachimud.db` reale: il mondo `pachimud` ha `database_url` assoluto verso un file nella cartella di
+lavoro temporanea e `definitions_path` verso una copia delle definizioni di esempio (`tests/fixtures`). Schema e dati
+si creano con i modelli copiati del gioco (`pachimudeditor_adapter_pachimud.game_models`): nessun checkout del MUD.
 """
 
 import asyncio
@@ -16,8 +16,8 @@ from pathlib import Path
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 """Radice del repository dell'editor (config di sviluppo `pachimudeditor.yaml`)."""
 
-REPO_ROOT = PACKAGE_ROOT.parent / "pachimud"
-"""Radice del repository del gioco pachimud (fratello `../pachimud`; serve solo ai test, con il gioco installato a mano)."""
+DEFINITIONS_FIXTURE = PACKAGE_ROOT / "tests" / "fixtures" / "pachimud_definitions"
+"""Definizioni di esempio (razze, classi, zona `RavnFjord`): copia del MUD, vedi il README nella cartella."""
 
 TEST_USER = "e2e-user"
 TEST_PASSWORD = "Password-di-test-123"
@@ -52,7 +52,7 @@ def apply_environment(workdir: Path) -> dict[str, str]:
     params = world_params(workdir)
     definitions = Path(params["definitions_path"])
     if not definitions.exists():
-        shutil.copytree(REPO_ROOT / "definitions", definitions, ignore=shutil.ignore_patterns("zones"))
+        shutil.copytree(DEFINITIONS_FIXTURE, definitions, ignore=shutil.ignore_patterns("zones", "README.md"))
     world = {"id": "pachimud", "kind": "pachimud", "name": "Pachimud", "params": params}
     env = {
         "PACHIFAST_CONFIG_FILE": str(PACKAGE_ROOT / "pachimudeditor.yaml"),  # locale it, limiti auth: come il vecchio backend/
@@ -76,16 +76,16 @@ def seed_game_db(workdir: Path) -> None:
     stanza 1002 isolata con extra description, mob 1000 (usato da un reset) e 1001, oggetto 1000
     (usato da un reset) e 1001; zona 20 vuota (range 2000-2099).
     """
-    import pachimud.database  # noqa: F401  registra i modelli
-    from pachimud.character.enums import Sex
-    from pachimud.database.base import Base
-    from pachimud.mob.models import MobPrototype
-    from pachimud.object.enums import ObjectType
-    from pachimud.object.models import ObjectPrototype
-    from pachimud.zone.enums import ZoneCommandType, ZoneResetMode
-    from pachimud.zone.models import Zone, ZoneResetCommand
-    from pachimud.zone.room.enums import Direction, SectorType
-    from pachimud.zone.room.models import Exit, Room, RoomExtraDescription
+    import pachimudeditor_adapter_pachimud.game_models  # noqa: F401  registra i modelli
+    from pachimudeditor_adapter_pachimud.game_models.enums import Sex
+    from pachimudeditor_adapter_pachimud.game_models.base import Base
+    from pachimudeditor_adapter_pachimud.game_models.mob import MobPrototype
+    from pachimudeditor_adapter_pachimud.game_models.enums import ObjectType
+    from pachimudeditor_adapter_pachimud.game_models.object import ObjectPrototype
+    from pachimudeditor_adapter_pachimud.game_models.enums import ZoneCommandType, ZoneResetMode
+    from pachimudeditor_adapter_pachimud.game_models.zone import Zone, ZoneResetCommand
+    from pachimudeditor_adapter_pachimud.game_models.enums import Direction, SectorType
+    from pachimudeditor_adapter_pachimud.game_models.room import Exit, Room, RoomExtraDescription
     from sqlalchemy import create_engine
     from sqlalchemy.orm import Session
 

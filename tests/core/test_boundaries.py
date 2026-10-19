@@ -25,6 +25,21 @@ def test_package_never_imports_pachimud() -> None:
     assert not offenders, offenders
 
 
+def test_no_import_of_pachimud_anywhere_in_repo() -> None:
+    """Guardia: nessun `import pachimud` / `from pachimud...` in tutto il repo (src, adapters, tests, e2e, scripts).
+
+    Il MUD non e' una dipendenza: i modelli sono copiati in `game_models`. Il confronto opzionale col MUD vero
+    (`tests/test_game_compat.py`) lo carica dinamicamente da `PACHIMUD_GAME_ROOT`, senza import statici.
+    """
+    roots = [PACKAGE_ROOT / name for name in ("src", "adapters", "tests", "e2e", "scripts")]
+    offenders: list[str] = []
+    for path in sorted(p for root in roots for p in root.rglob("*.py") if "node_modules" not in p.parts and ".venv" not in p.parts):
+        for line, mod in _imported_modules(path):
+            if mod.split(".")[0] == "pachimud":
+                offenders.append(f"{path.relative_to(PACKAGE_ROOT)}:{line} {mod}")
+    assert not offenders, offenders
+
+
 def test_no_sys_path_tricks_or_python_path() -> None:
     """Niente `sys.path`, `python_path` o `PACHIMUD_CONFIG_PATH` nei sorgenti (salvo il ripiego documentato in params.py)."""
     pyproject = (PACKAGE_ROOT / "pyproject.toml").read_text(encoding="utf-8")

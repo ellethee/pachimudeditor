@@ -6,11 +6,11 @@ Uso: python <questo file> <cartella temporanea>   (cwd = radice del repo, come `
 import sys
 from pathlib import Path
 
-import pachimud.database  # noqa: F401  registra i modelli
-from pachimud.account.models import Account
-from pachimud.account.security import hash_password
-from pachimud.character.enums import Sex
-from pachimud.character.models import PlayerCharacter
+import pachimudeditor_adapter_pachimud.game_models  # noqa: F401  registra i modelli
+from pachimudeditor_adapter_pachimud.game_models.account import Account
+from pachimudeditor_adapter_pachimud.security import hash_password
+from pachimudeditor_adapter_pachimud.game_models.enums import Sex
+from pachimudeditor_adapter_pachimud.game_models.character import PlayerCharacter
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 

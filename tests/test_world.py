@@ -9,9 +9,9 @@ from collections.abc import AsyncIterator
 import httpx
 import pytest_asyncio
 from pachifast import create_app
-from pachimud.zone.models import Zone
-from pachimud.zone.room.enums import Direction, SectorType
-from pachimud.zone.room.models import Exit, Room
+from pachimudeditor_adapter_pachimud.game_models.zone import Zone
+from pachimudeditor_adapter_pachimud.game_models.enums import Direction, SectorType
+from pachimudeditor_adapter_pachimud.game_models.room import Exit, Room
 from pachimudeditor.common.adapters.plugins import available_kinds
 from pachimudeditor.modules import build_modules
 

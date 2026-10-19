@@ -1,0 +1,6 @@
+---
+race_id: unique
+name: Unique
+description: A generic template for mobiles with no distinct racial traits — used as a fallback when no other race fits.
+mob_only: true
+who_name: Unique

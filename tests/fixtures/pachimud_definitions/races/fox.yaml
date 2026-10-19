@@ -1,0 +1,16 @@
+---
+race_id: fox
+name: Fox
+description: A cunning, nimble creature that relies on speed and guile over strength.
+mob_only: true
+who_name: Fox
+offensive_flags:
+  - FAST
+  - DODGE
+affected_by:
+  - DARK_VISION
+form:
+  - MAMMAL
+parts:
+  - CANINE
+  - TAIL

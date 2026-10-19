@@ -2,7 +2,7 @@
 
 Copie dei `Loader*` del gioco (`zone/schema`, `zone/room/schema`, `mob/schema`, `object/schema`): stessi campi, default e
 validazioni (nomi di enum in maiuscolo, notazione dadi `XdY+Z`, uscite per direzione), cosi' un file valido per
-l'importer del gioco lo e' anche qui e viceversa (`tests/test_equivalence.py`).
+l'importer del gioco lo e' anche qui e viceversa (`tests/test_game_compat.py`).
 """
 
 import re

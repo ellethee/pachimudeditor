@@ -1,0 +1,19 @@
+---
+race_id: bat
+name: Bat
+description: A small flying mammal that navigates by sound in the darkest caves.
+mob_only: true
+who_name: Bat
+offensive_flags:
+  - DODGE
+  - FAST
+resistance:
+  - LIGHT
+affected_by:
+  - FLYING
+  - DARK_VISION
+form:
+  - MAMMAL
+parts:
+  - QUADRUPED
+  - WINGS

@@ -1,15 +1,14 @@
 """Fixture della suite: app pachifast contro database temporanei (mai `pachimud.db` reale).
 
-`tests/core/` non richiede nessun adapter. Il resto della suite (adapter, HTTP, equivalenza con il gioco) richiede tutti
-gli adapter del monorepo piu' il gioco `pachimud` (non e' una dipendenza: `uv pip install -e ../pachimud`): se mancano viene
-saltato in raccolta.
+`tests/core/` non richiede nessun adapter. Il resto della suite (adapter, HTTP) richiede tutti
+gli adapter del monorepo (nessun checkout del gioco: i modelli sono copiati in `game_models`): se mancano viene saltato
+in raccolta.
 """
 
 from importlib.util import find_spec
 from pathlib import Path
 
 STACK_MODULES = (
-    "pachimud",
     "pachimudeditor_adapter_pachimud",
     "pachimudeditor_adapter_basedmud",
     "pachimudeditor_adapter_dikumod",

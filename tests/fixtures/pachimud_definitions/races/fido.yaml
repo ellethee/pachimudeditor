@@ -1,0 +1,17 @@
+---
+race_id: fido
+name: Fido
+description: A scruffy, feral cousin of the common dog, quick to bite and quicker to flee.
+mob_only: true
+who_name: Fido
+offensive_flags:
+  - DODGE
+  - ASSIST_RACE
+vulnerability:
+  - MAGIC
+form:
+  - MAMMAL
+  - POISON
+parts:
+  - CANINE
+  - TAIL

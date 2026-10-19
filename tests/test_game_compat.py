@@ -1,4 +1,6 @@
-"""Equivalenza editor <-> gioco (il gioco e' una dipendenza di SOLO sviluppo: senza `pachimud` questi test si saltano).
+"""Allineamento editor <-> MUD vero: OPZIONALE, gira solo con `PACHIMUD_GAME_ROOT` che punta a un checkout del gioco.
+
+Il gioco non e' una dipendenza (modelli copiati in `game_models`): senza checkout questi test si saltano.
 
 - hash delle password: quelli dell'editor si verificano con `verify_password` del gioco e viceversa;
 - trasferimento zone: file scritti dall'editor letti dall'importer del gioco, e file del gioco letti dall'editor,
@@ -13,21 +15,16 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("pachimud")
-
-from pachimud.account import security as game_security  # noqa: E402
-from pachimud.database.base import Base  # noqa: E402
-from pachimud.database.database import create_engine, create_session_factory  # noqa: E402
-from pachimud.zone.importer import import_zone_directory as game_import  # noqa: E402
-
 from pachimudeditor_adapter_pachimud import security as editor_security  # noqa: E402
 from pachimudeditor_adapter_pachimud.adapter import PachimudAdapter  # noqa: E402
 from pachimudeditor_adapter_pachimud.transfer.files import ZONE_FILES  # noqa: E402
 from pachimudeditor.common.adapters.models import ZonePageParams  # noqa: E402
 from pachimudeditor.common.adapters.registry import WorldConfig  # noqa: E402
-from tests.support import stack  # noqa: E402
-from tests.support.stack import REPO_ROOT  # noqa: E402
+from tests.support.stack import DEFINITIONS_FIXTURE  # noqa: E402
+from tests.support.game_checkout import game_root, load  # noqa: E402
 from tests.support.zone_fixture import write_zone  # noqa: E402
+
+pytestmark = pytest.mark.skipif(game_root() is None, reason="PACHIMUD_GAME_ROOT non impostata: confronto col MUD saltato")
 
 TABLES = ("zone", "room", "exit", "room_extra_description", "mob_prototype", "object_prototype", "zone_reset_command")
 
@@ -39,17 +36,17 @@ def test_hash_made_by_editor_verifies_in_game() -> None:
     """Un hash dell'editor passa `verify_password` del gioco (stesso formato Argon2id e parametri)."""
     hashed = editor_security.hash_password("una password-di-prova 123")
     assert hashed.startswith("$argon2id$v=19$m=65536,t=3,p=4$")
-    assert game_security.verify_password(hashed, "una password-di-prova 123")
-    assert not game_security.verify_password(hashed, "sbagliata")
+    assert load("account.security").verify_password(hashed, "una password-di-prova 123")
+    assert not load("account.security").verify_password(hashed, "sbagliata")
 
 
 def test_hash_made_by_game_verifies_in_editor() -> None:
     """E viceversa; un hash non valido non solleva."""
-    hashed = game_security.hash_password("altra-password-9")
+    hashed = load("account.security").hash_password("altra-password-9")
     assert editor_security.verify_password(hashed, "altra-password-9")
     assert not editor_security.verify_password(hashed, "no")
     assert editor_security.verify_password("non-un-hash", "x") is False
-    assert game_security.hash_password("x").split("$")[:4] == editor_security.hash_password("x").split("$")[:4]
+    assert load("account.security").hash_password("x").split("$")[:4] == editor_security.hash_password("x").split("$")[:4]
 
 
 # ------------------------------------------------------------------------------ allineamento dati
@@ -57,11 +54,8 @@ def test_hash_made_by_game_verifies_in_editor() -> None:
 
 def test_editor_data_tables_match_game() -> None:
     """Enum del gioco = tabelle dati dell'editor (nomi e valori); anche i flag di razze e mob."""
-    from pachimud.character import enums as game_char
-    from pachimud.character.race import enums as game_race
-    from pachimud.object import enums as game_obj
-    from pachimud.zone import enums as game_zone
-    from pachimud.zone.room import enums as game_room
+    game_char, game_race, game_obj = load("character.enums"), load("character.race.enums"), load("object.enums")
+    game_zone, game_room = load("zone.enums"), load("zone.room.enums")
 
     from pachimudeditor_adapter_pachimud import race_enums
     from pachimudeditor.common import enums
@@ -89,13 +83,9 @@ def _fields(model: type) -> dict[str, object]:
 
 def test_loader_schemas_match_game() -> None:
     """Gli schemi dei file YAML e delle definizioni (razze/classi) hanno gli stessi campi e default di quelli del gioco."""
-    from pachimud.character.classes.schema import loader_class as g_class
-    from pachimud.character.race.schema import loader_race as g_race
-    from pachimud.mob.schema import loader_mob as g_mob
-    from pachimud.object.schema import loader_object as g_obj
-    from pachimud.zone.room.schema import loader_room as g_room
-    from pachimud.zone.schema import loader_reset as g_reset
-    from pachimud.zone.schema import loader_zone as g_zone
+    g_class, g_race = load("character.classes.schema.loader_class"), load("character.race.schema.loader_race")
+    g_mob, g_obj, g_room = load("mob.schema.loader_mob"), load("object.schema.loader_object"), load("zone.room.schema.loader_room")
+    g_reset, g_zone = load("zone.schema.loader_reset"), load("zone.schema.loader_zone")
 
     from pachimudeditor_adapter_pachimud import definitions
     from pachimudeditor_adapter_pachimud.transfer import schemas
@@ -124,8 +114,9 @@ def test_loader_schemas_match_game() -> None:
 
 
 def test_expected_columns_match_game_models() -> None:
-    """Le colonne attese dall'editor (`EXPECTED`) coincidono con quelle dei modelli del gioco (nome e nullabilita')."""
-    import pachimud.database  # noqa: F401  registra i modelli
+    """Le colonne attese dall'editor (`EXPECTED`) coincidono con quelle dei modelli del MUD vero (nome e nullabilita')."""
+    load("database")  # registra i modelli del MUD
+    Base = load("database.base").Base
 
     from pachimudeditor_adapter_pachimud.schema import EXPECTED
 
@@ -142,7 +133,7 @@ def test_known_revisions_match_alembic_chain() -> None:
     """`REVISIONS` e' la catena delle migration alembic del gioco, nell'ordine di applicazione."""
     from pachimudeditor_adapter_pachimud.schema import REVISIONS
 
-    versions = REPO_ROOT / "alembic" / "versions"
+    versions = game_root() / "alembic" / "versions"
     if not versions.is_dir():
         pytest.skip("alembic/versions del gioco non trovato")
     down: dict[str, str | None] = {}
@@ -174,7 +165,8 @@ def _dump(path: Path) -> dict[str, list[tuple]]:
 
 def _empty_game_db(path: Path) -> str:
     """Un DB di gioco vuoto creato dal GIOCO (schema `Base.metadata.create_all`); restituisce l'URL async."""
-    import pachimud.database  # noqa: F401
+    load("database")
+    Base = load("database.base").Base
     from sqlalchemy import create_engine as sync_engine
 
     for suffix in ("", "-wal", "-shm"):
@@ -187,9 +179,11 @@ def _empty_game_db(path: Path) -> str:
 
 async def _game_import(path: Path, zone_dir: Path) -> None:
     """Importa `zone_dir` con l'importer del GIOCO nel DB `path`."""
-    engine = create_engine(_empty_game_db(path) if not path.exists() else f"sqlite+aiosqlite:///{path}")
+    database = load("database.database")
+    game_import = load("zone.importer").import_zone_directory
+    engine = database.create_engine(_empty_game_db(path) if not path.exists() else f"sqlite+aiosqlite:///{path}")
     try:
-        async with create_session_factory(engine)() as session:
+        async with database.create_session_factory(engine)() as session:
             await game_import(session, zone_dir)
             await session.commit()
     finally:
@@ -200,7 +194,7 @@ async def _editor_import(path: Path, zone_dir: Path, *, create: bool = True) -> 
     """Importa `zone_dir` con l'importer dell'EDITOR in un DB di gioco (creato dal gioco se manca)."""
     url = _empty_game_db(path) if create else f"sqlite+aiosqlite:///{path}"
     adapter = PachimudAdapter(
-        WorldConfig(id="eq", kind="pachimud", params={"database_url": url, "definitions_path": str(REPO_ROOT / "definitions")})
+        WorldConfig(id="eq", kind="pachimud", params={"database_url": url, "definitions_path": str(DEFINITIONS_FIXTURE)})
     )
     preview = await adapter.import_zone_dir(zone_dir, dry_run=False, confirm=True)
     assert preview.applied and not preview.conflicts
@@ -241,8 +235,8 @@ async def test_editor_export_game_import_same_rows(tmp_path: Path) -> None:
 
 
 async def test_real_zone_definitions_equivalent(tmp_path: Path) -> None:
-    """La zona reale `RavnFjord` (copia): gioco -> DB, esportata dall'editor, riletta dal gioco = stesse righe."""
-    source = REPO_ROOT / "definitions" / "zones" / "RavnFjord"
+    """La zona di esempio `RavnFjord` (copia nelle fixture): gioco -> DB, esportata dall'editor, riletta dal gioco = stesse righe."""
+    source = DEFINITIONS_FIXTURE / "zones" / "RavnFjord"
     if not source.is_dir():
         pytest.skip("zona RavnFjord non trovata")
     copy = tmp_path / "RavnFjord"
@@ -268,9 +262,3 @@ async def test_second_import_is_idempotent_like_game(tmp_path: Path) -> None:
     await adapter.close()
     assert again.zone.action == "unchanged" and again.resets.changed is False
     assert _dump(tmp_path / "editor.db") == _dump(tmp_path / "game.db")
-
-
-def test_stack_world_params_point_to_tmp(tmp_path: Path) -> None:
-    """`world_params` non usa mai il database reale del gioco."""
-    params = stack.world_params(tmp_path)
-    assert str(tmp_path) in params["database_url"] and str(REPO_ROOT / "pachimud.db") not in params["database_url"]

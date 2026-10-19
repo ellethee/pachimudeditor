@@ -1,0 +1,19 @@
+---
+race_id: lizard
+name: Lizard
+description: A cold-blooded reptile that suns itself for warmth and strikes quickly when threatened.
+mob_only: true
+who_name: Lizard
+resistance:
+  - POISON
+vulnerability:
+  - COLD
+# Form era codificato a lettere nella tabella sorgente ("A, G, X, cc"):
+# A=EDIBLE, G=ANIMAL, X=REPTILE, cc=COLD_BLOOD (verificato su basedmud/src/flags.h)
+form:
+  - EDIBLE
+  - ANIMAL
+  - REPTILE
+  - COLD_BLOOD
+parts:
+  - LIZARD

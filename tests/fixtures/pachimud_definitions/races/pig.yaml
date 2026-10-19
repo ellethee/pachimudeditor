@@ -1,0 +1,10 @@
+---
+race_id: pig
+name: Pig
+description: A stout, unassuming farm animal, more prey than predator.
+mob_only: true
+who_name: Pig
+form:
+  - MAMMAL
+parts:
+  - QUADRUPED

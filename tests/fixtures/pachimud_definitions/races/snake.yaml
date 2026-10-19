@@ -1,0 +1,21 @@
+---
+race_id: snake
+name: Snake
+description: A limbless reptile whose venomous bite makes up for its lack of limbs.
+mob_only: true
+who_name: Snake
+resistance:
+  - POISON
+vulnerability:
+  - COLD
+# Form era codificato a lettere nella tabella sorgente ("A, G, X, Y, cc"):
+# A=EDIBLE, G=ANIMAL, X=REPTILE, Y=SNAKE, cc=COLD_BLOOD (verificato su basedmud/src/flags.h)
+form:
+  - EDIBLE
+  - ANIMAL
+  - REPTILE
+  - SNAKE
+  - COLD_BLOOD
+parts:
+  - REPTILE
+  - FANGS

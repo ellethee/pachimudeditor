@@ -1,0 +1,30 @@
+---
+race_id: elf
+name: Elf
+description: Graceful and intelligent race, known for their longevity and affinity with nature.
+mob_only: false
+who_name: Elf
+form:
+  - HUMANOID
+parts:
+  - HUMANOID
+affected_by:
+  - INFRARED
+resistance:
+  - CHARM
+vulnerability:
+  - IRON
+stats:
+  strength: 12
+  dexterity: 15
+  constitution: 11
+  intelligence: 14
+  wisdom: 13
+  charisma: 0
+max_stats:
+  strength: 16
+  dexterity: 21
+  constitution: 15
+  intelligence: 20
+  wisdom: 18
+  charisma: 18

@@ -1,0 +1,35 @@
+---
+race_id: pixie
+name: Pixie
+description: Small and magical race, known for their agility and mischievous nature.
+mob_only: false
+who_name: Pixie
+form:
+  - HUMANOID
+  - MAGICAL
+parts:
+  - HUMANOID
+  - WINGS
+affected_by:
+  - FLYING
+  - DETECT_GOOD
+  - DETECT_EVIL
+  - DETECT_MAGIC
+resistance:
+  - CHARM
+vulnerability:
+  - IRON
+stats:
+  strength: 11
+  dexterity: 14
+  constitution: 10
+  intelligence: 15
+  wisdom: 15
+  charisma: 0
+max_stats:
+  strength: 15
+  dexterity: 20
+  constitution: 14
+  intelligence: 21
+  wisdom: 20
+  charisma: 18

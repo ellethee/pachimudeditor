@@ -1,0 +1,28 @@
+---
+race_id: wyvern
+name: Wyvern
+description: A winged reptilian predator, smaller than a dragon but just as deadly in the air.
+mob_only: true
+who_name: Wyvern
+offensive_flags:
+  - BASH
+  - FAST
+  - DODGE
+immunity:
+  - POISON
+vulnerability:
+  - LIGHT
+affected_by:
+  - FLYING
+  - DETECT_INVIS
+  - DETECT_HIDDEN
+# Form era codificato a lettere nella tabella sorgente ("A, B, G, Z"):
+# A=EDIBLE, B=POISON, G=ANIMAL, Z=DRAGON (verificato su basedmud/src/flags.h)
+form:
+  - EDIBLE
+  - POISON
+  - ANIMAL
+  - DRAGON
+parts:
+  - LIZARD
+  - FANGS

@@ -1,0 +1,19 @@
+---
+mobs:
+  - vnum: 400000
+    keywords: guardia ravnfjord
+    short_description: una guardia di Ravnfjord
+    long_description: Una guardia di Ravnfjord sorveglia la piazza.
+    detailed_description: Un uomo robusto in armatura leggera, vigile e attento.
+    level: 5
+    thac0: 18
+    armor_class: 5
+    hp_dice: 3d8+10
+    damage_dice: 1d6+2
+    gold: 50
+    experience: 200
+    sex: MALE
+    flags: [SENTINEL]
+    alignment: 500
+    race_id: human
+    class_id: warrior

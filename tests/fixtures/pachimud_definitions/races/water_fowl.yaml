@@ -1,0 +1,15 @@
+---
+race_id: water_fowl
+name: Water Fowl
+description: A webbed-foot bird equally at home swimming or taking to the air.
+mob_only: true
+who_name: Fowl
+resistance:
+  - DROWNING
+affected_by:
+  - SWIM
+  - FLYING
+form:
+  - BIRD
+parts:
+  - BIRD

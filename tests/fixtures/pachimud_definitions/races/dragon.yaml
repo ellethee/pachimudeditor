@@ -1,0 +1,27 @@
+---
+race_id: dragon
+name: Dragon
+description: An ancient, fire-breathing reptile of immense size and cunning.
+mob_only: true
+who_name: Dragon
+resistance:
+  - FIRE
+  - BASH
+  - CHARM
+vulnerability:
+  - PIERCE
+  - COLD
+affected_by:
+  - INFRARED
+  - FLYING
+# Form era codificato a lettere nella tabella sorgente ("A, H, Z"):
+# A=EDIBLE, H=SENTIENT, Z=DRAGON (verificato su basedmud/src/flags.h)
+form:
+  - EDIBLE
+  - SENTIENT
+  - DRAGON
+parts:
+  - LIZARD
+  - FINGERS
+  - CLAWS
+  - FANGS

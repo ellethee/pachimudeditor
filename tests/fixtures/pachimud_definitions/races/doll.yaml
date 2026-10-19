@@ -1,0 +1,40 @@
+---
+race_id: doll
+name: Doll
+description: An animated construct given a semblance of life, unnervingly still until it moves.
+mob_only: true
+who_name: Doll
+immunity:
+  - COLD
+  - POISON
+  - HOLY
+  - NEGATIVE
+  - MENTAL
+  - DISEASE
+  - DROWNING
+resistance:
+  - BASH
+  - LIGHT
+vulnerability:
+  - SLASH
+  - FIRE
+  - ACID
+  - LIGHTNING
+  - ENERGY
+# Form era codificato a lettere nella tabella sorgente ("E, J, M, cc"):
+# E=OTHER, J=CONSTRUCT, M=BIPED, cc=COLD_BLOOD (verificato su basedmud/src/flags.h)
+form:
+  - OTHER
+  - CONSTRUCT
+  - BIPED
+  - COLD_BLOOD
+# Parts era "PARTS_HUMANOID & ~(PARTS_ALIVE, PART_EAR)": HUMANOID meno
+# (HEART, BRAINS, GUTS, EAR) — elencato esplicito qui sotto.
+parts:
+  - HEAD
+  - ARMS
+  - LEGS
+  - FEET
+  - EYE
+  - HANDS
+  - FINGERS

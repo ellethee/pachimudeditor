@@ -1,0 +1,23 @@
+---
+race_id: school_monster
+name: School Monster
+description: A misfit creature assembled for training grounds, resistant to charm and summoning.
+mob_only: true
+who_name: School
+mob_flags:
+  - NOALIGN
+immunity:
+  - CHARM
+  - SUMMON
+vulnerability:
+  - MAGIC
+# Form era codificato a lettere nella tabella sorgente ("A, M, V"):
+# A=EDIBLE, M=BIPED, V=BASE_MAMMAL (verificato su basedmud/src/flags.h)
+form:
+  - EDIBLE
+  - BIPED
+  - BASE_MAMMAL
+parts:
+  - BIPED
+  - TAIL
+  - CLAWS

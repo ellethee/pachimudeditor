@@ -1,0 +1,10 @@
+class_id: thief
+name: Thief
+description: A class specializing in stealth, agility, and cunning.
+attrs_priority:
+  - dexterity
+  - strength
+  - constitution
+  - intelligence
+  - wisdom
+  - charisma

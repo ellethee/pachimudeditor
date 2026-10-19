@@ -2,7 +2,7 @@
 
 `PasswordHasher()` con i default di argon2-cffi (time_cost=3, memory_cost=64 MiB, parallelism=4): l'hash e' la
 stringa autodescrittiva `$argon2id$...`, quindi un hash fatto qui si verifica nel gioco e viceversa
-(`tests/test_equivalence.py`). Dipendenza dichiarata in `pyproject.toml` (`argon2-cffi`).
+(`tests/test_game_compat.py`). Dipendenza dichiarata in `pyproject.toml` (`argon2-cffi`).
 """
 
 from argon2 import PasswordHasher

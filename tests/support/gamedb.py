@@ -1,28 +1,33 @@
-"""Accesso diretto al database di gioco di test con i modelli ORM del GIOCO (dipendenza di solo sviluppo).
+"""Accesso diretto al database di gioco di test con i modelli ORM COPIATI dal gioco (`game_models`).
 
 I test lo usano per seminare e verificare righe come farebbe il game server, indipendentemente dall'adapter
-dell'editor (che legge le tabelle riflesse). Richiede il pacchetto `pachimud`; senza, i test che lo importano si saltano.
+dell'editor (che legge le tabelle riflesse). Nessuna dipendenza dal pacchetto `pachimud`.
 """
 
 import os
 
-import pytest
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
-pytest.importorskip("pachimud")
-
-from pachimud.database.database import create_engine, create_session_factory  # noqa: E402
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker  # noqa: E402
+import pachimudeditor_adapter_pachimud.game_models  # noqa: F401  registra i modelli
+from pachimudeditor_adapter_pachimud.connection import configure_sqlite
 
 _engine: AsyncEngine | None = None
 _factory: async_sessionmaker[AsyncSession] | None = None
 
 
+def create_engine(database_url: str) -> AsyncEngine:
+    """Engine async con i pragma SQLite del game server."""
+    engine = create_async_engine(database_url)
+    configure_sqlite(engine)
+    return engine
+
+
 def get_session_factory() -> async_sessionmaker[AsyncSession]:
-    """Il session factory (modelli del gioco) sul DB di test indicato da `PACHIMUD_DATABASE_URL`."""
+    """Il session factory (modelli copiati) sul DB di test indicato da `PACHIMUD_DATABASE_URL`."""
     global _engine, _factory
     if _factory is None:
         _engine = create_engine(os.environ["PACHIMUD_DATABASE_URL"])
-        _factory = create_session_factory(_engine)
+        _factory = async_sessionmaker(_engine, expire_on_commit=False)
     return _factory
 
 

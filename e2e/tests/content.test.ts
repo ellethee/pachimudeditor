@@ -1,4 +1,4 @@
-/** Contenuti (razze/classi YAML) su una copia temporanea di definitions/ (vedi support/stack.ts). */
+/** Contenuti (razze/classi YAML) su una copia temporanea delle definizioni di esempio (vedi support/stack.ts). */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { Api } from '../support/api.ts'

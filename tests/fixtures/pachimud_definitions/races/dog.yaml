@@ -1,0 +1,13 @@
+---
+race_id: dog
+name: Dog
+description: A loyal, quick-footed animal, common as both companion and stray.
+mob_only: true
+who_name: Dog
+offensive_flags:
+  - FAST
+form:
+  - MAMMAL
+parts:
+  - CANINE
+  - CLAWS

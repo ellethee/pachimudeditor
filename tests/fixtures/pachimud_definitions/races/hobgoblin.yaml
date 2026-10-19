@@ -1,0 +1,16 @@
+---
+race_id: hobgoblin
+name: Hobgoblin
+description: A larger, tougher cousin of the goblin, favoring brute force over trickery.
+mob_only: true
+who_name: HobGob
+resistance:
+  - DISEASE
+  - POISON
+affected_by:
+  - INFRARED
+form:
+  - HUMANOID
+parts:
+  - HUMANOID
+  - TUSKS

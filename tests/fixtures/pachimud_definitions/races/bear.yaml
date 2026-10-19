@@ -1,0 +1,19 @@
+---
+race_id: bear
+name: Bear
+description: A powerful, thick-furred predator capable of crushing prey in a single charge.
+mob_only: true
+who_name: Bear
+offensive_flags:
+  - CRUSH
+  - DISARM
+  - BERSERK
+resistance:
+  - BASH
+  - COLD
+form:
+  - MAMMAL
+parts:
+  - BIPED
+  - CLAWS
+  - FANGS

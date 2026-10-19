@@ -7,9 +7,9 @@ from pathlib import Path
 
 import httpx
 import pytest_asyncio
-from pachimud.database.base import Base
-from pachimud.database.database import create_engine
-from pachimud.zone.models import Zone
+from pachimudeditor_adapter_pachimud.game_models.base import Base
+from tests.support.gamedb import create_engine
+from pachimudeditor_adapter_pachimud.game_models.zone import Zone
 from sqlalchemy import select
 
 from pachimudeditor.common.adapters.registry import WorldConfig, WorldRegistry, get_registry, set_registry

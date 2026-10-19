@@ -1,0 +1,15 @@
+---
+race_id: song_bird
+name: Song Bird
+description: A small, colorful bird known for its song and its swift retreat from danger.
+mob_only: true
+who_name: SongBird
+offensive_flags:
+  - FAST
+  - DODGE
+affected_by:
+  - FLYING
+form:
+  - BIRD
+parts:
+  - BIRD

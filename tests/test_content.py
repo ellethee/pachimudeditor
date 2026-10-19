@@ -8,21 +8,21 @@ from pathlib import Path
 import httpx
 import pytest
 import pytest_asyncio
-from pachimud.mob.models import MobPrototype
+from pachimudeditor_adapter_pachimud.game_models.mob import MobPrototype
 from sqlalchemy import update
 
 from pachimudeditor.common.adapters.registry import get_registry
 from tests.helpers import data, error_code
 from tests.support import gamedb
 from tests.support.extra_apps import build_app, make_client
-from tests.support.stack import REPO_ROOT
+from tests.support.stack import DEFINITIONS_FIXTURE
 
 
 @pytest.fixture(autouse=True)
 def definitions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Copia di `definitions/` in tmp_path e `definitions_path` del mondo pachimud puntato li'."""
     target = tmp_path / "definitions"
-    shutil.copytree(REPO_ROOT / "definitions", target, ignore=shutil.ignore_patterns("zones"))
+    shutil.copytree(DEFINITIONS_FIXTURE, target, ignore=shutil.ignore_patterns("zones", "README.md"))
     adapter = get_registry().get("pachimud")
     monkeypatch.setattr(adapter, "params", dataclasses.replace(adapter.params, definitions_path=target))
     return target
@@ -45,7 +45,7 @@ async def _set_mob(**values: object) -> None:
 async def test_guard_not_real_definitions(definitions: Path) -> None:
     """La config in uso punta alla copia temporanea."""
     assert get_registry().get("pachimud").params.definitions_path == definitions
-    assert REPO_ROOT / "definitions" != definitions
+    assert DEFINITIONS_FIXTURE != definitions
 
 
 async def test_list_and_get(api: httpx.AsyncClient) -> None:
@@ -117,7 +117,7 @@ async def test_create_race_and_class(api: httpx.AsyncClient, definitions: Path) 
     assert not (definitions.parent / "evil.yaml").exists()
     cls = data(await api.post("/api/content/classes", json={"classId": "bard", "name": "Bard", "attrPrime": "charisma"}), 201)
     assert cls["classId"] == "bard" and (definitions / "classes" / "bard.yaml").is_file()
-    # appare nel manager del gioco (stesse cartelle)
+    # appare nell'elenco (stesse cartelle del MUD)
     assert any(c["classId"] == "bard" for c in data(await api.get("/api/content/classes")))
 
 
@@ -148,27 +148,17 @@ async def test_delete_blocked_when_in_use(api: httpx.AsyncClient, definitions: P
 
 
 async def test_disable_enable(api: httpx.AsyncClient, definitions: Path) -> None:
-    """Razza e classe: rinomina in .yaml.disabled (non piu' caricate dal gioco)."""
+    """Razza e classe: rinomina in .yaml.disabled (non piu' caricate dal MUD)."""
     race = data(await api.post("/api/content/races/fox/disable"))
     assert race["disabled"] is True and race["file"] == "fox.yaml.disabled"
     assert not (definitions / "races" / "fox.yaml").exists()
-    # il RaceManager del gioco non la vede piu'
-    from pachimud.character.race.manager import RaceManager
-    from pachimud.config.schema.pachimud import PachimudConfig
-
-    manager = RaceManager(PachimudConfig(definition_path=str(definitions)))
-    manager.load_races()
-    assert "fox" not in manager.races and "wolf" in manager.races
+    assert not list((definitions / "races").glob("fox.yaml")) and (definitions / "races" / "wolf.yaml").is_file()
     # modificabile anche da disattivata, poi riattivabile
     assert data(await api.get("/api/content/races/fox"))["disabled"] is True
     assert data(await api.post("/api/content/races/fox/enable"))["file"] == "fox.yaml"
     klass = data(await api.post("/api/content/classes/thief/disable"))
     assert klass["disabled"] is True and klass["file"] == "thief.yaml.disabled"
-    from pachimud.character.classes.manager import ClassManager
-
-    cm = ClassManager(PachimudConfig(definition_path=str(definitions)))
-    cm.load_classes()
-    assert "thief" not in cm.classes
+    assert not (definitions / "classes" / "thief.yaml").exists()
     assert data(await api.post("/api/content/classes/thief/enable"))["disabled"] is False
     assert (definitions / "classes" / "thief.yaml").is_file()
 

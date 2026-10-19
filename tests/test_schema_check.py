@@ -1,6 +1,6 @@
 """Compatibilita' con lo schema del gioco: revisioni note/ignote e degrado quando mancano colonne o tabelle.
 
-I database di prova sono creati dal gioco (dipendenza di solo sviluppo) e poi "invecchiati" o alterati con SQL.
+I database di prova sono creati con i modelli copiati del gioco e poi "invecchiati" o alterati con SQL.
 """
 
 import sqlite3
@@ -10,7 +10,6 @@ import httpx
 import pytest
 from fastapi import HTTPException
 
-pytest.importorskip("pachimud")
 
 from pachimudeditor_adapter_pachimud.adapter import PachimudAdapter  # noqa: E402
 from pachimudeditor_adapter_pachimud.schema import HEAD, REVISIONS  # noqa: E402

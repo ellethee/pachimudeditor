@@ -2,10 +2,10 @@
 
 import httpx
 from pachimudeditor.common.enums import Sex
-from pachimud.character.models import PlayerCharacter
-from pachimud.account.models import Account
-from pachimud.mob.models import MobInstance
-from pachimud.object.models import ObjectInstance
+from pachimudeditor_adapter_pachimud.game_models.character import PlayerCharacter
+from pachimudeditor_adapter_pachimud.game_models.account import Account
+from pachimudeditor_adapter_pachimud.game_models.mob import MobInstance
+from pachimudeditor_adapter_pachimud.game_models.object import ObjectInstance
 
 from tests.support.gamedb import get_session_factory
 from tests.helpers import by_vnum, data, error_code
@@ -329,7 +329,7 @@ async def test_exit_coherence(client: httpx.AsyncClient) -> None:
 
 async def test_exit_legacy_inconsistent_data_still_editable(client: httpx.AsyncClient) -> None:
     """Un'uscita preesistente incoerente resta modificabile finche' il patch non tocca i campi coinvolti."""
-    from pachimud.zone.room.models import Exit
+    from pachimudeditor_adapter_pachimud.game_models.room import Exit
     from sqlalchemy import select
 
     room = await by_vnum(client, "rooms", 1000)

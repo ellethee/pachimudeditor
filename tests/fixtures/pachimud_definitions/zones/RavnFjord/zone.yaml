@@ -1,0 +1,12 @@
+---
+zone_id: ravnfjord
+vnum: 400
+name: Ravnfjord
+builder: Luca
+bottom_vnum: 400000
+top_vnum: 400099
+min_level: 1
+max_level: 10
+lifespan_minutes: 30
+reset_mode: ALWAYS
+enabled: true

@@ -1,0 +1,18 @@
+---
+race_id: kobold
+name: Kobold
+description: A small reptilian humanoid, sickly but resistant to poison and disease.
+mob_only: true
+who_name: Kobold
+resistance:
+  - POISON
+vulnerability:
+  - MAGIC
+affected_by:
+  - INFRARED
+form:
+  - HUMANOID
+  - POISON
+parts:
+  - HUMANOID
+  - TAIL

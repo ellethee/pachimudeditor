@@ -1,0 +1,13 @@
+---
+race_id: rabbit
+name: Rabbit
+description: A jittery, fast-fleeing creature that survives on speed alone.
+mob_only: true
+who_name: Rabbit
+offensive_flags:
+  - DODGE
+  - FAST
+form:
+  - MAMMAL
+parts:
+  - QUADRUPED

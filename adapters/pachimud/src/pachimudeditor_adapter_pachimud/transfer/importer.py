@@ -2,7 +2,7 @@
 
 Riscrittura sull'insieme di tabelle riflesse (nessun import di `pachimud`): idempotente per vnum, mai cancellazioni di
 stanze/mob/oggetti assenti dal file; uscite non piu' presenti rimosse; extra description e reset sostituiti per intero.
-L'equivalenza con `pachimud.zone.importer` e' verificata da `tests/test_equivalence.py`. Non committa: lo fa chi chiama.
+L'equivalenza con `pachimud.zone.importer` e' verificata da `tests/test_game_compat.py`. Non committa: lo fa chi chiama.
 """
 
 import logging

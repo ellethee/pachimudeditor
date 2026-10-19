@@ -72,7 +72,7 @@ async def test_delete_cascades_reset_script(client: httpx.AsyncClient) -> None:
     assert len(data(put)) == 1
     assert (await client.delete(f"/api/zones/{zone['id']}")).status_code == 204
     from tests.support.gamedb import get_session_factory
-    from pachimud.zone.models import ZoneResetCommand
+    from pachimudeditor_adapter_pachimud.game_models.zone import ZoneResetCommand
     from sqlalchemy import func, select
 
     async with get_session_factory()() as session:

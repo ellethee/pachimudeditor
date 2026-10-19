@@ -1,0 +1,25 @@
+---
+race_id: troll
+name: Troll
+description: A regenerating brute whose wounds close almost as fast as they're dealt.
+mob_only: true
+who_name: Troll
+offensive_flags:
+  - BERSERK
+resistance:
+  - CHARM
+  - BASH
+vulnerability:
+  - FIRE
+  - ACID
+affected_by:
+  - REGENERATION
+  - INFRARED
+  - DETECT_HIDDEN
+form:
+  - HUMANOID
+  - POISON
+parts:
+  - HUMANOID
+  - CLAWS
+  - FANGS

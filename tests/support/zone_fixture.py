@@ -1,4 +1,4 @@
-"""Una cartella di zona "ricca" nel formato YAML del gioco, per i test di equivalenza editor <-> importer del gioco.
+"""Una cartella di zona "ricca" nel formato YAML del gioco, per i test di round-trip editor <-> importer.
 
 Copre ogni campo dei cinque file: uscite in tutte le direzioni con porte/chiavi/blocchi, extra description, rate/clan/
 owner, dadi con bonus negativo, razza/classe/insegnamenti dei mob, valori e `affects` degli oggetti, i sette tipi di reset.

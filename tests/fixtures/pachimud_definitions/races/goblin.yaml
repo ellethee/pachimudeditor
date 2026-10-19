@@ -1,0 +1,16 @@
+---
+race_id: goblin
+name: Goblin
+description: A small, sneaky humanoid that thrives in numbers and shadows.
+mob_only: true
+who_name: Goblin
+resistance:
+  - DISEASE
+vulnerability:
+  - MAGIC
+affected_by:
+  - INFRARED
+form:
+  - HUMANOID
+parts:
+  - HUMANOID

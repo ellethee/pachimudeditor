@@ -1,0 +1,15 @@
+---
+race_id: cat
+name: Cat
+description: A quick, sharp-eyed hunter that strikes before its prey notices.
+mob_only: true
+who_name: Cat
+offensive_flags:
+  - FAST
+  - DODGE
+affected_by:
+  - DARK_VISION
+form:
+  - MAMMAL
+parts:
+  - FELINE

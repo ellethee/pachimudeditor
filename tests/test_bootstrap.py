@@ -61,8 +61,7 @@ def test_pachimud_world_params_without_game(tmp_path: Path) -> None:
 
 def test_pachimud_world_runs_without_pachimud_package(tmp_path: Path) -> None:
     """L'app completa con un mondo pachimud funziona con il pacchetto `pachimud` BLOCCATO (python -I + meta_path),
-    su un DB creato in precedenza dal gioco (qui: schema e dati di test, in una cartella temporanea)."""
-    pytest.importorskip("pachimud")
+    su un DB di gioco preesistente (qui: schema e dati di test, in una cartella temporanea)."""
     workdir = tmp_path / "w"
     workdir.mkdir()
     stack.seed_game_db(workdir)

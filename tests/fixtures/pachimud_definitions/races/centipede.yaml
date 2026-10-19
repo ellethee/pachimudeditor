@@ -1,0 +1,20 @@
+---
+race_id: centipede
+name: Centipede
+description: A many-legged crawler whose bite carries a numbing venom.
+mob_only: true
+who_name: Centiped
+resistance:
+  - PIERCE
+  - COLD
+vulnerability:
+  - BASH
+affected_by:
+  - DARK_VISION
+form:
+  - BUG
+  - POISON
+parts:
+  - HEAD
+  - LEGS
+  - EYE

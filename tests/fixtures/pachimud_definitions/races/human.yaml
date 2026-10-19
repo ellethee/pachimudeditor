@@ -1,0 +1,25 @@
+---
+race_id: human
+name: Human
+description: Versatile and adaptable race, known for their resilience and ambition.
+mob_only: false
+who_name: Human
+form:
+  - HUMANOID
+parts:
+  - HUMANOID
+stats:
+  strength: 13
+  dexterity: 13
+  constitution: 13
+  intelligence: 13
+  wisdom: 13
+  charisma: 0
+max_stats:
+  strength: 18
+  dexterity: 18
+  constitution: 18
+  intelligence: 18
+  wisdom: 18
+  charisma: 18
+extra_training_cap: 1

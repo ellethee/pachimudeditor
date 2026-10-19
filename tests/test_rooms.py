@@ -112,7 +112,7 @@ async def test_clone(client: httpx.AsyncClient) -> None:
 async def test_delete_cascades_exits_and_extras(client: httpx.AsyncClient) -> None:
     """Eliminare una stanza elimina le sue uscite/extra; le uscite altrui verso di lei restano senza destinazione."""
     from tests.support.gamedb import get_session_factory
-    from pachimud.zone.room.models import Exit, RoomExtraDescription
+    from pachimudeditor_adapter_pachimud.game_models.room import Exit, RoomExtraDescription
     from sqlalchemy import select
 
     room = await _new_room(client, 1040)

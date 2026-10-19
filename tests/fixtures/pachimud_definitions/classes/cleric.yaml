@@ -1,0 +1,11 @@
+---
+class_id: cleric
+name: Cleric
+description: A class specializing in divine magic and healing.
+attrs_priority:
+  - wisdom
+  - intelligence
+  - strength
+  - dexterity
+  - constitution
+  - charisma

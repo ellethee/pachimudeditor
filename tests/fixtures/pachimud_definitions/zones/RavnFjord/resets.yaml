@@ -1,0 +1,23 @@
+---
+resets:
+  - type: LOAD_MOB
+    mob_vnum: 400000
+    max_existing: 1
+    room_vnum: 400001
+    room_limit: 1
+
+  - type: LOAD_OBJECT
+    obj_vnum: 400000
+    max_existing: 1
+    room_vnum: 400001
+
+  - type: EQUIP_OBJECT
+    if_flag: true
+    obj_vnum: 400000
+    max_existing: 1
+    wear_slot: WIELD
+
+  - type: SET_DOOR_STATE
+    room_vnum: 400001
+    direction: NORTH
+    state: CLOSED

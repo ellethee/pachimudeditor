@@ -1,0 +1,17 @@
+---
+race_id: wolf
+name: Wolf
+description: A pack hunter with keen night vision and relentless speed.
+mob_only: true
+who_name: Wolf
+offensive_flags:
+  - FAST
+  - DODGE
+affected_by:
+  - DARK_VISION
+form:
+  - MAMMAL
+parts:
+  - CANINE
+  - CLAWS
+  - TAIL

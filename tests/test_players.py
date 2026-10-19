@@ -35,8 +35,8 @@ async def _account(c: httpx.AsyncClient, username: str = "mario", email: str | N
 
 async def _char(c: httpx.AsyncClient, account_id: int, name: str = "Gandalf", **extra: object) -> int:
     """Inserisce un personaggio direttamente nel DB di test (non esiste un endpoint di creazione)."""
-    from pachimud.character.enums import Sex
-    from pachimud.character.models import PlayerCharacter
+    from pachimudeditor_adapter_pachimud.game_models.enums import Sex
+    from pachimudeditor_adapter_pachimud.game_models.character import PlayerCharacter
 
     from tests.support.gamedb import get_session_factory
 
@@ -83,8 +83,8 @@ async def test_account_crud_and_no_hash(pc: httpx.AsyncClient) -> None:
     assert data(await pc.get("/api/players/accounts", params={"isBanned": True}))["total"] == 1
     assert data(await pc.post(f"/api/players/accounts/{acc['id']}/unban"))["isBanned"] is False
     data(await pc.post(f"/api/players/accounts/{acc['id']}/password", json={"password": "altrapassword1"}))
-    from pachimud.account.security import verify_password
-    from pachimud.account.models import Account
+    from pachimudeditor_adapter_pachimud.security import verify_password
+    from pachimudeditor_adapter_pachimud.game_models.account import Account
 
     from tests.support.gamedb import get_session_factory
 
@@ -182,7 +182,7 @@ async def test_inventory(pc: httpx.AsyncClient) -> None:
 
 async def test_inventory_container_contents(pc: httpx.AsyncClient) -> None:
     """Gli oggetti dentro un contenitore del personaggio compaiono e non sono equipaggiabili."""
-    from pachimud.object.models import ObjectInstance
+    from pachimudeditor_adapter_pachimud.game_models.object import ObjectInstance
 
     from tests.support.gamedb import get_session_factory
 

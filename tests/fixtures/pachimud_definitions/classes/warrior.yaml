@@ -1,0 +1,11 @@
+class_id: warrior
+name: Warrior
+description: A class specializing in physical combat and martial prowess.
+add_strength: true
+attrs_priority:
+  - strength
+  - dexterity
+  - constitution
+  - wisdom
+  - intelligence
+  - charisma

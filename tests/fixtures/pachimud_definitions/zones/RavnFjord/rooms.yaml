@@ -1,0 +1,32 @@
+---
+rooms:
+  - vnum: 400001
+    name: Piazza del Mercato
+    description: |
+      Una piazza acciottolata, bancarelle vuote ai lati. A nord si apre un vicolo buio.
+    sector_type: CITY
+    flags: []
+    exits:
+      north:
+        target_vnum: 400002
+        description: Un vicolo buio si apre a nord.
+        keywords: vicolo
+        door_flag: CLOSABLE
+        is_open: false
+        is_locked: false
+    extra_descriptions:
+      - keywords: bancarella banco
+        text: Una bancarella vuota, abbandonata da tempo.
+
+  - vnum: 400002
+    name: Vicolo Buio
+    description: |
+      Un vicolo stretto e buio, puzzolente di rifiuti.
+    sector_type: CITY
+    flags: [INDOORS]
+    exits:
+      south:
+        target_vnum: 400001
+        door_flag: CLOSABLE
+        is_open: false
+        is_locked: false

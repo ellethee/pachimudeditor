@@ -1,0 +1,30 @@
+---
+race_id: giant
+name: Giant
+description: Massive and powerful race, known for their strength and imposing presence.
+mob_only: false
+who_name: Giant
+form:
+  - HUMANOID
+parts:
+  - HUMANOID
+resistance:
+  - FIRE
+  - COLD
+vulnerability:
+  - MENTAL
+  - LIGHTNING
+stats:
+  strength: 16
+  dexterity: 11
+  constitution: 14
+  intelligence: 11
+  wisdom: 13
+  charisma: 0
+max_stats:
+  strength: 22
+  dexterity: 15
+  constitution: 20
+  intelligence: 15
+  wisdom: 18
+  charisma: 18

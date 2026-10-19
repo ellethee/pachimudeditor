@@ -1,4 +1,4 @@
-"""Enum dei flag di razze e mob (ROM): copia di `pachimud.character.race.enums`, verificata da `tests/test_equivalence.py`.
+"""Enum dei flag di razze e mob (ROM): copia di `pachimud.character.race.enums`, verificata da `tests/test_game_compat.py`.
 
 Servono a `apps/content` (opzioni dei form e controllo dei nomi nei YAML delle razze); l'editor non importa `pachimud`.
 """

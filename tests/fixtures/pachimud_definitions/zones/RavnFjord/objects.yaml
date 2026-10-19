@@ -1,0 +1,14 @@
+---
+objects:
+  - vnum: 400000
+    keywords: spada corta guardia
+    short_description: una spada corta
+    long_description: Una spada corta giace qui.
+    object_type: WEAPON
+    weight: 5
+    cost: 50
+    rent: 5
+    value_0: 2
+    value_1: 6
+    value_2: 1
+    wear_flags: [WIELD]

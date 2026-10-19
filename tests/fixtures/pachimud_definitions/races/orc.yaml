@@ -1,0 +1,16 @@
+---
+race_id: orc
+name: Orc
+description: A brutish, disease-hardened humanoid that favors raw strength over subtlety.
+mob_only: true
+who_name: Orc
+resistance:
+  - DISEASE
+vulnerability:
+  - LIGHT
+affected_by:
+  - INFRARED
+form:
+  - HUMANOID
+parts:
+  - HUMANOID
