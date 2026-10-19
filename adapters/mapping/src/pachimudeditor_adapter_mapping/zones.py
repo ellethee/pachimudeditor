@@ -136,7 +136,7 @@ class ZonesMixin(MappingSupport):
         """
         self.ensure_writable()
         values = data.model_dump(by_alias=False, exclude=_STRUCTURAL)
-        async with self.lock:
+        async with self.writing():
             self.sync()
             lay = self.spec.layout
             self._check_new_zone(data.vnum, data.bottom_vnum, data.top_vnum)
@@ -174,7 +174,7 @@ class ZonesMixin(MappingSupport):
         """
         self.ensure_writable()
         changes = data.model_dump(by_alias=False, exclude_unset=True, exclude={"extra"})
-        async with self.lock:
+        async with self.writing():
             unit = self.zone_or_404(zone_id)
             lay, current = self.spec.layout, self._zone_out(unit)
             bottom, top = changes.get("bottom_vnum", unit.bottom), changes.get("top_vnum", unit.top)
@@ -224,7 +224,7 @@ class ZonesMixin(MappingSupport):
     async def delete_zone(self, zone_id: int) -> None:
         """Elimina la zona (file + riga dell'indice, oppure il record di zona); 409 `zones.not_empty` se ha contenuto."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             unit = self.zone_or_404(zone_id)
             summary = self._summary(unit)
             if summary.room_count or summary.mob_count or summary.object_count:
@@ -280,7 +280,7 @@ class ZonesMixin(MappingSupport):
         self.ensure_writable()
         if self.spec.layout.mode != "zone_files":
             raise api_error(422, "mapping.clone_unsupported")
-        async with self.lock:
+        async with self.writing():
             source = self.zone_or_404(zone_id)
             bottom, top = data.bottom_vnum or 0, data.top_vnum or 0
             self._check_new_zone(data.vnum, bottom, top)
@@ -326,7 +326,7 @@ class ZonesMixin(MappingSupport):
         self.ensure_writable()
         if self.spec.model.zone.resets is None:
             raise api_error(409, "world.capability_missing", capability="supports_reset_scripts")
-        async with self.lock:
+        async with self.writing():
             unit = self.zone_or_404(zone_id)
             drafts = self.drafts_of(data.commands)
             rules.raise_script_errors(await rules.validate_script(self.reset_lookup(), drafts))

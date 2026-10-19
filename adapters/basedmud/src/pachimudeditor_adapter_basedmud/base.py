@@ -1,6 +1,8 @@
 """Supporto comune ai mixin di `BasedMudAdapter`: archivio, lock di scrittura, paginazione in memoria, uso dei vnum."""
 
 import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Any
 
 from pachimudeditor_adapter_basedmud.rom_lib import Reset
@@ -40,6 +42,18 @@ class BasedMudSupport:
         """Riallinea la cache al disco e restituisce l'archivio."""
         self.store.refresh()
         return self.store
+
+    @asynccontextmanager
+    async def writing(self) -> AsyncIterator[AreaStore]:
+        """Sezione di scrittura: lock unico e cache aggiornata; se qualcosa fallisce la cache e' invalidata (le modifiche
+        in memoria non salvate non devono restare ne' finire su disco al salvataggio successivo)."""
+        async with self.lock:
+            store = self.sync()
+            try:
+                yield store
+            except BaseException:
+                store.invalidate()
+                raise
 
     # ------------------------------------------------------------------ ricerca per id
 

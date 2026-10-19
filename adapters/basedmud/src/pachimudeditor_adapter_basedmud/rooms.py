@@ -115,7 +115,7 @@ class RoomsMixin(BasedMudSupport):
         """Crea una stanza nella zona (vnum libero e dentro il range della zona)."""
         self.ensure_writable()
         values = data.model_dump(by_alias=False, exclude={"extra"})
-        async with self.lock:
+        async with self.writing():
             self.sync()
             if self.store.find("room", data.vnum) is not None:
                 raise conflict("rooms.vnum_taken", vnum=data.vnum)
@@ -134,7 +134,7 @@ class RoomsMixin(BasedMudSupport):
         stanze che portano qui seguono il nuovo vnum. `zoneId` sposta la stanza in un altro file."""
         self.ensure_writable()
         changes = data.model_dump(by_alias=False, exclude_unset=True, exclude={"extra"})
-        async with self.lock:
+        async with self.writing():
             entry, room = self.find_or_404("room", room_id, "rooms.not_found")
             old_vnum, touched = room.vnum, {entry}
             target = entry
@@ -172,7 +172,7 @@ class RoomsMixin(BasedMudSupport):
         """Elimina la stanza: 409 `rooms.in_reset_usage` se un reset (diverso dai `D` delle sue porte, che vanno
         via con lei) la referenzia. Le uscite di altre stanze verso di lei restano senza destinazione."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             entry, room = self.find_or_404("room", room_id, "rooms.not_found")
             usage = [
                 u for u in self.find_usage("room", room_id, include_exit_keys=False)
@@ -194,7 +194,7 @@ class RoomsMixin(BasedMudSupport):
     async def clone_room(self, room_id: int, data: RoomCloneIn) -> RoomDetail:
         """Duplica la stanza nella stessa zona (senza uscite, con le extra description)."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             entry, room = self.find_or_404("room", room_id, "rooms.not_found")
             if self.store.find("room", data.vnum) is not None:
                 raise conflict("rooms.vnum_taken", vnum=data.vnum)
@@ -264,7 +264,7 @@ class RoomsMixin(BasedMudSupport):
     async def create_exit(self, room_id: int, data: ExitIn) -> ExitOut:
         """Crea un'uscita (una per direzione); lo stato porta va nel reset `D` della zona."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             entry, room = self.find_or_404("room", room_id, "rooms.not_found")
             if room.exit_for(int(data.direction)) is not None:
                 raise conflict("rooms.exit_direction_taken", direction=data.direction.name)
@@ -294,7 +294,7 @@ class RoomsMixin(BasedMudSupport):
         """Aggiornamento parziale di un'uscita (cambiando direzione cambia anche l'`id`)."""
         self.ensure_writable()
         changes = data.model_dump(by_alias=False, exclude_unset=True)
-        async with self.lock:
+        async with self.writing():
             entry, room, exit_ = self._exit_or_404(room_id, exit_id)
             current = self._exit_by_id(exit_id)
             if "direction" in changes and changes["direction"] != current.direction:
@@ -328,7 +328,7 @@ class RoomsMixin(BasedMudSupport):
     async def delete_exit(self, room_id: int, exit_id: int) -> None:
         """Elimina un'uscita (e il suo reset `D`)."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             entry, room, exit_ = self._exit_or_404(room_id, exit_id)
             room.exits.remove(exit_)
             drop_door_resets(entry, room_id, exit_.door)
@@ -351,7 +351,7 @@ class RoomsMixin(BasedMudSupport):
     async def create_extra_description(self, room_id: int, data: ExtraDescriptionIn) -> ExtraDescriptionOut:
         """Aggiunge un'extra description in coda."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             entry, room = self.find_or_404("room", room_id, "rooms.not_found")
             room.extra_descs.append(ExtraDescription(data.keywords, data.text))
             index = len(room.extra_descs) - 1
@@ -367,7 +367,7 @@ class RoomsMixin(BasedMudSupport):
         """Aggiornamento parziale di un'extra description."""
         self.ensure_writable()
         changes: dict[str, Any] = data.model_dump(by_alias=False, exclude_unset=True)
-        async with self.lock:
+        async with self.writing():
             entry, _, extra, index = self._extra_or_404(room_id, extra_id)
             if "keywords" in changes:
                 extra.keyword = changes["keywords"]
@@ -379,7 +379,7 @@ class RoomsMixin(BasedMudSupport):
     async def delete_extra_description(self, room_id: int, extra_id: int) -> None:
         """Elimina un'extra description (le successive scalano di una posizione)."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             entry, room, _, index = self._extra_or_404(room_id, extra_id)
             del room.extra_descs[index]
             self.store.save(entry)

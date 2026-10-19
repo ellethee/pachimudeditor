@@ -202,7 +202,7 @@ class RoomsMixin(MappingSupport):
         """Crea una stanza nella zona (vnum libero e dentro il range della zona)."""
         self.ensure_writable()
         values = data.model_dump(by_alias=False, exclude=_ROOM_STRUCTURAL)
-        async with self.lock:
+        async with self.writing():
             self.sync()
             if self.store.find("room", data.vnum) is not None:
                 raise conflict("rooms.vnum_taken", vnum=data.vnum)
@@ -220,7 +220,7 @@ class RoomsMixin(MappingSupport):
         stanze che portano qui seguono il nuovo vnum. `zoneId` sposta la stanza (altro file, o altro range)."""
         self.ensure_writable()
         changes = data.model_dump(by_alias=False, exclude_unset=True, exclude=_ROOM_STRUCTURAL)
-        async with self.lock:
+        async with self.writing():
             unit, rec = self.find_or_404("room", room_id, "rooms.not_found")
             old_vnum = self.vnum(rec)
             new_vnum = data.vnum if data.vnum is not None else old_vnum
@@ -249,7 +249,7 @@ class RoomsMixin(MappingSupport):
         """Elimina la stanza: 409 `rooms.in_reset_usage` se un reset (diverso da quelli di stato porta, che vanno via
         con lei) la referenzia. Le uscite di altre stanze verso di lei restano senza destinazione."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             unit, rec = self.find_or_404("room", room_id, "rooms.not_found")
             usage = [
                 u for u in self.find_usage("room", room_id, include_exit_keys=False) if u.command_type != ZoneCommandType.SET_DOOR_STATE
@@ -270,7 +270,7 @@ class RoomsMixin(MappingSupport):
     async def clone_room(self, room_id: int, data: RoomCloneIn) -> RoomDetail:
         """Duplica la stanza nella stessa zona (senza uscite, con le extra description)."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             unit, rec = self.find_or_404("room", room_id, "rooms.not_found")
             if self.store.find("room", data.vnum) is not None:
                 raise conflict("rooms.vnum_taken", vnum=data.vnum)
@@ -355,7 +355,7 @@ class RoomsMixin(MappingSupport):
         """Crea un'uscita (una per direzione); con `door_state: resets` lo stato porta va nel reset della zona."""
         self.ensure_writable()
         model = self.spec.model.exit
-        async with self.lock:
+        async with self.writing():
             unit, rec = self.find_or_404("room", room_id, "rooms.not_found")
             if any(self._dir(x) == int(data.direction) for x in self._exits(rec)):
                 raise conflict("rooms.exit_direction_taken", direction=data.direction.name)
@@ -376,7 +376,7 @@ class RoomsMixin(MappingSupport):
         self.ensure_writable()
         changes = data.model_dump(by_alias=False, exclude_unset=True)
         model = self.spec.model.exit
-        async with self.lock:
+        async with self.writing():
             unit, rec, x = self._exit_or_404(room_id, exit_id)
             current = self._exit_by_id(exit_id)
             if "direction" in changes and changes["direction"] != current.direction:
@@ -407,7 +407,7 @@ class RoomsMixin(MappingSupport):
     async def delete_exit(self, room_id: int, exit_id: int) -> None:
         """Elimina un'uscita (e il suo reset di stato porta)."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             unit, rec, x = self._exit_or_404(room_id, exit_id)
             direction = self._dir(x)
             self._exits(rec).remove(x)
@@ -440,7 +440,7 @@ class RoomsMixin(MappingSupport):
         """Aggiunge un'extra description in coda."""
         self.ensure_writable()
         self._need_extras()
-        async with self.lock:
+        async with self.writing():
             unit, rec = self.find_or_404("room", room_id, "rooms.not_found")
             d = copy.deepcopy(self.spec.model.extra_description.defaults)
             self.extra_desc_map.apply(d, data.model_dump(by_alias=False))
@@ -453,7 +453,7 @@ class RoomsMixin(MappingSupport):
         """Aggiornamento parziale di un'extra description."""
         self.ensure_writable()
         self._need_extras()
-        async with self.lock:
+        async with self.writing():
             rec, d, index = self._extra_or_404(room_id, extra_id)
             mutate(d, lambda f: self.extra_desc_map.apply(f, data.model_dump(by_alias=False, exclude_unset=True)))
             self.store.save(self.store.file_of(rec))
@@ -463,7 +463,7 @@ class RoomsMixin(MappingSupport):
         """Elimina un'extra description (le successive scalano di una posizione)."""
         self.ensure_writable()
         self._need_extras()
-        async with self.lock:
+        async with self.writing():
             rec, _, index = self._extra_or_404(room_id, extra_id)
             del self._extras(rec)[index]
             self.store.save(self.store.file_of(rec))

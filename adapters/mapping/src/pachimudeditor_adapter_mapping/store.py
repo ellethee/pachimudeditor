@@ -425,6 +425,11 @@ class Store:
         """Il file riscritto (record invariati byte per byte)."""
         return write_document(self.spec, entry.kind, entry.doc).encode(entry.doc.encoding)
 
+    def invalidate(self) -> None:
+        """Scarta la cache: la prossima `refresh` rilegge tutti i file dal disco."""
+        self.entries.clear()
+        self._signature = None
+
     def save(self, *entries: FileEntry) -> None:
         """Scrive i file (atomici) e ricarica dal disco quelli scritti; se una scrittura fallisce invalida la cache."""
         try:

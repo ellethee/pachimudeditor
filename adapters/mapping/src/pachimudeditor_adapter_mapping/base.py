@@ -1,6 +1,8 @@
 """Stato e utilita' comuni ai mixin di `MappingAdapter`: mapping caricato, archivio, lock, mapper, uso dei vnum."""
 
 import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -107,6 +109,18 @@ class MappingSupport:
         """Riallinea la cache al disco e restituisce l'archivio."""
         self.store.refresh()
         return self.store
+
+    @asynccontextmanager
+    async def writing(self) -> AsyncIterator[Store]:
+        """Sezione di scrittura: lock unico e cache aggiornata; se qualcosa fallisce la cache e' invalidata (nessuna
+        modifica in memoria non salvata deve restare o finire su disco al salvataggio successivo)."""
+        async with self.lock:
+            store = self.sync()
+            try:
+                yield store
+            except BaseException:
+                store.invalidate()
+                raise
 
     def zone_or_404(self, zone_id: int) -> ZoneUnit:
         """La zona `zone_id` (404 `zones.not_found`)."""

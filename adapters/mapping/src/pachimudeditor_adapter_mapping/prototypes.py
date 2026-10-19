@@ -61,7 +61,7 @@ class PrototypesMixin(RoomsMixin, MappingSupport):
         self.ensure_writable()
         code = _CODES[kind]
         values = data.model_dump(by_alias=False, exclude=_STRUCTURAL)
-        async with self.lock:
+        async with self.writing():
             self.sync()
             if self.store.find(kind, data.vnum) is not None:
                 raise conflict(f"{code}.vnum_taken", vnum=data.vnum)
@@ -80,7 +80,7 @@ class PrototypesMixin(RoomsMixin, MappingSupport):
         self.ensure_writable()
         code = _CODES[kind]
         changes = data.model_dump(by_alias=False, exclude_unset=True, exclude=_STRUCTURAL)
-        async with self.lock:
+        async with self.writing():
             unit, rec = self.find_or_404(kind, vnum, f"{code}.not_found")
             new_vnum = data.vnum if data.vnum is not None else vnum
             if new_vnum != vnum:
@@ -103,7 +103,7 @@ class PrototypesMixin(RoomsMixin, MappingSupport):
         """Elimina; 409 `*.in_reset_usage` (e `objects.in_exit_key_usage`) se referenziato."""
         self.ensure_writable()
         code = _CODES[kind]
-        async with self.lock:
+        async with self.writing():
             _, rec = self.find_or_404(kind, vnum, f"{code}.not_found")
             self.ensure_unused(kind, vnum, f"{code}.in_reset_usage", include_exit_keys=False)
             if kind == "object":

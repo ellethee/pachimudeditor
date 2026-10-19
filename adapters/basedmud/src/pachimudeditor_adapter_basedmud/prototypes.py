@@ -109,7 +109,7 @@ class PrototypesMixin(BasedMudSupport):
         """Crea un mob (vnum libero e dentro il range della zona)."""
         self.ensure_writable()
         values = data.model_dump(by_alias=False, exclude={"extra"})
-        async with self.lock:
+        async with self.writing():
             self.sync()
             if self.store.find("mob", data.vnum) is not None:
                 raise conflict("mobs.vnum_taken", vnum=data.vnum)
@@ -126,7 +126,7 @@ class PrototypesMixin(BasedMudSupport):
         seguono il mob); `zoneId` sposta il mob in un altro file."""
         self.ensure_writable()
         changes = data.model_dump(by_alias=False, exclude_unset=True, exclude={"extra"})
-        async with self.lock:
+        async with self.writing():
             entry, mob = self.find_or_404("mob", mob_id, "mobs.not_found")
             new_vnum = changes.get("vnum", mob.vnum)
             if new_vnum != mob.vnum:
@@ -158,7 +158,7 @@ class PrototypesMixin(BasedMudSupport):
     async def delete_mob(self, mob_id: int) -> None:
         """Elimina il mob (con il suo negozio e la sua spec_fun): 409 `mobs.in_reset_usage` se un reset lo usa."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             entry, mob = self.find_or_404("mob", mob_id, "mobs.not_found")
             self.ensure_unused("mob", mob_id, "mobs.in_reset_usage")
             for item, kind in ((shop_of(entry, mob_id), "SHOPS"), (special_of(entry, mob_id), "SPECIALS")):
@@ -199,7 +199,7 @@ class PrototypesMixin(BasedMudSupport):
         """Crea un oggetto (vnum libero e dentro il range della zona)."""
         self.ensure_writable()
         values = data.model_dump(by_alias=False, exclude={"extra"})
-        async with self.lock:
+        async with self.writing():
             self.sync()
             if self.store.find("object", data.vnum) is not None:
                 raise conflict("objects.vnum_taken", vnum=data.vnum)
@@ -216,7 +216,7 @@ class PrototypesMixin(BasedMudSupport):
         lo referenzia; `zoneId` sposta l'oggetto in un altro file."""
         self.ensure_writable()
         changes = data.model_dump(by_alias=False, exclude_unset=True, exclude={"extra"})
-        async with self.lock:
+        async with self.writing():
             entry, obj = self.find_or_404("object", object_id, "objects.not_found")
             new_vnum = changes.get("vnum", obj.vnum)
             if new_vnum != obj.vnum:
@@ -238,7 +238,7 @@ class PrototypesMixin(BasedMudSupport):
     async def delete_object(self, object_id: int) -> None:
         """Elimina l'oggetto: 409 `objects.in_reset_usage` o `objects.in_exit_key_usage`."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             entry, obj = self.find_or_404("object", object_id, "objects.not_found")
             self.ensure_unused("object", object_id, "objects.in_reset_usage", include_exit_keys=False)
             self.ensure_unused("object", object_id, "objects.in_exit_key_usage")

@@ -181,6 +181,11 @@ class AreaStore:
             self._list_stamp, self._dir_stamp, self._loaded = list_stamp, tuple(order), True
             self._rebuild([n for n in order if n in self.entries], set(listed))
 
+    def invalidate(self) -> None:
+        """Scarta tutta la cache: la prossima `refresh` rilegge i file dal disco."""
+        self.entries.clear()
+        self._loaded = False
+
     def _rebuild(self, order: list[str], listed: set[str]) -> None:
         """Ricostruisce elenco zone, id di zona e indici per vnum."""
         self.entries = {n: self.entries[n] for n in order}

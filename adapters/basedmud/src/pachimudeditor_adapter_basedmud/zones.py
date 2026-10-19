@@ -148,7 +148,7 @@ class ZonesMixin(BasedMudSupport):
         `extra` ammette `file` (nome del file), `credits` e `security`.
         """
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             self.sync()
             self._check_new_zone(data.vnum, data.bottom_vnum, data.top_vnum)
             name = self._new_file_name(data.extra.get("file"), data.name)
@@ -170,7 +170,7 @@ class ZonesMixin(BasedMudSupport):
         """
         self.ensure_writable()
         changes = data.model_dump(by_alias=False, exclude_unset=True, exclude={"extra"})
-        async with self.lock:
+        async with self.writing():
             entry = self.zone_or_404(zone_id)
             old = entry.header
             new = copy.copy(old)
@@ -205,7 +205,7 @@ class ZonesMixin(BasedMudSupport):
     async def delete_zone(self, zone_id: int) -> None:
         """Elimina il file `.are` (e la riga in `area.lst`); 409 `zones.not_empty` se ha ancora stanze, mob o oggetti."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             entry = self.zone_or_404(zone_id)
             summary = self._summary(entry)
             if summary.room_count or summary.mob_count or summary.object_count:
@@ -242,7 +242,7 @@ class ZonesMixin(BasedMudSupport):
         """Duplica l'intestazione in un nuovo file (non il contenuto); opzionalmente copia lo script di reset.
         Range della copia da `bottomVnum`/`topVnum` (409 `zones.range_overlap`) oppure 0-0."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             source = self.zone_or_404(zone_id)
             bottom, top = data.bottom_vnum or 0, data.top_vnum or 0
             self._check_new_zone(data.vnum, bottom, top)
@@ -267,7 +267,7 @@ class ZonesMixin(BasedMudSupport):
         """Sostituisce lo script. I comandi invariati riusano il reset originale (stessi byte e commento); le righe
         di commento `*` vanno perse solo se lo script cambia davvero."""
         self.ensure_writable()
-        async with self.lock:
+        async with self.writing():
             entry = self.zone_or_404(zone_id)
             drafts = [ResetCommandDraft.model_validate(c.model_dump(by_alias=False)) for c in data.commands]
             rules.raise_script_errors(await rules.validate_script(BasedMudResetLookup(self.store), drafts))
