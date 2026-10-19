@@ -4,6 +4,10 @@ Un solo file per i cinque pacchetti. Le release sono sezioni `## <pacchetto> X.Y
 
 ## Non rilasciato
 
+- pachimud: `read_only` ora e' applicato anche a players, instances e content (409 `world.read_only` su ogni POST/PUT/PATCH/DELETE, prima passavano e scrivevano su DB/YAML). Le capability non cambiano (le GET restano disponibili).
+- pachimud: il 503 `world.unavailable` non espone piu' percorso del DB e messaggi del driver (dettaglio solo nel log del server; `worlds check` lo mostra ancora). Il messaggio localizzato non ha piu' il segnaposto `{detail}`.
+- pachimud: documentato che i range vnum di zona sono consultivi (nessun `vnum_out_of_range` in scrittura, solo nel controllo di integrita').
+
 - Frontend: il selettore di mondo mostra come badge i `params` non vuoti del mondo attivo (es. "Prefisso dati", "Variante"; etichette i18n it/en).
 
 - `AdapterInfo.params` (dict informativo, default vuoto) in `GET /api/worlds`; dikumod espone `variant` e `data_prefix`. `SDK_VERSION` 1.1 (additivo, compatibile con gli adapter 1.0).

@@ -19,7 +19,8 @@ webeditor_worlds:
 
 - `database_url`: un URL senza driver async e' portato al driver async di default (`sqlite://` -> `sqlite+aiosqlite://`).
   I path SQLite relativi si risolvono rispetto alla cartella di lavoro (la cartella del `pachimudeditor.yaml`, in mancanza la
-  cwd). Se il file SQLite non esiste il mondo risponde 503 `world.unavailable` (l'editor non crea mai un DB vuoto).
+  cwd). Se il file SQLite non esiste il mondo risponde 503 `world.unavailable` (l'editor non crea mai un DB vuoto). La risposta HTTP e' generica: percorso e messaggi del driver
+  restano nel log del server (e in `worlds check`, che e' locale).
 - `definitions_path`: cartella `definitions/` (razze e classi YAML; `zones/` e' solo il formato di scambio). Assente =
   `supports_content_races` falso, `/api/meta/races|classes` vuote.
 - `config_path` (anche come chiave diretta del mondo): il `pachimud.yaml` del game server, letto con PyYAML (nessun import del
@@ -91,3 +92,10 @@ Lo schema si legge una volta per processo (riavviare l'editor dopo una migration
 - `modules.build_modules(kinds)` aggiunge i moduli dei plugin dei kind configurati: `world/players/instances/transfer/content`
   arrivano dal plugin pachimud e si registrano solo quando c'e' un mondo `kind: pachimud` (le pagine del frontend compaiono
   solo se il mondo ha la capability, `supportsWorldOverview/Instances/Players/Transfer/ContentRaces`).
+
+## Range vnum delle zone
+
+A differenza di basedmud/dikumod, in pachimud `bottom_vnum`/`top_vnum` di una zona sono metadati consultivi (il modello di
+gioco non li impone come vincolo, come `min_vnum`/`max_vnum` in ROM; `(0, 0)` = non assegnato) e stanze/mob/oggetti non hanno
+una zona di appartenenza esplicita. Per questo creare o spostare un vnum fuori range non e' rifiutato (nessun
+`vnum_out_of_range` in scrittura): lo segnala il controllo di integrita' del mondo (`/api/world`, tipo `vnum_out_of_range`).
