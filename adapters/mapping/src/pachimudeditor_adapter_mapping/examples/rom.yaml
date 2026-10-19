@@ -84,7 +84,7 @@ grammar:
 
     # `#AREA` (formato vecchio): tre stringhe e il range (numeri oppure due parole come `XX00 XX99`)
     zone_old:
-      blank_after: 1
+      blank_after: 0   # la riga vuota che segue sta nella testata della sezione successiva: riscrivere l'intestazione non la raddoppia
       steps:
         - filename: string_tilde
         - name: string_tilde

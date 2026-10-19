@@ -139,6 +139,16 @@ async def test_echoing_dtos_is_a_noop(adapter: BasedMudAdapter, area: Path) -> N
     assert {p.name: p.read_bytes() for p in area.iterdir()} == before
 
 
+async def test_header_edits_do_not_grow_blank_lines(adapter: BasedMudAdapter, area: Path) -> None:
+    """Modificare l'intestazione di una zona (`#AREADATA` e `#AREA`) piu' volte non aggiunge righe vuote."""
+    for zone_id, name in ((ZONE, "prato.are"), (6000, "fucina.are")):
+        await adapter.update_zone(zone_id, ZonePatch(name="Uno"))
+        once = (area / name).read_text(encoding="latin-1")
+        await adapter.update_zone(zone_id, ZonePatch(name="Due"))
+        twice = (area / name).read_text(encoding="latin-1")
+        assert once.replace("Uno", "Due") == twice and "\n\n\n" not in twice.split("#MOBILES")[0]
+
+
 # --------------------------------------------------------------------------- riferimenti, negozi, area.lst
 
 

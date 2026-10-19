@@ -263,7 +263,10 @@ def _write_section(sec: Section, newline: str, preserve: bool) -> str:
         if use_src and is_unchanged(item):
             parts.append(item._src)  # type: ignore[attr-defined]
         else:
-            parts.append(_nl(format_item(item), newline))
+            text = format_item(item)
+            if use_src and kind in ("AREA", "AREADATA"):
+                text = text.rstrip("\n") + "\n"  # la riga vuota dopo l'intestazione sta nella testata della sezione successiva
+            parts.append(_nl(text, newline))
     if sec.tail is not None and use_src:
         parts.append(sec.tail)
     else:
