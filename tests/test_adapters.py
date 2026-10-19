@@ -155,6 +155,7 @@ async def test_worlds_endpoint(client: httpx.AsyncClient) -> None:
     world = worlds[0]
     assert world["kind"] == "pachimud" and world["default"] is True
     caps = world["capabilities"]
+    assert world["params"] == {}  # campo additivo: vuoto se l'adapter non espone parametri
     assert caps["supportsTransfer"] and caps["supportsPlayers"] and caps["readOnly"] is False
     assert {r["type"] for r in world["resources"]} >= {"zone", "room", "mob", "object"}
     assert (await client.get("/api/worlds", headers={"Authorization": ""})).status_code in (401, 403)

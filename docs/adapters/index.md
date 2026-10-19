@@ -56,7 +56,7 @@ adapter su file), `mapping` (path del YAML di mappatura per `kind: mapping`), `p
 dell'adapter), `read_only`, `config_path` (solo `kind: pachimud`, vedi [i parametri del mondo pachimud](pachimud.md#parametri-del-mondo)). Senza configurazione non esiste nessun mondo.
 
 Per richiesta: header `X-World: <id>` oppure query `?world=<id>`; assenti = mondo di default. Id ignoto =
-**404 `world.not_found`** (it/en). `GET /api/worlds` elenca i mondi: `id, kind, name, default, capabilities,
+**404 `world.not_found`** (it/en). `GET /api/worlds` elenca i mondi: `id, kind, name, default, capabilities, params (informativi, es. `data_prefix` di dikumod),
 resources[{type, fields[{name, type, required, readOnly, enum, nullable}]}]` (i `fields` guideranno i form
 generici). Gli errori di configurazione (kind non installato, id duplicati) fanno fallire la costruzione del
 registro con `ValueError` (kind non installato: `AdapterUnavailable`, che dice quale extra installare).

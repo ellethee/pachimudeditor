@@ -49,3 +49,10 @@ def test_missing_files_give_clear_error(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match=r"nessun file dikumoddata\.wld.*params\.data_prefix"):
         _adapter(lib)
     assert _adapter(lib, data_prefix="altro").store.lib == lib.resolve()
+
+
+def test_describe_exposes_params(tmp_path: Path) -> None:
+    """`describe().params` riporta prefisso e variante (informativi)."""
+    lib = write_world(tmp_path / "lib", "miomondo")
+    info = _adapter(lib, data_prefix="miomondo", variant="dikumod").describe()
+    assert info.params == {"variant": "dikumod", "data_prefix": "miomondo"}

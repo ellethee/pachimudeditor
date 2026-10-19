@@ -149,6 +149,8 @@ class AdapterInfo(AliasedBaseModel):
     resources: list[ResourceInfo] = Field(default_factory=list)
     capabilities: AdapterCapabilities = Field(default_factory=AdapterCapabilities)
     default: bool = False
+    params: dict[str, str | int | bool | None] = Field(default_factory=dict)
+    """Parametri informativi del mondo (es. `data_prefix`); additivo, vuoto se l'adapter non ne espone."""
 
 
 class WorldAdapter(ABC):

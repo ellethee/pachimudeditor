@@ -102,10 +102,11 @@ Gli adapter importano dal core **solo** questi moduli (verificato da `tests/core
 - `pachimudeditor.common.enums`: le enum dei DTO (`Direction`, `DoorFlag`, `SectorType`, `Sex`, `ObjectType`, `Position`, `ZoneCommandType`, `ZoneResetMode`).
 - `pachimudeditor.common.adapters.convert.helpers`: stesse funzioni di `sdk.convert_helpers`, importabili per nome.
 
-Compatibilita': `SDK_VERSION` (`"1.0"`) sale di minor per le aggiunte e di major per le rotture; gli adapter dichiarano
+Compatibilita': `SDK_VERSION` (`"1.1"`) sale di minor per le aggiunte e di major per le rotture; gli adapter dichiarano
 `pachimudeditor>=X,<Y` e, nel loro `AdapterPlugin`, `sdk_version="1.0"` (l'SDK con cui sono stati scritti). Regola applicata dal core
 alla scoperta: **major diversa** (piu' nuova o piu' vecchia) = il plugin e' rifiutato, il `kind` risulta in errore (`broken` in
 `adapters list`, 'SDK incompatibile ...' nel messaggio dei mondi) e il resto del core funziona; **minor diversa** = compatibile.
+Storia: 1.1 aggiunge `AdapterInfo.params` (dict informativo, default vuoto; additivo, gli adapter 1.0 restano validi).
 Senza `sdk_version` (adapter datati) non c'e' controllo. Provato da `tests/core/test_plugins.py`. I test del core NON richiedono nessun adapter: `tests/core/` usa adapter fittizi registrati con entry point
 sintetici (`tests/core/fake_adapter`), un buon modello per testare la scoperta nel tuo adapter.
 

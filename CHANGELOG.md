@@ -4,6 +4,8 @@ Un solo file per i cinque pacchetti. Le release sono sezioni `## <pacchetto> X.Y
 
 ## Non rilasciato
 
+- `AdapterInfo.params` (dict informativo, default vuoto) in `GET /api/worlds`; dikumod espone `variant` e `data_prefix`. `SDK_VERSION` 1.1 (additivo, compatibile con gli adapter 1.0).
+
 - Licenza MIT (espressione SPDX `license = "MIT"` e `LICENSE` in `pachimudeditor` e nei 4 adapter `-pachimud`, `-basedmud`, `-dikumod`, `-mapping`); email rimossa dagli `authors`; path personali sostituiti da segnaposto e default relativi ai checkout fratelli (`../basedmud`). `pachimudeditor.yaml` e' un esempio generico (la versione personale va in `pachimudeditor.local.yaml`, ignorato). Il classificatore `Private :: Do Not Upload` resta finche' non si decide di pubblicare su PyPI.
 
 - Il progetto vive in un repository proprio (storia di `webeditor2/` e `pachimudeditor/` mantenuta). Il gioco `pachimud` non e' una dipendenza del progetto (nemmeno di sviluppo): per i test di equivalenza lo si installa a mano nel venv (`uv pip install -e ../pachimud`); senza, la CI salta i test che lo richiedono.

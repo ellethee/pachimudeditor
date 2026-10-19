@@ -84,5 +84,6 @@ class DikumodAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, WorldAd
             kind=self.config.kind,
             name=self.config.name or f"Diku Modificato ({self.variant})",
             capabilities=self.capabilities(),
+            params={"variant": self.variant, "data_prefix": self.store.prefix},
             resources=[_finish(r) for r in resources],
         )

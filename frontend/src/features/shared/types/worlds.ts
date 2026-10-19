@@ -67,5 +67,7 @@ export interface IWorld {
   name: string
   default: boolean
   capabilities: IWorldCapabilities
+  /** Parametri informativi del mondo (es. `data_prefix`, `variant` per Diku Modificato); vuoto se non esposti. */
+  params: Record<string, string | number | boolean | null>
   resources: IWorldResource[]
 }
