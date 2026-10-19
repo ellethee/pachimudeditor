@@ -31,8 +31,9 @@ database:
 
 # Keep secrets (secret_key, database URLs with passwords) in .env, not here.
 
-# Esempio generico: copia in pachimudeditor.local.yaml (ignorato da git) e punta PACHIFAST_CONFIG_FILE a quel file nel .env.
-# Sostituisci i path /percorso/... con quelli reali; i mondi con path inesistente vanno rimossi o commentati.
+# Template di configurazione (per lo sviluppo del repo): copia in pachimudeditor.yaml o pachimudeditor.local.yaml (entrambi ignorati da git)
+# e, per il .local, punta PACHIFAST_CONFIG_FILE a quel file nel .env.
+# Nessun mondo e' attivo: decommenta gli esempi e sostituisci i path /percorso/... con quelli reali.
 app:
   project_name: Pachimud Editor
   default_locale: it # messaggi di errore in italiano (ogni errore ha comunque un `code` stabile)
@@ -76,5 +77,5 @@ webeditor_worlds:
   #     read_only: false,
   #   } # scrittura abilitata
 
-webeditor_default_world: pachimud # facoltativo: altrimenti "pachimud" se presente, o il primo
+# webeditor_default_world: pachimud # facoltativo: altrimenti "pachimud" se presente, o il primo
 

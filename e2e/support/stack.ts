@@ -15,7 +15,7 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 
 /** Radice del repository dell'editor. */
 export const ROOT = resolve(HERE, '..', '..')
-/** Cartella da cui girano python/uvicorn (contiene `.venv`, `tests/`, `pachimudeditor.yaml`). */
+/** Cartella da cui girano python/uvicorn (contiene `.venv`, `tests/`, `pachimudeditor.example.yaml`). */
 export const BACKEND = ROOT
 /** Sorgente di basedmud (default: checkout fratello `../basedmud`; override con `E2E_BASEDMUD`) da cui si copia l'area (solo lettura: i test lavorano su una copia temporanea). */
 export const BASEDMUD_SRC = process.env.E2E_BASEDMUD ?? resolve(ROOT, '..', 'basedmud')

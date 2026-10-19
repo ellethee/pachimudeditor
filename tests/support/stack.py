@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
-"""Radice del repository dell'editor (config di sviluppo `pachimudeditor.yaml`)."""
+"""Radice del repository dell'editor (template di configurazione `pachimudeditor.example.yaml`)."""
 
 DEFINITIONS_FIXTURE = PACKAGE_ROOT / "tests" / "fixtures" / "pachimud_definitions"
 """Definizioni di esempio (razze, classi, zona `RavnFjord`): copia del MUD, vedi il README nella cartella."""
@@ -55,7 +55,7 @@ def apply_environment(workdir: Path) -> dict[str, str]:
         shutil.copytree(DEFINITIONS_FIXTURE, definitions, ignore=shutil.ignore_patterns("zones", "README.md"))
     world = {"id": "pachimud", "kind": "pachimud", "name": "Pachimud", "params": params}
     env = {
-        "PACHIFAST_CONFIG_FILE": str(PACKAGE_ROOT / "pachimudeditor.yaml"),  # locale it, limiti auth: come il vecchio backend/
+        "PACHIFAST_CONFIG_FILE": str(PACKAGE_ROOT / "pachimudeditor.example.yaml"),  # locale it, limiti auth: come il vecchio backend/
         "WEBEDITOR_WORLDS": json.dumps([world]),
         "WEBEDITOR_DEFAULT_WORLD": "pachimud",
         "PACHIFAST_AUTH_DATABASE_URL": f"sqlite+aiosqlite:///{workdir / 'auth.db'}",

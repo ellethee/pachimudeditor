@@ -51,7 +51,7 @@ include = [
     "/migrations",
     "/*.md",
     "/LICENSE",
-    "/pachimudeditor.yaml",
+    "/pachimudeditor.example.yaml",
     "/pachimudeditor.service",
     "/pachifast.schema.json",
     "/.env.example",
