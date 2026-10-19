@@ -22,6 +22,15 @@
       </template>
     </q-select>
     <q-badge
+      v-for="[key, value] in params"
+      :key="key"
+      outline
+      color="primary"
+      class="q-ml-sm"
+      :label="`${te(`worlds.params.${key}`) ? t(`worlds.params.${key}`) : key}: ${value}`"
+      :data-testid="`world-param-${key}`"
+    />
+    <q-badge
       v-if="readOnly"
       color="warning"
       text-color="dark"
@@ -36,8 +45,8 @@
 
 <script setup lang="ts">
 /**
- * Selettore del mondo nella barra dell'app: compare solo con più di un mondo configurato e mostra un badge
- * "sola lettura" se il mondo attivo non è scrivibile. Cambiare mondo riporta alla dashboard e ricarica la
+ * Selettore del mondo nella barra dell'app: compare solo con più di un mondo configurato e mostra i parametri
+ * informativi non vuoti del mondo attivo (`params`) e un badge "sola lettura" se non è scrivibile. Cambiare mondo riporta alla dashboard e ricarica la
  * pagina: tutti gli store, i filtri e le cache dell'editor ripartono dal mondo nuovo.
  */
 import { computed, onMounted } from 'vue'
@@ -46,9 +55,14 @@ import { useRouter } from 'vue-router'
 import { mdiEarth } from '@quasar/extras/mdi-v7'
 import { ensureWorlds, selectWorld, useWorld } from '../helpers/world-state'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const router = useRouter()
 const { worlds, loaded, activeWorld, readOnly } = useWorld()
+
+/** Parametri informativi non vuoti del mondo attivo (es. `data_prefix`, `variant`). */
+const params = computed(() =>
+  Object.entries(activeWorld.value?.params ?? {}).filter(([, v]) => v !== null && v !== '' && v !== undefined),
+)
 
 const options = computed(() => worlds.value.map((world) => ({ id: world.id, name: world.name })))
 

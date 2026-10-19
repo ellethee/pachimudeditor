@@ -4,6 +4,8 @@ Un solo file per i cinque pacchetti. Le release sono sezioni `## <pacchetto> X.Y
 
 ## Non rilasciato
 
+- Frontend: il selettore di mondo mostra come badge i `params` non vuoti del mondo attivo (es. "Prefisso dati", "Variante"; etichette i18n it/en).
+
 - `AdapterInfo.params` (dict informativo, default vuoto) in `GET /api/worlds`; dikumod espone `variant` e `data_prefix`. `SDK_VERSION` 1.1 (additivo, compatibile con gli adapter 1.0).
 
 - Licenza MIT (espressione SPDX `license = "MIT"` e `LICENSE` in `pachimudeditor` e nei 4 adapter `-pachimud`, `-basedmud`, `-dikumod`, `-mapping`); email rimossa dagli `authors`; path personali sostituiti da segnaposto e default relativi ai checkout fratelli (`../basedmud`). `pachimudeditor.yaml` e' un esempio generico (la versione personale va in `pachimudeditor.local.yaml`, ignorato). Il classificatore `Private :: Do Not Upload` resta finche' non si decide di pubblicare su PyPI.

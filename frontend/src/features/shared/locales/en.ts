@@ -6,6 +6,7 @@ export default {
       body: 'The editor has no MUD to manage yet. Add at least one world to pachimudeditor.yaml (webeditor_worlds key), for example:',
       after: 'Then restart `pachimudeditor serve` and reload the page. Check the configuration with `pachimudeditor worlds check`.',
     },
+    params: { data_prefix: 'Data prefix', variant: 'Variant' },
     selector: 'World',
     readOnly: 'Read only',
     readOnlyHint: 'This world is read only: changes are disabled.',
