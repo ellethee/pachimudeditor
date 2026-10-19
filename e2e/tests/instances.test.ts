@@ -41,9 +41,10 @@ describe('istanze', () => {
   })
 
   it('elimina (despawn) l\'istanza', async () => {
+    const deleted = s.page.waitForResponse((r) => r.request().method() === 'DELETE' && /\/api\/instances\/mobs\/\d+/.test(r.url()))
     await tableRow(s.page, 'un ratto').first().locator('.text-negative').click()
     await confirm(s.page)
-    await s.page.waitForTimeout(800)
+    await deleted
     assert.equal((await api.get(`/api/instances/mobs/${instanceId}`)).status, 404)
     instanceId = 0
   })

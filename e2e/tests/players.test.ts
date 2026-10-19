@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { Api } from '../support/api.ts'
-import { confirm, goto, loginOk, openSession, rawI18nKey, tableRow, type Session } from '../support/browser.ts'
+import { confirm, goto, loginOk, openSession, rawI18nKey, tableRow, waitDialogsClosed, type Session } from '../support/browser.ts'
 
 /** Compila il prompt di Quasar Dialog (input + OK). */
 async function answer(s: Session, value: string): Promise<void> {
@@ -59,9 +59,17 @@ describe('giocatori', () => {
   })
 
   it('un account con personaggi non si elimina senza cascata', async () => {
+    // l'account ha personaggi e la cascata non e' spuntata: la UI chiude il dialog senza inviare nessun DELETE
+    const sent: string[] = []
+    const track = (r: { method(): string; url(): string }): void => {
+      if (r.method() === 'DELETE') sent.push(r.url())
+    }
+    s.page.on('request', track)
     await tableRow(s.page, 'seed-account').getByLabel('Elimina').click()
     await confirm(s.page)
-    await s.page.waitForTimeout(500)
+    await waitDialogsClosed(s.page)
+    s.page.off('request', track)
+    assert.deepEqual(sent, [])
     assert.ok((await api.list('players/accounts')).some((a: { username: string }) => a.username === 'seed-account'))
   })
 
