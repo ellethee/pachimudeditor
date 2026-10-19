@@ -4,6 +4,11 @@ Un solo file per i cinque pacchetti. Le release sono sezioni `## <pacchetto> X.Y
 
 ## Non rilasciato
 
+- basedmud e mapping: una scrittura fallita a meta' (es. `extra` invalido dopo la mutazione dei campi) non lascia piu' la cache sporca: `writing()` invalida la cache come dikumod, quindi il valore scartato non resta in memoria ne' finisce su disco al salvataggio successivo.
+- basedmud (`rom_lib`) e `rom.yaml` (mapping): modificare l'intestazione di una zona (`#AREA`/`#AREADATA`) non aggiunge piu' una riga vuota a ogni salvataggio.
+- Test: i dati reali dei MUD sono opzionali. Mondi sintetici versionati (`tests/support/synthetic_worlds.py`) fanno girare in CI scritture, round trip, mutazioni, conversione e contratto; i test su contenuti precisi dei dati reali sono marcati `real_rom`/`real_dikumod`. Su clone pulito: 449 passati e 210 saltati prima, 627 passati e 107 saltati dopo. La CI fallisce oltre `MAX_SKIPPED`; `DIKUMOD_ROOT`, `DIKUMOD_PREFIX`, `BASEDMUD_AREA_DIR` documentati in `docs/contributing.md`.
+- Docs: `DOCS_SITE_URL` fisso `https://pachimudeditor.ilpachi.it/` (canonical e sitemap erano `http://`). Dependabot anche per `/e2e`; e2e senza `waitForTimeout` fissi in `instances` e `players`.
+
 - pachimud: `read_only` ora e' applicato anche a players, instances e content (409 `world.read_only` su ogni POST/PUT/PATCH/DELETE, prima passavano e scrivevano su DB/YAML). Le capability non cambiano (le GET restano disponibili).
 - pachimud: il 503 `world.unavailable` non espone piu' percorso del DB e messaggi del driver (dettaglio solo nel log del server; `worlds check` lo mostra ancora). Il messaggio localizzato non ha piu' il segnaposto `{detail}`.
 - pachimud: documentato che i range vnum di zona sono consultivi (nessun `vnum_out_of_range` in scrittura, solo nel controllo di integrita').
