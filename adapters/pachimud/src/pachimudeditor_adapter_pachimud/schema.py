@@ -623,8 +623,12 @@ def load_schema(url: str) -> GameSchema:
 
 
 def schema_unavailable_error(exc: Exception) -> Exception:
-    """L'`HTTPException` 503 `world.unavailable` per un `SchemaUnavailable`."""
-    return api_error(503, "world.unavailable", detail=str(exc)[:300])
+    """L'`HTTPException` 503 `world.unavailable` per un `SchemaUnavailable`.
+
+    Il dettaglio (percorso del DB, messaggi del driver) va solo nel log del server, mai nella risposta HTTP.
+    """
+    log.warning("mondo pachimud non utilizzabile: %s", exc)
+    return api_error(503, "world.unavailable")
 
 
 Loader = Callable[[str], GameSchema]

@@ -169,7 +169,7 @@ async def test_optional_tables_switch_off_capabilities(tmp_path: Path) -> None:
     await adapter.close()
 
 
-async def test_missing_core_table_is_incompatible_503(tmp_path: Path) -> None:
+async def test_missing_core_table_is_incompatible_503(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     """Manca una tabella obbligatoria: 503 `world.unavailable` per quel mondo (gli altri funzionano), mai un 500."""
     adapter = world(tmp_path, "DROP TABLE exit")
     assert adapter.schema_report() is not None and adapter.schema_report().status == "incompatible"  # type: ignore[union-attr]
@@ -177,6 +177,9 @@ async def test_missing_core_table_is_incompatible_503(tmp_path: Path) -> None:
     with pytest.raises(HTTPException) as error:
         await adapter.list_zones(ZonePageParams())
     assert error.value.status_code == 503 and error.value.detail[0]["code"] == "world.unavailable"
+    # niente percorso/driver nella risposta, dettaglio solo nel log
+    assert str(tmp_path) not in str(error.value.detail) and "exit" not in str(error.value.detail)
+    assert any("exit" in r.getMessage() for r in caplog.records)
     assert adapter.describe().kind == "pachimud" and adapter.capabilities().supports_players is False
     await adapter.close()
 
