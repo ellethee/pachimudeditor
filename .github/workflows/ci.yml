@@ -33,7 +33,21 @@ jobs:
         with:
           python-version: "3.14"
       - run: uv sync --all-packages --frozen
-      - run: uv run --frozen pytest -q
+      # I test su dati reali di MUD (fuori repo) e sul MUD pachimud sono saltati; i test di scrittura/conversione/contratto girano sui
+      # mondi sintetici. Se i test saltati superano la soglia, qualcosa ha smesso di girare (aggiornare `MAX_SKIPPED` dopo aver
+      # aggiunto o spostato test: ultimo valore misurato su clone pulito 107).
+      - name: Test (fallisce se troppi test sono saltati)
+        shell: bash
+        env:
+          MAX_SKIPPED: "115"
+        run: |
+          uv run --frozen pytest -q -rs | tee pytest.log
+          skipped=$(grep -Eo '[0-9]+ skipped' pytest.log | tail -1 | grep -Eo '[0-9]+' || true)
+          echo "test saltati: ${skipped:-0} (soglia $MAX_SKIPPED)"
+          if [ "${skipped:-0}" -gt "$MAX_SKIPPED" ]; then
+            echo "::error::troppi test saltati (${skipped} > ${MAX_SKIPPED}): dati sintetici o fixture non piu' usati?"
+            exit 1
+          fi
 
   frontend:
     runs-on: ubuntu-latest

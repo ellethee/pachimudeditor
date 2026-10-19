@@ -24,6 +24,27 @@ uv run ruff check . && uv run ruff format --check .
 (cd frontend && pnpm run typecheck)
 ```
 
+### Dati reali dei MUD (opzionali)
+
+La suite gira **senza** dati dei MUD: i test di scrittura, round trip, conversione e contratto usano mondi sintetici e
+versionati (contenuti inventati, `tests/support/synthetic_worlds.py`). I test che asseriscono su contenuti precisi di dati
+reali sono marcati `real_rom` / `real_dikumod` e vengono saltati se i dati mancano; per eseguirli (sola lettura, si lavora
+su copie temporanee e a fine sessione si verifica che gli originali siano intatti):
+
+| Variabile | Significato |
+|---|---|
+| `BASEDMUD_AREA_DIR` | cartella `area/` di basedmud (default: `../basedmud/area` accanto al repository) |
+| `DIKUMOD_ROOT` | cartella che contiene `dikumod/lib` e `dikumod2/lib` (senza, i test `real_dikumod` si saltano) |
+| `DIKUMOD_PREFIX` | prefisso dei file dati reali (default `dikumoddata`); i dati locali ne usano un altro: **senza il valore esatto i test sui dati reali falliscono** perche' non trovano i file |
+| `PACHIMUD_GAME_ROOT` | checkout del MUD pachimud per il confronto dei modelli (test `tests/test_game_compat.py`) |
+
+```bash
+DIKUMOD_ROOT=/percorso/radice DIKUMOD_PREFIX=prefissolocale BASEDMUD_AREA_DIR=/percorso/basedmud/area uv run pytest -q -rs
+```
+
+`-rs` elenca i test saltati col motivo. La CI fallisce se i test saltati superano `MAX_SKIPPED` (`.github/workflows/ci.yml`):
+dopo aver aggiunto fixture sintetiche o test, aggiorna la soglia al nuovo valore (con un piccolo margine).
+
 ## Mantenere i modelli allineati col MUD
 
 Il MUD pachimud non e' una dipendenza: i modelli SQLAlchemy del suo database sono **copiati** in
