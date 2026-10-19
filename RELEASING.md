@@ -63,10 +63,8 @@ I workflow stanno in `.github/workflows/` alla radice del repository; la radice 
 
 ### Logo nei README (PyPI)
 
-I README del core e degli adapter puntano a `docs/assets/logo.svg` con path relativo: funziona su GitHub e nel sito, ma PyPI non
-risolve i path relativi. Dopo aver creato il repo GitHub sostituisci in `README.md` e `adapters/*/README.md` il `src` dell'immagine
-con l'URL raw assoluto (`https://raw.githubusercontent.com/ellethee/pachimudeditor/main/docs/assets/logo.svg`) prima del
-primo rilascio (c'e' un commento `shortcut:` in cima a ogni README).
+I README del core e degli adapter usano l'URL raw assoluto del logo
+(`https://raw.githubusercontent.com/ellethee/pachimudeditor/main/docs/assets/logo.svg`) perche' PyPI non risolve i path relativi.
 
 ### Environment GitHub (Settings > Environments)
 

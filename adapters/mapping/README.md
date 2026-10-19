@@ -1,6 +1,4 @@
-<!-- shortcut: path relativo, PyPI non lo rende; dopo la creazione del repo GitHub usare l'URL raw assoluto
-     (https://raw.githubusercontent.com/ellethee/pachimudeditor/main/docs/assets/logo.svg). Vedi RELEASING.md. -->
-<p align="center"><img src="../../docs/assets/logo.svg" alt="pachimudeditor" width="160"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/ellethee/pachimudeditor/main/docs/assets/logo.svg" alt="pachimudeditor" width="160"></p>
 
 # pachimudeditor-adapter-mapping
 
