@@ -171,7 +171,7 @@ importers:
         version: 0.1.1(@ilpachi/pachi-i18n@0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3)))(@ilpachi/use-alova@2.1.2(alova@3.5.5)(vue@3.5.44(typescript@5.9.3)))(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))
       '@ilpachi/fastquasar-settings':
         specifier: ^0.1.1
-        version: 0.1.1(@ilpachi/pachi-i18n@0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3)))(@ilpachi/use-alova@2.1.2(alova@3.5.5)(vue@3.5.44(typescript@5.9.3)))(@quasar/extras@2.1.0)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))
+        version: 0.1.1(@ilpachi/pachi-i18n@0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3)))(@ilpachi/use-alova@2.1.2(alova@3.5.5)(vue@3.5.44(typescript@5.9.3)))(@quasar/extras@2.1.0)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))
       '@ilpachi/pachi-i18n':
         specifier: ^0.1.1
         version: 0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))
@@ -180,7 +180,7 @@ importers:
         version: 0.1.1(@ilpachi/pachi-i18n@0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3)))(@ilpachi/use-alova@2.1.2(alova@3.5.5)(vue@3.5.44(typescript@5.9.3)))(@quasar/extras@2.1.0)(alova@3.5.5)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))
       '@ilpachi/pachifastquasar':
         specifier: ^0.1.3
-        version: 0.1.3(70564cf819ec8818f4c9a779c122e25e)
+        version: 0.1.3(3b6bceaf029ff642afcacb56f690cfe8)
       '@ilpachi/use-alova':
         specifier: ^2.1.2
         version: 2.1.2(alova@3.5.5)(vue@3.5.44(typescript@5.9.3))
@@ -203,11 +203,11 @@ importers:
         specifier: ^3.3.0
         version: 3.5.5
       pinia:
-        specifier: ^3.0.4
-        version: 3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
+        specifier: ^4.1.0
+        version: 4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
       pinia-plugin-persistedstate:
         specifier: ^4.7.1
-        version: 4.7.1(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))
+        version: 4.7.1(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))
       quasar:
         specifier: ^2.20.0
         version: 2.35.1
@@ -219,11 +219,11 @@ importers:
         version: 11.4.14(vue@3.5.44(typescript@5.9.3))
       vue-router:
         specifier: ^5.1.0
-        version: 5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3))
+        version: 5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3))
     devDependencies:
       '@quasar/app-vite':
         specifier: ^3.10.3
-        version: 3.10.3(@types/node@22.20.5)(esbuild@0.27.7)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(quasar@2.35.1)(sass@1.105.1)(supports-color@8.1.1)(terser@5.51.2)(typescript@5.9.3)(vue-router@5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))(yaml@2.9.1)
+        version: 3.10.3(@types/node@22.20.5)(esbuild@0.27.7)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(quasar@2.35.1)(sass@1.105.1)(supports-color@8.1.1)(terser@5.51.2)(typescript@5.9.3)(vue-router@5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))(yaml@2.9.1)
       '@quasar/vite-plugin':
         specifier: ^2.0.2
         version: 2.0.2(@vitejs/plugin-vue@6.0.10(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3)))(quasar@2.35.1)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3))
@@ -1268,20 +1268,11 @@ packages:
   '@vue/devtools-api@6.6.4':
     resolution: {integrity: sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==}
 
-  '@vue/devtools-api@7.7.10':
-    resolution: {integrity: sha512-KxtEpUOOpFz/qOGRrAwA36QF7DqIA+FXgCYit9mk9wjbaZt0sXOFz81ElOZtKA4HbWHUdwNjZHBFsFFyp5BZiA==}
-
   '@vue/devtools-api@8.2.1':
     resolution: {integrity: sha512-6u4vXBlIBAC1wMplIZgpyPn7uh/s4Bf6F5bMzvLv+EdJ0aHs/+4B7Ygv864EStQSjRbsRzTko/kUG1A1IejQ3A==}
 
-  '@vue/devtools-kit@7.7.10':
-    resolution: {integrity: sha512-3WNi2Kq4tbpVbmhml7RiphmAt0279oh3fKNeWMQIrltfX8Q91b4i5PL8DtyNKdwmcsGrV4fg+erwWOmD05CLIw==}
-
   '@vue/devtools-kit@8.2.1':
     resolution: {integrity: sha512-FIGIuq3AWReEpbAHY/cRGeHDfI0qOb8OCQ3YjbEAX04uaxIDbGc9rhkbVcG7rnfHPXE3RsU5KrWOu9V/okd8AQ==}
-
-  '@vue/devtools-shared@7.7.10':
-    resolution: {integrity: sha512-wOPslzB8vTvpxwdaOcR2qAbwmuSP0L+rhpoC6Cf56V3Jip+HWb7PQQXOUPgBNQARpXsbQX/+mvi8kKucmBGRwQ==}
 
   '@vue/devtools-shared@8.2.1':
     resolution: {integrity: sha512-Fkac7lUdGReh6pVOi3AYPRGe82LQqRmAfThW7RRligOAP0ZA/Z1z9XLHDM9dv34pV2HRc79DK8uKPeG2fLnA/g==}
@@ -1432,10 +1423,6 @@ packages:
 
   confbox@0.3.1:
     resolution: {integrity: sha512-cKUSoKa8YxFZZSmraVi7onONx3amu77ngK3kGpsYHDH7drPwCRkQE1RYMPlLRrMtnciRj274XNRxcHxnKmDSnA==}
-
-  copy-anything@4.1.5:
-    resolution: {integrity: sha512-vePst2VLTSqPglW7Q98VwFpGiGpOHTyXIo81MO5VyLecA5zMbZw/P/V1vmwD1jksa2iJpn/YkDrJ3XhTfzUyhQ==}
-    engines: {node: '>=18'}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -1959,9 +1946,6 @@ packages:
     resolution: {integrity: sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==}
     engines: {node: 18 || 20 || >=22}
 
-  mitt@3.0.1:
-    resolution: {integrity: sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==}
-
   mlly@1.8.2:
     resolution: {integrity: sha512-d+ObxMQFmbt10sretNDytwt85VrbkhhUA/JBGm1MPaWJ65Cl4wOgLaB1NYvJSZ0Ef03MMEU/0xpPMXUIQ29UfA==}
 
@@ -2044,9 +2028,6 @@ packages:
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
-  perfect-debounce@1.0.0:
-    resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==}
-
   perfect-debounce@2.1.0:
     resolution: {integrity: sha512-LjgdTytVFXeUgtHZr9WYViYSM/g8MkcTPYDlPa3cDqMirHjKiSZPYd6DoL7pK8AJQr+uWkQvCjHNdiMqsrJs+g==}
 
@@ -2075,10 +2056,11 @@ packages:
       pinia:
         optional: true
 
-  pinia@3.0.4:
-    resolution: {integrity: sha512-l7pqLUFTI/+ESXn6k3nu30ZIzW5E2WZF/LaHJEpoq6ElcLD+wduZoB2kBN19du6K/4FDpPMazY2wJr+IndBtQw==}
+  pinia@4.1.0:
+    resolution: {integrity: sha512-+5/HMuVjYQfKlCD5xQ7zfXn1xUzYFEa7pd0DQK5SaMfZCaFRTHlaH/c02N1FoGOdlzSiwf5EOPgJx//1QDw6gw==}
     peerDependencies:
-      typescript: '>=4.5.0'
+      '@vue/devtools-api': ^8.2.1
+      typescript: '>=5.6.0'
       vue: ^3.5.11
     peerDependenciesMeta:
       typescript:
@@ -2165,9 +2147,6 @@ packages:
   reusify@1.1.0:
     resolution: {integrity: sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
-
-  rfdc@1.4.1:
-    resolution: {integrity: sha512-q1b3N5QkRUWUl7iyylaaj3kOpIT0N2i9MqIEQXP73GVsN9cw3fdx8X63cEmWhJGi2PPCF23Ijp7ktmd39rawIA==}
 
   rolldown@1.2.14:
     resolution: {integrity: sha512-eTBTTqMR6uHKLgcUqpJP8ntzDI6V4LYA8negAMBEI7gkgVvOdrx6VsvS2Ym+83KhOPdLCHWJu0w7UQFJZhHKNw==}
@@ -2365,10 +2344,6 @@ packages:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
 
-  speakingurl@14.0.1:
-    resolution: {integrity: sha512-1POYv7uv2gXoyGFpBCmpDVSNV74IfsWlDW216UPjbWufNf+bSU6GdbDsxdcxtfwb4xlI3yxzOTKClUosxARYrQ==}
-    engines: {node: '>=0.10.0'}
-
   stack-trace@1.0.0:
     resolution: {integrity: sha512-H6D7134xi6qONvh7ZHKgviXf+rd3vhGBSvebPZCaUkd8zvQ+7PtDw6CljPTe4cXWNf2IKZGNqw6VJXSb9IgBpA==}
     engines: {node: '>=20.0.0'}
@@ -2376,10 +2351,6 @@ packages:
   statuses@2.0.2:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
     engines: {node: '>= 0.8'}
-
-  superjson@2.2.6:
-    resolution: {integrity: sha512-H+ue8Zo4vJmV2nRjpx86P35lzwDT3nItnIsocgumgr0hHMQ+ZGq5vrERg9kJBo5AWGmxZDhzDo+WVIJqkB0cGA==}
-    engines: {node: '>=16'}
 
   supports-color@8.1.1:
     resolution: {integrity: sha512-MpUEN2OodtUzxvKQl72cUF7RQ5EiHsGvSsVG0ia9c5RbWGL2CI4C7EpPS8UTBIplnlzZiNuV56w+FuNxy3ty2Q==}
@@ -2960,12 +2931,12 @@ snapshots:
       vue: 3.5.44(typescript@5.9.3)
       vue-i18n: 11.4.14(vue@3.5.44(typescript@5.9.3))
 
-  '@ilpachi/fastquasar-settings@0.1.1(@ilpachi/pachi-i18n@0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3)))(@ilpachi/use-alova@2.1.2(alova@3.5.5)(vue@3.5.44(typescript@5.9.3)))(@quasar/extras@2.1.0)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))':
+  '@ilpachi/fastquasar-settings@0.1.1(@ilpachi/pachi-i18n@0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3)))(@ilpachi/use-alova@2.1.2(alova@3.5.5)(vue@3.5.44(typescript@5.9.3)))(@quasar/extras@2.1.0)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))':
     dependencies:
       '@ilpachi/pachi-i18n': 0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))
       '@ilpachi/use-alova': 2.1.2(alova@3.5.5)(vue@3.5.44(typescript@5.9.3))
       '@quasar/extras': 2.1.0
-      pinia: 3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
+      pinia: 4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
       quasar: 2.35.1
       vue: 3.5.44(typescript@5.9.3)
       vue-i18n: 11.4.14(vue@3.5.44(typescript@5.9.3))
@@ -2988,20 +2959,20 @@ snapshots:
       '@ilpachi/use-alova': 2.1.2(alova@3.5.5)(vue@3.5.44(typescript@5.9.3))
       alova: 3.5.5
 
-  '@ilpachi/pachifastquasar@0.1.3(70564cf819ec8818f4c9a779c122e25e)':
+  '@ilpachi/pachifastquasar@0.1.3(3b6bceaf029ff642afcacb56f690cfe8)':
     dependencies:
       '@ilpachi/pachi-i18n': 0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))
       '@ilpachi/use-alova': 2.1.2(alova@3.5.5)(vue@3.5.44(typescript@5.9.3))
       '@intlify/unplugin-vue-i18n': 11.1.2(eslint@10.12.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue-i18n@11.4.14(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))
       '@quasar/extras': 2.1.0
       alova: 3.5.5
-      pinia: 3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
-      pinia-plugin-persistedstate: 4.7.1(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))
+      pinia: 4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
+      pinia-plugin-persistedstate: 4.7.1(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))
       quasar: 2.35.1
       vite-plugin-checker: 0.14.5(eslint@10.12.0(jiti@2.7.0)(supports-color@8.1.1))(optionator@0.9.4)(typescript@5.9.3)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.13(typescript@5.9.3))
       vue: 3.5.44(typescript@5.9.3)
       vue-i18n: 11.4.14(vue@3.5.44(typescript@5.9.3))
-      vue-router: 5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3))
+      vue-router: 5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3))
     transitivePeerDependencies:
       - '@biomejs/biome'
       - eslint
@@ -3287,7 +3258,7 @@ snapshots:
       tslib: 2.8.1
       tsyringe: 4.10.0
 
-  '@quasar/app-vite@3.10.3(@types/node@22.20.5)(esbuild@0.27.7)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(quasar@2.35.1)(sass@1.105.1)(supports-color@8.1.1)(terser@5.51.2)(typescript@5.9.3)(vue-router@5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))(yaml@2.9.1)':
+  '@quasar/app-vite@3.10.3(@types/node@22.20.5)(esbuild@0.27.7)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(quasar@2.35.1)(sass@1.105.1)(supports-color@8.1.1)(terser@5.51.2)(typescript@5.9.3)(vue-router@5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3)))(vue@3.5.44(typescript@5.9.3))(yaml@2.9.1)':
     dependencies:
       '@clack/prompts': 1.8.1
       '@quasar/art': 1.0.0
@@ -3322,10 +3293,10 @@ snapshots:
       ts-essentials: 10.2.1(typescript@5.9.3)
       vite: 8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
       vue: 3.5.44(typescript@5.9.3)
-      vue-router: 5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3))
+      vue-router: 5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3))
       webpack-merge: 6.0.1
     optionalDependencies:
-      pinia: 3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
+      pinia: 4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
       typescript: 5.9.3
     transitivePeerDependencies:
       - '@types/node'
@@ -3570,23 +3541,9 @@ snapshots:
 
   '@vue/devtools-api@6.6.4': {}
 
-  '@vue/devtools-api@7.7.10':
-    dependencies:
-      '@vue/devtools-kit': 7.7.10
-
   '@vue/devtools-api@8.2.1':
     dependencies:
       '@vue/devtools-kit': 8.2.1
-
-  '@vue/devtools-kit@7.7.10':
-    dependencies:
-      '@vue/devtools-shared': 7.7.10
-      birpc: 2.9.0
-      hookable: 5.5.3
-      mitt: 3.0.1
-      perfect-debounce: 1.0.0
-      speakingurl: 14.0.1
-      superjson: 2.2.6
 
   '@vue/devtools-kit@8.2.1':
     dependencies:
@@ -3594,10 +3551,6 @@ snapshots:
       birpc: 2.9.0
       hookable: 5.5.3
       perfect-debounce: 2.1.0
-
-  '@vue/devtools-shared@7.7.10':
-    dependencies:
-      rfdc: 1.4.1
 
   '@vue/devtools-shared@8.2.1': {}
 
@@ -3776,8 +3729,6 @@ snapshots:
   confbox@0.1.8: {}
 
   confbox@0.3.1: {}
-
-  copy-anything@4.1.5: {}
 
   cross-spawn@7.0.6:
     dependencies:
@@ -4303,8 +4254,6 @@ snapshots:
     dependencies:
       brace-expansion: 5.0.12
 
-  mitt@3.0.1: {}
-
   mlly@1.8.2:
     dependencies:
       acorn: 8.19.0
@@ -4389,8 +4338,6 @@ snapshots:
 
   pathe@2.0.3: {}
 
-  perfect-debounce@1.0.0: {}
-
   perfect-debounce@2.1.0: {}
 
   picocolors@1.1.1: {}
@@ -4399,15 +4346,16 @@ snapshots:
 
   picomatch@4.0.7: {}
 
-  pinia-plugin-persistedstate@4.7.1(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))):
+  pinia-plugin-persistedstate@4.7.1(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))):
     dependencies:
       defu: 6.1.7
     optionalDependencies:
-      pinia: 3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
+      pinia: 4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
 
-  pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)):
+  pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)):
     dependencies:
-      '@vue/devtools-api': 7.7.10
+      '@vue/devtools-api': 8.2.1
+      nostics: 1.3.0
       vue: 3.5.44(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
@@ -4484,8 +4432,6 @@ snapshots:
   retry@0.12.0: {}
 
   reusify@1.1.0: {}
-
-  rfdc@1.4.1: {}
 
   rolldown@1.2.14:
     dependencies:
@@ -4677,15 +4623,9 @@ snapshots:
 
   source-map@0.6.1: {}
 
-  speakingurl@14.0.1: {}
-
   stack-trace@1.0.0: {}
 
   statuses@2.0.2: {}
-
-  superjson@2.2.6:
-    dependencies:
-      copy-anything: 4.1.5
 
   supports-color@8.1.1:
     dependencies:
@@ -4834,7 +4774,7 @@ snapshots:
       '@vue/devtools-api': 6.6.4
       vue: 3.5.44(typescript@5.9.3)
 
-  vue-router@5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3)):
+  vue-router@5.4.0(@vue/compiler-sfc@3.5.44)(esbuild@0.27.7)(pinia@4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3)))(rolldown@1.2.14)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@5.9.3)):
     dependencies:
       '@vue-macros/common': 3.1.4(vue@3.5.44(typescript@5.9.3))
       '@vue/devtools-api': 8.2.1
@@ -4855,7 +4795,7 @@ snapshots:
       vue: 3.5.44(typescript@5.9.3)
     optionalDependencies:
       '@vue/compiler-sfc': 3.5.44
-      pinia: 3.0.4(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
+      pinia: 4.1.0(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.44(typescript@5.9.3))
       vite: 8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.105.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@farmfe/core'
