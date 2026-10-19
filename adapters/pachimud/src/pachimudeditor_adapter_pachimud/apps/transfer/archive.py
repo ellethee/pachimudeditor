@@ -54,8 +54,7 @@ def _extract_zip(data: bytes, filename: str, target: Path) -> None:
             name = canonical_name(info.filename)
             if name is None:
                 continue
-            total += info.file_size
-            if info.file_size > MAX_UPLOAD_BYTES or total > MAX_UPLOAD_BYTES:
+            if info.file_size > MAX_UPLOAD_BYTES:  # il dichiarato e' solo un rifiuto rapido: il limite vero e' sui byte letti
                 raise api_error(413, "transfer.file_too_large", file=filename, max_mb=MAX_UPLOAD_BYTES // (1024 * 1024))
             parent = str(PurePosixPath(info.filename.replace("\\", "/")).parent)
             if parent not in groups:
@@ -63,8 +62,9 @@ def _extract_zip(data: bytes, filename: str, target: Path) -> None:
                 group.mkdir(parents=True)
                 groups[parent] = group
             with archive.open(info) as source:
-                content = source.read(MAX_UPLOAD_BYTES + 1)
-            if len(content) > MAX_UPLOAD_BYTES:
+                content = source.read(min(MAX_UPLOAD_BYTES, MAX_UPLOAD_BYTES - total) + 1)
+            total += len(content)
+            if total > MAX_UPLOAD_BYTES:
                 raise api_error(413, "transfer.file_too_large", file=filename, max_mb=MAX_UPLOAD_BYTES // (1024 * 1024))
             (groups[parent] / name).write_bytes(content)
 

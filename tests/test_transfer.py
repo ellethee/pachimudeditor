@@ -222,3 +222,20 @@ async def test_real_game_db_untouched() -> None:
     async with gamedb.get_session_factory()() as session:
         assert "pachimudeditor-pytest" in str(get_registry().get("pachimud").params.database_url)  # type: ignore[attr-defined]
         assert (await session.execute(select(Zone))).scalars().first() is not None
+
+
+def test_zip_members_summing_over_limit(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Ogni membro sta nel limite ma la somma dei byte letti lo supera: 413 (il totale non si fida del dichiarato)."""
+    import pytest
+    from fastapi import HTTPException
+
+    from pachimudeditor_adapter_pachimud.apps.transfer import archive
+
+    monkeypatch.setattr(archive, "MAX_UPLOAD_BYTES", 100)
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name in ("zone.yaml", "rooms.yaml"):
+            zf.writestr(f"z/{name}", "a" * 60)
+    with pytest.raises(HTTPException) as err:
+        archive._extract_zip(buffer.getvalue(), "z.zip", tmp_path)
+    assert err.value.status_code == 413
