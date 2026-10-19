@@ -137,6 +137,8 @@ class Tables:
             values = ts.values
             if ts.file is not None:
                 path = (base_dir / ts.file).resolve()
+                if not path.is_relative_to(base_dir.resolve()):
+                    raise ValueError(f"tabella {name!r}: `file` {ts.file!r} esce dalla cartella del mapping")
                 if path not in cache:
                     cache[path] = YAML(typ="safe").load(path.read_text(encoding="utf-8"))
                 values = self._select(cache[path], ts.name or name, path)

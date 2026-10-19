@@ -53,7 +53,7 @@ Record <--model.EntityMapper / ResetMapper--> DTO neutri (+ extra)  --> mixin zo
 2. **`layout`**: un file per zona (`zone_files`, con `index` e/o `glob`) oppure un file per tipo (`type_files` + `zone_range`).
 3. **`grammar.files`**: sezioni in ordine canonico con `header`, `record`, `entity`, `until`, `tail`; `end` per `#$`.
 4. **`grammar.records`**: i passi (`nome: tipo`, `line:`, `when:`, `switch:`, `tagged:`); `key` = campo vnum.
-5. **`tables`**: nomi dei flag/enum (inline o da file) con `expose` per `enums()`.
+5. **`tables`**: nomi dei flag/enum (inline o da file: il `file` e' relativo alla cartella del YAML e non puo' uscirne, niente `..` ne' percorsi assoluti) con `expose` per `enums()`.
 6. **`model`**: per ogni entita' i `fields` (`from`, `expr`+`to`, `map`, `null_if`, `const`, `pairs`, `hook`), `defaults`,
    `exits`/`extra_descriptions`, `exit`, `reset.commands`.
 7. **`hooks`/`rules`/`meta`** solo se servono.

@@ -105,3 +105,14 @@ def test_custom_hook_must_be_registered_and_declared(tmp_path: Path) -> None:
     text = path.read_text(encoding="utf-8").replace("builder: {hook: rom_credits_builder}", "builder: {hook: test_upper_name}")
     path.write_text(text, encoding="utf-8")
     assert load_mapping(path).model.zone.fields["builder"].hook == "test_upper_name"
+
+
+@pytest.mark.parametrize("ref", ["../outside.yaml", "/etc/hostname"])
+def test_table_file_cannot_escape_base_dir(tmp_path: Path, ref: str) -> None:
+    """`tables.<t>.file` e' confinato alla cartella del mapping: `..` e percorsi assoluti sono rifiutati."""
+    from pachimudeditor_adapter_mapping.model import Tables
+
+    spec = load_mapping(ROM_MAPPING)
+    spec.tables["room_flags"].file = ref
+    with pytest.raises(ValueError, match="esce dalla cartella"):
+        Tables(spec, ROM_MAPPING.parent)
