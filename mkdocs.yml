@@ -1,6 +1,6 @@
 site_name: pachimudeditor
 site_description: Editor web di zone, stanze, mob e oggetti per pachimud e altri MUD, esteso da adapter
-site_url: !ENV [DOCS_SITE_URL, "https://ellethee.github.io/pachimudeditor/"]
+site_url: !ENV [DOCS_SITE_URL, "https://pachimudeditor.ilpachi.it/"]
 docs_dir: docs
 hooks:
   - scripts/mkdocs_hooks.py
