@@ -52,6 +52,7 @@ def records(path: Path, kind: str) -> dict[tuple[int, int], str]:
     return out
 
 
+@pytest.mark.real_dikumod
 async def test_editing_one_mob_and_one_room_changes_only_those_records(rw: DikumodAdapter, lib: Path) -> None:
     """Un mob e una stanza modificati: cambiano solo dikumoddata.mob e dikumoddata.wld e, dentro, solo quei due record."""
     before_files = digest(lib)
@@ -71,6 +72,7 @@ async def test_editing_one_mob_and_one_room_changes_only_those_records(rw: Dikum
     assert wld["name"] == "Piazza rinominata" and wld["desc"] == "Nuova descrizione.\n"
 
 
+@pytest.mark.real_dikumod
 async def test_overrides_are_edited_in_place(rw: DikumodAdapter, lib: Path, variant: str) -> None:
     """Una stanza con `rooms/<vnum>` e un oggetto con `objects/<vnum>` si scrivono nel loro file; il principale non cambia."""
     if variant != "dikumod2":
@@ -94,6 +96,7 @@ async def test_overrides_are_edited_in_place(rw: DikumodAdapter, lib: Path, vari
         await rw.get_room(free)
 
 
+@pytest.mark.real_dikumod
 async def test_unchanged_dto_roundtrip_writes_no_byte(rw: DikumodAdapter, lib: Path) -> None:
     """Rimandare il DTO letto (extra compreso) come patch non cambia nessun file, nemmeno con record speciali."""
     before = digest(lib)
@@ -121,6 +124,7 @@ async def test_unchanged_dto_roundtrip_writes_no_byte(rw: DikumodAdapter, lib: P
     assert digest(lib) == before
 
 
+@pytest.mark.real_dikumod
 async def test_create_update_delete_mob_keeps_order_and_loader_compat(rw: DikumodAdapter, lib: Path) -> None:
     """Un mob nuovo finisce al posto giusto (ricerca binaria del gioco), con negozio e script; poi cambia vnum e si elimina."""
     zone = await rw.get_zone(10)
@@ -176,6 +180,7 @@ async def test_create_update_delete_mob_keeps_order_and_loader_compat(rw: Dikumo
     assert [e.vnum for e in index.entries] == sorted(e.vnum for e in index.entries)
 
 
+@pytest.mark.real_dikumod
 async def test_object_create_and_affects(rw: DikumodAdapter, lib: Path) -> None:
     """Oggetto nuovo con affect (dict) e `extra.affects` ordinato; il loader legge E, A e P come previsto."""
     zone = await rw.get_zone(10)
@@ -214,6 +219,7 @@ async def test_object_create_and_affects(rw: DikumodAdapter, lib: Path) -> None:
     await rw.delete_object(vnum)
 
 
+@pytest.mark.real_dikumod
 async def test_zone_edit_rewrites_only_that_zone(rw: DikumodAdapter, lib: Path) -> None:
     """Sostituire lo script di una zona con una `O` a 4 numeri la riscrive (a 5 numeri); le altre zone restano identiche."""
     world = load_world(lib)
@@ -243,6 +249,7 @@ async def test_zone_edit_rewrites_only_that_zone(rw: DikumodAdapter, lib: Path) 
     assert len(mine["cmds"]) == len(zone.commands) and mine["cmds"][0][0] == zone.commands[0].letter
 
 
+@pytest.mark.real_dikumod
 async def test_exit_door_state_updates_bits_and_d_commands(rw: DikumodAdapter, lib: Path) -> None:
     """`isOpen/isLocked` aggiornano i bit di `exit_info` e i comandi `D` esistenti della stanza."""
     world = load_world(lib)
@@ -269,6 +276,7 @@ async def test_exit_door_state_updates_bits_and_d_commands(rw: DikumodAdapter, l
     assert reopened.is_open and not reopened.is_locked and reopened.extra["exitInfo"] & 6 == 0 and reopened.extra["dState"] == 0
 
 
+@pytest.mark.real_dikumod
 async def test_room_vnum_change_follows_exits_and_doors(rw: DikumodAdapter, lib: Path) -> None:
     """Cambiando il vnum di una stanza, le uscite delle altre che portano li' e i suoi `D` seguono; resta ordinato."""
     zone = await rw.get_zone(10)
@@ -288,6 +296,7 @@ async def test_room_vnum_change_follows_exits_and_doors(rw: DikumodAdapter, lib:
     await rw.delete_room(moved.id)
 
 
+@pytest.mark.real_dikumod
 async def test_zone_lifecycle_on_real_world(rw: DikumodAdapter, lib: Path) -> None:
     """Crea (in coda), aggiorna, clona ed elimina una zona: rispetta l'ordine dei `top` e il formato del file."""
     free = await rw.next_zone_vnum(99)
@@ -329,6 +338,7 @@ async def test_zone_lifecycle_on_real_world(rw: DikumodAdapter, lib: Path) -> No
     assert (await rw.next_zone_vnum(9)).vnum == 93
 
 
+@pytest.mark.real_dikumod
 async def test_invalid_input_is_rejected_with_stable_codes(rw: DikumodAdapter, lib: Path) -> None:
     """`extra` sconosciuto, flag inesistente, tilde e righe pericolose: 422 con codice stabile e nessun byte scritto."""
     before = digest(lib)
@@ -358,6 +368,7 @@ async def test_invalid_input_is_rejected_with_stable_codes(rw: DikumodAdapter, l
     assert (await rw.update_mob(3000, MobPatch(level=5))).level == 5
 
 
+@pytest.mark.real_dikumod
 async def test_originals_stay_readable_after_all_writes(rw: DikumodAdapter, lib: Path) -> None:
     """Dopo una raffica di scritture ogni vnum dei file mob/oggetti si trova ancora con la ricerca binaria del gioco."""
     for vnum in (3000, 3001, 3002):

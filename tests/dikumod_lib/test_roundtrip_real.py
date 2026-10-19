@@ -1,5 +1,6 @@
 """Round-trip sui dati REALI di dikumod e dikumod2 (copiati in una cartella temporanea): conteggi, byte-identita', idempotenza."""
 
+import pytest
 import collections
 from pathlib import Path
 
@@ -22,6 +23,7 @@ EXPECTED = {
 PARSERS = {"wld": parse_wld, "mob": parse_mob, "obj": parse_obj, "zon": parse_zon, "shp": parse_shp}
 
 
+@pytest.mark.real_dikumod
 def test_counts_match_the_spec(variant: str, lib: Path, capsys) -> None:  # type: ignore[no-untyped-def]
     """Stanze, mob, oggetti, zone e comandi come nel documento del formato; stampa le statistiche (-s)."""
     world = load_world(lib)
@@ -79,6 +81,7 @@ def test_canonical_rewrite_is_semantically_idempotent(lib: Path) -> None:
         assert a == b, name
 
 
+@pytest.mark.real_dikumod
 def test_bad_mobs_are_kept_as_raw_with_error(lib: Path) -> None:
     """I 33 mob corrotti restano visibili con errore e riga, e nessun byte va perso nella riscrittura."""
     world = load_world(lib)

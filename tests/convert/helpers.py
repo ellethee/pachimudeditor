@@ -2,9 +2,17 @@
 
 from typing import Any
 
+from tests.support.real_data import HAVE_ROM
+
 from pachimudeditor.common.adapters.base import WorldAdapter
 from pachimudeditor.common.adapters.convert.reader import list_all_zones, read_zone
 from pachimudeditor.common.adapters.models import ResetCommandDraft, ResetDraftScriptIn
+
+
+MIDGAARD, SCHOOL = (3000, 3700) if HAVE_ROM else (5000, 6000)
+"""Id delle due zone ROM usate dai test di conversione: aree reali di basedmud o aree sintetiche."""
+SCHOOL_NAME = "mud school" if HAVE_ROM else "Fucina"
+"""Nome della zona `SCHOOL`."""
 
 
 async def snapshot(adapter: WorldAdapter) -> dict[int, tuple[Any, ...]]:

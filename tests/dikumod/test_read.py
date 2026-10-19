@@ -16,6 +16,7 @@ from tests.adapter_contract.helpers import expect_error
 from tests.dikumod.conftest import DUPLICATES, MOB_SPEC, SPEC
 
 
+@pytest.mark.real_dikumod
 async def test_counts_match_the_spec(ro: DikumodAdapter, variant: str, capsys) -> None:  # type: ignore[no-untyped-def]
     """Zone, stanze, mob (sani + corrotti), oggetti come da documento, tolti i vnum doppi (l'API ne mostra uno)."""
     want, dup = SPEC[variant], DUPLICATES[variant]
@@ -37,6 +38,7 @@ async def test_counts_match_the_spec(ro: DikumodAdapter, variant: str, capsys) -
         )
 
 
+@pytest.mark.real_dikumod
 async def test_zone_ids_are_positions_and_ranges_derive_from_top(ro: DikumodAdapter) -> None:
     """`id == vnum ==` indice; `#N` doppi (138, 151) restano zone distinte; il bottom e' `top` precedente + 1."""
     zones = (await ro.list_zones(ZonePageParams(page=1, pageSize=500))).items
@@ -60,6 +62,7 @@ async def test_content_belongs_to_the_zone_of_its_vnum(ro: DikumodAdapter) -> No
     assert (await ro.get_room(rooms.items[0].id)).zone_id == 1
 
 
+@pytest.mark.real_dikumod
 async def test_corrupted_mobs_are_visible_with_warning_and_not_editable(ro: DikumodAdapter, rw: DikumodAdapter, variant: str) -> None:
     """I 33 mob corrotti compaiono in list/get con `extra.corrupted` e il motivo; update/delete danno 409."""
     mob = await ro.get_mob(2111)
@@ -75,6 +78,7 @@ async def test_corrupted_mobs_are_visible_with_warning_and_not_editable(ro: Diku
     assert (await ro.get_mob(3000)).extra.get("corrupted") is None
 
 
+@pytest.mark.real_dikumod
 async def test_room_fields_and_special_blocks(ro: DikumodAdapter, variant: str) -> None:
     """Teleport, fiume, tunnel e settore vero stanno in `extra`; le uscite hanno id `vnum*10+dir` e info grezza."""
     tele = next(r for r in (await ro.list_rooms(RoomPageParams(page=1, pageSize=5000))).items if r.extra["tele"])
@@ -89,6 +93,7 @@ async def test_room_fields_and_special_blocks(ro: DikumodAdapter, variant: str) 
     assert any(e.id // 1000 == 3001 for e in room.extra_descriptions) or not room.extra_descriptions
 
 
+@pytest.mark.real_dikumod
 async def test_override_files_take_precedence(ro: DikumodAdapter, lib: Path, variant: str) -> None:
     """Con `rooms/<vnum>` e `objects/<vnum>` (dikumod2) il contenuto effettivo e' quello del file per-vnum."""
     if variant != "dikumod2":
@@ -102,6 +107,7 @@ async def test_override_files_take_precedence(ro: DikumodAdapter, lib: Path, var
     assert (lib / "rooms" / "3008").is_file() and (await ro.get_zone(0)).extra["override"] is None
 
 
+@pytest.mark.real_dikumod
 async def test_mob_mapping(ro: DikumodAdapter) -> None:
     """Mob `S` (dado hp del file) e `A/N/B/L` (hp = level d8 + bonus), razza, sesso, maschere, negozio, script."""
     puff = await ro.get_mob(1)
@@ -118,6 +124,7 @@ async def test_mob_mapping(ro: DikumodAdapter) -> None:
     assert len(shop["producing"]) == 5 and len(shop["types"]) == 5 and "noSuchItem1" in shop["messages"] and shop["tag"].startswith("#")
 
 
+@pytest.mark.real_dikumod
 async def test_script_extra_on_dikumod(ro: DikumodAdapter, variant: str) -> None:
     """In dikumod gli script di `scripts.dat` compaiono in `extra.script` con il testo del file."""
     if variant != "dikumod":
@@ -126,6 +133,7 @@ async def test_script_extra_on_dikumod(ro: DikumodAdapter, variant: str) -> None
     assert mob.extra["script"]["name"] == "Drunk" and mob.extra["script"]["text"]
 
 
+@pytest.mark.real_dikumod
 async def test_object_mapping(ro: DikumodAdapter) -> None:
     """Tipo, flag, affect (somma + elenco ordinato in extra), extra description."""
     objs = (await ro.list_objects(ObjectPageParams(page=1, pageSize=5000))).items
@@ -140,6 +148,7 @@ async def test_object_mapping(ro: DikumodAdapter) -> None:
     assert with_extra.extra["extraDescs"][0]["keyword"]
 
 
+@pytest.mark.real_dikumod
 async def test_reset_commands_mapping(ro: DikumodAdapter, variant: str) -> None:
     """Comandi M O G E P D C H F: argomenti per tipo, if_value intero (anche -5), commento, `O` senza arg4 segnalata."""
     zones = (await ro.list_zones(ZonePageParams(page=1, pageSize=500))).items
@@ -197,6 +206,7 @@ async def test_meta_and_describe(ro: DikumodAdapter) -> None:
     assert len(races) == 85 and races[1].id == "human" and await ro.classes() == []
 
 
+@pytest.mark.real_dikumod
 async def test_read_only_is_the_default(make_adapter, lib: Path) -> None:  # type: ignore[no-untyped-def]
     """Senza `read_only` esplicito il mondo e' in sola lettura; `read_only: false` abilita le scritture."""
     from pachimudeditor.common.adapters.models import MobPatch, ZoneIn
@@ -214,6 +224,7 @@ async def test_read_only_is_the_default(make_adapter, lib: Path) -> None:  # typ
     assert (await default.get_mob(3000)).level == (await make_adapter(read_only=False).get_mob(3000)).level
 
 
+@pytest.mark.real_dikumod
 async def test_reading_never_writes(ro: DikumodAdapter, lib: Path) -> None:
     """Nessuna lettura modifica un file (hash prima/dopo)."""
     import hashlib
@@ -230,6 +241,7 @@ async def test_reading_never_writes(ro: DikumodAdapter, lib: Path) -> None:
     assert digest() == before
 
 
+@pytest.mark.real_dikumod
 async def test_validate_script_on_dikumod_commands(ro: DikumodAdapter) -> None:
     """La validazione riconosce i comandi Diku Modificato (C/H/F/Z) e i vnum inesistenti."""
     from pachimudeditor.common.adapters.models import ResetCommandDraft, ResetDraftScriptIn

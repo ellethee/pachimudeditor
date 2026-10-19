@@ -45,6 +45,7 @@ def _texts(rf) -> list[str]:  # type: ignore[no-untyped-def]
     return [item_text(i) for i in rf.items]
 
 
+@pytest.mark.real_dikumod
 def test_editing_one_mob_changes_only_that_record(lib: Path) -> None:
     """Un mob modificato e' riscritto in forma canonica; tutti gli altri record (anche i corrotti) restano identici."""
     rf = load_mob(lib / "dikumoddata.mob")
@@ -68,6 +69,7 @@ def test_editing_one_mob_changes_only_that_record(lib: Path) -> None:
     assert not got["errors"] and got["level"] == mob.level and got["short"] == "Un mob rinominato"
 
 
+@pytest.mark.real_dikumod
 def test_new_records_keep_the_file_sorted_and_loadable(lib: Path) -> None:
     """Un record nuovo va al suo posto (ricerca binaria del gioco) e il file termina con `%%`."""
     rf = load_mob(lib / "dikumoddata.mob")
@@ -113,6 +115,7 @@ def test_new_records_keep_the_file_sorted_and_loadable(lib: Path) -> None:
     assert c.read_mobile(text, index.entries[c.real_lookup(index, mid)].pos)["damage"] == (1, 6, 2)
 
 
+@pytest.mark.real_dikumod
 def test_object_mutation_and_new_object(lib: Path) -> None:
     """Oggetto modificato/nuovo: E prima di A, al massimo 5 affect, `P` in fondo; il loader li rilegge uguali."""
     rf = load_obj(lib / "dikumoddata.obj")
@@ -151,6 +154,7 @@ def test_object_mutation_and_new_object(lib: Path) -> None:
     assert c.read_object(text, index.entries[c.real_lookup(index, 3001)].pos)["cost"] == obj.cost
 
 
+@pytest.mark.real_dikumod
 def test_room_mutation_only_touches_that_room(lib: Path) -> None:
     """Una stanza modificata (nome, nuova uscita, extra) cambia da sola; il loader la rilegge."""
     rf = load_wld(lib / "dikumoddata.wld")
@@ -190,6 +194,7 @@ def test_special_room_blocks_roundtrip_canonically(tmp_path: Path) -> None:
     assert [repr(b) for b in back] == [repr(r) for r in rooms]
 
 
+@pytest.mark.real_dikumod
 def test_zone_edit_rewrites_only_that_zone_and_fixes_O(lib: Path) -> None:
     """Toccare un comando riscrive la sola zona; le sue `O` a 4 numeri diventano a 5 (e il loader non perde la zona)."""
     rf = load_zon(lib / "dikumoddata.zon")

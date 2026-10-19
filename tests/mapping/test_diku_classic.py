@@ -84,6 +84,7 @@ def changed_blocks(spec: MappingSpec, kind: str, old: str, new: str) -> list[tup
 # --------------------------------------------------------------------------- parsing e scrittura
 
 
+@pytest.mark.real_dikumod
 def test_world_parses_and_rewrites_identically(dikumod_dir: Path, spec: MappingSpec) -> None:
     """Ogni file ha tanti record quanti blocchi `#N` e si riscrive byte per byte."""
     expected = {
@@ -146,6 +147,7 @@ def test_tolerated_irregularities_roundtrip(spec: MappingSpec) -> None:
 # --------------------------------------------------------------------------- lettura confrontata con il testo grezzo
 
 
+@pytest.mark.real_dikumod
 async def test_zones_chain_on_top(dikumod_dir: Path) -> None:
     """Le zone sono i record del `.zon`: id = `top`, bottom = top precedente + 1, un solo file, sempre abilitate."""
     a = adapter_for(dikumod_dir)
@@ -159,6 +161,7 @@ async def test_zones_chain_on_top(dikumod_dir: Path) -> None:
     assert (summary.room_count, summary.mob_count, summary.object_count) == (50, 45, 14)
 
 
+@pytest.mark.real_dikumod
 async def test_rooms_match_raw_text(dikumod_dir: Path) -> None:
     """Nome, flag, settore, uscite ed extra di ogni stanza coincidono con il testo del `.wld`."""
     a = adapter_for(dikumod_dir)
@@ -183,6 +186,7 @@ async def test_rooms_match_raw_text(dikumod_dir: Path) -> None:
     assert teleports >= 1
 
 
+@pytest.mark.real_dikumod
 async def test_mobs_and_objects_match_raw_text(dikumod_dir: Path) -> None:
     """Livello, thac0, AC, tipo e allineamento dei mob; tipo, peso, costo e valori degli oggetti coincidono con il grezzo."""
     a = adapter_for(dikumod_dir)
@@ -219,6 +223,7 @@ async def test_mobs_and_objects_match_raw_text(dikumod_dir: Path) -> None:
         assert len(obj.affects) <= len(re.findall(r"(?m)^A\s*$", chunk))
 
 
+@pytest.mark.real_dikumod
 async def test_reset_scripts_match_raw_text(dikumod_dir: Path) -> None:
     """Una zona ha tanti comandi quante righe di comando (M O P G E D) nel `.zon`; commenti e `if_flag <= 0` sono letti bene."""
     a = adapter_for(dikumod_dir)
@@ -243,6 +248,7 @@ async def test_reset_scripts_match_raw_text(dikumod_dir: Path) -> None:
 # --------------------------------------------------------------------------- scritture
 
 
+@pytest.mark.real_dikumod
 async def test_edit_room_rewrites_only_its_block(dikumod_dir: Path, spec: MappingSpec) -> None:
     """`update_room` cambia solo il blocco della stanza nel `.wld`; gli altri file restano identici."""
     a = adapter_for(dikumod_dir)
@@ -257,6 +263,7 @@ async def test_edit_room_rewrites_only_its_block(dikumod_dir: Path, spec: Mappin
     assert {n: text_of(dikumod_dir, n) for n in before} == before
 
 
+@pytest.mark.real_dikumod
 async def test_exit_door_bits(dikumod_dir: Path) -> None:
     """`doorFlag`, `isOpen` e `isLocked` sono espressioni sui bit di `exit_info` (1 ISDOOR, 2 CLOSED, 4 LOCKED, 32 PICKPROOF)."""
     a = adapter_for(dikumod_dir)
@@ -273,6 +280,7 @@ async def test_exit_door_bits(dikumod_dir: Path) -> None:
     assert proof.door_flag is DoorFlag.PICKPROOF and proof.is_locked and not proof.is_open
 
 
+@pytest.mark.real_dikumod
 async def test_create_edit_delete_content(dikumod_dir: Path, spec: MappingSpec) -> None:
     """Stanza, mob, oggetto: creazione ordinata per vnum, patch (gold `-1`, affects), eliminazione; solo un blocco cambia."""
     a = adapter_for(dikumod_dir)
@@ -311,6 +319,7 @@ async def test_create_edit_delete_content(dikumod_dir: Path, spec: MappingSpec) 
     assert text_of(dikumod_dir, "dikumoddata.wld") == old_wld
 
 
+@pytest.mark.real_dikumod
 async def test_zones_are_appended_in_order(dikumod_dir: Path) -> None:
     """Una zona nuova va in coda (top oltre l'ultima, bottom derivato); `top` non puo' scavalcare le vicine."""
     a = adapter_for(dikumod_dir)
@@ -346,6 +355,7 @@ async def test_zones_are_appended_in_order(dikumod_dir: Path) -> None:
     assert text_of(dikumod_dir, "dikumoddata.zon") == zon_before
 
 
+@pytest.mark.real_dikumod
 async def test_reset_scripts_roundtrip_and_canonical_O(dikumod_dir: Path) -> None:
     """Rimandare lo script letto non cambia byte (commenti e `O` con 4 numeri compresi); uno script diverso riscrive i soli
     comandi nuovi in forma canonica (`O` sempre con 5 numeri) e perde i commenti."""
@@ -371,6 +381,7 @@ async def test_reset_scripts_roundtrip_and_canonical_O(dikumod_dir: Path) -> Non
     assert [(c.arg1, c.arg4) for c in await a.list_reset_commands(199)] == [(1, 10), (2, 10), (70, 0)]
 
 
+@pytest.mark.real_dikumod
 async def test_unmapped_reset_commands_block_replace(dikumod_dir: Path) -> None:
     """I comandi `H/F/C/Z` non hanno un tipo neutro: restano nel file ma sostituire lo script li cancellerebbe (422)."""
     zon = text_of(dikumod_dir, "dikumoddata.zon")

@@ -12,9 +12,8 @@ from pachimudeditor.common.adapters.convert.models import ConvertPlan
 from pachimudeditor.common.adapters.convert.reader import list_all_zones, read_zone
 from pachimudeditor.common.adapters.models import ExitPatch
 from pachimudeditor.common.enums import DoorFlag
-from tests.convert.helpers import assert_zone_valid, snapshot
-
-MIDGAARD, SCHOOL = 3000, 3700
+from tests.convert.helpers import MIDGAARD, SCHOOL, assert_zone_valid, snapshot
+from tests.support.real_data import HAVE_ROM
 
 
 def plan(*zone_ids: int, **kwargs) -> ConvertPlan:  # type: ignore[no-untyped-def]
@@ -49,7 +48,7 @@ async def test_real_run_needs_confirm(rom_world, pachimud_world):
         await convert(rom_world(), pachimud_world, plan(SCHOOL), dry_run=False)
     assert error.value.status_code == 422 and code_of(error.value) == "convert.confirm_required"
     assert await snapshot(pachimud_world) == await snapshot(pachimud_world)
-    assert 3700 not in {z.vnum for z in await list_all_zones(pachimud_world)}
+    assert SCHOOL not in {z.vnum for z in await list_all_zones(pachimud_world)}
 
 
 async def test_basedmud_to_pachimud_run(rom_world, pachimud_world, tmp_path: Path):
@@ -59,7 +58,7 @@ async def test_basedmud_to_pachimud_run(rom_world, pachimud_world, tmp_path: Pat
     report = await convert(src, pachimud_world, plan(MIDGAARD, SCHOOL), dry_run=False, confirm=True, journal_dir=journal)
     assert report.applied and not report.errors and not report.rolled_back
     zones = {z.vnum: z for z in await list_all_zones(pachimud_world)}
-    assert {3000, 3700} <= set(zones)
+    assert {MIDGAARD, SCHOOL} <= set(zones)
     for action in report.zones:
         assert action.target_zone_id == zones[action.target_vnum].id
         s = await read_zone(pachimud_world, zones[action.target_vnum].id)
@@ -68,8 +67,8 @@ async def test_basedmud_to_pachimud_run(rom_world, pachimud_world, tmp_path: Pat
         assert sum(len(r.extra_descriptions) for r in s.rooms) == action.counts["extraDescriptions"]
         assert len(s.resets) == action.counts["resets"]
         await assert_zone_valid(pachimud_world, zones[action.target_vnum].id)
-    school = await read_zone(pachimud_world, zones[3700].id)
-    assert all(zones[3700].bottom_vnum <= r.vnum <= zones[3700].top_vnum for r in school.rooms)
+    school = await read_zone(pachimud_world, zones[SCHOOL].id)
+    assert all(zones[SCHOOL].bottom_vnum <= r.vnum <= zones[SCHOOL].top_vnum for r in school.rooms)
     files = list(journal.glob("convert-*.json"))
     assert report.journal.enabled and report.journal.file == files[0].name
     saved = json.loads(files[0].read_text(encoding="utf-8"))
@@ -89,7 +88,7 @@ async def test_rerun_skip_then_replace(rom_world, pachimud_world):
     assert [z.action for z in replaced.zones] == ["replace"] and replaced.applied
     assert replaced.totals["rooms"].replace == replaced.zones[0].counts["rooms"]
     assert await snapshot(pachimud_world) == after_first
-    zone = next(z for z in await list_all_zones(pachimud_world) if z.vnum == 3700)
+    zone = next(z for z in await list_all_zones(pachimud_world) if z.vnum == SCHOOL)
     await assert_zone_valid(pachimud_world, zone.id)
 
 
@@ -97,11 +96,12 @@ async def test_vnum_policies(rom_world, pachimud_world):
     """`offset` somma ai vnum (anche dentro reset e uscite); `shift_to` usa il primo intervallo libero, zone una dopo l'altra."""
     src = rom_world()
     report = await convert(src, pachimud_world, plan(SCHOOL, vnum_policy={"mode": "offset", "offset": 10000}), dry_run=False, confirm=True)
-    assert report.applied and report.zones[0].bottom_vnum == 13700 and report.zones[0].target_vnum == 13700
-    assert report.remap["rooms"][3700] == 13700 if 3700 in report.remap["rooms"] else True
-    zone = next(z for z in await list_all_zones(pachimud_world) if z.vnum == 13700)
+    moved = SCHOOL + 10000
+    assert report.applied and report.zones[0].bottom_vnum == moved and report.zones[0].target_vnum == moved
+    assert report.remap["rooms"][SCHOOL] == moved if SCHOOL in report.remap["rooms"] else True
+    zone = next(z for z in await list_all_zones(pachimud_world) if z.vnum == moved)
     s = await read_zone(pachimud_world, zone.id)
-    assert all(13700 <= r.vnum <= 13799 for r in s.rooms) and all(13700 <= m.vnum <= 13799 for m in s.mobs)
+    assert all(moved <= r.vnum <= moved + 99 for r in s.rooms) and all(moved <= m.vnum <= moved + 99 for m in s.mobs)
     await assert_zone_valid(pachimud_world, zone.id)
 
     shifted = await convert(src, pachimud_world, plan(MIDGAARD, SCHOOL, vnum_policy={"mode": "shift_to"}))
@@ -113,7 +113,7 @@ async def test_vnum_policies(rom_world, pachimud_world):
     assert first.top_vnum < second.bottom_vnum and first.offset != 0
     assert all(a.action == "create" for a in shifted.zones)
     with pytest.raises(HTTPException) as error:
-        await convert(src, pachimud_world, plan(SCHOOL, vnum_policy={"mode": "offset", "offset": -5000}))
+        await convert(src, pachimud_world, plan(SCHOOL, vnum_policy={"mode": "offset", "offset": -(SCHOOL + 1000)}))
     assert code_of(error.value) == "convert.offset_negative"
 
 
@@ -121,7 +121,9 @@ async def test_blocked_by_foreign_vnums(rom_world, pachimud_world):
     """Un vnum o un range che toccano un'altra zona bloccano la zona: nulla viene scritto."""
     src = rom_world()
     before = await snapshot(pachimud_world)
-    report = await convert(src, pachimud_world, plan(SCHOOL, vnum_policy={"mode": "offset", "offset": -2700}), dry_run=False, confirm=True)
+    report = await convert(
+        src, pachimud_world, plan(SCHOOL, vnum_policy={"mode": "offset", "offset": 1000 - SCHOOL}), dry_run=False, confirm=True
+    )
     assert [z.action for z in report.zones] == ["blocked"]
     assert {c.kind for c in report.conflicts} >= {"range_overlap", "vnum_taken"}
     assert await snapshot(pachimud_world) == before
@@ -147,7 +149,7 @@ async def test_safety_checks(rom_world, pachimud_world):
 class Failing(PachimudAdapter):
     """Adapter pachimud che fallisce alla N-esima creazione di mob (per provare il rollback)."""
 
-    fail_at = 5
+    fail_at = 5 if HAVE_ROM else 2
 
     async def create_mob(self, data):  # type: ignore[no-untyped-def]
         """Alza un errore alla `fail_at`-esima chiamata."""
@@ -174,11 +176,11 @@ async def test_rollback_restores_replaced_zone(rom_world, pachimud_world):
     await convert(src, pachimud_world, plan(SCHOOL), dry_run=False, confirm=True)
     before = await snapshot(pachimud_world)
     failing = Failing(pachimud_world.config)
-    failing.fail_at = 3
+    failing.fail_at = 3 if HAVE_ROM else 2
     report = await convert(src, failing, plan(SCHOOL, on_conflict="replace"), dry_run=False, confirm=True)
     assert report.rolled_back and not report.applied and not report.rollback_errors, report.rollback_errors
     assert await snapshot(failing) == before
-    zone = next(z for z in await list_all_zones(failing) if z.vnum == 3700)
+    zone = next(z for z in await list_all_zones(failing) if z.vnum == SCHOOL)
     await assert_zone_valid(failing, zone.id)
     await failing.close()
 
@@ -220,5 +222,5 @@ async def test_generic_fallback_with_mapping_world(tmp_path: Path, pachimud_worl
     report = await convert(world, pachimud_world, plan(SCHOOL), dry_run=False, confirm=True)
     assert report.converter == "generic" and report.applied, report.errors
     assert any(l.code == "extra_dropped" for l in report.losses)
-    zone = next(z for z in await list_all_zones(pachimud_world) if z.vnum == 3700)
+    zone = next(z for z in await list_all_zones(pachimud_world) if z.vnum == SCHOOL)
     await assert_zone_valid(pachimud_world, zone.id)

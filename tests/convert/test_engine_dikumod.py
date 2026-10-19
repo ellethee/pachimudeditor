@@ -9,7 +9,7 @@ from pachimudeditor.common.adapters.convert.engine import convert
 from pachimudeditor.common.adapters.convert.models import ConvertPlan
 from pachimudeditor.common.adapters.convert.reader import list_all_zones, read_zone
 from pachimudeditor.common.adapters.registry import WorldConfig
-from tests.convert.helpers import assert_zone_valid, snapshot
+from tests.convert.helpers import SCHOOL, SCHOOL_NAME, assert_zone_valid, snapshot
 from tests.dikumod.synthetic import write_world
 from tests.dikumod_lib.conftest import PREFIX, lib_of
 
@@ -57,9 +57,9 @@ async def test_dikumod_to_basedmud_and_back(dikumod_small, empty_rom, tmp_path):
 async def test_basedmud_and_pachimud_to_dikumod(rom_world, pachimud_world, dikumod_small):
     """BasedMud -> Diku Modificato e pachimud -> Diku Modificato in coda al mondo Diku Modificato; un guasto non lascia nulla."""
     before = await snapshot(dikumod_small)
-    report = await convert(rom_world(), dikumod_small, plan(3700, vnum_policy={"mode": "shift_to"}), dry_run=False, confirm=True)
+    report = await convert(rom_world(), dikumod_small, plan(SCHOOL, vnum_policy={"mode": "shift_to"}), dry_run=False, confirm=True)
     assert report.applied and not report.errors, report.errors
-    created = next(z for z in await list_all_zones(dikumod_small) if z.name == "mud school")
+    created = next(z for z in await list_all_zones(dikumod_small) if z.name == SCHOOL_NAME)
     await assert_zone_valid(dikumod_small, created.id)
     after_first = await snapshot(dikumod_small)
     assert len(after_first) == len(before) + 1

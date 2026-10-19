@@ -10,6 +10,7 @@ import pytest_asyncio
 
 from pachimudeditor.common.adapters.registry import WorldConfig, WorldRegistry, set_registry
 from tests.convert.conftest import make_rom_dir
+from tests.convert.helpers import SCHOOL
 from tests.support import stack
 from tests.helpers import data, error_code
 
@@ -33,8 +34,8 @@ async def worlds(tmp_path: Path) -> AsyncIterator[None]:
 
 
 def body(**kw) -> dict:  # type: ignore[type-arg]
-    """Corpo base: la zona 3700 di `rom` verso pachimud."""
-    return {"sourceWorld": "rom", "targetWorld": "pachimud", "zoneIds": [3700], **kw}
+    """Corpo base: la zona `SCHOOL` di `rom` verso pachimud."""
+    return {"sourceWorld": "rom", "targetWorld": "pachimud", "zoneIds": [SCHOOL], **kw}
 
 
 async def test_auth_required(anon: httpx.AsyncClient) -> None:
@@ -74,7 +75,7 @@ async def test_preview_then_run(client: httpx.AsyncClient, monkeypatch: pytest.M
 
     done = data(await client.post("/api/convert/run", json=body(dryRun=False, confirm=True)))
     assert done["applied"] is True and done["journal"]["enabled"] is True
-    assert [z["vnum"] for z in data(await client.get("/api/zones"))["items"]] == [10, 20, 3700]
+    assert [z["vnum"] for z in data(await client.get("/api/zones"))["items"]] == [10, 20, SCHOOL]
     saved = json.loads((journal / done["journal"]["file"]).read_text(encoding="utf-8"))
     assert saved["report"]["applied"] is True and saved["sourceWorld"] == "rom"
     again = data(await client.post("/api/convert/run", json=body(dryRun=False, confirm=True)))

@@ -10,6 +10,36 @@ from pachimudeditor.common.adapters import registry as registry_module
 from pachimudeditor.common.adapters.registry import WorldConfig, WorldRegistry, set_registry
 from tests.support import stack
 from tests.helpers import data, error_code
+from tests.support.real_data import HAVE_ROM
+
+if HAVE_ROM:  # aree reali di basedmud
+    ZONES, ZONE, ZONE_NAME, FILE, ROOMS, ROOM, SECTOR, MOB, SEARCH, NEXT, NEW = (
+        49,
+        3000,
+        "Midgaard",
+        "midgaard.are",
+        143,
+        3001,
+        0,
+        3000,
+        "wizard",
+        10600,
+        3390,
+    )
+else:  # aree sintetiche (tests/support/synthetic_worlds.py)
+    ZONES, ZONE, ZONE_NAME, FILE, ROOMS, ROOM, SECTOR, MOB, SEARCH, NEXT, NEW = (
+        2,
+        5000,
+        "Prato",
+        "prato.are",
+        4,
+        5000,
+        1,
+        5000,
+        "maestro",
+        6100,
+        5090,
+    )
 
 H = {"X-World": "basedmud"}
 
@@ -50,20 +80,20 @@ async def test_worlds_lists_basedmud(client: httpx.AsyncClient) -> None:
 async def test_core_routes_on_basedmud(client: httpx.AsyncClient) -> None:
     """Zone, stanze, mob, oggetti e meta rispondono sul mondo scelto; senza header resta pachimud."""
     zones = data(await client.get("/api/zones", headers=H))
-    assert zones["total"] == 49 and any(z["name"] == "Midgaard" for z in zones["items"])
+    assert zones["total"] == ZONES and any(z["name"] == ZONE_NAME for z in zones["items"])
     assert data(await client.get("/api/zones"))["total"] == 2  # default: pachimud
-    midgaard = data(await client.get("/api/zones/3000?world=basedmud"))
-    assert midgaard["extra"]["file"] == "midgaard.are"
-    rooms = data(await client.get("/api/rooms", params={"zoneId": 3000, "pageSize": 5, "page": 1}, headers=H))
-    assert rooms["total"] == 143 and len(rooms["items"]) == 5
-    room = data(await client.get("/api/rooms/3001", headers=H))
-    assert room["exits"][0]["targetRoomName"] and room["extra"]["sector"] == 0
-    mobs = data(await client.get("/api/mobs", params={"search": "wizard"}, headers=H))
+    zone = data(await client.get(f"/api/zones/{ZONE}?world=basedmud"))
+    assert zone["extra"]["file"] == FILE
+    rooms = data(await client.get("/api/rooms", params={"zoneId": ZONE, "pageSize": 3, "page": 1}, headers=H))
+    assert rooms["total"] == ROOMS and len(rooms["items"]) == 3
+    room = data(await client.get(f"/api/rooms/{ROOM}", headers=H))
+    assert room["exits"][0]["targetRoomName"] and room["extra"]["sector"] == SECTOR
+    mobs = data(await client.get("/api/mobs", params={"search": SEARCH}, headers=H))
     assert mobs["total"] >= 1
-    objects = data(await client.get("/api/objects", params={"zoneId": 3000, "orderBy": "-vnum", "pageSize": 3, "page": 1}, headers=H))
+    objects = data(await client.get("/api/objects", params={"zoneId": ZONE, "orderBy": "-vnum", "pageSize": 3, "page": 1}, headers=H))
     assert [o["vnum"] for o in objects["items"]] == sorted((o["vnum"] for o in objects["items"]), reverse=True)
-    assert data(await client.get("/api/zones/3000/reset-commands", headers=H))[0]["commandType"] == 0
-    assert data(await client.get("/api/zones/next-vnum", headers=H))["bottomVnum"] == 10600
+    assert data(await client.get(f"/api/zones/{ZONE}/reset-commands", headers=H))[0]["commandType"] == 0
+    assert data(await client.get("/api/zones/next-vnum", headers=H))["bottomVnum"] == NEXT
     enums = data(await client.get("/api/meta/enums", headers=H))
     assert "romMobFlags" in enums and data(await client.get("/api/meta/races", headers=H)) == []
     assert error_code(await client.get("/api/mobs/999999", headers=H), 404) == "mobs.not_found"
@@ -71,26 +101,26 @@ async def test_core_routes_on_basedmud(client: httpx.AsyncClient) -> None:
 
 async def test_writes_over_http(client: httpx.AsyncClient, area_dir: Path) -> None:
     """PUT/POST/DELETE su BasedMud scrivono il file `.are`; gli errori hanno i codici stabili."""
-    mob = data(await client.put("/api/mobs/3000", json={"level": 31, "extra": {"size": "large"}}, headers=H))
+    mob = data(await client.put(f"/api/mobs/{MOB}", json={"level": 31, "extra": {"size": "large"}}, headers=H))
     assert mob["level"] == 31 and mob["extra"]["size"] == "large"
-    assert " large " in (area_dir / "midgaard.are").read_text(encoding="latin-1")
-    created = data(await client.post("/api/rooms", json={"vnum": 3390, "zoneId": 3000, "name": "Nuova", "flags": ["dark"]}, headers=H), 201)
+    assert " large " in (area_dir / FILE).read_text(encoding="latin-1")
+    created = data(await client.post("/api/rooms", json={"vnum": NEW, "zoneId": ZONE, "name": "Nuova", "flags": ["dark"]}, headers=H), 201)
     assert created["flags"] == ["dark"]
-    response = await client.post("/api/rooms", json={"vnum": 3390, "zoneId": 3000, "name": "Doppia"}, headers=H)
+    response = await client.post("/api/rooms", json={"vnum": NEW, "zoneId": ZONE, "name": "Doppia"}, headers=H)
     assert error_code(response, 409) == "rooms.vnum_taken"
-    assert error_code(await client.put("/api/mobs/3000", json={"extra": {"x": 1}}, headers=H), 422) == "basedmud.extra_unknown"
-    assert error_code(await client.put("/api/mobs/3000", json={"experience": 5}, headers=H), 422) == "basedmud.field_unsupported"
-    assert (await client.delete("/api/rooms/3390", headers=H)).status_code == 204
-    assert error_code(await client.get("/api/rooms/3390", headers=H), 404) == "rooms.not_found"
-    msg = (await client.put("/api/mobs/3000", json={"extra": {"x": 1}}, headers={**H, "Accept-Language": "en"})).json()
+    assert error_code(await client.put(f"/api/mobs/{MOB}", json={"extra": {"x": 1}}, headers=H), 422) == "basedmud.extra_unknown"
+    assert error_code(await client.put(f"/api/mobs/{MOB}", json={"experience": 5}, headers=H), 422) == "basedmud.field_unsupported"
+    assert (await client.delete(f"/api/rooms/{NEW}", headers=H)).status_code == 204
+    assert error_code(await client.get(f"/api/rooms/{NEW}", headers=H), 404) == "rooms.not_found"
+    msg = (await client.put(f"/api/mobs/{MOB}", json={"extra": {"x": 1}}, headers={**H, "Accept-Language": "en"})).json()
     assert "Unknown extra key" in msg["detail"][0]["msg"]
 
 
 async def test_read_only_and_capabilities_over_http(client: httpx.AsyncClient) -> None:
     """Mondo in sola lettura: 409 `world.read_only`; aree opzionali: 409 `world.capability_missing`."""
     ro = {"X-World": "basedmud-ro"}
-    assert data(await client.get("/api/mobs/3000", headers=ro))["level"] == 23
-    assert error_code(await client.put("/api/mobs/3000", json={"level": 1}, headers=ro), 409) == "world.read_only"
+    assert data(await client.get(f"/api/mobs/{MOB}", headers=ro))["level"] == 23
+    assert error_code(await client.put(f"/api/mobs/{MOB}", json={"level": 1}, headers=ro), 409) == "world.read_only"
     assert error_code(await client.post("/api/zones", json={"vnum": 1, "name": "X"}, headers=ro), 409) == "world.read_only"
     for path in ("/api/players/accounts", "/api/world/overview", "/api/instances/mobs", "/api/content/races"):
         assert error_code(await client.get(path, headers=H), 409) == "world.capability_missing", path

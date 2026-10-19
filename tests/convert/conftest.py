@@ -14,6 +14,7 @@ from pachimudeditor_adapter_pachimud.adapter import PachimudAdapter
 from pachimudeditor.common.adapters.registry import WorldConfig
 from tests.basedmud.conftest import AREA_DIR
 from tests.support import stack
+from tests.support.synthetic_worlds import write_rom_area
 from tests.dikumod_lib.conftest import (  # noqa: F401  (fixture condivise: guardia sugli hash degli originali, copie)
     VARIANTS,
     _originals_untouched,
@@ -41,9 +42,9 @@ def _originals_basedmud_untouched():  # type: ignore[no-untyped-def]
 
 
 def make_rom_dir(dest: Path, areas: tuple[str, ...] = AREAS) -> Path:
-    """Una cartella `area/` ROM con solo `areas` copiate da basedmud e un `area.lst` che le elenca."""
+    """Una cartella `area/` ROM con solo `areas` copiate da basedmud e un `area.lst` che le elenca (aree sintetiche se mancano)."""
     if not AREA_DIR.is_dir():
-        pytest.skip(f"aree basedmud non trovate in {AREA_DIR}")
+        return write_rom_area(dest)
     dest.mkdir(parents=True, exist_ok=True)
     for name in areas:
         shutil.copy2(AREA_DIR / name, dest / name)

@@ -7,17 +7,18 @@ fuori dal mondo sintetico sono tolti (`prune_resets`), cosi' gli script passano 
 """
 
 import hashlib
-import os
 import re
 import shutil
 from pathlib import Path
 
-ROM_AREA = Path(os.environ.get("BASEDMUD_AREA_DIR", Path(__file__).resolve().parents[3] / "basedmud" / "area"))
+from tests.support import real_data
+from tests.support.synthetic_worlds import write_dikumod_world, write_rom_area
+
+ROM_AREA = real_data.ROM_AREA
 """Cartella `area/` reale di basedmud (sola lettura)."""
-# Nessun default: senza `DIKUMOD_ROOT` la cartella non esiste e i test che la usano si saltano.
-PREFIX = os.environ.get("DIKUMOD_PREFIX") or "dikumoddata"
+PREFIX = real_data.DIKUMOD_PREFIX
 """Prefisso dei file dati reali (`DIKUMOD_PREFIX`)."""
-DIKUMOD_LIB: Path | None = Path(root) / "dikumod2" / "lib" if (root := os.environ.get("DIKUMOD_ROOT")) else None
+DIKUMOD_LIB: Path | None = real_data.DIKUMOD_ROOT / "dikumod2" / "lib" if real_data.DIKUMOD_ROOT else None
 """Cartella `lib/` reale della variante `dikumod2` (sola lettura, solo da `DIKUMOD_ROOT`); `None` se non impostata."""
 EXAMPLES = Path(__file__).resolve().parents[2] / "adapters" / "mapping" / "src" / "pachimudeditor_adapter_mapping" / "examples"
 ROM_MAPPING = EXAMPLES / "rom.yaml"
@@ -32,7 +33,9 @@ def digest(folder: Path) -> dict[str, str]:
 
 
 def copy_rom_area(dest: Path) -> Path:
-    """Copia le aree reali (`*.are`, `area.lst`) in `dest`."""
+    """Copia le aree reali (`*.are`, `area.lst`) in `dest`; senza i dati reali, scrive le aree sintetiche."""
+    if not ROM_AREA.is_dir():
+        return write_rom_area(dest)
     dest.mkdir(parents=True, exist_ok=True)
     for p in ROM_AREA.iterdir():
         if p.is_file() and (p.suffix == ".are" or p.name == "area.lst"):
@@ -84,8 +87,12 @@ def dikumod_text(name: str) -> str:
 def build_dikumod_world(dest: Path) -> dict[str, int]:
     """Scrive in `dest` un mondo `dikumoddata.*` con i record reali di Diku Modificato dentro le prime `DIKUMOD_ZONES` zone.
 
-    Restituisce i conteggi `{zones, rooms, mobs, objects, shops, top}`.
+    Restituisce i conteggi `{zones, rooms, mobs, objects, shops, top}`. Senza i dati reali scrive il mondo sintetico
+    (`write_dikumod_world`) e i conteggi coincidono con i suoi.
     """
+    if DIKUMOD_LIB is None or not DIKUMOD_LIB.is_dir():
+        write_dikumod_world(dest)
+        return {"zones": 3, "rooms": 5, "mobs": 3, "objects": 5, "shops": 1, "top": 199}
     from pachimudeditor_adapter_mapping.grammar import parse_document
     from pachimudeditor_adapter_mapping.schema import load_mapping
 

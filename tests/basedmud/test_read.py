@@ -1,5 +1,6 @@
 """Lettura dell'adapter BasedMud sulle aree reali (copia): caricamento, conteggi, ricerca, paginazione, filtri."""
 
+import pytest
 from pathlib import Path
 
 from pachimudeditor_adapter_basedmud.rom_lib import load_area_file, read_area_list
@@ -9,6 +10,7 @@ from pachimudeditor.common.adapters.models import MobPageParams, ObjectPageParam
 from tests.adapter_contract.helpers import expect_error
 
 
+@pytest.mark.real_rom
 async def test_all_areas_load_and_counts_match_library(adapter: BasedMudAdapter, area_dir: Path) -> None:
     """Tutti i 53 file di `area.lst` si caricano; zone, stanze, mob e oggetti coincidono con i conteggi della libreria."""
     names = read_area_list(area_dir / "area.lst").names
@@ -35,6 +37,7 @@ async def test_all_areas_load_and_counts_match_library(adapter: BasedMudAdapter,
         assert summary.room_count == len(entry.items("room"))
 
 
+@pytest.mark.real_rom
 async def test_zone_mapping(adapter: BasedMudAdapter) -> None:
     """Id = vnum minimo, livelli/builder dai credits, extra con file e credits."""
     zone = await adapter.get_zone(3000)
@@ -48,6 +51,7 @@ async def test_zone_mapping(adapter: BasedMudAdapter) -> None:
         await adapter.get_zone(424242)
 
 
+@pytest.mark.real_rom
 async def test_search_paging_and_ordering(adapter: BasedMudAdapter) -> None:
     """Ricerca case-insensitive su nome/keywords/vnum, paginazione, ordinamento e filtro per zona."""
     found = await adapter.list_mobs(MobPageParams(search="WIZARD"))
@@ -66,6 +70,7 @@ async def test_search_paging_and_ordering(adapter: BasedMudAdapter) -> None:
     assert (await adapter.list_zones(ZonePageParams(search="3000"))).total >= 1
 
 
+@pytest.mark.real_rom
 async def test_details_and_usage(adapter: BasedMudAdapter) -> None:
     """Stanza con uscite ed extra, mob con negozio/special, oggetto, reset e uso dei vnum."""
     room = await adapter.get_room(3001)
@@ -101,6 +106,7 @@ async def test_meta_from_tables(adapter: BasedMudAdapter, area_dir: Path) -> Non
     assert info.capabilities.supports_reset_scripts and not info.capabilities.supports_players
 
 
+@pytest.mark.real_rom
 async def test_cache_follows_external_changes(adapter: BasedMudAdapter, area_dir: Path) -> None:
     """Una modifica esterna del file (mtime/size) e' vista alla richiesta successiva."""
     assert (await adapter.get_mob(3000)).level == 23

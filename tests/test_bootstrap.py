@@ -6,8 +6,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 from pachimudeditor.modules import build_modules
 from tests.support import mapping_worlds as worlds
 from tests.support import stack
@@ -35,13 +33,15 @@ def test_optional_modules_only_with_pachimud_world() -> None:
 
 def test_mapping_world_runs_without_pachimud(tmp_path: Path) -> None:
     """Avvio e uso di un mondo non-pachimud con `pachimud` NON importabile; le rotte opzionali sono 404."""
-    if not worlds.ROM_AREA.is_dir():
-        pytest.skip("aree basedmud non trovate")
     area = worlds.copy_rom_area(tmp_path / "area")
     based = tmp_path / "based"
     shutil.copytree(area, based / "area")
     (based / "src").mkdir()
-    shutil.copy(worlds.ROM_AREA.parent / "src" / "tables.c", based / "src" / "tables.c")
+    tables = worlds.ROM_AREA.parent / "src" / "tables.c"
+    if worlds.ROM_AREA.is_dir() and tables.is_file():
+        shutil.copy(tables, based / "src" / "tables.c")
+    else:  # niente dati reali: tabelle minime
+        (based / "src" / "tables.c").write_text('const RACE_TYPE race_table[RACE_MAX + 1] = {\n    {"human", TRUE, 0},\n};\n')
     config = [{"id": "rom", "kind": "mapping", "mapping": str(worlds.ROM_MAPPING), "path": str(area), "read_only": True}]
     result = run_child("serve", workdir=str(tmp_path / "w"), worlds=config)
     assert result.returncode == 0 and "OK zones=" in result.stdout, result.stdout + result.stderr

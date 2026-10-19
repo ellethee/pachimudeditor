@@ -37,6 +37,13 @@ from pachimudeditor.common.adapters.models import (
 )
 from pachimudeditor.common.adapters.registry import WorldConfig
 from tests.support.mapping_worlds import ROM_AREA, ROM_MAPPING
+from tests.support.real_data import HAVE_ROM
+from tests.support.synthetic_worlds import write_rom_area
+
+if HAVE_ROM:  # (file, mob, nome breve del mob, stanza, altra stanza, chiave, oggetto, zona) usati dagli scenari di scrittura
+    FILE, MOB, MOB_SHORT, ROOM, ROOM2, KEY, OBJ, ZONE = "midgaard.are", 3000, "the wizard", 3001, 3002, 3005, 3000, 3000
+else:
+    FILE, MOB, MOB_SHORT, ROOM, ROOM2, KEY, OBJ, ZONE = "prato.are", 5000, "il maestro", 5000, 5001, 5004, 5001, 5000
 
 
 @pytest.fixture(scope="module")
@@ -71,7 +78,7 @@ RESET_FIELDS = {
 def test_parses_all_real_areas_like_rom_lib(rom_dir: Path, spec: MappingSpec) -> None:
     """Per ogni `.are`: stessi conteggi per sezione e stessi campi chiave di ogni record (zona, mob, oggetti, stanze, reset, negozi, spec)."""
     files = sorted(rom_dir.glob("*.are"))
-    assert len(files) >= 40
+    assert len(files) >= (40 if HAVE_ROM else 2)
     totals = {"MOBILES": 0, "OBJECTS": 0, "ROOMS": 0, "RESETS": 0, "SHOPS": 0, "SPECIALS": 0}
     for path in files:
         doc, _ = parse(spec, path)
@@ -125,7 +132,11 @@ def test_parses_all_real_areas_like_rom_lib(rom_dir: Path, spec: MappingSpec) ->
         for mine, theirs in zip(records(doc, "SPECIALS"), lib.specials, strict=False):
             if mine.fields["cmd"] == "M":
                 assert (mine.fields["mob_vnum"], mine.fields["function"]) == (theirs.mob_vnum, theirs.function)
-    assert totals["ROOMS"] > 3000 and totals["MOBILES"] > 900 and totals["RESETS"] > 5000
+    assert (
+        totals["ROOMS"] > (3000 if HAVE_ROM else 5)
+        and totals["MOBILES"] > (900 if HAVE_ROM else 3)
+        and totals["RESETS"] > (5000 if HAVE_ROM else 10)
+    )
 
 
 def test_untouched_files_rewrite_byte_identical(rom_dir: Path, spec: MappingSpec) -> None:
@@ -142,11 +153,11 @@ def test_untouched_files_rewrite_byte_identical(rom_dir: Path, spec: MappingSpec
 
 async def test_editing_a_mob_rewrites_only_its_block(rom_dir: Path, spec: MappingSpec) -> None:
     """`update_mob` cambia solo i byte del blocco del mob; gli altri record e gli altri file restano identici."""
-    path = rom_dir / "midgaard.are"
+    path = rom_dir / FILE
     before = {p.name: p.read_bytes() for p in rom_dir.iterdir() if p.is_file()}
     old_doc, old_text = parse(spec, path)
     adapter = MappingAdapter(WorldConfig(id="rom", kind="mapping", mapping=str(ROM_MAPPING), path=str(rom_dir)))
-    await adapter.update_mob(3000, MobPatch(level=24, short_description="il mago"))
+    await adapter.update_mob(MOB, MobPatch(level=24, short_description="il mago"))
 
     new_doc, new_text = parse(spec, path)
     old_blocks = [r.src for s in old_doc.sections for r in s.records]
@@ -154,10 +165,10 @@ async def test_editing_a_mob_rewrites_only_its_block(rom_dir: Path, spec: Mappin
     changed = [i for i, (a, b) in enumerate(zip(old_blocks, new_blocks, strict=True)) if a != b]
     assert len(old_blocks) == len(new_blocks) and len(changed) == 1
     old_block, new_block = old_blocks[changed[0]], new_blocks[changed[0]]
-    assert old_block.lstrip().startswith("#3000") and "the wizard" in old_block and "il mago" in new_block
+    assert old_block.lstrip().startswith(f"#{MOB}") and MOB_SHORT in old_block and "il mago" in new_block
     assert new_text == old_text.replace(old_block, new_block, 1)  # tutto il resto del file e' identico
-    assert {p.name: p.read_bytes() for p in rom_dir.iterdir() if p.is_file() and p.name != "midgaard.are"} == {
-        k: v for k, v in before.items() if k != "midgaard.are"
+    assert {p.name: p.read_bytes() for p in rom_dir.iterdir() if p.is_file() and p.name != FILE} == {
+        k: v for k, v in before.items() if k != FILE
     }
 
 
@@ -213,33 +224,33 @@ async def test_adapter_dtos_equal_basedmud(rom_dir: Path) -> None:
 
 async def scenario(adapter: Any) -> None:
     """Una sequenza di scritture di ogni tipo (zona, stanza, uscita, extra, mob, oggetto, reset)."""
-    await adapter.update_mob(3000, MobPatch(level=24, short_description="il mago", flags=["npc", "sentinel"], race_id="elf", hp_bonus=5))
-    await adapter.update_room(3001, RoomPatch(name="Altare", flags=["indoors", "no_recall"], heal_rate=120, clan_id="xx", owner="luca"))
+    await adapter.update_mob(MOB, MobPatch(level=24, short_description="il mago", flags=["npc", "sentinel"], race_id="elf", hp_bonus=5))
+    await adapter.update_room(ROOM, RoomPatch(name="Altare", flags=["indoors", "no_recall"], heal_rate=120, clan_id="xx", owner="luca"))
     await adapter.update_object(
-        3000, ObjectPatch(cost=99, extra_flags=["glow"], wear_flags=["take", "hold"], affects={"strength": 2, "hit roll": 1}, value_2=None)
+        OBJ, ObjectPatch(cost=99, extra_flags=["glow"], wear_flags=["take", "hold"], affects={"strength": 2, "hit roll": 1}, value_2=None)
     )
     await adapter.create_exit(
-        3001,
+        ROOM,
         ExitIn(
             direction=Direction.WEST,
-            target_room_id=3002,
+            target_room_id=ROOM2,
             door_flag=DoorFlag.CLOSABLE,
             is_open=False,
-            key_vnum=3005,
+            key_vnum=KEY,
             keywords="porta",
             description="Una porta.",
         ),
     )
-    await adapter.create_extra_description(3001, ExtraDescriptionIn(keywords="statua", text="Una statua."))
-    await adapter.update_zone(3000, ZonePatch(name="Midgaard2", builder="luca", min_level=2, max_level=40))
+    await adapter.create_extra_description(ROOM, ExtraDescriptionIn(keywords="statua", text="Una statua."))
+    await adapter.update_zone(ZONE, ZonePatch(name="Midgaard2", builder="luca", min_level=2, max_level=40))
     commands = [
-        ResetCommandIn(command_type=ZoneCommandType.LOAD_MOB, arg1=3000, arg2=2, arg3=3001, arg4=3),
-        ResetCommandIn(command_type=ZoneCommandType.EQUIP_OBJECT, arg1=3000, arg_str="hold"),
-        ResetCommandIn(command_type=ZoneCommandType.GIVE_OBJECT, arg1=3000),
-        ResetCommandIn(command_type=ZoneCommandType.PUT_OBJECT, arg1=3000, arg3=3000, arg4=2),
-        ResetCommandIn(command_type=ZoneCommandType.SET_DOOR_STATE, arg1=3001, arg2=0, arg_str="CLOSED"),
+        ResetCommandIn(command_type=ZoneCommandType.LOAD_MOB, arg1=MOB, arg2=2, arg3=ROOM, arg4=3),
+        ResetCommandIn(command_type=ZoneCommandType.EQUIP_OBJECT, arg1=OBJ, arg_str="hold"),
+        ResetCommandIn(command_type=ZoneCommandType.GIVE_OBJECT, arg1=OBJ),
+        ResetCommandIn(command_type=ZoneCommandType.PUT_OBJECT, arg1=OBJ, arg3=OBJ, arg4=2),
+        ResetCommandIn(command_type=ZoneCommandType.SET_DOOR_STATE, arg1=ROOM, arg2=0, arg_str="CLOSED"),
     ]
-    await adapter.replace_reset_commands(3000, ResetScriptIn(commands=commands))
+    await adapter.replace_reset_commands(ZONE, ResetScriptIn(commands=commands))
 
 
 async def test_same_operations_produce_the_same_files(rom_dir: Path, tmp_path: Path) -> None:
@@ -260,4 +271,5 @@ async def test_same_operations_produce_the_same_files(rom_dir: Path, tmp_path: P
             .replace("M 100 H 120\n", "H 120\n")
         )
         assert a == b, "".join(list(difflib.unified_diff(b.splitlines(True), a.splitlines(True)))[:40])
-    assert (rom_dir / "midgaard.are").read_bytes() != (ROM_AREA / "midgaard.are").read_bytes()  # riscritto davvero
+    original = ROM_AREA if HAVE_ROM else write_rom_area(tmp_path / "orig")
+    assert (rom_dir / FILE).read_bytes() != (original / FILE).read_bytes()  # riscritto davvero

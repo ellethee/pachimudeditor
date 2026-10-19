@@ -7,7 +7,6 @@ cartella temporanea copiata da una fixture). La suite non assume dati preesisten
 """
 
 import atexit
-import os
 import shutil
 import tempfile
 from collections.abc import AsyncIterator, Callable
@@ -18,6 +17,8 @@ import pytest_asyncio
 
 from pachimudeditor.common.adapters.base import WorldAdapter
 from pachimudeditor.common.adapters.registry import WorldConfig
+from tests.support import real_data
+from tests.support.synthetic_worlds import write_rom_area
 
 
 def _pachimud() -> WorldAdapter:
@@ -77,12 +78,13 @@ def _mapping() -> WorldAdapter:
 
 
 def _mapping_rom_copy() -> WorldAdapter:
-    """`MappingAdapter` (rom.yaml) su una copia temporanea delle aree reali di basedmud (la suite crea il suo contenuto)."""
-    source = Path(os.environ.get("BASEDMUD_AREA_DIR", Path(__file__).resolve().parents[3] / "basedmud" / "area"))
-    if not source.is_dir():
-        pytest.skip(f"aree basedmud non trovate in {source}")
+    """`MappingAdapter` (rom.yaml) su una copia temporanea delle aree reali di basedmud, o sintetiche se mancano (la suite crea il suo contenuto)."""
     root = Path(tempfile.mkdtemp(prefix="mapping-contract-rom-"))
     atexit.register(shutil.rmtree, root, ignore_errors=True)
+    source = real_data.ROM_AREA
+    if not source.is_dir():  # niente dati reali: aree sintetiche
+        write_rom_area(root)
+        return _mapping_adapter(root)
     for p in source.iterdir():
         if p.is_file() and (p.suffix == ".are" or p.name == "area.lst"):
             shutil.copy2(p, root / p.name)

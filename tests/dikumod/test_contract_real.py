@@ -14,6 +14,7 @@ def adapter(ro: DikumodAdapter) -> WorldAdapter:
     return ro
 
 
+@pytest.mark.real_dikumod
 async def test_paging_and_search_on_real_data(adapter: WorldAdapter) -> None:
     """Paginazione, ricerca e ordinamento sui dati veri: pagine coerenti, vnum in ordine, ricerca per nome."""
     page = await adapter.list_zones(ZonePageParams(page=2, pageSize=10))

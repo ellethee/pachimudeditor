@@ -37,6 +37,7 @@ def _block(text: str, vnum: int) -> tuple[int, int]:
     return start, end
 
 
+@pytest.mark.real_rom
 async def test_edit_mob_changes_only_its_bytes(adapter: BasedMudAdapter, area_dir: Path) -> None:
     """Modificare un mob riscrive solo il suo blocco: prefisso e suffisso del file restano identici."""
     path = area_dir / "midgaard.are"
@@ -51,6 +52,7 @@ async def test_edit_mob_changes_only_its_bytes(adapter: BasedMudAdapter, area_di
     assert mob.level == 30 and mob.extra["shop"]["profitBuy"] == 105  # il negozio e' intatto
 
 
+@pytest.mark.real_rom
 async def test_echoing_dtos_is_a_noop(adapter: BasedMudAdapter, area_dir: Path) -> None:
     """Rimandare come patch l'intero DTO letto (extra compreso) non cambia un solo byte del file."""
     path = area_dir / "midgaard.are"
@@ -72,6 +74,7 @@ async def test_echoing_dtos_is_a_noop(adapter: BasedMudAdapter, area_dir: Path) 
     assert path.read_bytes() == before
 
 
+@pytest.mark.real_rom
 async def test_object_room_and_exit_edits(adapter: BasedMudAdapter, area_dir: Path) -> None:
     """Oggetto, stanza, uscita ed extra description: round trip dei valori ROM (flag, settore, porte, extra)."""
     obj = await adapter.update_object(3000, ObjectPatch(cost=99, extra={"values": ["300", "300", "wine", "0", "0"]}))
@@ -99,6 +102,7 @@ async def test_object_room_and_exit_edits(adapter: BasedMudAdapter, area_dir: Pa
     assert new_exit.id == 30013 and new_exit.target_room_name == "The Temple Square"
 
 
+@pytest.mark.real_rom
 async def test_vnum_change_follows_references(adapter: BasedMudAdapter) -> None:
     """Un vnum usato da un reset non cambia; altrimenti uscite entranti, negozio e special seguono il nuovo vnum."""
     with expect_error(409, "rooms.vnum_in_use"):
@@ -132,6 +136,7 @@ async def test_vnum_change_follows_references(adapter: BasedMudAdapter) -> None:
     assert (await adapter.list_mobs(MobPageParams(zone_id=3000))).total == 65
 
 
+@pytest.mark.real_rom
 async def test_delete_mob_removes_shop_and_special(adapter: BasedMudAdapter, area_dir: Path) -> None:
     """Eliminare un mob toglie anche il suo negozio e la sua spec_fun (se nessun reset lo usa)."""
     mob = await adapter.create_mob(
@@ -151,6 +156,7 @@ async def test_delete_mob_removes_shop_and_special(adapter: BasedMudAdapter, are
     assert "3390" not in text
 
 
+@pytest.mark.real_rom
 async def test_area_list_edits(adapter: BasedMudAdapter, area_dir: Path) -> None:
     """Creare/disabilitare/riabilitare/eliminare una zona modifica `area.lst` mantenendo il `$` finale."""
     zone = await adapter.create_zone(ZoneIn(vnum=1, name="Nuova Terra", builder="Luca", bottom_vnum=20000, top_vnum=20099))
@@ -176,6 +182,7 @@ async def test_area_list_edits(adapter: BasedMudAdapter, area_dir: Path) -> None
         await adapter.create_mob(MobIn(vnum=2950, zone_id=3000, keywords="x", short_description="x"))
 
 
+@pytest.mark.real_rom
 async def test_read_only(make_adapter, area_dir: Path) -> None:  # type: ignore[no-untyped-def]
     """Un mondo `read_only` legge ma rifiuta ogni scrittura (409 `world.read_only`) senza toccare i file."""
     adapter = make_adapter(read_only=True)
@@ -206,6 +213,7 @@ async def test_zone_name_cannot_escape(adapter: BasedMudAdapter, area_dir: Path)
         await adapter.create_zone(ZoneIn(vnum=1, name="x", bottom_vnum=30100, top_vnum=30109, extra={"file": "etcpasswd.are"}))
 
 
+@pytest.mark.real_rom
 async def test_concurrent_writes_are_serialized(adapter: BasedMudAdapter, area_dir: Path) -> None:
     """Molte scritture concorrenti sullo stesso file non si perdono: tutte presenti e file ancora valido."""
     before = (await adapter.list_mobs(MobPageParams(zone_id=3000))).total

@@ -1,5 +1,6 @@
 """Parser e writer contro l'emulazione rigorosa del loader del gioco (`c_loader.py`) sui dati reali."""
 
+import pytest
 from pathlib import Path
 
 
@@ -117,6 +118,7 @@ def test_parser_agrees_with_the_loader_on_every_room(lib: Path) -> None:
         assert got["light"] == r.light
 
 
+@pytest.mark.real_dikumod
 def test_original_zone_file_hits_the_O_trap_and_canonical_rewrite_fixes_it(lib: Path, capsys) -> None:  # type: ignore[no-untyped-def]
     """Il loader C legge 90 zone dal file originale (trappola dei `O` a 4 numeri); riscritto in forma canonica ne legge 93."""
     world = load_world(lib)
@@ -155,6 +157,7 @@ def test_canonical_zone_commands_match_the_parser_exactly(lib: Path) -> None:
                 assert a4 == args[3]
 
 
+@pytest.mark.real_dikumod
 def test_shop_file_loader(lib: Path) -> None:
     """Il loader dei negozi legge i negozi sani del parser (il troncato fa perdere il sincronismo, come nel gioco)."""
     world = load_world(lib)

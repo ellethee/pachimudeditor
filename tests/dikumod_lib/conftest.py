@@ -1,17 +1,19 @@
 """Fixture dei test della libreria Diku Modificato: copie temporanee dei dati reali; gli originali non si toccano mai."""
 
 import hashlib
-import os
 import shutil
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
 
-# Nessun default: senza `DIKUMOD_ROOT` le cartelle non esistono e i test sui dati reali si saltano.
-ROOT = Path(os.environ.get("DIKUMOD_ROOT") or "/DIKUMOD_ROOT-non-impostata")
+from tests.support import real_data
+from tests.support.synthetic_worlds import write_dikumod_world
+
+# Senza `DIKUMOD_ROOT` le cartelle reali non esistono: `copy_lib` ripiega sul mondo sintetico.
+ROOT = real_data.DIKUMOD_ROOT or Path("/DIKUMOD_ROOT-non-impostata")
 """Cartella che contiene `dikumod/lib` e `dikumod2/lib` (sola lettura), da `DIKUMOD_ROOT`."""
-PREFIX = os.environ.get("DIKUMOD_PREFIX") or "dikumoddata"
+PREFIX = real_data.DIKUMOD_PREFIX
 """Prefisso dei file dati reali (`DIKUMOD_PREFIX`): nelle copie di lavoro i file diventano `dikumoddata.*`."""
 VARIANTS = ("dikumod", "dikumod2")
 _COPIED = ("dikumoddata.wld", "dikumoddata.mob", "dikumoddata.obj", "dikumoddata.zon", "dikumoddata.shp", "scripts.dat", "dikumoddata.gui")
@@ -53,11 +55,11 @@ def _originals_untouched() -> Iterator[None]:
 
 
 def copy_lib(variant: str, dest: Path) -> Path:
-    """Copia i dati di `variant` in `dest/lib` e restituisce il percorso (salta se mancano gli originali)."""
+    """Copia i dati di `variant` in `dest/lib` e restituisce il percorso (mondo sintetico se mancano gli originali)."""
     src = lib_of(variant)
-    if not (src / real_name("dikumoddata.wld")).is_file():
-        pytest.skip(f"dati Diku Modificato {variant} non trovati in {src}")
     out = dest / "lib"
+    if not (src / real_name("dikumoddata.wld")).is_file():
+        return write_dikumod_world(out)
     out.mkdir(parents=True)
     for name in _COPIED:
         if (src / real_name(name)).is_file():

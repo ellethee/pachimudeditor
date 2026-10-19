@@ -30,17 +30,13 @@ def _originals_untouched() -> Iterator[None]:
 
 @pytest.fixture
 def rom_dir(tmp_path: Path) -> Path:
-    """Copia temporanea delle aree reali di basedmud."""
-    if not worlds.ROM_AREA.is_dir():
-        pytest.skip(f"aree basedmud non trovate in {worlds.ROM_AREA}")
+    """Copia temporanea delle aree reali di basedmud (sintetiche se mancano)."""
     return worlds.copy_rom_area(tmp_path / "area")
 
 
 @pytest.fixture
 def dikumod_dir(tmp_path: Path) -> Path:
-    """Mondo `dikumoddata.*` sintetico con record reali di Diku Modificato."""
-    if worlds.DIKUMOD_LIB is None or not worlds.DIKUMOD_LIB.is_dir():
-        pytest.skip(f"dati Diku Modificato non trovati in {worlds.DIKUMOD_LIB}")
+    """Mondo `dikumoddata.*` con i primi record reali di Diku Modificato (o il mondo sintetico se mancano)."""
     root = tmp_path / "lib"
     worlds.build_dikumod_world(root)
     return root
