@@ -110,7 +110,6 @@ MIT, vedi il file `LICENSE` (copyright (c) 2026 IlPachi). Ogni adapter ha il pro
 
 ```bash
 uv sync --all-packages                   # workspace: core + tutti gli adapter editabili; il gruppo dev porta pytest
-uv pip install -e ../pachimud            # opzionale, NON e' una dipendenza: il gioco (checkout fratello) per i test di equivalenza; poi usa `uv run --no-sync`
 (cd frontend && pnpm install)
 uv run pachimudeditor init --workdir .   # la cartella del repo e' anche la cartella di lavoro di sviluppo
 uv run pachimudeditor serve --workdir . --reload     # API su :8123; oppure `uv run pachifast dev` (project_modules.py)
@@ -118,7 +117,7 @@ cd frontend && pnpm dev                  # app su http://localhost:9010, proxy /
 uv run pachimudeditor build-frontend     # SPA -> src/pachimudeditor/static (serve per `serve` senza pnpm dev e per gli e2e)
 ```
 
-Nella cartella di sviluppo `pachimudeditor.yaml` ha il mondo pachimud con `params.config_path: ../pachimud/pachimud.yaml` (il gioco e' un checkout fratello `../pachimud`).
+Nessun checkout del MUD pachimud serve per sviluppare o testare: i modelli del DB di gioco sono copiati nell'adapter (`game_models/`) e le definizioni di esempio in `tests/fixtures/pachimud_definitions/`. Il confronto opzionale con il MUD vero gira solo con `PACHIMUD_GAME_ROOT=<checkout>` (vedi `docs/contributing.md`).
 
 I test che usano dati reali di basedmud li cercano nel checkout fratello `../basedmud` (override con `BASEDMUD_AREA_DIR`, `ROM_AREA_DIR`, `E2E_BASEDMUD`). I dati reali del **Diku Modificato** non hanno nessun default: i test pytest leggono solo `DIKUMOD_ROOT` (una cartella con `dikumod/lib` e `dikumod2/lib`; prefisso dei file dati `dikumoddata`, o `DIKUMOD_PREFIX`) e gli e2e solo `E2E_DIKUMOD` (una cartella `lib/`; prefisso `E2E_DIKUMOD_PREFIX`); se non sono impostate (o non esistono) quei test vengono saltati e i mondi `dikumod*` non compaiono negli e2e. Per gli altri dati mancanti i test pytest si saltano, mentre gli e2e che li copiano falliscono con un errore esplicito.
 Per lavorare sui propri mondi copia `pachimudeditor.yaml` (esempio generico) in `pachimudeditor.local.yaml` (ignorato da git) e imposta `PACHIFAST_CONFIG_FILE=pachimudeditor.local.yaml` nel `.env`.
@@ -128,8 +127,7 @@ Per lavorare sui propri mondi copia `pachimudeditor.yaml` (esempio generico) in 
 Entrambe le suite lavorano solo su database **temporanei** (mai `pachimud.db`).
 
 ```bash
-uv run pytest -q                          # API in-process (httpx + ASGI); il pacchetto `pachimud` (installato a mano dal checkout `../pachimud`: schema/seed del DB di prova, equivalenza) e'
-                                          # richiesto da quasi tutta la suite; senza, in raccolta restano solo `tests/core/` (CI)
+uv run pytest -q                          # API in-process (httpx + ASGI) su DB temporanei creati con i modelli copiati del gioco; nessun checkout del MUD
 uv run pytest tests/core -q               # solo il core: nessun adapter richiesto (adapter fittizi con entry point sintetici)
 (cd frontend && pnpm run typecheck)
 cd e2e && pnpm install && pnpm test       # richiede Chromium con debugging remoto su :9222 e la SPA in static/

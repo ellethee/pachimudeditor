@@ -223,7 +223,7 @@ opzionali coerenti con le capability dichiarate.
 # Punti aperti per un adapter su file
 
 - `id` di uscite/extra description (non hanno vnum) e di `ResetCommandOut` (indice nello script).
-- Le enum sono quelle di pachimud (copie in `common/enums.py`, allineate al gioco da `tests/test_equivalence.py`): i flag specifici del MUD (stanze/mob/oggetti) viaggiano come `list[str]`.
+- Le enum sono quelle di pachimud (copie in `common/enums.py`, allineate al gioco da `tests/test_game_compat.py`): i flag specifici del MUD (stanze/mob/oggetti) viaggiano come `list[str]`.
 - Ordine/formattazione dei file: scrivere in modo da minimizzare i diff; preservare le sezioni non
   modellate (candidato naturale: `extra` o conservazione del testo grezzo).
 - `delete_*` e cambio vnum: su file non esistono FK, l'integrita' e' tutta in `rules.py`/nell'adapter.

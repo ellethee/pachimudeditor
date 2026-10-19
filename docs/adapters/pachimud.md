@@ -53,7 +53,7 @@ webeditor_worlds:
 
 All'apertura del mondo si legge `alembic_version` e si confronta con la tabella delle revisioni note
 (`REVISIONS` in `schema.py`: `64f2026e1334` -> `f8c896cb5dd8` -> `848330e8786f` -> `9d4aa2f29079`, allineata alle migration del
-gioco da `tests/test_equivalence.py`) e con le colonne attese di ogni tabella (`EXPECTED`). Il rapporto (`SchemaReport`) ha uno
+gioco da `tests/test_game_compat.py`) e con le colonne attese di ogni tabella (`EXPECTED`). Il rapporto (`SchemaReport`) ha uno
 stato: `ok`, `behind` (revisione nota piu' vecchia), `unknown` (revisione ignota), `unversioned` (niente `alembic_version`),
 `incompatible`. Si scrive nel log all'avvio e `pachimudeditor worlds check` lo mostra (revisione, stato, avvisi). **Mai un
 errore salvo `incompatible`**:
@@ -80,10 +80,14 @@ Lo schema si legge una volta per processo (riavviare l'editor dopo una migration
 
 - Nessun mondo e' implicito: i mondi sono solo quelli di `webeditor_worlds` (vuoto = `/api/worlds` vuoto, UI con la
   pagina "Nessun mondo configurato").
-- `pachimud` (il gioco) NON e' una dipendenza dei pacchetti e nessun loro file lo importa (lo verifica
-  `tests/core/test_boundaries.py` con una scansione AST di core e adapter, e `tests/test_bootstrap.py` con un processo `python -I` che blocca l'import). E' una dipendenza di solo
-  sviluppo: i test lo usano per creare lo schema del DB di prova e per i test di equivalenza (`tests/test_equivalence.py`: hash,
-  trasferimento zone nei due versi, enum/schemi/colonne/revisioni allineati); senza il gioco quei test si saltano.
+- `pachimud` (il gioco) NON e' una dipendenza (nemmeno di sviluppo) e nessun file del repo lo importa (lo verifica
+  `tests/core/test_boundaries.py` con una scansione AST di src, adapter, tests, e2e e scripts, e `tests/test_bootstrap.py` con un processo `python -I` che blocca l'import).
+  I modelli SQLAlchemy del DB di gioco sono COPIATI in `pachimudeditor_adapter_pachimud/game_models/`: l'adapter in
+  produzione legge il DB con la riflessione e non li usa, servono a test, seed e2e e script per creare lo schema. Per
+  questo `params.config_path` si limita a leggere il `pachimud.yaml` come YAML e non c'e' nessun `python_path`.
+- Il confronto della copia con il MUD vero (hash, enum, schemi dei file, colonne, revisioni alembic, import di zone nei due
+  versi) e' OPZIONALE: `tests/test_game_compat.py` gira solo se `PACHIMUD_GAME_ROOT` punta a un checkout del gioco, altrimenti
+  e' saltato. I test sempre attivi (`tests/test_roundtrip.py`) verificano la coerenza con i modelli copiati.
 - `modules.build_modules(kinds)` aggiunge i moduli dei plugin dei kind configurati: `world/players/instances/transfer/content`
   arrivano dal plugin pachimud e si registrano solo quando c'e' un mondo `kind: pachimud` (le pagine del frontend compaiono
   solo se il mondo ha la capability, `supportsWorldOverview/Instances/Players/Transfer/ContentRaces`).

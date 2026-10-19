@@ -25,7 +25,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      # Il gioco `pachimud` non e' installato in CI: i test che lo richiedono si saltano in raccolta.
+      # Nessun checkout del MUD pachimud: modelli e definizioni di prova sono copiati nel repo (`PACHIMUD_GAME_ROOT` assente = confronto col MUD saltato).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false

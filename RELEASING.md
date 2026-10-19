@@ -110,7 +110,7 @@ Qui non si pubblica nulla su npm. I pacchetti `@ilpachi/*` usati dal frontend so
 I test degli adapter restano nella suite del monorepo (`tests/`, che usa fixture e dati condivisi con il core: spostarli in
 `adapters/<kind>/tests/` sarebbe invasivo) e quindi **non** sono nelle sdist degli adapter; la sdist del core include `tests/`.
 Sdist e wheel di ogni adapter sono comunque installabili e funzionanti (provato in un venv pulito: `pip install` delle sdist,
-`pachimudeditor adapters list`, `pip check`); la CI esegue la suite completa dal checkout.
+`pachimudeditor adapters list`, `pip check`); la CI esegue la suite completa dal checkout (senza il MUD pachimud: i modelli sono copiati, vedi `docs/contributing.md`).
 
 ## Verifiche in locale (senza pubblicare)
 

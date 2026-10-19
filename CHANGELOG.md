@@ -8,7 +8,7 @@ Un solo file per i cinque pacchetti. Le release sono sezioni `## <pacchetto> X.Y
 
 - Licenza MIT (espressione SPDX `license = "MIT"` e `LICENSE` in `pachimudeditor` e nei 4 adapter `-pachimud`, `-basedmud`, `-dikumod`, `-mapping`); email rimossa dagli `authors`; path personali sostituiti da segnaposto e default relativi ai checkout fratelli (`../basedmud`). `pachimudeditor.yaml` e' un esempio generico (la versione personale va in `pachimudeditor.local.yaml`, ignorato). Il classificatore `Private :: Do Not Upload` resta finche' non si decide di pubblicare su PyPI.
 
-- Il progetto vive in un repository proprio (storia di `webeditor2/` e `pachimudeditor/` mantenuta). Il gioco `pachimud` non e' una dipendenza del progetto (nemmeno di sviluppo): per i test di equivalenza lo si installa a mano nel venv (`uv pip install -e ../pachimud`); senza, la CI salta i test che lo richiedono.
+- Il progetto vive in un repository proprio (storia di `webeditor2/` e `pachimudeditor/` mantenuta). Il gioco `pachimud` non e' una dipendenza del progetto (nemmeno di sviluppo) e non serve nessun checkout: i modelli SQLAlchemy del DB di gioco sono copiati in `adapters/pachimud/.../game_models/` (usati da test, seed e2e e script) e le definizioni di esempio in `tests/fixtures/pachimud_definitions/`. Il confronto con il MUD vero e' opzionale (`tests/test_game_compat.py`, solo con `PACHIMUD_GAME_ROOT`). Un test AST vieta ogni `import pachimud` nel repo.
 
 - Il core rifiuta un plugin con `sdk_version` di major diversa da `SDK_VERSION` (kind in errore, non crash); i 4 adapter dichiarano `sdk_version="1.0"`.
 
@@ -45,7 +45,7 @@ Il mondo pachimud non dipende piu' dal pacchetto del gioco (`pachimud`): schema-
   tabelle reali (`MetaData.reflect`) invece di importare i modelli ORM del gioco. Engine e sessioni sono dell'adapter
   (per mondo, creati al primo uso, chiusi allo spegnimento); i pragma SQLite sono quelli del game server.
 - Nessun `import pachimud` in `src/pachimudeditor` (test di scansione AST + processo `python -I` con l'import bloccato),
-  niente `sys.path`/`python_path`. `pachimud` resta una dipendenza di solo sviluppo (schema del DB di prova ed equivalenza).
+  niente `sys.path`/`python_path`. Lo schema del DB di prova si crea con i modelli copiati del gioco (`game_models`).
 - I moduli `world/players/instances/transfer/content` si registrano quando e' configurato un mondo `kind: pachimud` (senza
   controllo di importabilita') e usano il database del mondo scelto dalla richiesta (`X-World`): `common/editor/db.py` espone
   `SessionDep`/`PachimudDep` che risolvono l'adapter attivo (409 `world.not_pachimud` se il mondo e' di un altro tipo).
@@ -60,7 +60,7 @@ Il mondo pachimud non dipende piu' dal pacchetto del gioco (`pachimud`): schema-
   Pydantic propri (`adapters/pachimud/definitions.py`); hash Argon2id con `argon2-cffi` (dipendenza ora dichiarata, come
   `sqlalchemy`, `aiosqlite`, `pyyaml`), identico a quello del gioco.
 - Export/import YAML di zona (`adapters/pachimud/transfer/`) riscritto: stessi file e stessa semantica upsert dell'importer del
-  gioco (verificata dai test di equivalenza nei due versi).
+  gioco (verificata da round-trip sempre attivi e, con `PACHIMUD_GAME_ROOT`, dal confronto con l'importer del MUD).
 - Rimossa la logica di `PACHIMUD_CONFIG_PATH` da `common/editor/db.py`; resta come ripiego documentato di `config_path`
   (`adapters/pachimud/params.py`). `pachimudeditor info` non mostra piu' la versione di `pachimud`.
 - `worlds check`: per i mondi pachimud mostra revisione e stato dello schema.
@@ -79,6 +79,6 @@ Prima versione distribuibile: il webeditor (ex `webeditor2/`) diventa il pacchet
 - CLI `pachimudeditor`: `init`, `serve`, `users`, `worlds`, `build-frontend`, `info`, `--version`.
 - Cartella di lavoro (`.env`, `pachimudeditor.yaml`, DB di autenticazione, migration) generata da `init`.
 - Nessun mondo implicito; `pachimud` (gioco) non e' una dipendenza: mondi pachimud e moduli collegati attivi solo se
-  il pacchetto e' importabile. Config del game server: `config_path` del mondo, `PACHIMUD_CONFIG_PATH` o `pachimud.yaml`
+  c'e' un mondo `kind: pachimud` (l'adapter non importa il gioco). Config del game server: `config_path` del mondo, `PACHIMUD_CONFIG_PATH` o `pachimud.yaml`
   in cwd; i path relativi si risolvono rispetto alla cartella di quel file.
 - Alias `PACHIMUDEDITOR_WORLDS` / `PACHIMUDEDITOR_DEFAULT_WORLD` (restano validi `WEBEDITOR_*`).

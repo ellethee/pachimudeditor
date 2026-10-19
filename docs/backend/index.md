@@ -68,9 +68,9 @@ fine sessione, con gli hash, che gli originali siano intatti. `uv run pytest tes
 ## Test automatici
 
 `uv run pytest` esegue la suite in `tests/` (httpx con trasporto ASGI) contro DB di gioco e di
-autenticazione temporanei seminati da `tests/support/stack.py` (usa il pacchetto `pachimud`, dipendenza di solo
-sviluppo, per creare lo schema e i dati di prova); non tocca `pachimud.db`. I test di equivalenza con il gioco sono in
-`tests/test_equivalence.py` (saltati senza `pachimud`). I test e2e
+autenticazione temporanei seminati da `tests/support/stack.py` (usa i modelli copiati del gioco, `game_models`, per creare lo
+schema e i dati di prova; nessun checkout del MUD); non tocca `pachimud.db`. Il confronto opzionale con il MUD vero e' in
+`tests/test_game_compat.py` (solo con `PACHIMUD_GAME_ROOT`). I test e2e
 del browser sono in `../e2e` (vedi `../README.md`).
 
 ## Test (smoke, sola lettura)
