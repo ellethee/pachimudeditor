@@ -398,7 +398,7 @@ async def test_read_only_world_rejects_writes(dikumod_dir: Path) -> None:
 # --------------------------------------------------------------------------- limiti sui file Diku Modificato interi
 
 
-@pytest.mark.skipif(not DIKUMOD_LIB.is_dir(), reason="dati Diku Modificato non trovati")
+@pytest.mark.skipif(DIKUMOD_LIB is None or not DIKUMOD_LIB.is_dir(), reason="dati Diku Modificato non trovati")
 def test_real_dikumod_files_known_irregularities(spec: MappingSpec) -> None:
     """Sui file Diku Modificato interi: `.zon` (93 zone), `.wld` (3856) e `.obj` (2041) si leggono e si riscrivono identici;
     `.mob` e `.shp` contengono record corrotti/troncati (vedi docs/formats/dikumod.md) che una grammatica rigorosa rifiuta

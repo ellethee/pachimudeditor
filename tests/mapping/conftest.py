@@ -21,7 +21,7 @@ def game_db() -> None:
 @pytest.fixture(scope="session", autouse=True)
 def _originals_untouched() -> Iterator[None]:
     """A fine sessione gli originali (aree ROM e `lib` di Diku Modificato) devono avere gli stessi hash di prima."""
-    roots = [p for p in (worlds.ROM_AREA, worlds.DIKUMOD_LIB) if p.is_dir()]
+    roots = [p for p in (worlds.ROM_AREA, worlds.DIKUMOD_LIB) if p is not None and p.is_dir()]
     before = {p: worlds.digest(p) for p in roots}
     yield
     for p in roots:
@@ -39,7 +39,7 @@ def rom_dir(tmp_path: Path) -> Path:
 @pytest.fixture
 def dikumod_dir(tmp_path: Path) -> Path:
     """Mondo `dikumoddata.*` sintetico con record reali di Diku Modificato."""
-    if not worlds.DIKUMOD_LIB.is_dir():
+    if worlds.DIKUMOD_LIB is None or not worlds.DIKUMOD_LIB.is_dir():
         pytest.skip(f"dati Diku Modificato non trovati in {worlds.DIKUMOD_LIB}")
     root = tmp_path / "lib"
     worlds.build_dikumod_world(root)

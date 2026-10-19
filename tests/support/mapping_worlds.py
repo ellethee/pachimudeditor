@@ -17,8 +17,8 @@ ROM_AREA = Path(os.environ.get("BASEDMUD_AREA_DIR", Path(__file__).resolve().par
 # Nessun default: senza `DIKUMOD_ROOT` la cartella non esiste e i test che la usano si saltano.
 PREFIX = os.environ.get("DIKUMOD_PREFIX") or "dikumoddata"
 """Prefisso dei file dati reali (`DIKUMOD_PREFIX`)."""
-DIKUMOD_LIB = Path(os.environ.get("DIKUMOD_ROOT") or "/DIKUMOD_ROOT-non-impostata") / "dikumod2" / "lib"
-"""Cartella `lib/` reale della variante `dikumod2` (sola lettura, solo da `DIKUMOD_ROOT`)."""
+DIKUMOD_LIB: Path | None = Path(root) / "dikumod2" / "lib" if (root := os.environ.get("DIKUMOD_ROOT")) else None
+"""Cartella `lib/` reale della variante `dikumod2` (sola lettura, solo da `DIKUMOD_ROOT`); `None` se non impostata."""
 EXAMPLES = Path(__file__).resolve().parents[2] / "adapters" / "mapping" / "src" / "pachimudeditor_adapter_mapping" / "examples"
 ROM_MAPPING = EXAMPLES / "rom.yaml"
 DIKU_MAPPING = EXAMPLES / "diku_classic.yaml"
@@ -77,6 +77,7 @@ def prune_resets(zone_chunk: str, rooms: set[int], mobs: set[int], objects: set[
 def dikumod_text(name: str) -> str:
     """Un file reale di Diku Modificato come testo (latin-1: round trip esatto)."""
     real = PREFIX + name[len("dikumoddata") :]  # i file reali usano `DIKUMOD_PREFIX`
+    assert DIKUMOD_LIB is not None
     return (DIKUMOD_LIB / real).read_text(encoding="latin-1")
 
 
