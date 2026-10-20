@@ -13,6 +13,7 @@ from pachifast import create_app
 
 from pachimudeditor.common.adapters.bootstrap import prepare_worlds
 from pachimudeditor.common.adapters.registry import WorldRegistry, set_registry
+from pachimudeditor.common.http_guard import install_http_guard
 from pachimudeditor.modules import build_modules
 from pachimudeditor.spa import SpaStaticFiles, static_dir
 
@@ -56,6 +57,8 @@ def create_editor_app(*, serve_spa: bool = True, extra_kinds: Iterable[str] = ()
         if len(path) > 1 and path.endswith("/") and path.startswith(_EDITOR_PREFIXES):
             request.scope["path"] = path.rstrip("/")
         return await call_next(request)
+
+    install_http_guard(app)  # per ultimo: e' il piu' esterno, vale anche per la SPA montata dopo
 
     directory = static_dir() if serve_spa else None
     if directory is not None:

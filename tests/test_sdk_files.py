@@ -52,3 +52,29 @@ def test_error_leaves_no_temp_and_original_intact(tmp_path: Path, monkeypatch: p
     with pytest.raises(OSError, match="replace fallito"):
         atomic_write_bytes(path, b"new")
     assert path.read_bytes() == b"old" and [p.name for p in tmp_path.iterdir()] == ["f"]
+
+
+def test_chown_denied_does_not_fail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Senza privilegi `fchown` fallisce con PermissionError: la scrittura riesce lo stesso e i permessi restano."""
+    path = tmp_path / "f"
+    path.write_bytes(b"old")
+    path.chmod(0o640)
+
+    def denied(*_: object) -> None:
+        raise PermissionError(1, "Operation not permitted")
+
+    monkeypatch.setattr(os, "fchown", denied)
+    atomic_write_bytes(path, b"new")
+    assert path.read_bytes() == b"new" and stat.S_IMODE(path.stat().st_mode) == 0o640
+    assert [p.name for p in tmp_path.iterdir()] == ["f"]
+
+
+def test_owner_and_group_of_existing_file_are_requested(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Proprietario e gruppo del file esistente sono quelli passati a `fchown` (se i privilegi lo consentono)."""
+    path = tmp_path / "f"
+    path.write_bytes(b"old")
+    calls: list[tuple[int, int]] = []
+    monkeypatch.setattr(os, "fchown", lambda _fd, uid, gid: calls.append((uid, gid)))
+    atomic_write_bytes(path, b"new")
+    st = path.stat()
+    assert calls == [(st.st_uid, st.st_gid)]

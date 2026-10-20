@@ -63,6 +63,21 @@ describe('trasferimento', () => {
     assert.equal((await api.list('rooms')).length, before)
   })
 
+  it('mondo in sola lettura: "Applica" resta disabilitato', async () => {
+    await s.page.getByTestId('world-select').click()
+    await Promise.all([
+      s.page.waitForNavigation({ waitUntil: 'load' }),
+      s.page.locator('.q-menu .q-item', { hasText: 'Pachimud (sola lettura)' }).first().click(),
+    ])
+    await goto(s.page, '/transfer')
+    await page_files(s).setInputFiles(zipPath)
+    await s.page.getByTestId('import-preview').click()
+    await s.page.getByTestId('import-confirm').waitFor()
+    await s.page.getByTestId('import-confirm').click()
+    assert.equal(await s.page.getByTestId('import-apply').isDisabled(), true)
+    assert.equal(await s.page.getByTestId('import-done').count(), 0)
+  })
+
   it('nessun errore di console imprevisto', () => {
     assert.deepEqual(s.errors, [])
   })

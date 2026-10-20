@@ -66,6 +66,7 @@ nav:
       - Installazione: guide/installation.md
       - Avvio e comandi: guide/cli.md
       - Configurazione dei mondi: guide/configuration.md
+      - Sicurezza e limiti noti: guide/security.md
   - Backend:
       - Panoramica: backend/index.md
       - Contratto API: backend/contract.md
