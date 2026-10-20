@@ -1,12 +1,13 @@
 # Test e2e del webeditor
 
-Test Playwright (`playwright-core`) eseguiti con `node:test` + `tsx`. Si collegano al Chromium **gia'
-avviato** con il debugging remoto su `http://localhost:9222` (`chromium.connectOverCDP`): ogni file apre
-un nuovo contesto/tab e lo chiude alla fine, senza toccare i tab esistenti.
+Test Playwright (`playwright-core`) eseguiti con `node:test` + `tsx`. Di default ogni file lancia un **proprio
+Chrome headless** con profilo temporaneo (`chromium.launch`), che chiude (profilo cancellato) a fine file: nessuna
+finestra e nessun tab sul browser dell'utente. Con `E2E_CDP_URL` ci si collega invece a un browser gia' avviato
+(`chromium.connectOverCDP`), aprendo un nuovo contesto e lasciando intatti i tab esistenti.
 
 ## Prerequisiti
 
-- Chromium con `--remote-debugging-port=9222` in esecuzione (override: `E2E_CDP_URL`).
+- Google Chrome o Chromium installato (`/usr/bin/google-chrome`, `/usr/bin/chromium-browser`; override: `E2E_CHROME_PATH`).
 - il progetto sincronizzato (`uv sync --all-packages`; nessun checkout del MUD pachimud) e frontend buildato e copiato nel pacchetto
   (`uv run pachimudeditor build-frontend`, genera `src/pachimudeditor/static`).
 - `pnpm install` in questa cartella.
@@ -36,7 +37,7 @@ Il mondo `pachimud` ha parametri espliciti (`database_url` e `definitions_path` 
 (`E2E_BASEDMUD`, default il checkout fratello `../basedmud`, solo in lettura), e configura i mondi con `WEBEDITOR_WORLDS`:
 `pachimud` (default), `basedmud`, `basedmud-ro` (stessa copia, sola lettura), e, **solo se `E2E_DIKUMOD` e' impostata** su una cartella `lib/` esistente di dati Diku Modificato (nessun default; sola lettura sull'originale, i test lavorano su copie), `dikumod` (copia in sola lettura) e `dikumod-rw` (seconda copia scrivibile). Il prefisso dei file dati (`<prefisso>.wld`, ...) e' `dikumoddata`, o `E2E_DIKUMOD_PREFIX` se impostata. Senza `E2E_DIKUMOD` quei due mondi non esistono e `e2e/tests/dikumod.test.ts` viene saltato. Il `pachimud.db` reale non viene mai aperto. Se la porta e' occupata il setup si interrompe.
 
-Variabili: `E2E_PORT` (8124), `E2E_CDP_URL`, `E2E_USER` / `E2E_PASSWORD` (default: utente di test creato dal
+Variabili: `E2E_PORT` (8124), `E2E_CHROME_PATH`, `E2E_CDP_URL` (opzionale: usa un browser gia' avviato invece di quello headless), `E2E_USER` / `E2E_PASSWORD` (default: utente di test creato dal
 setup), `E2E_BASE_URL` / `E2E_SKIP_STACK`.
 
 ## Copertura

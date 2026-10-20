@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Test end-to-end del webeditor pachimud (Chromium gia' avviato, connectOverCDP)",
+  "description": "Test end-to-end del webeditor pachimud (Chrome headless proprio, o connectOverCDP con E2E_CDP_URL)",
   "scripts": {
     "test": "tsx run.ts",
     "stack": "tsx serve.ts",

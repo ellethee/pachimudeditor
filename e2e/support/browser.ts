@@ -1,14 +1,24 @@
 /**
- * Utility browser per i test e2e: connessione al Chromium gia' avviato (CDP), tab dedicato,
- * login, raccolta errori di console e controlli comuni (chiavi i18n grezze).
+ * Utility browser per i test e2e: browser headless proprio con profilo temporaneo (default) oppure
+ * connessione a un Chromium gia' avviato (E2E_CDP_URL), login, raccolta errori di console e controlli comuni.
  *
- * Regole: si apre SEMPRE un nuovo contesto/tab e lo si chiude alla fine; i tab esistenti non si toccano.
+ * Regole: il browser proprio e il suo profilo vengono eliminati a fine sessione (e all'uscita del processo);
+ * su un browser esterno si apre SEMPRE un nuovo contesto e i tab esistenti non si toccano.
  */
+import { existsSync } from 'node:fs'
 import { chromium, type Browser, type BrowserContext, type Locator, type Page } from 'playwright-core'
 import { credentials } from './stack.ts'
 
-/** Endpoint di debugging del Chromium gia' in esecuzione (override con E2E_CDP_URL). */
-export const CDP_URL = process.env.E2E_CDP_URL ?? 'http://localhost:9222'
+/** Se impostata, ci si collega a quel browser gia' in esecuzione (CDP); altrimenti se ne lancia uno headless proprio. */
+export const CDP_URL = process.env.E2E_CDP_URL
+
+/** Eseguibile del browser headless proprio (override con E2E_CHROME_PATH). */
+function chromePath(): string {
+  const candidates = [process.env.E2E_CHROME_PATH, '/usr/bin/google-chrome', '/usr/bin/chromium-browser', '/usr/bin/chromium']
+  const found = candidates.find((path) => path && existsSync(path))
+  if (!found) throw new Error('Nessun Chrome/Chromium trovato: imposta E2E_CHROME_PATH o E2E_CDP_URL')
+  return found
+}
 
 /** URL base dello stack, impostato da `run.ts`. */
 export const BASE_URL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8124'
@@ -25,16 +35,19 @@ export interface Session {
   errors: string[]
   /** Ammette gli errori di console che corrispondono (es. il 409 atteso di un test negativo). */
   allow: (pattern: RegExp) => void
-  /** Chiude il contesto (e quindi il tab) e si disconnette dal browser, senza chiuderlo. */
+  /** Chiude il contesto e il browser proprio (profilo incluso); su un browser esterno si limita a disconnettersi. */
   close: () => Promise<void>
 }
 
 /**
- * Si collega al Chromium via CDP e apre un nuovo contesto con un nuovo tab.
+ * Lancia un Chrome headless (profilo temporaneo) o si collega via CDP se E2E_CDP_URL e' impostata,
+ * poi apre un nuovo contesto con un nuovo tab.
  * @returns la sessione pronta all'uso
  */
 export async function openSession(): Promise<Session> {
-  const browser = await chromium.connectOverCDP(CDP_URL)
+  const browser = CDP_URL
+    ? await chromium.connectOverCDP(CDP_URL)
+    : await chromium.launch({ executablePath: chromePath(), headless: true })
   const context = await browser.newContext({ viewport: { width: 1400, height: 1000 }, locale: 'it-IT' })
   const page = await context.newPage()
   const errors: string[] = []

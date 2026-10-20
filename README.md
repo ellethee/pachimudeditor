@@ -130,7 +130,7 @@ Entrambe le suite lavorano solo su database **temporanei** (mai `pachimud.db`).
 uv run pytest -q                          # API in-process (httpx + ASGI) su DB temporanei creati con i modelli copiati del gioco; nessun checkout del MUD
 uv run pytest tests/core -q               # solo il core: nessun adapter richiesto (adapter fittizi con entry point sintetici)
 (cd frontend && pnpm run typecheck)
-cd e2e && pnpm install && pnpm test       # richiede Chromium con debugging remoto su :9222 e la SPA in static/
+cd e2e && pnpm install && pnpm test       # lancia un Chrome headless proprio (profilo temporaneo); richiede la SPA in static/
 ```
 
 Dettagli in `e2e/README.md`.
