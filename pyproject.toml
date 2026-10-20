@@ -10,7 +10,6 @@ authors = [{ name = "IlPachi" }]
 keywords = ["mud", "editor", "web", "pachimud", "rom", "diku", "fastapi", "quasar"]
 classifiers = [
     "Development Status :: 3 - Alpha",
-    "Private :: Do Not Upload",
     "Environment :: Web Environment",
     "Framework :: FastAPI",
     "Intended Audience :: Developers",

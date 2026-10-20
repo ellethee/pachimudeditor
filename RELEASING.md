@@ -13,8 +13,7 @@ Da fare **una volta**, nell'ordine (nulla di questo e' automatico: il workflow n
 - [ ] **Pending publisher** per i **5 pacchetti** (`pachimudeditor`, `pachimudeditor-adapter-pachimud`, `-basedmud`, `-dikumod`, `-mapping`)
       sia su PyPI sia su TestPyPI, con owner `ellethee`, repository `pachimudeditor`, workflow `publish-pypi.yml`, environment `pypi` / `testpypi`
       (tabella in "Configurazione una tantum").
-- [ ] **Rimuovi `Private :: Do Not Upload`** dai 5 `pyproject.toml` (`pyproject.toml`, `adapters/*/pyproject.toml`): `classifiers = []` o i
-      classificatori veri; `uv lock`; commit e push su `main`; CI verde. Finche' c'e', `prepare` fallisce apposta.
+- [x] **`Private :: Do Not Upload`** rimosso dai 5 `pyproject.toml`. Se lo rimetti, `prepare` fallisce apposta.
 - [ ] **Prova su TestPyPI** (Actions > *Pubblicazione su PyPI* > Run workflow da `main`), prima il core e poi gli adapter; installa da TestPyPI in un venv pulito.
 - [ ] **Core per primo: `pachimudeditor` 0.1.0.** Gli adapter dichiarano `pachimudeditor>=0.1.0,<0.2` e un `sdk_version` (1.2 per basedmud, dikumod e mapping;
       il core espone `SDK_VERSION = "1.2"`): senza il core su PyPI non sono installabili. Tag `pachimudeditor-v0.1.0`, approva il job `publish-pypi`,
@@ -113,9 +112,7 @@ Il primo upload riuscito trasforma il pending publisher in un publisher normale 
 
 ### Prima del primo rilascio: classificatore e licenza
 
-- Tutti e cinque i `pyproject.toml` hanno `classifiers = ["Private :: Do Not Upload"]`: PyPI rifiuta l'upload. Il workflow **non** lo rimuove:
-  il job `prepare` fallisce finche' e' presente. Per rilasciare, togli quella voce da ciascun pacchetto (lascia `classifiers = []` o aggiungi i
-  classificatori veri, ad esempio `Programming Language :: Python :: 3.14`), poi `uv lock` e commit.
+- Il classificatore `Private :: Do Not Upload` e' stato tolto dai cinque `pyproject.toml`. Il job `prepare` fallisce se viene rimesso.
 - Licenza: tutti e cinque i pacchetti dichiarano `license = "MIT"` (espressione SPDX) con il proprio file `LICENSE`; non serve altro.
 
 ### npm

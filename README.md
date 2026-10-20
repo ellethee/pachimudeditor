@@ -144,6 +144,5 @@ env -u UV_PUBLISH_INDEX uv publish --publish-url https://<host>/<percorso-upload
 ```
 
 Ogni adapter e' un wheel a se' (`pachimudeditor_adapter_<kind>-<ver>-py3-none-any.whl`); gli extras del core puntano ai loro
-nomi su PyPI (le `[tool.uv.sources]` del workspace servono solo allo sviluppo e non entrano nel wheel). I pacchetti hanno il
-classificatore `Private :: Do Not Upload` (PyPI rifiuta l'upload). Credenziali di upload in
+nomi su PyPI (le `[tool.uv.sources]` del workspace servono solo allo sviluppo e non entrano nel wheel). Credenziali di upload in
 `UV_PUBLISH_USERNAME`/`UV_PUBLISH_PASSWORD`, mai nel repo.

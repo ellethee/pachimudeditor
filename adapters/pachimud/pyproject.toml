@@ -10,7 +10,6 @@ authors = [{ name = "IlPachi" }]
 keywords = ["mud", "pachimudeditor", "adapter", "pachimud", "sqlalchemy"]
 classifiers = [
     "Development Status :: 3 - Alpha",
-    "Private :: Do Not Upload",
     "Environment :: Plugins",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3 :: Only",
