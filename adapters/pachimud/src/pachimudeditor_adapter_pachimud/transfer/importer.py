@@ -53,16 +53,29 @@ def _load(path: Path, schema: type[BaseModel]) -> Any:
         raise api_error(422, "transfer.invalid_file", file=path.name, detail=str(error).splitlines()[0][:200]) from error
 
 
+MAX_RECORDS = 5_000
+"""Massimo di record (stanze, mob, oggetti, reset) per ciascun file di una richiesta di import."""
+
+
 def parse_zone_dir(directory: Path) -> ParsedZone:
-    """Valida i file della cartella (`zone.yaml` obbligatorio, gli altri opzionali)."""
+    """Valida i file della cartella (`zone.yaml` obbligatorio, gli altri opzionali); troppi record -> 422."""
     zone_file = directory / "zone.yaml"
-    return ParsedZone(
+    parsed = ParsedZone(
         zone=_load(zone_file, LoaderZone),
         rooms=_load(directory / "rooms.yaml", LoaderRoomsFile),
         mobs=_load(directory / "mobs.yaml", LoaderMobsFile),
         objects=_load(directory / "objects.yaml", LoaderObjectsFile),
         resets=_load(directory / "resets.yaml", LoaderResetsFile),
     )
+    for name, records in (
+        ("rooms.yaml", parsed.rooms.rooms),
+        ("mobs.yaml", parsed.mobs.mobs),
+        ("objects.yaml", parsed.objects.objects),
+        ("resets.yaml", parsed.resets.resets),
+    ):
+        if len(records) > MAX_RECORDS:
+            raise api_error(422, "transfer.invalid_file", file=name, detail=f"troppi record (massimo {MAX_RECORDS})")
+    return parsed
 
 
 def parse_dice(text: str) -> tuple[int, int, int]:

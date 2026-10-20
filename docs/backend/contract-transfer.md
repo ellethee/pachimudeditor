@@ -26,5 +26,5 @@ Semantica dell'importer: upsert per vnum, **mai cancellazioni** (`keptNotInFile`
 `warnings[].code`: `out_of_range`, `invalid_range`, `dangling_exit`, `unknown_reset_ref`, `unknown_key`, `unknown_race`, `unknown_class`, `range_overlap`.
 
 Errori: 422 `transfer.no_files|unsupported_file|invalid_archive|zone_missing|multiple_zones|invalid_file|confirm_required`,
-413 `transfer.file_too_large` (20 MB), 409 `transfer.vnum_conflict` (import vero con vnum che appartengono ad altre zone; in dry-run sono in `conflicts`).
+413 `transfer.file_too_large` (20 MB totali per upload su tutti i file e zip, 2 MB per ogni YAML), 422 `transfer.invalid_archive` anche oltre 10 file o 200 voci per upload, 422 `transfer.invalid_file` oltre 5000 record per file, 422 `world.value_out_of_range` per id/page/vnum oltre i limiti degli interi, 409 `transfer.vnum_conflict` (import vero con vnum che appartengono ad altre zone; in dry-run sono in `conflicts`).
 Sicurezza upload: dello zip si usa solo il nome base dei 5 file ammessi (nessuna scrittura da path dell'archivio), estrazione in cartella temporanea.

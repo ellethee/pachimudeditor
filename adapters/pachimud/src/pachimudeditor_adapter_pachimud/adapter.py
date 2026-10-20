@@ -11,6 +11,7 @@ import logging
 import tempfile
 from pathlib import Path
 from pachifast.i18n import api_error
+from starlette.concurrency import run_in_threadpool
 
 from pachimudeditor_adapter_pachimud.meta import MetaMixin
 from pachimudeditor_adapter_pachimud.prototypes import PrototypesMixin
@@ -166,7 +167,7 @@ class PachimudAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, WorldA
             raise api_error(422, "transfer.confirm_required", loc=("query", "confirm"))
         if not dry_run:
             self.ensure_writable()
-        parsed = parse_zone_dir(directory)
+        parsed = await run_in_threadpool(parse_zone_dir, directory)  # YAML+pydantic sincroni: fuori dal loop
         race_ids, class_ids = self.content_ids()
         async with self.session() as session:
             preview = await build_preview(session, parsed, race_ids, class_ids)

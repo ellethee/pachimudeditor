@@ -14,8 +14,35 @@ from pachimudeditor_adapter_pachimud.transfer.files import ZONE_FILES
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 """Limite per il totale decompresso (e per ogni singolo file caricato)."""
+MAX_YAML_BYTES = 2 * 1024 * 1024
+"""Limite per ogni singolo file YAML di zona (il parsing e' costoso in CPU e memoria)."""
 MAX_MEMBERS = 200
-"""Numero massimo di voci in uno zip."""
+"""Numero massimo di voci in uno zip, e (cumulativo) di voci di zona estratte in un intero upload."""
+MAX_UPLOAD_FILES = 10
+"""Numero massimo di file/zip in un upload."""
+
+
+class _Budget:
+    """Contatori condivisi da tutti i file e zip di un upload: byte totali, voci estratte, cartelle `g<n>`."""
+
+    def __init__(self) -> None:
+        self.total = 0
+        self.members = 0
+        self.groups = 0
+
+    def take(self, size: int, filename: str) -> None:
+        """Conta `size` byte e una voce; oltre i limiti dell'upload -> 413 / 422."""
+        self.total += size
+        self.members += 1
+        if self.total > MAX_UPLOAD_BYTES:
+            raise api_error(413, "transfer.file_too_large", file=filename, max_mb=MAX_UPLOAD_BYTES // (1024 * 1024))
+        if self.members > MAX_MEMBERS:
+            raise api_error(422, "transfer.invalid_archive", file=filename)
+
+
+def _too_large(filename: str) -> Exception:
+    """413 per un YAML sopra `MAX_YAML_BYTES`."""
+    return api_error(413, "transfer.file_too_large", file=filename, max_mb=MAX_YAML_BYTES // (1024 * 1024))
 
 
 def canonical_name(name: str) -> str | None:
@@ -34,10 +61,11 @@ async def _read_limited(upload: UploadFile) -> bytes:
     return data
 
 
-def _extract_zip(data: bytes, filename: str, target: Path) -> None:
+def _extract_zip(data: bytes, filename: str, target: Path, budget: _Budget | None = None) -> None:
     """Estrae in `target/<n>/<nomecanonico>` i file di zona di uno zip, raggruppati per cartella di origine."""
     import io
 
+    budget = budget or _Budget()
     try:
         archive = zipfile.ZipFile(io.BytesIO(data))
     except zipfile.BadZipFile as error:
@@ -46,7 +74,6 @@ def _extract_zip(data: bytes, filename: str, target: Path) -> None:
         infos = archive.infolist()
         if len(infos) > MAX_MEMBERS:
             raise api_error(422, "transfer.invalid_archive", file=filename)
-        total = 0
         groups: dict[str, Path] = {}
         for info in infos:
             if info.is_dir():
@@ -54,18 +81,19 @@ def _extract_zip(data: bytes, filename: str, target: Path) -> None:
             name = canonical_name(info.filename)
             if name is None:
                 continue
-            if info.file_size > MAX_UPLOAD_BYTES:  # il dichiarato e' solo un rifiuto rapido: il limite vero e' sui byte letti
-                raise api_error(413, "transfer.file_too_large", file=filename, max_mb=MAX_UPLOAD_BYTES // (1024 * 1024))
+            if info.file_size > MAX_YAML_BYTES:  # il dichiarato e' solo un rifiuto rapido: il limite vero e' sui byte letti
+                raise _too_large(filename)
             parent = str(PurePosixPath(info.filename.replace("\\", "/")).parent)
             if parent not in groups:
-                group = target / f"g{len(groups)}"
+                group = target / f"g{budget.groups}"
+                budget.groups += 1
                 group.mkdir(parents=True)
                 groups[parent] = group
             with archive.open(info) as source:
-                content = source.read(min(MAX_UPLOAD_BYTES, MAX_UPLOAD_BYTES - total) + 1)
-            total += len(content)
-            if total > MAX_UPLOAD_BYTES:
-                raise api_error(413, "transfer.file_too_large", file=filename, max_mb=MAX_UPLOAD_BYTES // (1024 * 1024))
+                content = source.read(MAX_YAML_BYTES + 1)
+            if len(content) > MAX_YAML_BYTES:
+                raise _too_large(filename)
+            budget.take(len(content), filename)
             (groups[parent] / name).write_bytes(content)
 
 
@@ -78,17 +106,23 @@ async def stage_uploads(uploads: list[UploadFile], target: Path) -> Path:
     """
     if not uploads:
         raise api_error(422, "transfer.no_files")
+    if len(uploads) > MAX_UPLOAD_FILES:
+        raise api_error(422, "transfer.invalid_archive", file=f"{len(uploads)} file")
+    budget = _Budget()
     loose = target / "loose"
     loose.mkdir(parents=True)
     for upload in uploads:
         filename = upload.filename or ""
         data = await _read_limited(upload)
         if filename.lower().endswith(".zip") or data[:2] == b"PK":
-            _extract_zip(data, filename, target)
+            _extract_zip(data, filename, target, budget)
             continue
         name = canonical_name(filename)
         if name is None:
             raise api_error(422, "transfer.unsupported_file", file=filename)
+        if len(data) > MAX_YAML_BYTES:
+            raise _too_large(filename)
+        budget.take(len(data), filename)
         (loose / name).write_bytes(data)
     candidates = sorted(p for p in target.rglob("zone.yaml"))
     if not candidates:

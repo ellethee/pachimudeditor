@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pachimudeditor_adapter_pachimud.schema import models_of
-from pachimudeditor_adapter_pachimud.transfer.files import mob_dict, object_dict, reset_dict, room_dicts, zone_dict
+from pachimudeditor_adapter_pachimud.transfer.files import chunks, mob_dict, object_dict, reset_dict, room_dicts, zone_dict
 from pachimudeditor_adapter_pachimud.transfer.importer import ParsedZone
 from pachimudeditor_adapter_pachimud.transfer.schemas import LoaderMob, LoaderObject, LoaderResetsFile, LoaderRoom, LoaderZone
 from pachimudeditor.common.adapters.models import (
@@ -87,7 +87,7 @@ async def build_preview(session: AsyncSession, parsed: ParsedZone, race_ids: set
         """Righe esistenti con quei vnum; registra i conflitti con altre zone."""
         if not vnums:
             return {}
-        rows = (await session.execute(select(model).where(model.vnum.in_(vnums)))).scalars().all()
+        rows = [r for part in chunks(vnums) for r in (await session.execute(select(model).where(model.vnum.in_(part)))).scalars()]
         by_vnum = {row.vnum: row for row in rows}
         other_ids = {row.zone_id for row in rows if row.zone_id != db_zone_id}
         zones = {}
@@ -184,7 +184,9 @@ async def _collect_warnings(
         missing = wanted - in_file
         if not missing:
             return in_file
-        rows = set((await session.execute(select(model.vnum).where(model.vnum.in_(missing)))).scalars())
+        rows = {
+            v for part in chunks(list(missing)) for v in (await session.execute(select(model.vnum).where(model.vnum.in_(part)))).scalars()
+        }
         return in_file | rows
 
     for kind, vnums in (("room", file_rooms), ("mob", file_mobs), ("object", file_objs)):

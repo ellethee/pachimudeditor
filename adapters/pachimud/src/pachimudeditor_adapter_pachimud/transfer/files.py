@@ -48,29 +48,32 @@ def zone_dict(zone: Any) -> dict[str, Any]:
     }
 
 
+def chunks(items: list[int], size: int = 500) -> list[list[int]]:
+    """Blocchi per le query `IN`, sotto il limite di variabili di SQLite."""
+    return [items[i : i + size] for i in range(0, len(items), size)]
+
+
 async def room_dicts(session: AsyncSession, rooms: list[Any]) -> list[dict[str, Any]]:
     """Le stanze (con uscite ed extra description) come voci di `rooms.yaml`, ordinate per vnum."""
     if not rooms:
         return []
     m = models_of(session)
     ids = [room.id for room in rooms]
-    exits = (await session.execute(select(m.Exit).where(m.Exit.room_id.in_(ids)).order_by(m.Exit.direction))).scalars().all()
+    exits: list[Any] = []
     extras: list[Any] = []
-    if m.RoomExtraDescription is not None:
-        extras = list(
-            (
+    for part in chunks(ids):  # blocchi: SQLite ha un limite di variabili per query
+        exits += (await session.execute(select(m.Exit).where(m.Exit.room_id.in_(part)).order_by(m.Exit.direction))).scalars()
+        if m.RoomExtraDescription is not None:
+            extras += (
                 await session.execute(
-                    select(m.RoomExtraDescription).where(m.RoomExtraDescription.room_id.in_(ids)).order_by(m.RoomExtraDescription.id)
+                    select(m.RoomExtraDescription).where(m.RoomExtraDescription.room_id.in_(part)).order_by(m.RoomExtraDescription.id)
                 )
-            )
-            .scalars()
-            .all()
-        )
-    target_ids = {e.target_room_id for e in exits if e.target_room_id is not None}
+            ).scalars()
+    target_ids = list({e.target_room_id for e in exits if e.target_room_id is not None})
     vnum_by_id: dict[int, int] = {}
-    if target_ids:
-        rows = await session.execute(select(m.Room.id, m.Room.vnum).where(m.Room.id.in_(target_ids)))
-        vnum_by_id = {row.id: row.vnum for row in rows}
+    for part in chunks(target_ids):
+        rows = await session.execute(select(m.Room.id, m.Room.vnum).where(m.Room.id.in_(part)))
+        vnum_by_id |= {row.id: row.vnum for row in rows}
     out: list[dict[str, Any]] = []
     for room in sorted(rooms, key=lambda r: r.vnum):
         room_exits = {
