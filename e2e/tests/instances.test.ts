@@ -30,6 +30,19 @@ describe('istanze', () => {
     assert.equal(await rawI18nKey(s.page), null)
   })
 
+  it('il dialog e\' accessibile (aria-labelledby sul titolo, pulsante di chiusura con nome) e si chiude con Esc', async () => {
+    await tableRow(s.page, 'un ratto').first().dblclick()
+    const box = s.page.locator('[role=dialog]').last()
+    await box.waitFor()
+    const labelId = await box.getAttribute('aria-labelledby')
+    assert.ok(labelId, 'aria-labelledby mancante')
+    const title = await s.page.locator(`[id="${labelId}"]`).innerText()
+    assert.match(title, /Mob vivo #\d+/)
+    await box.getByRole('button', { name: 'Chiudi', exact: true }).waitFor()
+    await s.page.keyboard.press('Escape')
+    await box.waitFor({ state: 'detached' })
+  })
+
   it('modifica i punti ferita dal dialog', async () => {
     await tableRow(s.page, `#${instanceId}`).or(tableRow(s.page, 'un ratto')).first().dblclick()
     await dialog(s.page).getByLabel('PF massimi').fill('25')

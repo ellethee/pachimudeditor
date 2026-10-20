@@ -1,8 +1,6 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide">
-    <q-card style="min-width: 420px; max-width: 95vw">
-      <q-card-section class="text-h6">{{ title }}</q-card-section>
-      <q-card-section>
+  <pachi-dialog ref="dialogRef" :title="title" min-width="420px" max-width="95vw" @hide="onDialogHide()">
+      <div>
         <q-select
           v-model="selected"
           :options="options"
@@ -24,19 +22,19 @@
             </q-item>
           </template>
         </q-select>
-      </q-card-section>
-      <q-card-actions align="right">
+      </div>
+      <template #actions>
         <q-btn flat :label="t('players.cancel')" @click="onDialogCancel" />
         <q-btn color="primary" :label="confirmLabel" :disable="!selected" @click="onDialogOK(selected?.id)" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+      </template>
+  </pachi-dialog>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDialogPluginComponent } from 'quasar'
+import { PachiDialog } from '@ilpachi/pachi-kit/dialog'
 
 /** Elemento minimo selezionabile. */
 interface IPickable {

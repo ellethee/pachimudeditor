@@ -1,12 +1,6 @@
 <template>
-  <q-dialog ref="dialogRef" @hide="onDialogHide">
-    <q-card style="min-width: 640px; max-width: 95vw">
-      <q-card-section class="row items-center">
-        <div class="text-h6">{{ t('players.inventory.title', { name: characterName }) }}</div>
-        <q-space />
-        <q-btn flat round dense :icon="mdiClose" :aria-label="t('players.close')" @click="onDialogCancel" />
-      </q-card-section>
-      <q-card-section class="q-pt-none">
+  <pachi-dialog ref="dialogRef" :title="t('players.inventory.title', { name: characterName })" min-width="640px" max-width="95vw" @hide="onDialogHide()">
+      <div>
         <q-banner v-if="error" class="bg-negative text-white q-mb-sm" rounded>{{ error }}</q-banner>
         <q-table
           :rows="items"
@@ -36,13 +30,14 @@
             </q-td>
           </template>
         </q-table>
-      </q-card-section>
-      <q-card-actions align="between">
-        <q-btn flat :icon="mdiPlus" :label="t('players.inventory.add')" color="primary" :disable="readOnly" @click="addItem" />
-        <q-btn flat :label="t('players.close')" @click="onDialogCancel" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+      </div>
+      <template #actions>
+        <div class="row full-width justify-between">
+          <q-btn flat :icon="mdiPlus" :label="t('players.inventory.add')" color="primary" :disable="readOnly" @click="addItem" />
+          <q-btn flat :label="t('players.close')" @click="onDialogCancel" />
+        </div>
+      </template>
+  </pachi-dialog>
 </template>
 
 <script setup lang="ts">
@@ -50,7 +45,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDialogPluginComponent, useQuasar } from 'quasar'
 import type { QTableColumn } from 'quasar'
-import { mdiClose, mdiDelete, mdiPlus, mdiShieldHalfFull } from '@quasar/extras/mdi-v7'
+import { mdiDelete, mdiPlus, mdiShieldHalfFull } from '@quasar/extras/mdi-v7'
 import { describeError } from '../helpers/describe-error'
 import { useWorld } from '../../shared/helpers/world-state'
 import {
@@ -61,6 +56,7 @@ import {
   setItemSlot,
 } from '../services/players-api'
 import type { IInventoryItem, IObjectRef } from '../types/players'
+import { PachiDialog } from '@ilpachi/pachi-kit/dialog'
 import PickerDialog from './PickerDialog.vue'
 
 const props = defineProps<{

@@ -1,14 +1,14 @@
 <template>
-  <q-dialog ref="dialogRef" no-backdrop-dismiss @hide="onDialogHide">
-    <q-card style="width: 560px; max-width: 95vw">
-      <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">{{ isEdit ? t('instances.mob.editTitle', { id: instance?.id }) : t('instances.mob.createTitle') }}</div>
-        <q-space />
-        <q-btn flat round dense :icon="mdiClose" :aria-label="t('instances.cancel')" @click="onDialogCancel" />
-      </q-card-section>
-
-      <q-form @submit.prevent="save">
-        <q-card-section class="q-gutter-md">
+  <pachi-dialog
+    ref="dialogRef"
+    :title="isEdit ? t('instances.mob.editTitle', { id: instance?.id }) : t('instances.mob.createTitle')"
+    width="560px"
+    max-width="95vw"
+    no-backdrop-dismiss
+    @hide="onDialogHide()"
+  >
+      <q-form id="mob-instance-form" @submit.prevent="save">
+        <div class="q-gutter-md">
           <q-banner v-if="errorText" class="bg-negative text-white" rounded dense>{{ errorText }}</q-banner>
 
           <div v-if="instance" class="row q-gutter-sm">
@@ -80,15 +80,13 @@
               </q-item>
             </q-list>
           </div>
-        </q-card-section>
-
-        <q-card-actions align="right">
-          <q-btn flat :label="t('instances.cancel')" @click="onDialogCancel" />
-          <q-btn color="primary" type="submit" :label="t('instances.save')" :loading="saving" />
-        </q-card-actions>
+        </div>
       </q-form>
-    </q-card>
-  </q-dialog>
+      <template #actions>
+        <q-btn flat :label="t('instances.cancel')" @click="onDialogCancel" />
+        <q-btn color="primary" type="submit" form="mob-instance-form" :label="t('instances.save')" :loading="saving" />
+      </template>
+  </pachi-dialog>
 </template>
 
 <script setup lang="ts">
@@ -100,7 +98,8 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useDialogPluginComponent } from 'quasar'
-import { mdiClose, mdiDoor, mdiPaw } from '@quasar/extras/mdi-v7'
+import { PachiDialog } from '@ilpachi/pachi-kit/dialog'
+import { mdiDoor, mdiPaw } from '@quasar/extras/mdi-v7'
 import PrototypePicker from './PrototypePicker.vue'
 import RoomPicker from './RoomPicker.vue'
 import { describeError } from '../helpers/describe-error'
