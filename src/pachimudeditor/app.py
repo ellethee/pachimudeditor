@@ -15,6 +15,7 @@ from pachifast.config.settings import get_settings
 from pachimudeditor.common.adapters.bootstrap import prepare_worlds
 from pachimudeditor.common.adapters.registry import WorldRegistry, set_registry
 from pachimudeditor.common.http_guard import install_http_guard
+from pachimudeditor.common.rate_limit import apply_rate_limit_defaults
 from pachimudeditor.modules import build_modules
 from pachimudeditor.spa import SpaStaticFiles, static_dir
 
@@ -58,6 +59,7 @@ def create_editor_app(*, serve_spa: bool = True, extra_kinds: Iterable[str] = ()
     """
     # config mondi -> moduli opzionali solo se servono e `pachimud` e' importabile -> registro
     _default_cookie_refresh()
+    apply_rate_limit_defaults()
     configs, default = prepare_worlds()
     app = create_app(build_modules({c.kind for c in configs} | set(extra_kinds)), cors_origins=CORS_ORIGINS)
     set_registry(WorldRegistry(configs, default))

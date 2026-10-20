@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Games/Entertainment :: Multi-User Dungeons (MUD)",
 ]
 dependencies = [
-    "pachifast>=0.17.1",
+    "pachifast>=0.18.0",
     "typer>=0.27.2",
     "uvicorn[standard]>=0.34.0",
 ]

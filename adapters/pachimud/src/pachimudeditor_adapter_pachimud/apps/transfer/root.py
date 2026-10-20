@@ -14,7 +14,7 @@ from pachifast.router_factory import get_router
 from pachimudeditor_adapter_pachimud.transfer.files import ZONE_FILES
 from pachimudeditor_adapter_pachimud.apps.transfer.archive import stage_uploads
 from pachimudeditor.common.adapters.models import ImportPreview, ZoneBundle
-from pachimudeditor.sdk import AdapterDep, require_capability
+from pachimudeditor.sdk import AdapterDep, heavy_rate_limit, require_capability
 
 router = get_router(deps=[Depends(require_capability("supports_transfer"))])
 
@@ -41,7 +41,7 @@ async def export_zone_bundle(zone_id: int, adapter: AdapterDep) -> ZoneBundle:
     return await adapter.export_zone_bundle(zone_id)
 
 
-@router.post("/zones/import", response_model=ImportPreview)
+@router.post("/zones/import", response_model=ImportPreview, dependencies=[heavy_rate_limit()])
 async def import_zone(
     adapter: AdapterDep,
     files: Annotated[list[UploadFile], File(description="Uno zip della zona e/o i file zone/rooms/mobs/objects/resets .yaml")],

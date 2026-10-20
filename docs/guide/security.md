@@ -25,18 +25,24 @@ verifica nel browser che SPA e `/docs` funzionino senza violazioni CSP.
 
 ## Limite di richieste sugli endpoint costosi
 
-Le conversioni (`POST /api/convert/preview` e `/run`) e l'import di zone (`POST /api/transfer/zones/import`) sono limitati
-per indirizzo client con un contatore a finestra fissa nella cache di pachifast (in memoria del processo; condivisa tra
-worker solo con `cache_url` Redis). Oltre il limite: `429` con `Retry-After` e codice `auth.rate_limited`.
+Le conversioni (`POST /api/convert/preview` e `/run`) e l'import di zone (`POST /api/transfer/zones/import`) usano il
+`rate_limit` di pachifast (`pachifast>=0.18`) come dipendenza di rotta: contatore a finestra fissa per **utente autenticato**
+(ripiego: indirizzo IP, IPv6 come rete /64), con un solo budget (scope `heavy`) condiviso dalle tre rotte, nella cache di pachifast
+(memoria del processo; condivisa tra worker solo con `cache.url` Redis). Le richieste non autenticate sono rifiutate (401) prima
+del conteggio. Oltre il limite: `429` con `Retry-After`, codice `api.rate_limited` e header `X-RateLimit-Limit`/`-Remaining`/`-Reset`
+(anche sulle risposte riuscite).
 
-| Variabile | Default | Significato |
-| --- | --- | --- |
-| `WEBEDITOR_HEAVY_RATE_LIMIT` | `60` | richieste per finestra e per indirizzo; `0` = nessun limite |
-| `WEBEDITOR_HEAVY_RATE_WINDOW` | `60` | durata della finestra in secondi |
+Configurazione con le impostazioni di pachifast (yaml o env):
 
-pachifast offre un limite analogo solo per login/registrazione/MFA (`auth_rate_limit`, spento di default): non copre gli
-endpoint dell'editor, per questo il limite sopra e' dell'editor. Dietro un reverse proxy avvia uvicorn con
-`--proxy-headers`, altrimenti tutti i client condividono l'indirizzo del proxy e quindi un solo budget.
+| yaml (`rate_limit.`) | Env | Default dell'editor | Significato |
+| --- | --- | --- | --- |
+| `default` | `PACHIFAST_RATE_LIMIT_DEFAULT` | `60` | richieste per finestra e utente; `0` = nessun limite |
+| `window_seconds` | `PACHIFAST_RATE_LIMIT_WINDOW_SECONDS` | `60` | durata della finestra in secondi |
+
+pachifast lascia il limite spento; l'editor lo imposta a 60/60 s se non e' scritto. Gli env `WEBEDITOR_HEAVY_RATE_LIMIT` e
+`WEBEDITOR_HEAVY_RATE_WINDOW` restano come **alias deprecati**: valgono solo se la chiave pachifast corrispondente non e' scritta.
+Dietro un reverse proxy avvia uvicorn con `--proxy-headers` (`pachifast serve` lo fa), altrimenti i client anonimi condividono
+l'indirizzo del proxy. Nota: il codice di errore e' passato da `auth.rate_limited` ad `api.rate_limited`.
 
 ## Sessione: refresh token in cookie HttpOnly
 

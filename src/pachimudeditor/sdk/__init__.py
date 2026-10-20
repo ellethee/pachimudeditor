@@ -38,6 +38,7 @@ from pachimudeditor.common.adapters.registry import (
     register_kind,
     require_capability,
 )
+from pachimudeditor.common.rate_limit import heavy_rate_limit
 from pachimudeditor.common.editor.errors import conflict, not_found
 from pachimudeditor.common.editor.schemas import PatchModel
 from pachimudeditor.sdk.files import atomic_write_bytes
@@ -73,6 +74,7 @@ __all__ = [
     "finish_resource",
     "get_registry",
     "loss",
+    "heavy_rate_limit",
     "make_page",
     "not_found",
     "paginate_list",

@@ -8,6 +8,7 @@ from pachifast.router_factory import get_router
 from pachimudeditor.apps.convert import service
 from pachimudeditor.apps.convert.schemas import ConvertRequest, PairsResponse
 from pachimudeditor.common.adapters.convert.models import ConvertReport
+from pachimudeditor.common.rate_limit import heavy_rate_limit
 
 router = get_router()
 
@@ -18,13 +19,13 @@ async def pairs() -> PairsResponse:
     return service.list_pairs()
 
 
-@router.post("/preview", response_model=ConvertReport)
+@router.post("/preview", response_model=ConvertReport, dependencies=[heavy_rate_limit()])
 async def preview(body: ConvertRequest) -> ConvertReport:
     """Anteprima: cosa si creerebbe/sostituirebbe, tabella dei vnum, perdite e conflitti. Non scrive nulla."""
     return await service.run_conversion(body, force_dry_run=True)
 
 
-@router.post("/run", response_model=ConvertReport)
+@router.post("/run", response_model=ConvertReport, dependencies=[heavy_rate_limit()])
 async def run(body: ConvertRequest) -> ConvertReport:
     """Conversione. Scrive solo con `dryRun=false` **e** `confirm=true` (altrimenti dry-run o 422
     `convert.confirm_required`); con un errore a meta' annulla quanto creato (`rolledBack`)."""
