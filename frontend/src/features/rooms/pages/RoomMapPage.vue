@@ -84,6 +84,7 @@ const nodes = ref<Node<RoomNodeData>[]>([])
 useFlowControlLabels(nodes)
 const edges = ref<Edge<RoomEdgeData>[]>([])
 const loading = ref(false)
+let loadSeq = 0
 
 const zoneOptions = computed(() =>
   store.zones.map((zone) => ({ id: zone.id, label: `${zone.vnum} - ${zone.name}` })),
@@ -101,14 +102,17 @@ async function load(): Promise<void> {
     edges.value = []
     return
   }
+  // caricamenti sovrapposti (zona di default, poi zona del deep-link): vale solo l'ultimo, altrimenti una risposta in ritardo sovrascrive la mappa
+  const ticket = ++loadSeq
   loading.value = true
   try {
     const graph = await getRoomGraph(store.selectedZoneId)
+    if (ticket !== loadSeq) return
     const flow = graphToFlow(graph.nodes, graph.edges, shortLabel)
     nodes.value = flow.nodes
     edges.value = flow.edges
   } finally {
-    loading.value = false
+    if (ticket === loadSeq) loading.value = false
   }
   await nextTick()
   fitAll()

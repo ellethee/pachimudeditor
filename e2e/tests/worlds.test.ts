@@ -105,7 +105,10 @@ describe('mondi', () => {
     await s.page.getByLabel('Chiudi').first().click()
     await waitDialogsClosed(s.page)
     await goto(s.page, '/rooms/map?zoneId=3000')
+    // regressione: la zona del deep-link, non quella di default, e' quella mostrata (caricamenti sovrapposti)
+    const graph = (await api.get('/api/rooms/graph?zoneId=3000')).data as { nodes: unknown[] }
     await s.page.locator('.vue-flow__node').first().waitFor()
+    await s.page.waitForFunction((n) => document.querySelectorAll('.vue-flow__node').length === n, graph.nodes.length)
   })
 
   it('basedmud sola lettura: badge, niente pulsanti di scrittura, scrittura rifiutata', async () => {
