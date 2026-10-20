@@ -1,5 +1,28 @@
 /** English labels of the backend enums (`enumLabels.<enum>.<value>`). */
 export default {
+  common: { retry: 'Retry' },
+  flow: { zoomIn: 'Zoom in', zoomOut: 'Zoom out', fitView: 'Fit view', interactive: 'Toggle interactivity' },
+  errors: {
+    http: {
+      title: 'Error {status}',
+      generic: 'Something went wrong. Please try again.',
+      network: 'The server is not responding: check your connection and try again.',
+      tooManyRequests: 'Too many requests: wait a moment and try again.',
+      status: {
+        400: 'Invalid request.',
+        401: 'Session expired: please sign in again.',
+        403: 'You do not have permission for this operation.',
+        404: 'Item not found.',
+        405: 'Operation not allowed.',
+        409: 'The operation conflicts with the current state (read-only world or data already changed).',
+        422: 'The submitted data is not valid.',
+        500: 'Internal server error.',
+        502: 'The server cannot be reached.',
+        503: 'Service temporarily unavailable.',
+        504: 'The server did not respond in time.',
+      },
+    },
+  },
   worlds: {
     none: {
       title: 'No world configured',

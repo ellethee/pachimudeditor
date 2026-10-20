@@ -54,6 +54,9 @@
       @pt2:delete-item="onDelete"
       @row-dblclick="onRowDblClick"
     >
+      <template #error="{ error, retry }">
+        <table-error :error="error" :retry="retry" />
+      </template>
       <template #toolbar-actions="{ api }">
         <q-btn v-if="!readOnly" color="primary" :icon="mdiPlus" :label="t('rooms.create')" @click="onCreate" />
         <q-btn flat round :icon="mdiRefresh" :aria-label="t('rooms.reload')" @click="api.reload()" />
@@ -61,7 +64,7 @@
 
       <template #body-cell-clone="{ slotProps }">
         <q-td :props="slotProps">
-          <q-btn v-if="!readOnly" dense flat round :icon="mdiContentCopy" @click.stop="dialogs.openClone(slotProps.row)">
+          <q-btn v-if="!readOnly" dense flat round :icon="mdiContentCopy" @click.stop="dialogs.openClone(slotProps.row)" :aria-label="t('rooms.clone.action')">
             <q-tooltip>{{ t('rooms.clone.action') }}</q-tooltip>
           </q-btn>
         </q-td>
@@ -84,6 +87,7 @@ import { getRoomUsage } from '../services/rooms-api'
 import { useRoomsStore } from '../stores/use-rooms-store'
 import { useWorld } from '../../shared/helpers/world-state'
 import type { IRoom } from '../types/rooms'
+import TableError from '../../shared/components/TableError.vue'
 
 /**
  * Lista delle stanze di una zona (pachi-table2 lato server) con editor (uscite ed extra

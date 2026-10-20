@@ -49,7 +49,7 @@ export interface Stack {
 /**
  * Isola i dati che i test possono modificare oltre al DB di gioco: copia le definizioni di esempio (`tests/fixtures/pachimud_definitions`, razze/classi YAML)
  * nella cartella temporanea e punta la config li', copia l'area di basedmud (+ `src/tables.c` per razze/classi)
- * e configura i mondi del webeditor: `pachimud` (default), `basedmud` (scrivibile), `basedmud-ro` (stessa copia,
+ * e configura i mondi del webeditor: `pachimud` (default), `pachimud-ro` (stesso DB, sola lettura), `basedmud` (scrivibile), `basedmud-ro` (stessa copia,
  * sola lettura), e, solo se `E2E_DIKUMOD` e' impostata, `dikumod` (copia di quella `lib/`, sola lettura) e `dikumod-rw` (seconda copia scrivibile).
  * @param workdir cartella temporanea dello stack
  * @param pachimud parametri del mondo pachimud (DB di gioco e definitions temporanei, preparati da `tests/support/stack.py`)
@@ -65,6 +65,7 @@ function prepareExtras(workdir: string, pachimud: { databaseUrl: string; definit
     { id: 'pachimud', kind: 'pachimud', name: 'Pachimud', params: { database_url: pachimud.databaseUrl, definitions_path: pachimud.definitionsPath } },
     { id: 'basedmud', kind: 'basedmud', name: 'BasedMud', path: based },
     { id: 'basedmud-ro', kind: 'basedmud', name: 'BasedMud (sola lettura)', path: based, read_only: true },
+    { id: 'pachimud-ro', kind: 'pachimud', name: 'Pachimud (sola lettura)', read_only: true, params: { database_url: pachimud.databaseUrl, definitions_path: pachimud.definitionsPath } },
   ]
   if (HAS_DIKUMOD) {
     const dikumodRo = join(workdir, 'dikumod', 'lib')

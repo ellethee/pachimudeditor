@@ -12,7 +12,7 @@
         dense
         outlined
       />
-      <q-btn dense flat round :icon="mdiDelete" color="negative" @click="state.rows.splice(index, 1)">
+      <q-btn dense flat round :icon="mdiDelete" color="negative" @click="state.rows.splice(index, 1)" :aria-label="t('rooms.extras.remove')">
         <q-tooltip>{{ t('rooms.extras.remove') }}</q-tooltip>
       </q-btn>
     </div>

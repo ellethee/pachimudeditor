@@ -29,15 +29,16 @@
                 dense
                 :icon="mdiShieldHalfFull"
                 :aria-label="t('players.inventory.slot')"
+                :disable="readOnly"
                 @click="editSlot(row)"
               />
-              <q-btn flat round dense :icon="mdiDelete" :aria-label="t('players.inventory.remove')" @click="remove(row)" />
+              <q-btn flat round dense :icon="mdiDelete" :aria-label="t('players.inventory.remove')" :disable="readOnly" @click="remove(row)" />
             </q-td>
           </template>
         </q-table>
       </q-card-section>
       <q-card-actions align="between">
-        <q-btn flat :icon="mdiPlus" :label="t('players.inventory.add')" color="primary" @click="addItem" />
+        <q-btn flat :icon="mdiPlus" :label="t('players.inventory.add')" color="primary" :disable="readOnly" @click="addItem" />
         <q-btn flat :label="t('players.close')" @click="onDialogCancel" />
       </q-card-actions>
     </q-card>
@@ -51,6 +52,7 @@ import { useDialogPluginComponent, useQuasar } from 'quasar'
 import type { QTableColumn } from 'quasar'
 import { mdiClose, mdiDelete, mdiPlus, mdiShieldHalfFull } from '@quasar/extras/mdi-v7'
 import { describeError } from '../helpers/describe-error'
+import { useWorld } from '../../shared/helpers/world-state'
 import {
   addInventoryItem,
   listInventory,
@@ -72,6 +74,7 @@ defineEmits([...useDialogPluginComponent.emits])
 
 const { t } = useI18n()
 const $q = useQuasar()
+const { readOnly } = useWorld()
 const { dialogRef, onDialogHide, onDialogCancel } = useDialogPluginComponent()
 const items = ref<IInventoryItem[]>([])
 const loading = ref(false)
@@ -144,7 +147,6 @@ function editSlot(row: IInventoryItem): void {
     message: t('players.inventory.slotHint', { name: row.shortDescription }),
     prompt: { model: row.equippedSlot ?? '', type: 'text' },
     cancel: true,
-    persistent: true,
   }).onOk((slot: string) =>
     void run(() => setItemSlot(props.characterId, row.id, slot.trim() === '' ? null : slot.trim())),
   )
@@ -160,7 +162,6 @@ function remove(row: IInventoryItem): void {
     title: t('players.inventory.remove'),
     message: t('players.inventory.removeConfirm', { name: row.shortDescription }),
     cancel: true,
-    persistent: true,
   }).onOk(() => void run(() => removeInventoryItem(props.characterId, row.id)))
 }
 

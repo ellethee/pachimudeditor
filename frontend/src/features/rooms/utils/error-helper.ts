@@ -1,4 +1,5 @@
 import { ResponseError } from '@ilpachi/use-alova'
+import { httpErrorMessage } from '../../shared/helpers/http-errors'
 
 /** Dettaglio di errore del backend (`detail[]`). */
 interface IErrorDetail {
@@ -35,5 +36,5 @@ export async function describeError(
         .join('; ')
     }
   }
-  return error instanceof Error && error.message ? error.message : t('errors.http.generic')
+  return httpErrorMessage(error)
 }

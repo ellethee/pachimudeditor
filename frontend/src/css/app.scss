@@ -20,3 +20,10 @@
 .pachi-record-locked button[aria-label='Save changes'] {
   display: none;
 }
+
+// Barra dell'app sotto 600px: il nome accanto al logo cede lo spazio al selettore del mondo.
+@media (max-width: 599px) {
+  .pachi-app-logo__wordmark {
+    display: none;
+  }
+}

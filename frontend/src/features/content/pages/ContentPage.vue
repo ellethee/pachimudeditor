@@ -16,7 +16,7 @@
       :no-data-label="t('content.empty')"
     >
       <template #top>
-        <q-btn color="primary" no-caps :icon="mdiPlus" :label="t(`content.${kind}.create`)" @click="openCreate" />
+        <q-btn color="primary" no-caps :icon="mdiPlus" :label="t(`content.${kind}.create`)" :disable="readOnly" @click="openCreate" />
         <q-btn flat round :icon="mdiRefresh" :aria-label="t('content.reload')" @click="load" />
         <q-space />
         <q-input v-model="filter" dense outlined clearable :placeholder="t('content.search')" style="min-width: 220px">
@@ -36,13 +36,13 @@
 
       <template #body-cell-actions="{ row }">
         <q-td class="text-right" auto-width>
-          <q-btn dense flat round :icon="mdiPencil" :disable="!row.valid" @click="openEdit(row)">
+          <q-btn dense flat round :icon="mdiPencil" :disable="!row.valid || readOnly" @click="openEdit(row)" :aria-label="t('content.actions.edit')">
             <q-tooltip>{{ t('content.actions.edit') }}</q-tooltip>
           </q-btn>
-          <q-btn dense flat round :icon="row.disabled ? mdiPlayCircleOutline : mdiPauseCircleOutline" :disable="!row.valid" @click="toggleDisabled(row)">
+          <q-btn dense flat round :icon="row.disabled ? mdiPlayCircleOutline : mdiPauseCircleOutline" :disable="!row.valid || readOnly" @click="toggleDisabled(row)" :aria-label="row.disabled ? t('content.actions.enable') : t('content.actions.disable')">
             <q-tooltip>{{ row.disabled ? t('content.actions.enable') : t('content.actions.disable') }}</q-tooltip>
           </q-btn>
-          <q-btn dense flat round color="negative" :icon="mdiDelete" @click="confirmDelete(row)">
+          <q-btn dense flat round color="negative" :icon="mdiDelete" :disable="readOnly" @click="confirmDelete(row)" :aria-label="t('content.actions.delete')">
             <q-tooltip>{{ t('content.actions.delete') }}</q-tooltip>
           </q-btn>
         </q-td>
@@ -76,6 +76,7 @@ import type { IFieldRow } from '@ilpachi/pachi-kit/fields'
 import RestartBanner from '../components/RestartBanner.vue'
 import { createContent, deleteContent, getContentOptions, listContent, setContentDisabled, updateContent } from '../services/content-api'
 import { describeError } from '../helpers/describe-error'
+import { useWorld } from '../../shared/helpers/world-state'
 import {
   buildClassCombatRows,
   buildClassGeneralRows,
@@ -92,6 +93,7 @@ const props = defineProps<{ kind: ContentKind }>()
 
 const { t } = useI18n()
 const $q = useQuasar()
+const { readOnly } = useWorld()
 
 const rows = ref<IContentItem[]>([])
 const loading = ref(false)
@@ -246,7 +248,6 @@ function confirmDelete(row: IContentItem): void {
     message: t(`content.${props.kind}.deleteConfirm`, { name: row.name, id: idOf(row), count: row.mobCount }),
     cancel: { label: t('content.cancel'), flat: true },
     ok: { label: t('content.actions.delete'), color: 'negative', flat: true },
-    persistent: true,
   }).onOk(async () => {
     try {
       await deleteContent(props.kind, idOf(row))

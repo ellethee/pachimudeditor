@@ -1,5 +1,7 @@
 import { getPachiI18n, pachiT } from '@ilpachi/pachi-i18n'
 import { TransferHttpError } from '../services/transfer-api'
+import { httpErrorMessage } from '../../shared/helpers/http-errors'
+
 
 /** Dettaglio d'errore del backend (`{ detail: [{ loc, msg, code?, params? }] }`). */
 interface IErrorDetail {
@@ -29,5 +31,5 @@ export function describeError(error: unknown): string {
         .join('; ')
     }
   }
-  return error instanceof Error ? error.message : pachiT('errors.http.generic')
+  return httpErrorMessage(error)
 }

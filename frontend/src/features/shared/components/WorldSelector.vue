@@ -1,5 +1,5 @@
 <template>
-  <div v-if="activeWorld" class="row items-center no-wrap q-mr-sm" data-testid="world-selector">
+  <div v-if="activeWorld" class="row items-center no-wrap q-mr-sm pachi-world-selector" data-testid="world-selector">
     <q-select
       v-if="worlds.length > 1"
       :model-value="activeWorld.id"
@@ -26,7 +26,7 @@
       :key="key"
       outline
       color="primary"
-      class="q-ml-sm"
+      class="q-ml-sm gt-sm"
       :label="`${te(`worlds.params.${key}`) ? t(`worlds.params.${key}`) : key}: ${value}`"
       :data-testid="`world-param-${key}`"
     />
@@ -35,9 +35,11 @@
       color="warning"
       text-color="dark"
       class="q-ml-sm"
-      :label="t('worlds.readOnly')"
+      :aria-label="t('worlds.readOnly')"
       data-testid="world-readonly"
     >
+      <q-icon :name="mdiLock" class="lt-sm" />
+      <span class="gt-xs">{{ t('worlds.readOnly') }}</span>
       <q-tooltip>{{ t('worlds.readOnlyHint') }}</q-tooltip>
     </q-badge>
   </div>
@@ -52,7 +54,7 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { mdiEarth } from '@quasar/extras/mdi-v7'
+import { mdiEarth, mdiLock } from '@quasar/extras/mdi-v7'
 import { ensureWorlds, selectWorld, useWorld } from '../helpers/world-state'
 
 const { t, te } = useI18n()
@@ -90,5 +92,16 @@ onMounted(async () => {
 <style lang="scss">
 .pachi-world-select {
   min-width: 170px;
+}
+// sotto 600px la barra e' stretta: il selettore si restringe invece di uscire dallo schermo
+@media (max-width: 599px) {
+  .pachi-world-selector {
+    min-width: 0;
+    flex: 100 1 auto;
+  }
+  .pachi-world-select {
+    flex: 1 1 0;
+    min-width: 0;
+  }
 }
 </style>

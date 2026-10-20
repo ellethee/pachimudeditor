@@ -9,8 +9,11 @@
       error-banner
       dense
     >
+      <template #error="{ error, retry }">
+        <table-error :error="error" :retry="retry" />
+      </template>
       <template #toolbar-actions="{ api }">
-        <q-btn color="primary" :icon="mdiPlus" :label="t('players.accounts.new')" @click="openCreate(api)" />
+        <q-btn color="primary" :icon="mdiPlus" :label="t('players.accounts.new')" :disable="readOnly" @click="openCreate(api)" />
         <q-btn flat round :icon="mdiRefresh" :aria-label="t('players.reload')" @click="api.reload()" />
       </template>
       <template #body-cell-isBanned="{ slotProps }">
@@ -23,10 +26,10 @@
       </template>
       <template #body-cell-actions="{ slotProps, api }">
         <q-td :props="slotProps" auto-width>
-          <q-btn flat round dense :icon="mdiEmail" :aria-label="t('players.accounts.editEmail')" @click="editEmail(slotProps.row, api)">
+          <q-btn flat round dense :icon="mdiEmail" :aria-label="t('players.accounts.editEmail')" :disable="readOnly" @click="editEmail(slotProps.row, api)">
             <q-tooltip>{{ t('players.accounts.editEmail') }}</q-tooltip>
           </q-btn>
-          <q-btn flat round dense :icon="mdiKey" :aria-label="t('players.accounts.setPassword')" @click="changePassword(slotProps.row)">
+          <q-btn flat round dense :icon="mdiKey" :aria-label="t('players.accounts.setPassword')" :disable="readOnly" @click="changePassword(slotProps.row)">
             <q-tooltip>{{ t('players.accounts.setPassword') }}</q-tooltip>
           </q-btn>
           <q-btn
@@ -35,14 +38,14 @@
             dense
             :icon="slotProps.row.isBanned ? mdiAccountCheck : mdiAccountCancel"
             :aria-label="slotProps.row.isBanned ? t('players.accounts.unban') : t('players.accounts.ban')"
-            @click="toggleBan(slotProps.row, api)"
+            :disable="readOnly" @click="toggleBan(slotProps.row, api)"
           >
             <q-tooltip>{{ slotProps.row.isBanned ? t('players.accounts.unban') : t('players.accounts.ban') }}</q-tooltip>
           </q-btn>
           <q-btn flat round dense :icon="mdiAccountGroup" :aria-label="t('players.accounts.showCharacters')" @click="emit('show-characters', slotProps.row)">
             <q-tooltip>{{ t('players.accounts.showCharacters') }}</q-tooltip>
           </q-btn>
-          <q-btn flat round dense :icon="mdiDelete" :aria-label="t('players.delete')" @click="confirmDelete(slotProps.row, api)">
+          <q-btn flat round dense :icon="mdiDelete" :aria-label="t('players.delete')" :disable="readOnly" @click="confirmDelete(slotProps.row, api)">
             <q-tooltip>{{ t('players.delete') }}</q-tooltip>
           </q-btn>
         </q-td>
@@ -69,6 +72,7 @@ import {
 import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import type { PachiTable2Api, PachiTable2Exposed } from '@ilpachi/pachi-kit/table'
 import { describeError } from '../helpers/describe-error'
+import { useWorld } from '../../shared/helpers/world-state'
 import {
   ACCOUNTS_URL,
   createAccount,
@@ -78,15 +82,17 @@ import {
   updateAccountEmail,
 } from '../services/players-api'
 import type { IAccount } from '../types/players'
+import TableError from '../../shared/components/TableError.vue'
 
 const emit = defineEmits<{ 'show-characters': [account: IAccount] }>()
 
 const { t, d } = useI18n()
 const $q = useQuasar()
+const { readOnly } = useWorld()
 const table = ref<PachiTable2Exposed<IAccount> | null>(null)
 
 /** Serve a tipizzare la tabella su `IAccount` (le azioni di riga sono personalizzate). */
-const allowRow = (_row: IAccount): boolean => true
+const allowRow = (_row: IAccount): boolean => !readOnly.value
 
 /**
  * Data/ora localizzata o trattino.
@@ -134,14 +140,12 @@ function openCreate(api: PachiTable2Api<IAccount>): void {
     html: false,
     prompt: { model: '', type: 'text', label: t('players.accounts.username'), isValid: (v: string) => v.trim().length >= 3 },
     cancel: true,
-    persistent: true,
   }).onOk((username: string) => {
     form.username = username.trim()
     $q.dialog({
       title: t('players.accounts.password'),
       prompt: { model: '', type: 'password', label: t('players.accounts.password'), isValid: (v: string) => v.length >= 8 },
       cancel: true,
-      persistent: true,
     }).onOk((password: string) => {
       form.password = password
       $q.dialog({
@@ -149,7 +153,6 @@ function openCreate(api: PachiTable2Api<IAccount>): void {
         message: t('players.accounts.emailOptional'),
         prompt: { model: '', type: 'email', label: t('players.accounts.email') },
         cancel: true,
-        persistent: true,
       }).onOk((email: string) =>
         void run(() => createAccount({ ...form, email: email.trim() === '' ? null : email.trim() }), api),
       )
@@ -169,7 +172,6 @@ function editEmail(row: IAccount, api: PachiTable2Api<IAccount>): void {
     message: row.username,
     prompt: { model: row.email ?? '', type: 'email', label: t('players.accounts.email') },
     cancel: true,
-    persistent: true,
   }).onOk((email: string) =>
     void run(() => updateAccountEmail(row.id, email.trim() === '' ? null : email.trim()), api),
   )
@@ -186,7 +188,6 @@ function changePassword(row: IAccount): void {
     message: row.username,
     prompt: { model: '', type: 'password', label: t('players.accounts.password'), isValid: (v: string) => v.length >= 8 },
     cancel: true,
-    persistent: true,
   }).onOk(async (password: string) => {
     try {
       await setAccountPassword(row.id, password)
@@ -224,7 +225,6 @@ function confirmDelete(row: IAccount, api: PachiTable2Api<IAccount>): void {
       ? { options: { type: 'toggle' as const, model: [], items: [{ label: t('players.accounts.cascade'), value: 'cascade' }] } }
       : {}),
     cancel: true,
-    persistent: true,
   }).onOk((choice: string[] | undefined) => {
     const cascade = Array.isArray(choice) && choice.includes('cascade')
     if (hasCharacters && !cascade) return

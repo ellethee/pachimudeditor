@@ -46,6 +46,9 @@
       @pt2:delete-item="confirmDelete"
       @row-dblclick="(_evt: Event, row: IMobs) => openEdit(row)"
     >
+      <template #error="{ error, retry }">
+        <table-error :error="error" :retry="retry" />
+      </template>
       <template #toolbar-actions="{ api }">
         <q-btn v-if="!readOnly" color="primary" :icon="mdiPlus" :label="t('mobs.new')" @click="openCreate(api)" />
         <q-btn flat round :icon="mdiRefresh" :aria-label="t('mobs.reload')" @click="api.reload()" />
@@ -88,6 +91,7 @@ import {
   nextMobVnum,
 } from '../services/mobs-api'
 import type { IContentRef, IMobEnums, IMobs, IMobsInput, IZoneRef } from '../types/mobs'
+import TableError from '../../shared/components/TableError.vue'
 
 const { t, te } = useI18n()
 const $q = useQuasar()
@@ -389,7 +393,6 @@ async function confirmDelete(row: IMobs, api: PachiTable2Api<IMobs>): Promise<vo
     title: t('mobs.delete.title'),
     message: t('mobs.delete.message', { name: row.shortDescription, vnum: row.vnum }) + warning,
     cancel: true,
-    persistent: true,
   }).onOk(() => {
     // gli errori (es. 409 in uso nei reset) li mostra già il dialog globale dell'HTTP client
     api.deleteRecord(row).catch(() => undefined)

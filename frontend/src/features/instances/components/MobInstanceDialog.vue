@@ -1,5 +1,5 @@
 <template>
-  <q-dialog ref="dialogRef" persistent @hide="onDialogHide">
+  <q-dialog ref="dialogRef" no-backdrop-dismiss @hide="onDialogHide">
     <q-card style="width: 560px; max-width: 95vw">
       <q-card-section class="row items-center q-pb-none">
         <div class="text-h6">{{ isEdit ? t('instances.mob.editTitle', { id: instance?.id }) : t('instances.mob.createTitle') }}</div>

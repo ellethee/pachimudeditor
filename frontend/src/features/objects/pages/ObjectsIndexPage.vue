@@ -46,6 +46,9 @@
       @pt2:delete-item="confirmDelete"
       @row-dblclick="(_evt: Event, row: IObjects) => openEdit(row)"
     >
+      <template #error="{ error, retry }">
+        <table-error :error="error" :retry="retry" />
+      </template>
       <template #toolbar-actions="{ api }">
         <q-btn v-if="!readOnly" color="primary" :icon="mdiPlus" :label="t('objects.new')" @click="openCreate(api)" />
         <q-btn flat round :icon="mdiRefresh" :aria-label="t('objects.reload')" @click="api.reload()" />
@@ -79,6 +82,7 @@ import { localizeEnums } from '../../shared/helpers/enum-labels'
 import { buildGeneralRows, buildStatsRows } from '../helpers/field-rows'
 import { OBJECTS_URL, getEnums, getObject, getObjectUsage, listZones, nextObjectVnum } from '../services/objects-api'
 import type { IObjectEnums, IObjects, IObjectsInput, IZoneRef } from '../types/objects'
+import TableError from '../../shared/components/TableError.vue'
 
 const { t, te } = useI18n()
 const $q = useQuasar()
@@ -354,7 +358,6 @@ async function confirmDelete(row: IObjects, api: PachiTable2Api<IObjects>): Prom
     title: t('objects.delete.title'),
     message: t('objects.delete.message', { name: row.shortDescription, vnum: row.vnum }) + warning,
     cancel: true,
-    persistent: true,
   }).onOk(() => {
     // gli errori (es. 409 in uso nei reset) li mostra già il dialog globale dell'HTTP client
     api.deleteRecord(row).catch(() => undefined)

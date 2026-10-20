@@ -7,7 +7,7 @@
     @update:model-value="onInput"
   >
     <template v-if="!$attrs.disable && zoneId" #append>
-      <q-btn dense flat round :icon="mdiAutoFix" @click="suggest">
+      <q-btn dense flat round :icon="mdiAutoFix" @click="suggest" :aria-label="t('objects.vnumSuggest')">
         <q-tooltip>{{ t('objects.vnumSuggest') }}</q-tooltip>
       </q-btn>
     </template>

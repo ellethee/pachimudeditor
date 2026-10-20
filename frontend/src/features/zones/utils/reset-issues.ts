@@ -1,6 +1,8 @@
 import { getPachiI18n, pachiT } from '@ilpachi/pachi-i18n'
 import { ResponseError } from '@ilpachi/use-alova'
 import type { IResetIssue } from '../types/zones'
+import { httpErrorMessage } from '../../shared/helpers/http-errors'
+
 
 /** Parametri di un codice d'errore (`{ index, vnum, ... }`). */
 type TParams = Record<string, string | number>
@@ -108,7 +110,7 @@ export async function issuesFromError(error: unknown): Promise<IResetIssue[]> {
     if (Array.isArray(detail) && detail.length > 0) return detail.map((entry) => toIssue(entry))
     if (detail !== null && typeof detail === 'object') return [toIssue(detail)]
     if (typeof detail === 'string' && detail.trim()) return [toIssue(detail)]
-    return [toIssue(error.message)]
+    return [toIssue(httpErrorMessage(error))]
   }
   return [toIssue(error instanceof Error ? error.message : String(error))]
 }

@@ -67,6 +67,7 @@ import { MarkerType, VueFlow, useVueFlow } from '@vue-flow/core'
 import type { Edge, Node, NodeMouseEvent } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
+import { useFlowControlLabels } from '../../shared/helpers/flow-controls'
 import { MiniMap } from '@vue-flow/minimap'
 import { getZoneGraph } from '../services/world-api'
 import type { IZoneGraph, IZoneGraphNode } from '../types/world'
@@ -84,6 +85,7 @@ const { fitView } = useVueFlow()
 
 const graph = ref<IZoneGraph | null>(null)
 const nodes = ref<Node[]>([])
+useFlowControlLabels(nodes)
 const edges = ref<Edge[]>([])
 const loading = ref(false)
 const loadError = ref(false)

@@ -57,13 +57,13 @@
           />
           <q-checkbox v-else v-model="model.ifFlag" :label="t('zones.resets.ifFlag')" />
           <q-space />
-          <q-btn dense flat round :icon="mdiArrowUp" :disable="index === 0" @click="emit('move', -1)">
+          <q-btn dense flat round :icon="mdiArrowUp" :disable="index === 0" @click="emit('move', -1)" :aria-label="t('zones.resets.moveUp')">
             <q-tooltip>{{ t('zones.resets.moveUp') }}</q-tooltip>
           </q-btn>
-          <q-btn dense flat round :icon="mdiArrowDown" :disable="index === count - 1" @click="emit('move', 1)">
+          <q-btn dense flat round :icon="mdiArrowDown" :disable="index === count - 1" @click="emit('move', 1)" :aria-label="t('zones.resets.moveDown')">
             <q-tooltip>{{ t('zones.resets.moveDown') }}</q-tooltip>
           </q-btn>
-          <q-btn dense flat round color="negative" :icon="mdiDelete" @click="emit('remove')">
+          <q-btn dense flat round color="negative" :icon="mdiDelete" @click="emit('remove')" :aria-label="t('zones.resets.remove')">
             <q-tooltip>{{ t('zones.resets.remove') }}</q-tooltip>
           </q-btn>
         </div>

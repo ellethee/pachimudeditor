@@ -1,5 +1,7 @@
 import { ResponseError } from '@ilpachi/use-alova'
 import { getPachiI18n, pachiT } from '@ilpachi/pachi-i18n'
+import { httpErrorMessage } from '../../shared/helpers/http-errors'
+
 
 /** Dettaglio di errore del backend (`{ detail: [{ loc, msg, code, params }] }`). */
 interface IErrorDetail {
@@ -31,5 +33,5 @@ export async function describeError(error: unknown): Promise<string> {
         .join('; ')
     }
   }
-  return pachiT('errors.http.generic')
+  return httpErrorMessage(error)
 }

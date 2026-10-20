@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-md column q-gutter-y-md" style="max-width: 1100px">
+  <div class="q-pa-md column q-gutter-y-md convert-page" style="max-width: 1100px">
     <q-banner v-if="loaded && pairs && pairs.worlds.length < 2" rounded class="bg-orange-2 text-dark" data-testid="convert-need-two">
       {{ t('convert.needTwoWorlds') }}
     </q-banner>
@@ -237,3 +237,14 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped lang="scss">
+// `.column` di Quasar e' flex-wrap: wrap: la card prende la larghezza della tabella invece di restare nella pagina
+.convert-page,
+.convert-page :deep(.column) {
+  flex-wrap: nowrap;
+}
+.convert-page > * {
+  min-width: 0;
+}
+</style>

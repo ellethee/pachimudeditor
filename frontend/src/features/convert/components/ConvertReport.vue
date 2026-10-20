@@ -1,5 +1,5 @@
 <template>
-  <div class="column q-gutter-y-md" data-testid="convert-report">
+  <div class="column no-wrap q-gutter-y-md convert-report" data-testid="convert-report">
     <q-banner v-for="(e, i) in report.errors" :key="`e${i}`" rounded class="bg-negative text-white" data-testid="report-error">
       {{ e.message || e.code }}
     </q-banner>
@@ -157,3 +157,10 @@ const remapKinds = computed(() =>
     .filter((k) => k.total > 0),
 )
 </script>
+
+<style scoped lang="scss">
+// le tabelle larghe scorrono in orizzontale dentro il loro riquadro
+.convert-report > * {
+  min-width: 0;
+}
+</style>

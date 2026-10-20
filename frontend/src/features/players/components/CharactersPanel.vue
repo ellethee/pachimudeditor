@@ -32,23 +32,26 @@
       :can-edit="allowRow"
       error-banner
       dense
-      @row-dblclick="(_evt: Event, row: ICharacter) => openEdit(row)"
+      @row-dblclick="(_evt: Event, row: ICharacter) => !readOnly && openEdit(row)"
     >
+      <template #error="{ error, retry }">
+        <table-error :error="error" :retry="retry" />
+      </template>
       <template #toolbar-actions="{ api }">
         <q-btn flat round :icon="mdiRefresh" :aria-label="t('players.reload')" @click="api.reload()" />
       </template>
       <template #body-cell-actions="{ slotProps, api }">
         <q-td :props="slotProps" auto-width>
-          <q-btn flat round dense :icon="mdiPencil" :aria-label="t('players.edit')" @click="openEdit(slotProps.row, api)">
+          <q-btn flat round dense :icon="mdiPencil" :aria-label="t('players.edit')" :disable="readOnly" @click="openEdit(slotProps.row, api)">
             <q-tooltip>{{ t('players.edit') }}</q-tooltip>
           </q-btn>
-          <q-btn flat round dense :icon="mdiMapMarkerRadius" :aria-label="t('players.characters.teleport')" @click="teleport(slotProps.row, api)">
+          <q-btn flat round dense :icon="mdiMapMarkerRadius" :aria-label="t('players.characters.teleport')" :disable="readOnly" @click="teleport(slotProps.row, api)">
             <q-tooltip>{{ t('players.characters.teleport') }}</q-tooltip>
           </q-btn>
           <q-btn flat round dense :icon="mdiBagPersonal" :aria-label="t('players.inventory.open')" @click="openInventory(slotProps.row)">
             <q-tooltip>{{ t('players.inventory.open') }}</q-tooltip>
           </q-btn>
-          <q-btn flat round dense :icon="mdiDelete" :aria-label="t('players.delete')" @click="confirmDelete(slotProps.row, api)">
+          <q-btn flat round dense :icon="mdiDelete" :aria-label="t('players.delete')" :disable="readOnly" @click="confirmDelete(slotProps.row, api)">
             <q-tooltip>{{ t('players.delete') }}</q-tooltip>
           </q-btn>
         </q-td>
@@ -70,6 +73,7 @@ import { PachiEditDialog } from '@ilpachi/pachi-kit/edit-dialog'
 import type { AwaitableData, ISectionDefinition } from '@ilpachi/pachi-kit/edit-dialog'
 import { FieldsSection } from '@ilpachi/pachi-kit/fields'
 import { describeError } from '../helpers/describe-error'
+import { useWorld } from '../../shared/helpers/world-state'
 import { buildIdentityRows, buildListRows, buildStateRows, buildStatsRows } from '../helpers/character-rows'
 import { localizeLookups } from '../helpers/labels'
 import {
@@ -85,6 +89,7 @@ import {
 import type { IAccount, ICharacter, ICharacterDetail, ICharacterPatch, IPlayerLookups, IRoomRef } from '../types/players'
 import InventoryDialog from './InventoryDialog.vue'
 import PickerDialog from './PickerDialog.vue'
+import TableError from '../../shared/components/TableError.vue'
 
 const props = defineProps<{
   /** Account su cui filtrare (impostato dal tab account). */
@@ -93,10 +98,11 @@ const props = defineProps<{
 
 const { t, d } = useI18n()
 const $q = useQuasar()
+const { readOnly } = useWorld()
 const table = ref<PachiTable2Exposed<ICharacter> | null>(null)
 
 /** Serve a tipizzare la tabella su `ICharacter` (le azioni di riga sono personalizzate). */
-const allowRow = (_row: ICharacter): boolean => true
+const allowRow = (_row: ICharacter): boolean => !readOnly.value
 const lookups = ref<IPlayerLookups>()
 const accounts = ref<IAccount[]>([])
 const loadError = ref(false)
@@ -256,7 +262,6 @@ function confirmDelete(row: ICharacter, api: PachiTable2Api<ICharacter>): void {
     message: t('players.characters.deleteMessage', { name: row.name }),
     options: { type: 'toggle', model: [], items: [{ label: t('players.characters.cascade'), value: 'cascade' }] },
     cancel: true,
-    persistent: true,
   }).onOk((choice: string[]) =>
     void run(() => deleteCharacter(row.id, Array.isArray(choice) && choice.includes('cascade')), api),
   )

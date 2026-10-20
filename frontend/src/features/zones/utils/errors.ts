@@ -1,5 +1,7 @@
 import { getPachiI18n, pachiT } from '@ilpachi/pachi-i18n'
 import { ResponseError } from '@ilpachi/use-alova'
+import { httpErrorMessage } from '../../shared/helpers/http-errors'
+
 
 /** Dettaglio d'errore del backend (`{ detail: [{ loc, msg, code?, params? }] }`). */
 interface IErrorDetail {
@@ -33,7 +35,7 @@ export async function describeError(error: unknown): Promise<string> {
       return (detail as IErrorDetail[]).map(translateDetail).filter(Boolean).join(' - ')
     }
     if (typeof detail === 'string' && detail.trim()) return detail
-    return error.message
+    return httpErrorMessage(error)
   }
   return error instanceof Error ? error.message : String(error)
 }

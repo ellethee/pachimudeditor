@@ -26,6 +26,15 @@ describe('giocatori', () => {
     if (created) await api.call('DELETE', `/api/players/accounts/${created.id}?cascade=true`)
   })
 
+  it('il dialogo "Nuovo account" si chiude con Esc', async () => {
+    await goto(s.page, '/players')
+    await tableRow(s.page, 'seed-account').waitFor()
+    await s.page.getByRole('button', { name: 'Nuovo account' }).click()
+    await s.page.locator('.q-dialog input').waitFor()
+    await s.page.keyboard.press('Escape')
+    await s.page.locator('.q-dialog').waitFor({ state: 'detached' })
+  })
+
   it('crea un account con i tre prompt', async () => {
     await goto(s.page, '/players')
     await tableRow(s.page, 'seed-account').waitFor()

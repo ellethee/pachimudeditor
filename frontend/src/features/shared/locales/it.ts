@@ -1,5 +1,28 @@
 /** Etichette italiane degli enum del backend (`enumLabels.<enum>.<valore>`). */
 export default {
+  common: { retry: 'Riprova' },
+  flow: { zoomIn: 'Ingrandisci', zoomOut: 'Riduci', fitView: 'Adatta alla vista', interactive: 'Blocca/sblocca interazione' },
+  errors: {
+    http: {
+      title: 'Errore {status}',
+      generic: 'Si è verificato un errore. Riprova.',
+      network: 'Il server non risponde: controlla la connessione e riprova.',
+      tooManyRequests: 'Troppe richieste: attendi qualche istante e riprova.',
+      status: {
+        400: 'Richiesta non valida.',
+        401: 'Sessione scaduta: accedi di nuovo.',
+        403: 'Non hai i permessi per questa operazione.',
+        404: 'Elemento non trovato.',
+        405: 'Operazione non consentita.',
+        409: 'Operazione in conflitto con lo stato attuale (mondo in sola lettura o dati già modificati).',
+        422: 'I dati inviati non sono validi.',
+        500: 'Errore interno del server.',
+        502: 'Il server non è raggiungibile.',
+        503: 'Servizio temporaneamente non disponibile.',
+        504: 'Il server non ha risposto in tempo.',
+      },
+    },
+  },
   worlds: {
     none: {
       title: 'Nessun mondo configurato',

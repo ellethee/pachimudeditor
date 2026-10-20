@@ -8,7 +8,7 @@ import logoUrl from "src/assets/logo.png";
  * ciò che non è nell'ambiente resta come scritto qui.
  */
 const baseConfig: PachiConfigInput = {
-  app: { logoSize: "64px" }, // la mascotte ha dettagli fini: leggibile solo da ~48px
+  app: { title: "Pachimud Editor", logoSize: "64px" }, // la mascotte ha dettagli fini: leggibile solo da ~48px
   // http: { envelope: false },             // backend con PACHIFAST_ENVELOPE_ENABLED=false
   logo: `img:${logoUrl}`, // mascotte pachimudeditor (PNG ritagliato e ottimizzato)
   // components: { layout, loginPage, errorPage },

@@ -45,8 +45,11 @@
       @pt2:delete-item="confirmDelete"
       @row-dblclick="(_evt: Event, row: Row) => openEdit(row)"
     >
+      <template #error="{ error, retry }">
+        <table-error :error="error" :retry="retry" />
+      </template>
       <template #toolbar-actions="{ api }">
-        <q-btn color="primary" :icon="mdiPlus" :label="t(`instances.${kind}.new`)" @click="openCreate(api)" />
+        <q-btn color="primary" :icon="mdiPlus" :label="t(`instances.${kind}.new`)" :disable="readOnly" @click="openCreate(api)" />
         <q-btn flat round :icon="mdiRefresh" :aria-label="t('instances.reload')" @click="api.reload()" />
       </template>
       <template #body-cell-prototype="{ slotProps }">
@@ -89,8 +92,10 @@ import RoomPicker from './RoomPicker.vue'
 import MobInstanceDialog from './MobInstanceDialog.vue'
 import ObjectInstanceDialog from './ObjectInstanceDialog.vue'
 import { describeError } from '../helpers/describe-error'
+import { useWorld } from '../../shared/helpers/world-state'
 import { enumLabel } from '../../shared/helpers/enum-labels'
 import { deleteInstance, instancesUrl, listZones } from '../services/instances-api'
+import TableError from '../../shared/components/TableError.vue'
 import type {
   ContentsPolicy,
   IMobInstance,
@@ -111,6 +116,7 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const $q = useQuasar()
+const { readOnly } = useWorld()
 
 const table = ref<PachiTable2Exposed<Row> | null>(null)
 const zones = ref<IZoneRef[]>([])
@@ -118,8 +124,8 @@ const filterZoneId = ref<number | null>(null)
 const filterVnum = ref<number | null>(null)
 const filterRoomId = ref<number | null>(null)
 
-/** Tutte le righe sono modificabili/eliminabili (serve anche a tipizzare la tabella). */
-const allowRow = (_row: Row): boolean => true
+/** Righe modificabili/eliminabili solo in un mondo scrivibile (serve anche a tipizzare la tabella). */
+const allowRow = (_row: Row): boolean => !readOnly.value
 
 /** Filtri esatti inviati alla tabella (solo quelli valorizzati). */
 const extraParams = computed<Record<string, unknown>>(() => {
@@ -202,6 +208,7 @@ function openDialog(api: PachiTable2Api<Row> | undefined, row?: Row): void {
 
 /** Gestore dell'edit della tabella (pulsante riga o doppio click). */
 function openEdit(row: Row, api?: PachiTable2Api<Row>): void {
+  if (readOnly.value) return
   openDialog(api, row)
 }
 
@@ -223,7 +230,6 @@ function confirmDelete(row: Row, api: PachiTable2Api<Row>): void {
     title: t('instances.delete.title'),
     message: t('instances.delete.message', { id: row.id, name }),
     cancel: true,
-    persistent: true,
     ...(hasContents
       ? {
           options: {

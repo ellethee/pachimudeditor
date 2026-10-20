@@ -14,6 +14,9 @@
       @pt2:edit-item="onEdit"
       @pt2:delete-item="onDelete"
     >
+      <template #error="{ error, retry }">
+        <table-error :error="error" :retry="retry" />
+      </template>
       <template #toolbar-actions="{ api }">
         <q-btn v-if="!readOnly" color="primary" :icon="mdiPlus" :label="t('zones.create')" no-caps @click="openCreate(api)" />
         <q-btn flat round :icon="mdiRefresh" :aria-label="t('zones.reload')" @click="api.reload()" />
@@ -31,10 +34,10 @@
 
       <template #body-cell-extra="{ slotProps, api }">
         <q-td :props="slotProps">
-          <q-btn v-if="supports('supportsResetScripts') && !guardOf(slotProps.row.extra).corrupted" dense flat round :icon="mdiReplay" @click="openResets(slotProps.row)">
+          <q-btn v-if="supports('supportsResetScripts') && !guardOf(slotProps.row.extra).corrupted" dense flat round :icon="mdiReplay" @click="openResets(slotProps.row)" :aria-label="t('zones.actions.resets')">
             <q-tooltip>{{ t('zones.actions.resets') }}</q-tooltip>
           </q-btn>
-          <q-btn v-if="!readOnly && !guardOf(slotProps.row.extra).corrupted" dense flat round :icon="mdiContentCopy" @click="openClone(slotProps.row, api)">
+          <q-btn v-if="!readOnly && !guardOf(slotProps.row.extra).corrupted" dense flat round :icon="mdiContentCopy" @click="openClone(slotProps.row, api)" :aria-label="t('zones.actions.clone')">
             <q-tooltip>{{ t('zones.actions.clone') }}</q-tooltip>
           </q-btn>
         </q-td>
@@ -57,6 +60,7 @@ import { useWorld } from '../../shared/helpers/world-state'
 import { guardOf } from '../../shared/helpers/record-guard'
 import { whenReady } from '../../shared/helpers/when-ready'
 import type { IZone } from '../types/zones'
+import TableError from '../../shared/components/TableError.vue'
 
 /** Spazio (px) lasciato sotto la tabella. */
 const REZ_OFFSET = 16

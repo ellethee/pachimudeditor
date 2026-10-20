@@ -61,6 +61,7 @@ import { VueFlow, useVueFlow } from '@vue-flow/core'
 import type { Edge, Node, NodeMouseEvent } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
+import { useFlowControlLabels } from '../../shared/helpers/flow-controls'
 import { MiniMap } from '@vue-flow/minimap'
 import RoomNode from '../components/RoomNode.vue'
 import { getRoomGraph } from '../services/rooms-api'
@@ -80,6 +81,7 @@ const store = useRoomsStore()
 const { fitView } = useVueFlow()
 
 const nodes = ref<Node<RoomNodeData>[]>([])
+useFlowControlLabels(nodes)
 const edges = ref<Edge<RoomEdgeData>[]>([])
 const loading = ref(false)
 

@@ -29,7 +29,7 @@ describe('mondi', () => {
 
   it('/api/worlds elenca i mondi con le capability', async () => {
     const worlds = (await (await Api.connect()).get('/api/worlds')).data as { id: string; capabilities: Record<string, boolean> }[]
-    assert.deepEqual(worlds.map((w) => w.id), ['pachimud', 'basedmud', 'basedmud-ro', ...(HAS_DIKUMOD ? ['dikumod', 'dikumod-rw'] : [])])
+    assert.deepEqual(worlds.map((w) => w.id), ['pachimud', 'basedmud', 'basedmud-ro', 'pachimud-ro', ...(HAS_DIKUMOD ? ['dikumod', 'dikumod-rw'] : [])])
     assert.equal(worlds[1]!.capabilities.supportsPlayers, false)
     assert.equal(worlds[2]!.capabilities.readOnly, true)
   })

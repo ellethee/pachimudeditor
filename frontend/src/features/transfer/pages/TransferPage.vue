@@ -99,7 +99,7 @@
                 no-caps
                 :icon="mdiDatabaseImport"
                 :label="t('transfer.import.apply')"
-                :disable="!confirmed || preview.conflicts.length > 0"
+                :disable="readOnly || !confirmed || preview.conflicts.length > 0"
                 :loading="loading"
                 data-testid="import-apply"
                 @click="runApply"
@@ -123,10 +123,12 @@ import { useQuasar } from 'quasar'
 import { mdiDatabaseImport, mdiDownload, mdiMagnify, mdiPaperclip } from '@quasar/extras/mdi-v7'
 import PreviewTable from '../components/PreviewTable.vue'
 import { describeError } from '../helpers/describe-error'
+import { useWorld } from '../../shared/helpers/world-state'
 import { downloadZoneExport, importZone, listZones } from '../services/transfer-api'
 import type { IImportPreview, IImportWarning, IZoneRef, ImportAction } from '../types/transfer'
 
 const { t } = useI18n()
+const { readOnly } = useWorld()
 const $q = useQuasar()
 
 const zones = ref<IZoneRef[]>([])
