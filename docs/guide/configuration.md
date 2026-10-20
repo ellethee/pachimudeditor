@@ -7,7 +7,7 @@ Priorita': variabili d'ambiente > `.env` della cartella > `pachimudeditor.yaml` 
   `PACHIFAST_CONFIG_FILE`). Chiavi del webeditor: `webeditor_worlds`, `webeditor_default_world`,
   `webeditor_convert_journal_dir`, `config_path` (dentro il mondo pachimud). Segreti (`PACHIFAST_SECRET_KEY`, URL con password) solo in `.env`.
 - Sessione: `auth.refresh_mode` (env `PACHIFAST_REFRESH_MODE`) vale `cookie` per default nell'editor (pachifast ha `body`): il
-  refresh token sta in un cookie `HttpOnly`, `SameSite=Lax`, `Path=/api/auth`, e la SPA (`refreshMode: 'cookie'`, `QCLI_AUTH_REFRESH_MODE`
+  refresh token (richiede `pachifast>=0.17.1`: tollera il refresh ripetuto entro `refresh_reuse_grace_seconds`) sta in un cookie `HttpOnly`, `SameSite=Lax`, `Path=/api/auth`, e la SPA (`refreshMode: 'cookie'`, `QCLI_AUTH_REFRESH_MODE`
   in build) non scrive token nel browser. `Secure` e' automatico su https (dietro un reverse proxy avvia uvicorn con
   `--proxy-headers`, o forza `refresh_cookie_secure`); su `http://localhost` funziona. Serve la stessa origine per SPA e `/api`
   (il backend serve la SPA, il proxy di sviluppo di Quasar e il reverse proxy di produzione lo garantiscono e devono inoltrare

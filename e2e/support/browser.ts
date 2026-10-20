@@ -110,15 +110,11 @@ export async function loginOk(page: Page): Promise<void> {
 
 /**
  * Naviga a una route dell'SPA (history mode) con un caricamento completo.
- * Attende anche la fine del refresh silenzioso iniziale (vedi sotto).
  * @param page pagina
  * @param path route, es. `/zones`
  */
 export async function goto(page: Page, path: string): Promise<void> {
   await page.goto(`${BASE_URL}${path}`)
-  // a ogni caricamento la SPA fa un refresh silenzioso (cookie ruotato): navigare di nuovo mentre e' in volo
-  // butta via il nuovo cookie e il login va perso, quindi si attende che la rete sia quieta
-  await page.waitForLoadState('networkidle')
 }
 
 /**

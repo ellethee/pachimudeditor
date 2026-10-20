@@ -48,6 +48,7 @@ L'editor usa la modalita' cookie di pachifast (`auth.refresh_mode: cookie`, defa
 - l'**access token** (breve) vive solo in memoria; a ogni caricamento la SPA fa un refresh silenzioso. Nel `localStorage` non
   c'e' nessun token; la sessione e' condivisa tra le schede tramite Web Lock e BroadcastChannel, e il logout in una scheda
   porta le altre al login;
+- un refresh ripetuto entro `refresh_reuse_grace_seconds` col token appena ruotato (ricarica subito dopo una navigazione) risponde 200 con un nuovo `Set-Cookie` invece di 401: richiede **pachifast>=0.17.1**;
 - **CSRF**: `refresh-token` e `logout` con il cookie richiedono l'header `X-Pachi-Auth: refresh` e, se presente, un `Origin`
   uguale all'host (o in `refresh_allowed_origins`); altrimenti `403 auth.csrf_rejected`. Il proxy deve inoltrare header e `Host`;
 - `Secure` e' automatico su https; con un reverse proxy avvia uvicorn con `--proxy-headers`. `localhost` funziona in http,
