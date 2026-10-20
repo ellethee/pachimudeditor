@@ -3,6 +3,25 @@
 Cinque pacchetti, ciascuno con la **propria versione** (semver), pubblicati su PyPI dal workflow `publish-pypi.yml`:
 `pachimudeditor` (core) e `pachimudeditor-adapter-pachimud`, `-basedmud`, `-dikumod`, `-mapping`.
 
+## Checklist del primo rilascio su PyPI
+
+Da fare **una volta**, nell'ordine (nulla di questo e' automatico: il workflow non tocca le impostazioni di PyPI/GitHub).
+
+- [ ] **Account**: account su <https://pypi.org> e <https://test.pypi.org> con 2FA attiva.
+- [ ] **Environment GitHub** (Settings > Environments): crea `pypi` (Required reviewers = tu; Deployment branches and tags =
+      `pachimudeditor-v*` e `pachimudeditor-adapter-*-v*`) e `testpypi` (solo `main`). I nomi devono coincidere con quelli del workflow.
+- [ ] **Pending publisher** per i **5 pacchetti** (`pachimudeditor`, `pachimudeditor-adapter-pachimud`, `-basedmud`, `-dikumod`, `-mapping`)
+      sia su PyPI sia su TestPyPI, con owner `ellethee`, repository `pachimudeditor`, workflow `publish-pypi.yml`, environment `pypi` / `testpypi`
+      (tabella in "Configurazione una tantum").
+- [ ] **Rimuovi `Private :: Do Not Upload`** dai 5 `pyproject.toml` (`pyproject.toml`, `adapters/*/pyproject.toml`): `classifiers = []` o i
+      classificatori veri; `uv lock`; commit e push su `main`; CI verde. Finche' c'e', `prepare` fallisce apposta.
+- [ ] **Prova su TestPyPI** (Actions > *Pubblicazione su PyPI* > Run workflow da `main`), prima il core e poi gli adapter; installa da TestPyPI in un venv pulito.
+- [ ] **Core per primo: `pachimudeditor` 0.1.0.** Gli adapter dichiarano `pachimudeditor>=0.1.0,<0.2` e un `sdk_version` (1.2 per basedmud, dikumod e mapping;
+      il core espone `SDK_VERSION = "1.2"`): senza il core su PyPI non sono installabili. Tag `pachimudeditor-v0.1.0`, approva il job `publish-pypi`,
+      attendi che il progetto compaia su PyPI (`pip index versions pachimudeditor`).
+- [ ] **Poi i 4 adapter** (0.1.0), un tag ciascuno: `pachimudeditor-adapter-pachimud-v0.1.0`, `-basedmud-v0.1.0`, `-dikumod-v0.1.0`, `-mapping-v0.1.0`.
+- [ ] **Verifica**: `uv tool install 'pachimudeditor[dikumod]'` in un ambiente pulito, poi `pachimudeditor adapters list`.
+
 ## Regole di versionamento
 
 - La versione di un pacchetto sta **solo** nel suo `pyproject.toml` (`pyproject.toml`, `adapters/<kind>/pyproject.toml`). Partono da `0.1.0`.
