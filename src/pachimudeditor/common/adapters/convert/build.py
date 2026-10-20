@@ -11,7 +11,9 @@ Fasi (nessuna scrittura):
    sua volta.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 from pachimudeditor.common.enums import ZoneCommandType
 from pachimudeditor.common.enums import DoorFlag
@@ -34,6 +36,10 @@ from pachimudeditor.common.adapters.models import (
 )
 
 ENTITIES = ("zones", "rooms", "mobs", "objects", "exits", "extraDescriptions", "resets")
+
+
+Resolver = Callable[[str, int], int | None]
+"""Vnum sorgente -> vnum di arrivo (`None` = non convertito), per tipo di elemento."""
 
 
 @dataclass
@@ -84,7 +90,7 @@ def _tag(items: list[LossItem], zone_vnum: int, vnum: int | None = None, index: 
     return [i.model_copy(update={"zone_vnum": zone_vnum, "vnum": vnum, "index": index}) for i in items]
 
 
-def _safe(fn, *args):  # type: ignore[no-untyped-def]
+def _safe(fn: Callable[..., Converted[Any]], *args: Any) -> Converted[Any]:
     """Esegue un metodo del convertitore: una `ValidationError` diventa `Converted(None, [entity_invalid])`."""
     try:
         return fn(*args)
@@ -224,7 +230,9 @@ def _retarget(items: list[LossItem], entity: str) -> list[LossItem]:
     return [i.model_copy(update={"entity": entity}) if i.code == "entity_invalid" else i for i in items]
 
 
-def _finalize_zone(item: _Pre, resolve, plan: ConvertPlan, converter: PairConverter, out: BuildResult, index: TargetIndex) -> None:  # type: ignore[no-untyped-def]
+def _finalize_zone(
+    item: _Pre, resolve: Resolver, plan: ConvertPlan, converter: PairConverter, out: BuildResult, index: TargetIndex
+) -> None:
     """Fasi 3-4: riferimenti, nuovi vnum, dipendenze dei reset."""
     zp = item.zp
     zv = zp.src.zone.vnum
@@ -256,7 +264,7 @@ def _finalize_zone(item: _Pre, resolve, plan: ConvertPlan, converter: PairConver
     out.writes.append(zw)
 
 
-def _resolve_exit(ex: ExitIn, target: int | None, old_room: int, new_room: int, resolve, zv: int, out: BuildResult):  # type: ignore[no-untyped-def]
+def _resolve_exit(ex: ExitIn, target: int | None, old_room: int, new_room: int, resolve: Resolver, zv: int, out: BuildResult):
     """`(uscita normalizzata, vnum di destinazione di arrivo)` oppure None se l'uscita va scartata."""
     values: dict = {}
     new_target: int | None = None
@@ -288,7 +296,7 @@ def _resolve_exit(ex: ExitIn, target: int | None, old_room: int, new_room: int, 
     return final, new_target
 
 
-def _finalize_resets(items: list, resolve, zv: int, out: BuildResult) -> list[ResetCommandIn]:  # type: ignore[no-untyped-def, type-arg]
+def _finalize_resets(items: list, resolve: Resolver, zv: int, out: BuildResult) -> list[ResetCommandIn]:  # type: ignore[type-arg]
     """Riferimenti e dipendenze di uno script (vedi docstring del modulo)."""
     kept: list[ResetCommandIn] = []
     prev_dropped = False

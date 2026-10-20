@@ -3,13 +3,14 @@
 import tomllib
 from pathlib import Path
 
-from mkdocs.structure.files import File
+from mkdocs.config.defaults import MkDocsConfig
+from mkdocs.structure.files import File, Files
 
 ROOT = Path(__file__).resolve().parent.parent
 PAGES = {"changelog.md": "CHANGELOG.md", "releasing.md": "RELEASING.md"}
 
 
-def on_files(files, config):
+def on_files(files: Files, config: MkDocsConfig) -> Files:
     """Aggiunge al sito le pagine generate leggendo i file della radice."""
     for dest, src in PAGES.items():
         text = (ROOT / src).read_text(encoding="utf-8")
@@ -17,7 +18,7 @@ def on_files(files, config):
     return files
 
 
-def on_config(config):
+def on_config(config: MkDocsConfig) -> MkDocsConfig:
     """Legge la versione da pyproject.toml: va nel footer (`copyright`) e nella home (`extra.version`)."""
     version = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
     config.extra["version"] = version

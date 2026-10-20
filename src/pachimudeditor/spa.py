@@ -4,7 +4,9 @@ from importlib.resources import as_file, files
 from pathlib import Path
 
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
+from starlette.types import Scope
 
 
 def static_dir() -> Path | None:
@@ -25,7 +27,7 @@ class SpaStaticFiles(StaticFiles):
     mancante non deve diventare una pagina HTML.
     """
 
-    async def get_response(self, path: str, scope):  # type: ignore[no-untyped-def]
+    async def get_response(self, path: str, scope: Scope) -> Response:
         """Come `StaticFiles.get_response`, ma i 404 di route client tornano `index.html`."""
         try:
             response = await super().get_response(path, scope)

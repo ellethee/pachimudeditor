@@ -12,6 +12,8 @@ Used in #MOBILES.
 
 
 class MobileFlags(IntFlag):
+    """Flag dei mob (`act`)."""
+
     IS_NPC = auto()
     SCAVENGER = auto()  # Picks up objects
     UNUSED_FLAG_1 = auto()  # old: isnpc
@@ -46,6 +48,8 @@ class MobileFlags(IntFlag):
 
 # /* OFF bits for mobiles */
 class OffensiveFlags(IntFlag):
+    """Flag offensive dei mob."""
+
     AREA_ATTACK = auto()
     BACKSTAB = auto()
     BASH = auto()
@@ -71,6 +75,8 @@ class OffensiveFlags(IntFlag):
 
 # /* IMM/RES/VULN bits for mobs */
 class ResistanceFlags(IntFlag):
+    """Flag di immunita', resistenza e vulnerabilita'."""
+
     SUMMON = auto()
     CHARM = auto()
     MAGIC = auto()
@@ -100,6 +106,8 @@ class ResistanceFlags(IntFlag):
 
 
 class FormFlags(IntFlag):
+    """Flag della forma del corpo."""
+
     # /* body form */
     EDIBLE = auto()
     POISON = auto()
@@ -141,6 +149,8 @@ class FormFlags(IntFlag):
 
 # /* body parts */
 class PartFlags(IntFlag):
+    """Flag delle parti del corpo."""
+
     HEAD = auto()
     ARMS = auto()
     LEGS = auto()
@@ -182,6 +192,8 @@ class PartFlags(IntFlag):
 # /* Bits for 'affected_by'.
 #  * Used in #MOBILES.  */
 class AffectedByFlags(IntFlag):
+    """Flag degli effetti attivi (`affected_by`)."""
+
     BLIND = auto()
     INVISIBLE = auto()
     DETECT_EVIL = auto()
@@ -216,6 +228,8 @@ class AffectedByFlags(IntFlag):
 
 # const SIZE_TYPE size_table[SIZE_MAX_R + 1] = {
 class SizeType(IntEnum):
+    """Taglia di una razza o di un mob."""
+
     TINY = auto()
     SMALL = auto()
     MEDIUM = auto()

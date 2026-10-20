@@ -7,6 +7,8 @@ mappatura sta in un posto solo. Il prezzo: cio' che il pivot non puo' rappresent
 ...) si perde passando da qui, anche tra due mondi che lo avrebbero entrambi; la perdita e' sempre riportata.
 """
 
+from collections.abc import Callable
+
 from pachimudeditor.common.adapters.convert.converter import ConvertContext, Converted, PairConverter, extra_dropped, to_in
 from pachimudeditor.common.adapters.models import (
     ExitIn,
@@ -82,7 +84,7 @@ class Flavor:
         return Converted(c)
 
 
-def _then(first: Converted, step) -> Converted:  # type: ignore[no-untyped-def, type-arg]
+def _then(first: Converted, step: Callable[..., Converted]) -> Converted:  # type: ignore[type-arg]
     """Applica `step` al valore di `first` (se c'e') sommando le perdite."""
     if first.value is None:
         return first

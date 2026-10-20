@@ -9,6 +9,7 @@ Rollback: se un passo fallisce si annullano, in ordine inverso, le creazioni di 
 l'esterno comprese; le uscite *entranti* da altre zone, azzerate dalla cancellazione, non sono ripristinabili).
 """
 
+from collections.abc import Awaitable
 from dataclasses import dataclass, field
 
 from fastapi import HTTPException
@@ -135,7 +136,7 @@ async def rollback(target: WorldAdapter, created: Created, index: TargetIndex) -
     """Annulla le creazioni (ordine inverso) e ripristina le zone `replace`; restituisce gli errori incontrati."""
     errors: list[ReportError] = []
 
-    async def attempt(what: str, call) -> None:  # type: ignore[no-untyped-def]
+    async def attempt(what: str, call: Awaitable[object]) -> None:
         """Esegue un passo di rollback registrando l'errore senza interrompersi."""
         try:
             await call

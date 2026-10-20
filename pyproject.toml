@@ -123,11 +123,12 @@ target-version = "py314"
 extend-exclude = ["frontend", "e2e", "migrations", "adapters/*/src/*/dikumod_lib", "adapters/*/src/*/rom_lib"]
 
 [tool.ruff.lint]
-# Set ristretto: errori di sintassi (E9) e pyflakes (F).
-select = ["E9", "F"]
+# Errori di sintassi (E9), pyflakes (F), docstring (D) e annotazioni (ANN); gli ignore sono scelte di stile del progetto.
+select = ["E9", "F", "D", "ANN"]
+ignore = ["D203", "D213", "D401", "D413", "D205", "D209", "D400", "D415", "D301", "D403", "ANN401", "ANN202", "D100", "D104"]
 
 # Le fixture riesportate da un altro conftest e usate come argomenti sembrano ridefinizioni (F811).
-per-file-ignores = { "tests/**/conftest.py" = ["F811"] }
+per-file-ignores = { "tests/**/conftest.py" = ["F811"], "tests/**" = ["D", "ANN"] }
 
 [tool.ruff.format]
 # Generati/vendor: le librerie standalone (dikumod_lib/rom_lib) restano come sono; frontend, e2e, migrations, static fuori.

@@ -6,9 +6,9 @@ dalla cartella di lavoro (`.env` e `pachimudeditor.yaml`)::
     PACHIFAST_CONFIG_FILE=pachimudeditor.yaml uvicorn pachimudeditor.app:create_editor_app --factory
 """
 
-from collections.abc import Iterable
+from collections.abc import Awaitable, Callable, Iterable
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from pachifast import create_app
 
 from pachimudeditor.common.adapters.bootstrap import prepare_worlds
@@ -50,7 +50,7 @@ def create_editor_app(*, serve_spa: bool = True, extra_kinds: Iterable[str] = ()
     set_registry(WorldRegistry(configs, default))
 
     @app.middleware("http")
-    async def strip_trailing_slash(request, call_next):  # type: ignore[no-untyped-def]
+    async def strip_trailing_slash(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """Accetta `/api/<risorsa>/` come `/api/<risorsa>` (pachi-table2 posta con lo slash finale)."""
         path = request.scope["path"]
         if len(path) > 1 and path.endswith("/") and path.startswith(_EDITOR_PREFIXES):

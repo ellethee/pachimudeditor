@@ -123,6 +123,7 @@ class YamlDirStore:
         validate: Validator | None = None,
         disabled_by_flag: str | None = None,
     ) -> None:
+        """Vedi la classe per il significato dei parametri."""
         self._root = root
         self.directory = directory
         self.model = model
