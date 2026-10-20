@@ -30,6 +30,10 @@ auth:
   registration_enabled: false # niente auto-registrazione: gli utenti si creano con `pachimudeditor users create`
   login_max_attempts: 5
   login_lockout_minutes: 15
+  # Refresh token in un cookie HttpOnly (default dell'editor; `body` lo rimette nel JSON ma la SPA richiede `cookie`).
+  # Secure e' automatico su https (dietro proxy: uvicorn --proxy-headers). Con SPA e API su origini diverse:
+  # refresh_allowed_origins: "https://editor.example.org" (e cors_origins).
+  refresh_mode: cookie
 events:
   broadcast_enabled: true
 

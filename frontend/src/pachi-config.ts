@@ -9,6 +9,7 @@ import logoUrl from "src/assets/logo.png";
  */
 const baseConfig: PachiConfigInput = {
   app: { title: "Pachimud Editor", logoSize: "64px" }, // la mascotte ha dettagli fini: leggibile solo da ~48px
+  auth: { refreshMode: "cookie" }, // refresh token in cookie HttpOnly (backend: auth.refresh_mode=cookie, e' il default dell'editor)
   // http: { envelope: false },             // backend con PACHIFAST_ENVELOPE_ENABLED=false
   logo: `img:${logoUrl}`, // mascotte pachimudeditor (PNG ritagliato e ottimizzato)
   // components: { layout, loginPage, errorPage },

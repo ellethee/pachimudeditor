@@ -1191,7 +1191,7 @@ wheels = [
 
 [[package]]
 name = "pachifast"
-version = "0.16.0"
+version = "0.17.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1213,9 +1213,9 @@ dependencies = [
     { name = "typer" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e1/a5/f061e31de77d7ac340932355b4ca5b84bde872b743eff10e93d9f38d9b1a/pachifast-0.16.0.tar.gz", hash = "sha256:99fd9bd44dc1155bbc4cdcb8eef8f344e78ab75a44b7c036e3566c22683b7440", size = 180642, upload-time = "2026-10-15T16:37:19.736Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/4e/ae261ad4a3c5e6e094da489dc72d1c3b69729eb885a5e010ddd4d1156e76/pachifast-0.17.0.tar.gz", hash = "sha256:755706dc71c30ffc80ac273b6dfdbf74e9df3ab5969f44a284e9a684dcd26a95", size = 184032, upload-time = "2026-10-20T12:04:17.329Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/63/60/70168d21ce2e0a98731d56976a18cc58537b488cbb136879938398fc1c5c/pachifast-0.16.0-py3-none-any.whl", hash = "sha256:9f6e134cae5f0edaa1364b6c7817c82710440966fb9d273e1381dfb2732fa140", size = 222213, upload-time = "2026-10-15T16:37:18.675Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/b8/4920db50382e13c8230c8d158ec0f610ec91b2be7721bef2d864e9f6b6df/pachifast-0.17.0-py3-none-any.whl", hash = "sha256:89edccad8b5116b8df2695660c87ca75b79c60c6a82942b37cd4db7ebd5821b5", size = 225262, upload-time = "2026-10-20T12:04:16.146Z" },
 ]
 
 [[package]]
@@ -1269,7 +1269,7 @@ ruff = [
 
 [package.metadata]
 requires-dist = [
-    { name = "pachifast", specifier = ">=0.16.0" },
+    { name = "pachifast", specifier = ">=0.17.0" },
     { name = "pachimudeditor-adapter-basedmud", marker = "extra == 'all'", editable = "adapters/basedmud" },
     { name = "pachimudeditor-adapter-basedmud", marker = "extra == 'basedmud'", editable = "adapters/basedmud" },
     { name = "pachimudeditor-adapter-dikumod", marker = "extra == 'all'", editable = "adapters/dikumod" },

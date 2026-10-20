@@ -42,6 +42,7 @@ setup), `E2E_BASE_URL` / `E2E_SKIP_STACK`.
 
 ## Copertura
 
+`tests/session.test.ts` sessione con refresh token in cookie HttpOnly (nessun token nello storage, cookie illeggibile da JS, ricarica, due schede, logout propagato, `403 auth.csrf_rejected` senza `X-Pachi-Auth`).
 `tests/auth.test.ts` login (errore e successo), logout, redirect, dashboard con le 5 schede, fallback SPA.
 `tests/zones.test.ts` lista, crea, vnum duplicato, range incoerente, modifica, clona, delete 409 su zona non vuota,
 delete, editor reset (aggiungi/salva/ricarica/svuota). `tests/rooms.test.ts` crea con flag + uscita + extra

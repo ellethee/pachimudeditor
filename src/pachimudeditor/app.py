@@ -10,6 +10,7 @@ from collections.abc import Awaitable, Callable, Iterable
 
 from fastapi import FastAPI, Request, Response
 from pachifast import create_app
+from pachifast.config.settings import get_settings
 
 from pachimudeditor.common.adapters.bootstrap import prepare_worlds
 from pachimudeditor.common.adapters.registry import WorldRegistry, set_registry
@@ -38,6 +39,16 @@ _EDITOR_PREFIXES = (
 )
 
 
+def _default_cookie_refresh() -> None:
+    """Il refresh token dell'editor viaggia in un cookie HttpOnly, salvo `auth.refresh_mode` esplicito (yaml/env).
+
+    La SPA usa `refreshMode: 'cookie'`: con il default `body` di pachifast non avrebbe una sessione persistente.
+    """
+    settings = get_settings()
+    if "refresh_mode" not in settings.model_fields_set:
+        settings.refresh_mode = "cookie"
+
+
 def create_editor_app(*, serve_spa: bool = True, extra_kinds: Iterable[str] = ()) -> FastAPI:
     """Costruisce l'app dell'editor: API pachifast e, se presente `static/`, la SPA sullo stesso processo/porta.
 
@@ -46,6 +57,7 @@ def create_editor_app(*, serve_spa: bool = True, extra_kinds: Iterable[str] = ()
     `extra_kinds`: kind di cui caricare i moduli API oltre a quelli dei mondi configurati (test, mondi aggiunti a runtime).
     """
     # config mondi -> moduli opzionali solo se servono e `pachimud` e' importabile -> registro
+    _default_cookie_refresh()
     configs, default = prepare_worlds()
     app = create_app(build_modules({c.kind for c in configs} | set(extra_kinds)), cors_origins=CORS_ORIGINS)
     set_registry(WorldRegistry(configs, default))

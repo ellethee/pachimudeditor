@@ -14,6 +14,7 @@ describe('pachimud in sola lettura', () => {
       s.page.waitForNavigation({ waitUntil: 'load' }),
       s.page.locator('.q-menu .q-item', { hasText: 'Pachimud (sola lettura)' }).first().click(),
     ])
+    await s.page.waitForLoadState('networkidle') // il refresh silenzioso deve finire prima di navigare ancora
     await s.page.getByTestId('world-readonly').waitFor()
   })
   after(async () => {

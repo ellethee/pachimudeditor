@@ -38,9 +38,28 @@ pachifast offre un limite analogo solo per login/registrazione/MFA (`auth_rate_l
 endpoint dell'editor, per questo il limite sopra e' dell'editor. Dietro un reverse proxy avvia uvicorn con
 `--proxy-headers`, altrimenti tutti i client condividono l'indirizzo del proxy e quindi un solo budget.
 
+## Sessione: refresh token in cookie HttpOnly
+
+L'editor usa la modalita' cookie di pachifast (`auth.refresh_mode: cookie`, default dell'editor) e di `@ilpachi/pachifastquasar`
+(`auth: { refreshMode: 'cookie' }`). Questo risolve la vecchia decisione aperta sui token nel `localStorage`:
+
+- il **refresh token** (il segreto di lunga durata) e' un cookie `HttpOnly`, `SameSite=Lax`, `Path=/api/auth`: il JavaScript
+  della pagina non lo legge (`document.cookie` non lo mostra) e non resta in nessuno storage;
+- l'**access token** (breve) vive solo in memoria; a ogni caricamento la SPA fa un refresh silenzioso. Nel `localStorage` non
+  c'e' nessun token; la sessione e' condivisa tra le schede tramite Web Lock e BroadcastChannel, e il logout in una scheda
+  porta le altre al login;
+- **CSRF**: `refresh-token` e `logout` con il cookie richiedono l'header `X-Pachi-Auth: refresh` e, se presente, un `Origin`
+  uguale all'host (o in `refresh_allowed_origins`); altrimenti `403 auth.csrf_rejected`. Il proxy deve inoltrare header e `Host`;
+- `Secure` e' automatico su https; con un reverse proxy avvia uvicorn con `--proxy-headers`. `localhost` funziona in http,
+  un IP di rete in http no.
+
+**Rischio residuo**: uno script iniettato (XSS) non puo' piu' rubare la sessione, ma finche' la pagina e' aperta puo' usare
+l'access token in memoria e chiamare l'API come l'utente. Restano quindi necessari la CSP stretta sopra e l'igiene delle
+dipendenze. Verificato dai test E2E `e2e/tests/auth.test.ts`.
+
 ## Decisioni aperte (lasciate all'utente)
 
-Le due questioni seguenti sono limiti noti, **non** modificati: richiedono una scelta di prodotto.
+La questione seguente e' un limite noto, **non** modificato: richiede una scelta di prodotto.
 
 ### Modello dei permessi per utente
 
@@ -54,16 +73,3 @@ Alternative:
 2. **Elenco utenti/gruppi per mondo nella configurazione** (`webeditor_worlds[].writers`): niente DB, ma modifiche solo da file.
 3. **Solo superuser scrivono** e gli altri leggono: semplicissimo, ma toglie la scrittura a chi oggi la usa.
 4. Lasciare cosi' se gli utenti sono pochi e fidati (situazione attuale).
-
-### Token in `localStorage`
-
-*Oggi*: la SPA (tramite `@ilpachi/pachifastquasar`) conserva i token di accesso e di refresh nel `localStorage` del
-browser. Un XSS potrebbe leggerli; la CSP stretta sopra riduce il rischio (niente script inline o di terzi) ma non lo elimina.
-
-Alternative:
-
-1. **Cookie `HttpOnly` + `SameSite=Strict`** per il refresh token (e access token solo in memoria): il JS non puo' leggerli,
-   richiede modifiche a pachifast (emissione/lettura dei cookie) e una protezione CSRF.
-2. **Access token solo in memoria** e refresh in cookie: come sopra, con ricarica silenziosa dell'access token.
-3. **`sessionStorage`**: il token non sopravvive alla chiusura della scheda, ma resta leggibile da un XSS.
-4. Lasciare cosi', accettando il rischio, con CSP e access token a vita breve.

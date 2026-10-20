@@ -57,6 +57,8 @@ export async function openSession(): Promise<Session> {
   }
   page.on('console', (message) => {
     const text = message.text()
+    // refresh silenzioso senza cookie (pagina di login, dopo il logout): il 401 e' il comportamento previsto
+    if (message.type() === 'error' && /401/.test(text) && message.location().url.endsWith('/api/auth/refresh-token')) return
     if (message.type() === 'error') record(`console.error: ${text}`)
     else if (message.type() === 'warning' && /i18n|Not found '.*' key|intlify/i.test(text)) record(`i18n: ${text}`)
   })
@@ -108,11 +110,15 @@ export async function loginOk(page: Page): Promise<void> {
 
 /**
  * Naviga a una route dell'SPA (history mode) con un caricamento completo.
+ * Attende anche la fine del refresh silenzioso iniziale (vedi sotto).
  * @param page pagina
  * @param path route, es. `/zones`
  */
 export async function goto(page: Page, path: string): Promise<void> {
   await page.goto(`${BASE_URL}${path}`)
+  // a ogni caricamento la SPA fa un refresh silenzioso (cookie ruotato): navigare di nuovo mentre e' in volo
+  // butta via il nuovo cookie e il login va perso, quindi si attende che la rete sia quieta
+  await page.waitForLoadState('networkidle')
 }
 
 /**

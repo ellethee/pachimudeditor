@@ -12,6 +12,7 @@ async function pickWorld(s: Session, name: string): Promise<void> {
     s.page.waitForNavigation({ waitUntil: 'load' }),
     s.page.locator('.q-menu .q-item', { hasText: name }).first().click(),
   ])
+  await s.page.waitForLoadState('networkidle') // il refresh silenzioso deve finire prima di navigare ancora
 }
 
 describe('mondi', () => {

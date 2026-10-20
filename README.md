@@ -113,7 +113,7 @@ uv sync --all-packages                   # workspace: core + tutti gli adapter e
 (cd frontend && pnpm install)
 uv run pachimudeditor init --workdir .   # la cartella del repo e' anche la cartella di lavoro di sviluppo
 uv run pachimudeditor serve --workdir . --reload     # API su :8123; oppure `uv run pachifast dev` (project_modules.py)
-cd frontend && pnpm dev                  # app su http://localhost:9010, proxy /api -> :8123 (QCLI_PROXY_TARGET)
+cd frontend && pnpm dev                  # app su http://localhost:9010, proxy /api -> :8123 (QCLI_PROXY_TARGET); serve auth.refresh_allowed_origins con l'origine :9010 (vedi example yaml)
 uv run pachimudeditor build-frontend     # SPA -> src/pachimudeditor/static (serve per `serve` senza pnpm dev e per gli e2e)
 ```
 

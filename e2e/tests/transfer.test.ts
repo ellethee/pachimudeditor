@@ -69,6 +69,7 @@ describe('trasferimento', () => {
       s.page.waitForNavigation({ waitUntil: 'load' }),
       s.page.locator('.q-menu .q-item', { hasText: 'Pachimud (sola lettura)' }).first().click(),
     ])
+    await s.page.waitForLoadState('networkidle') // il refresh silenzioso deve finire prima di navigare ancora
     await goto(s.page, '/transfer')
     await page_files(s).setInputFiles(zipPath)
     await s.page.getByTestId('import-preview').click()
