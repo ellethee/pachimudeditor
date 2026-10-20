@@ -10,8 +10,9 @@ Da fare **una volta**, nell'ordine (nulla di questo e' automatico: il workflow n
 - [ ] **Account**: account su <https://pypi.org> e <https://test.pypi.org> con 2FA attiva.
 - [ ] **Environment GitHub** (Settings > Environments): crea `pypi` (Required reviewers = tu; Deployment branches and tags =
       `pachimudeditor-v*` e `pachimudeditor-adapter-*-v*`) e `testpypi` (solo `main`). I nomi devono coincidere con quelli del workflow.
-- [ ] **Pending publisher** per i **5 pacchetti** (`pachimudeditor`, `pachimudeditor-adapter-pachimud`, `-basedmud`, `-dikumod`, `-mapping`)
-      sia su PyPI sia su TestPyPI, con owner `ellethee`, repository `pachimudeditor`, workflow `publish-pypi.yml`, environment `pypi` / `testpypi`
+- [ ] **Pending publisher**, **uno alla volta** (PyPI ne ammette uno solo per la stessa configurazione finche' non e' usato dal primo upload):
+      `pachimudeditor` per primo, poi un adapter per volta (`-pachimud`, `-basedmud`, `-dikumod`, `-mapping`), registrandolo dopo il rilascio
+      del precedente. Su PyPI e su TestPyPI, con owner `ellethee`, repository `pachimudeditor`, workflow `publish-pypi.yml`, environment `pypi` / `testpypi`
       (tabella in "Configurazione una tantum").
 - [x] **`Private :: Do Not Upload`** rimosso dai 5 `pyproject.toml`. Se lo rimetti, `prepare` fallisce apposta.
 - [ ] **Prova su TestPyPI** (Actions > *Pubblicazione su PyPI* > Run workflow da `main`), prima il core e poi gli adapter; installa da TestPyPI in un venv pulito.
@@ -97,7 +98,7 @@ a ogni push su `main` che tocca la documentazione. L'URL del sito (`Documentatio
 
 ### Trusted publisher su PyPI e TestPyPI (nessun token)
 
-Poiche' i progetti non esistono ancora, registra un **pending publisher** per ciascuno dei 5 pacchetti, su
+Poiche' i progetti non esistono ancora, registra un **pending publisher** per pacchetto, uno alla volta (errore "already been registered for a different project name" se ce n'e' un altro con la stessa configurazione ancora inutilizzato), su
 <https://pypi.org/manage/account/publishing/> e su <https://test.pypi.org/manage/account/publishing/>:
 
 | Campo | Valore |
