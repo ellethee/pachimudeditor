@@ -113,8 +113,7 @@ uv sync --all-packages                   # workspace: core + tutti gli adapter e
 (cd frontend && pnpm install)
 uv run pachimudeditor init --workdir .   # la cartella del repo e' anche la cartella di lavoro di sviluppo
 uv run pachimudeditor serve --workdir . --reload     # API su :8123; oppure `uv run pachifast dev` (project_modules.py)
-cd frontend && pnpm dev                  # app su http://localhost:9010, proxy /api -> :8123 (QCLI_PROXY_TARGET); serve auth.refresh_allowed_origins con l'origine :9010 (vedi example yaml)
-uv run pachimudeditor build-frontend     # SPA -> src/pachimudeditor/static (serve per `serve` senza pnpm dev e per gli e2e)
+cd frontend && pnpm dev                  # app su http://localhost:9010, proxy /api -> :8123 (QCLI_PROXY_TARGET)uv run pachimudeditor build-frontend     # SPA -> src/pachimudeditor/static (serve per `serve` senza pnpm dev e per gli e2e)
 ```
 
 Nessun checkout del MUD pachimud serve per sviluppare o testare: i modelli del DB di gioco sono copiati nell'adapter (`game_models/`) e le definizioni di esempio in `tests/fixtures/pachimud_definitions/`. Il confronto opzionale con il MUD vero gira solo con `PACHIMUD_GAME_ROOT=<checkout>` (vedi `docs/contributing.md`).

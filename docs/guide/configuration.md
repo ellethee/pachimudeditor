@@ -11,8 +11,7 @@ Priorita': variabili d'ambiente > `.env` della cartella > `pachimudeditor.yaml` 
   in build) non scrive token nel browser. `Secure` e' automatico su https (dietro un reverse proxy avvia uvicorn con
   `--proxy-headers`, o forza `refresh_cookie_secure`); su `http://localhost` funziona. Serve la stessa origine per SPA e `/api`
   (il backend serve la SPA, il proxy di sviluppo di Quasar e il reverse proxy di produzione lo garantiscono e devono inoltrare
-  `X-Pachi-Auth` e `Host`); con origini diverse elenca la SPA in `refresh_allowed_origins` e in `cors_origins`. Con `pnpm dev` (SPA su :9010) il proxy di Quasar cambia l'`Host` ma non l'`Origin`: aggiungi
-  `refresh_allowed_origins: "http://localhost:9010"` (gia' nel `pachimudeditor.example.yaml`), altrimenti il refresh risponde `403 auth.csrf_rejected`. Dettagli in [Sicurezza](security.md).
+  `X-Pachi-Auth` e `Host`); con origini diverse elenca la SPA in `refresh_allowed_origins` e in `cors_origins`. Con `pnpm dev` (SPA su :9010) non serve nulla: il proxy di sviluppo di `@ilpachi/pachifastquasar` (>=0.1.6) riscrive anche l'`Origin`. Dettagli in [Sicurezza](security.md).
 - Mondi: `WEBEDITOR_WORLDS` (JSON) e `WEBEDITOR_DEFAULT_WORLD`, con alias `PACHIMUDEDITOR_WORLDS` /
   `PACHIMUDEDITOR_DEFAULT_WORLD` (i `WEBEDITOR_*` hanno la precedenza).
 - `read_only` per mondo: `kind: dikumod` e' in sola lettura se non scritto (la scrittura va abilitata con `read_only: false`);

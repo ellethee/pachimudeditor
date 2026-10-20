@@ -49,8 +49,6 @@ auth:
   # Secure e' automatico su https (dietro proxy: uvicorn --proxy-headers). Con SPA e API su origini diverse:
   # refresh_allowed_origins: "https://editor.example.org" (e cors_origins).
   refresh_mode: cookie
-  # Sviluppo (`pnpm dev` su :9010): il proxy di Quasar riscrive l'Host ma non l'Origin, serve elencarla.
-  refresh_allowed_origins: "http://localhost:9010,http://127.0.0.1:9010"
 events:
   broadcast_enabled: true
 
