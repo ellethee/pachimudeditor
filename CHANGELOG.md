@@ -4,6 +4,9 @@ Un solo file per i cinque pacchetti. Le release sono sezioni `## <pacchetto> X.Y
 
 ## Non rilasciato
 
+- Metadati PyPI dei 5 pacchetti: `[project.urls]` (Homepage, Documentation, Repository, Issues, Changelog), `keywords` e classificatori (Python 3.14, OS Independent, Topic MUD, Framework FastAPI per il core, Environment Plugins per gli adapter); `Private :: Do Not Upload` resta. La sdist del core include `mkdocs.yml` e `overrides/` (con `docs/` e `scripts/mkdocs_hooks.py` basta per `mkdocs build --strict`).
+- Docs: l'esempio di adapter esterno in `docs/adapters/sdk.md` e' completo (import di `AppModule` da `pachifast`, `adapter.py` minimo provato in un venv pulito con `adapters list` e `worlds check`), la regola minor/major rimanda alla costante `SDK_VERSION` e c'e' il riepilogo degli helper SDK.
+- Test: coperti `common/adapters/lifecycle.py` (0% -> 100%), `init` (28% -> 100%), `build-frontend` (38% -> 100%), `worlds` (49% -> 98%) e `serve` (51% -> 100%) con test in `tests/core/` (cartelle temporanee, nessuna rete, uvicorn e pnpm sostituiti).
 - pachimud (transfer): piu' zip nello stesso upload danno 422 `transfer.multiple_zones` invece di 500 (contatore gruppi condiviso); limiti cumulativi su byte, file (10) e voci (200), 2 MB per ogni YAML e 5000 record per file; parsing YAML fuori dal loop e query `IN` a blocchi (niente piu' blocchi del server ne' `too many SQL variables`).
 - pachimud: id/page/pageSize oltre i 64 bit e vnum oltre 2^31-1 rispondono 422 (`world.value_out_of_range` / validazione) invece di 500 o di accettare vnum assurdi. `/api/convert/pairs` ora segnala `same_world` come `/run` quando due id puntano agli stessi dati (prima `target_read_only`).
 - basedmud e mapping: una scrittura fallita a meta' (es. `extra` invalido dopo la mutazione dei campi) non lascia piu' la cache sporca: `writing()` invalida la cache come dikumod, quindi il valore scartato non resta in memoria ne' finisce su disco al salvataggio successivo.
