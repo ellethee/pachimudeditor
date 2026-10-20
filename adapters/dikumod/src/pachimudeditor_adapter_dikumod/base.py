@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
 from typing import Any
 
 from pachimudeditor_adapter_dikumod.dikumod_lib import DikumodUnencodableError, DikumodWriteError, Raw
+from pachimudeditor_adapter_dikumod.dikumod_lib.writer import encode_latin1
 from pachimudeditor_adapter_dikumod.dikumod_lib import DEFAULT_PREFIX, validate_prefix
 from pachifast.i18n import api_error
 
@@ -47,6 +48,14 @@ class DikumodSupport:
         """Riallinea la cache al disco e restituisce l'archivio."""
         self.store.refresh()
         return self.store
+
+    def check_texts(self, texts: Iterable[str], *, zone_id: int | None) -> None:
+        """Anteprima di conversione: 422 `dikumod.unencodable_text` se un testo non e' in latin-1."""
+        for text in texts:
+            try:
+                encode_latin1(text)
+            except DikumodUnencodableError as error:
+                raise api_error(422, "dikumod.unencodable_text", reason=str(error)) from error
 
     @asynccontextmanager
     async def writing(self) -> AsyncIterator[DikumodStore]:

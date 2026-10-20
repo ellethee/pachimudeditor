@@ -19,6 +19,7 @@ Convenzioni:
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Literal
 
@@ -168,6 +169,11 @@ class WorldAdapter(ABC):
 
     async def close(self) -> None:
         """Rilascia le risorse dell'adapter (engine, connessioni): chiamato allo spegnimento. Default: niente."""
+
+    def check_texts(self, texts: Iterable[str], *, zone_id: int | None) -> None:
+        """Verifica (prima di una conversione) che i testi siano scrivibili nel mondo; 422 con il codice dell'adapter.
+
+        `zone_id` e' la zona di arrivo gia' esistente che verrebbe riscritta (`None` = zona nuova). Default: niente."""
 
     # ------------------------------------------------------------------ zone
 

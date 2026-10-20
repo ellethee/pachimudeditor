@@ -1,7 +1,7 @@
 """Supporto comune ai mixin di `BasedMudAdapter`: archivio, lock di scrittura, paginazione in memoria, uso dei vnum."""
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -42,6 +42,19 @@ class BasedMudSupport:
         """Riallinea la cache al disco e restituisce l'archivio."""
         self.store.refresh()
         return self.store
+
+    def check_texts(self, texts: Iterable[str], *, zone_id: int | None) -> None:
+        """Anteprima di conversione: 422 se un testo non e' scrivibile (encoding del `.are` esistente, NUL)."""
+        entry = self.sync().zone_by_id(zone_id) if zone_id is not None else None
+        encoding = entry.area.encoding if entry is not None else "utf-8"
+        for text in texts:
+            if "\0" in text:
+                raise api_error(422, "basedmud.unsafe_text", reason="il carattere NUL non e' ammesso")
+            try:
+                text.encode(encoding)
+            except UnicodeEncodeError as error:
+                reason = f"carattere {text[error.start]!r} non rappresentabile in {encoding}"
+                raise api_error(422, "basedmud.unencodable_text", reason=reason) from error
 
     @asynccontextmanager
     async def writing(self) -> AsyncIterator[AreaStore]:

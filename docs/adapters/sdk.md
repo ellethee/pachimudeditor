@@ -109,7 +109,9 @@ class MioMudAdapter(_Base):
         return AdapterCapabilities(read_only=True)
 
     def describe(self) -> AdapterInfo:
-        return AdapterInfo(id=self.config.id, kind=self.config.kind, name=self.config.name or "", capabilities=self.capabilities(), resources=[])
+        return AdapterInfo(
+            id=self.config.id, kind=self.config.kind, name=self.config.name or "", capabilities=self.capabilities(), resources=[]
+        )
 
 
 def validate_world(config: WorldConfig) -> None:
@@ -187,6 +189,8 @@ sintetici (`tests/core/fake_adapter`), un buon modello per testare la scoperta n
 - Meta: `enums, races, classes`.
 - Opzionali (default 409 `world.capability_missing`): `export_zone_bundle`, `import_zone_dir`
   (capability `supports_transfer`); `aclose()` per rilasciare risorse.
+- Opzionale (default: niente): `check_texts(texts, *, zone_id)`, chiamato dall'anteprima/esecuzione di una conversione prima di
+  scrivere; solleva 422 (con i codici dell'adapter) se un testo non e' scrivibile nel mondo (encoding, caratteri vietati).
 
 ## Convenzioni
 

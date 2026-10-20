@@ -6,6 +6,7 @@ zone sorgente e dell'indice dell'arrivo -> pianificazione (`planner`) -> costruz
 rapporto; solo se non e' un dry-run -> scrittura (`writer`) con rollback best-effort in caso di errore -> giornale.
 """
 
+from collections.abc import Iterator
 from pathlib import Path
 
 from pachifast.i18n import api_error
@@ -31,6 +32,28 @@ def ensure_distinct(source: WorldAdapter, target: WorldAdapter) -> None:
     cs, ct = getattr(source, "config", None), getattr(target, "config", None)
     if cs is not None and ct is not None and cs.kind == ct.kind and cs.path == ct.path and cs.mapping == ct.mapping:
         raise api_error(422, "convert.same_world")
+
+
+def _strings(value: object) -> Iterator[str]:
+    """Tutte le stringhe (valori e chiavi) di un dato annidato prodotto da `model_dump`."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            yield from _strings(k)
+            yield from _strings(v)
+    elif isinstance(value, (list, tuple)):
+        for v in value:
+            yield from _strings(v)
+
+
+def check_writable(target: WorldAdapter, built: builder.BuildResult) -> None:
+    """422 (codici dell'adapter) se un testo da scrivere non e' codificabile/ammesso nel mondo di arrivo."""
+    for zw in built.writes:
+        models = [zw.zone_in, *zw.mobs, *zw.objects, *(r.data for r in zw.rooms), *(x for r in zw.rooms for x in r.extras)]
+        models += [e.data for e in zw.exits] + (zw.resets or [])
+        existing = zw.plan.existing.id if zw.plan.action == "replace" and zw.plan.existing is not None else None
+        target.check_texts((s for m in models for s in _strings(m.model_dump())), zone_id=existing)
 
 
 async def _context(target: WorldAdapter) -> ConvertContext:
@@ -96,6 +119,7 @@ async def convert(
     planner.detect_conflicts(plans, index, plan)
     ctx = await _context(target)
     built = builder.build(plans, converter, ctx, index, plan)
+    check_writable(target, built)
 
     by_vnum = {zw.plan.src.zone.vnum: zw for zw in built.writes}
     zones = [

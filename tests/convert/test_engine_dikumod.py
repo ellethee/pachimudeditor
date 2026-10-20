@@ -3,11 +3,13 @@
 from pathlib import Path
 
 import pytest
+from fastapi import HTTPException
 
 from pachimudeditor_adapter_dikumod.adapter import DikumodAdapter
 from pachimudeditor.common.adapters.convert.engine import convert
 from pachimudeditor.common.adapters.convert.models import ConvertPlan
 from pachimudeditor.common.adapters.convert.reader import list_all_zones, read_zone
+from pachimudeditor.common.adapters.models import RoomPatch
 from pachimudeditor.common.adapters.registry import WorldConfig
 from tests.convert.helpers import SCHOOL, SCHOOL_NAME, assert_zone_valid, snapshot
 from tests.dikumod.synthetic import write_world
@@ -85,3 +87,28 @@ async def test_real_dikumod_zone_to_pachimud(pachimud_world):
     assert {"mob_flagset_dropped", "flags_dropped"} & {l.code for l in report.losses}
     target = next(z for z in await list_all_zones(pachimud_world) if z.name == "The colossal tree")
     await assert_zone_valid(pachimud_world, target.id)
+
+
+@pytest.mark.parametrize("dry_run", [True, False])
+@pytest.mark.parametrize(("target", "code"), [("dikumod_small", "dikumod.unencodable_text"), ("empty_rom", "basedmud.unencodable_text")])
+async def test_emoji_not_encodable_is_422_in_preview_and_run(request, pachimud_world, target, code, dry_run):
+    """Testo non codificabile nell'arrivo: 422 gia' in anteprima (e nel run), senza scrivere nulla.
+
+    Verso BasedMud una zona nuova e' utf-8 (emoji ammesse): qui si sostituisce una zona latin-1 esistente.
+    """
+    room = (await read_zone(pachimud_world, 1)).rooms[0]
+    await pachimud_world.update_room(room.id, RoomPatch(name="Piazza \U0001f600"))
+    world = request.getfixturevalue(target)
+    if target == "empty_rom":  # arrivo: area latin-1 gia' presente con lo stesso vnum di zona
+        src = await convert(pachimud_world, world, plan(1), dry_run=False, confirm=True)
+        assert src.applied
+        entry = world.store.zone_by_id((await list_all_zones(world))[0].id)
+        entry.area.encoding = "latin-1"
+        kw = {"on_conflict": "replace"}
+    else:
+        kw = {"vnum_policy": {"mode": "shift_to"}}
+    before = await snapshot(world)
+    with pytest.raises(HTTPException) as err:
+        await convert(pachimud_world, world, plan(1, **kw), dry_run=dry_run, confirm=True)
+    assert err.value.status_code == 422 and err.value.detail[0]["code"] == code
+    assert await snapshot(world) == before
