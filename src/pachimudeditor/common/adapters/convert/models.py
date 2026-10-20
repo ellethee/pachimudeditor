@@ -10,6 +10,8 @@ from typing import Any, Literal
 from pachifast.database import AliasedBaseModel
 from pydantic import Field, model_validator
 
+from pachimudeditor.common.adapters.models import MAX_INT
+
 Severity = Literal["info", "warning", "dropped"]
 """Gravita' di una perdita: `info` (trasformazione senza perdita sostanziale), `warning` (approssimato) o `dropped`
 (dato perso o elemento non convertito)."""
@@ -25,7 +27,7 @@ class VnumPolicy(AliasedBaseModel):
     """Come cambiano i vnum nel mondo di arrivo."""
 
     mode: VnumMode = "keep"
-    offset: int = 0
+    offset: int = Field(default=0, ge=-MAX_INT, le=MAX_INT)
     """Solo per `mode: offset` (puo' essere negativo)."""
 
     @model_validator(mode="after")

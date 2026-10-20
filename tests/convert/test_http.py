@@ -90,3 +90,10 @@ async def test_errors(client: httpx.AsyncClient) -> None:
     assert error_code(await client.post("/api/convert/preview", json=body(zoneIds=[424242])), 404) == "convert.zone_not_found"
     assert (await client.post("/api/convert/preview", json=body(zoneIds=[]))).status_code == 422
     assert (await client.post("/api/convert/preview", json=body(vnumPolicy={"mode": "keep", "offset": 5}))).status_code == 422
+
+
+@pytest.mark.parametrize("path", ["/api/convert/preview", "/api/convert/run"])
+async def test_offset_out_of_range_is_422(client: httpx.AsyncClient, path: str) -> None:
+    """`offset` oltre 2^31-1 (o sotto il suo opposto) e' un 422 di validazione, non un 500."""
+    for offset in (99999999999, -99999999999):
+        assert (await client.post(path, json=body(vnumPolicy={"mode": "offset", "offset": offset}))).status_code == 422
