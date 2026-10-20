@@ -18,6 +18,11 @@ Un solo file per i cinque pacchetti. Le release sono sezioni `## <pacchetto> X.Y
 - pachimud: il 503 `world.unavailable` non espone piu' percorso del DB e messaggi del driver (dettaglio solo nel log del server; `worlds check` lo mostra ancora). Il messaggio localizzato non ha piu' il segnaposto `{detail}`.
 - pachimud: documentato che i range vnum di zona sono consultivi (nessun `vnum_out_of_range` in scrittura, solo nel controllo di integrita').
 
+- Frontend: in un mondo `read_only` pachimud ora sono disabilitate anche le azioni di scrittura di istanze (nuovo/modifica/elimina), giocatori (account: nuovo, email, password, ban, elimina; personaggi: modifica, teletrasporto, elimina; inventario: aggiungi, slot, rimuovi), razze/classi (nuovo, modifica, disattiva, elimina) e l'applicazione dell'import in Trasferimento. I dialoghi di prompt (es. "Nuovo account") e di istanza si chiudono con Esc.
+- Frontend: nome app e `<title>` "Pachimud Editor" (prima "Pachimud Webeditor"; la barra mostrava il default della libreria). Sotto 600 px la barra e' adattiva (nome nascosto, selettore che si restringe, lucchetto al posto del badge "Sola lettura", badge `params` visibili da 1024 px) e le tabelle di `/convert` scorrono in orizzontale invece di essere tagliate.
+- Frontend: `aria-label` su tutti i pulsanti solo-icona (comandi di reset zone, clone, suggerimento vnum, azioni di razze/classi, controlli dei grafici) e stringhe `errors.http.*` (it/en) mancanti: le tabelle mostrano "Non hai i permessi per questa operazione." e simili invece di `Forbidden` / `Error: 403 - Forbidden`.
+- E2E: mondo `pachimud-ro` (stesso DB, sola lettura) e test `readonly`, `errors`, `a11y` (375 px).
+
 - Frontend: il selettore di mondo mostra come badge i `params` non vuoti del mondo attivo (es. "Prefisso dati", "Variante"; etichette i18n it/en).
 
 - `AdapterInfo.params` (dict informativo, default vuoto) in `GET /api/worlds`; dikumod espone `variant` e `data_prefix`. `SDK_VERSION` 1.1 (additivo, compatibile con gli adapter 1.0).
