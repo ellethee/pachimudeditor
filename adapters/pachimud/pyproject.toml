@@ -1,6 +1,6 @@
 [project]
 name = "pachimudeditor-adapter-pachimud"
-version = "0.1.0"
+version = "0.1.1"
 description = "Adapter pachimud di pachimudeditor: legge e scrive il database del gioco (SQLAlchemy) e porta le pagine world/giocatori/istanze/trasferimento/contenuti"
 readme = "README.md"
 license = "MIT"
@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Games/Entertainment :: Multi-User Dungeons (MUD)",
 ]
 dependencies = [
-    "pachimudeditor>=0.1.0,<0.2",
+    "pachimudeditor>=0.1.1,<0.2",
     # Il database di gioco si legge con SQLAlchemy async (nessuna dipendenza dal pacchetto `pachimud`; i modelli ORM sono copiati in `game_models/`).
     "sqlalchemy[asyncio]>=2.0.40",
     "aiosqlite>=0.20.0",

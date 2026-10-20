@@ -1220,7 +1220,7 @@ wheels = [
 
 [[package]]
 name = "pachimudeditor"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "pachifast" },
@@ -1339,7 +1339,7 @@ requires-dist = [
 
 [[package]]
 name = "pachimudeditor-adapter-pachimud"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "adapters/pachimud" }
 dependencies = [
     { name = "aiosqlite" },
