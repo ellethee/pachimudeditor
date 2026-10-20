@@ -4,6 +4,8 @@ Un solo file per i cinque pacchetti. Le release sono sezioni `## <pacchetto> X.Y
 
 ## Non rilasciato
 
+- pachimud (transfer): piu' zip nello stesso upload danno 422 `transfer.multiple_zones` invece di 500 (contatore gruppi condiviso); limiti cumulativi su byte, file (10) e voci (200), 2 MB per ogni YAML e 5000 record per file; parsing YAML fuori dal loop e query `IN` a blocchi (niente piu' blocchi del server ne' `too many SQL variables`).
+- pachimud: id/page/pageSize oltre i 64 bit e vnum oltre 2^31-1 rispondono 422 (`world.value_out_of_range` / validazione) invece di 500 o di accettare vnum assurdi. `/api/convert/pairs` ora segnala `same_world` come `/run` quando due id puntano agli stessi dati (prima `target_read_only`).
 - basedmud e mapping: una scrittura fallita a meta' (es. `extra` invalido dopo la mutazione dei campi) non lascia piu' la cache sporca: `writing()` invalida la cache come dikumod, quindi il valore scartato non resta in memoria ne' finisce su disco al salvataggio successivo.
 - basedmud (`rom_lib`) e `rom.yaml` (mapping): modificare l'intestazione di una zona (`#AREA`/`#AREADATA`) non aggiunge piu' una riga vuota a ogni salvataggio.
 - Test: i dati reali dei MUD sono opzionali. Mondi sintetici versionati (`tests/support/synthetic_worlds.py`) fanno girare in CI scritture, round trip, mutazioni, conversione e contratto; i test su contenuti precisi dei dati reali sono marcati `real_rom`/`real_dikumod`. Su clone pulito: 449 passati e 210 saltati prima, 627 passati e 107 saltati dopo. La CI fallisce oltre `MAX_SKIPPED`; `DIKUMOD_ROOT`, `DIKUMOD_PREFIX`, `BASEDMUD_AREA_DIR` documentati in `docs/contributing.md`.
