@@ -51,13 +51,13 @@ def list_pairs() -> PairsResponse:
             reason = None
             if sid == tid:
                 reason = "same_world"
-            elif t.capabilities.read_only:
-                reason = "target_read_only"
             else:
-                try:
+                try:  # come /run: prima "stessi dati" (anche sotto due id), poi la sola lettura
                     ensure_distinct(registry.get(sid), registry.get(tid))
-                except Exception:  # noqa: BLE001  (stessi dati sotto due id)
+                except Exception:  # noqa: BLE001
                     reason = "same_world"
+                if reason is None and t.capabilities.read_only:
+                    reason = "target_read_only"
             pairs.append(
                 PairInfo(
                     source=sid,

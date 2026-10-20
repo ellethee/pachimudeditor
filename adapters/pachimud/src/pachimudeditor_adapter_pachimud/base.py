@@ -41,6 +41,8 @@ class PachimudSupport:
                 yield session
         except SchemaUnavailable as exc:
             raise schema_unavailable_error(exc) from exc
+        except OverflowError as exc:  # id/page/pageSize oltre i 64 bit di SQLite: input non valido, non un guasto
+            raise api_error(422, "world.value_out_of_range") from exc
 
     def models(self) -> GameModels:
         """Le classi mappate del mondo (503 `world.unavailable` se il DB non e' utilizzabile)."""

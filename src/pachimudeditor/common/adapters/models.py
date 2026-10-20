@@ -21,6 +21,10 @@ from pydantic import BeforeValidator, Field, model_validator
 from pachimudeditor.common.editor.schemas import PatchModel
 
 
+MAX_INT = 2**31 - 1
+"""Massimo di vnum e argomenti dei reset: ben oltre ogni vnum reale, ma sotto i limiti degli INTEGER dei DB."""
+
+
 class NeutralOut(AliasedBaseModel):
     """Base delle entita' in uscita: `extra` contiene i campi specifici del MUD (vuoto per pachimud)."""
 
@@ -62,11 +66,11 @@ class ZoneOut(NeutralOut):
 class ZoneIn(NeutralIn):
     """Crea una zona."""
 
-    vnum: int = Field(ge=0)
+    vnum: int = Field(ge=0, le=MAX_INT)
     name: str = Field(min_length=1)
     builder: str = ""
-    bottom_vnum: int = Field(default=0, ge=0)
-    top_vnum: int = Field(default=0, ge=0)
+    bottom_vnum: int = Field(default=0, ge=0, le=MAX_INT)
+    top_vnum: int = Field(default=0, ge=0, le=MAX_INT)
     min_level: int = Field(default=1, ge=1)
     max_level: int = Field(default=1, ge=1)
     lifespan_minutes: int = Field(default=30, ge=0)
@@ -86,11 +90,11 @@ class ZoneIn(NeutralIn):
 class ZonePatch(NeutralPatch):
     """Aggiornamento parziale di una zona (nessuna colonna e' nullable: `null` esplicito = 422)."""
 
-    vnum: int | None = Field(default=None, ge=0)
+    vnum: int | None = Field(default=None, ge=0, le=MAX_INT)
     name: str | None = Field(default=None, min_length=1)
     builder: str | None = None
-    bottom_vnum: int | None = Field(default=None, ge=0)
-    top_vnum: int | None = Field(default=None, ge=0)
+    bottom_vnum: int | None = Field(default=None, ge=0, le=MAX_INT)
+    top_vnum: int | None = Field(default=None, ge=0, le=MAX_INT)
     min_level: int | None = Field(default=None, ge=1)
     max_level: int | None = Field(default=None, ge=1)
     lifespan_minutes: int | None = Field(default=None, ge=0)
@@ -127,11 +131,11 @@ class ZoneCloneIn(AliasedBaseModel):
     `bottomVnum`/`topVnum` (entrambi o nessuno): range vnum della copia. Se omessi la copia nasce con
     range 0-0 ("da assegnare", ignorato da `next-vnum`) invece di duplicare quello della sorgente."""
 
-    vnum: int = Field(ge=0)
+    vnum: int = Field(ge=0, le=MAX_INT)
     name: str = Field(min_length=1)
     copy_reset_commands: bool = False
-    bottom_vnum: int | None = Field(default=None, ge=0)
-    top_vnum: int | None = Field(default=None, ge=0)
+    bottom_vnum: int | None = Field(default=None, ge=0, le=MAX_INT)
+    top_vnum: int | None = Field(default=None, ge=0, le=MAX_INT)
 
     @model_validator(mode="after")
     def _range_is_coherent(self) -> "ZoneCloneIn":
@@ -197,10 +201,10 @@ class ResetCommandIn(AliasedBaseModel):
 
     command_type: ResetCommandType
     if_flag: bool = False
-    arg1: int | None = Field(default=None, ge=0)
-    arg2: int | None = Field(default=None, ge=0)
-    arg3: int | None = Field(default=None, ge=0)
-    arg4: int | None = Field(default=None, ge=0)
+    arg1: int | None = Field(default=None, ge=0, le=MAX_INT)
+    arg2: int | None = Field(default=None, ge=0, le=MAX_INT)
+    arg3: int | None = Field(default=None, ge=0, le=MAX_INT)
+    arg4: int | None = Field(default=None, ge=0, le=MAX_INT)
     arg_str: str | None = None
     if_value: int | None = None
     """Se presente prevale su `ifFlag` (MUD con `if_flag` intero)."""
@@ -292,7 +296,7 @@ class ExitIn(AliasedBaseModel):
     door_flag: DoorFlag = DoorFlag.NONE
     is_open: bool = True
     is_locked: bool = False
-    key_vnum: int | None = Field(default=None, ge=0)
+    key_vnum: int | None = Field(default=None, ge=0, le=MAX_INT)
     target_room_id: int | None = None
 
 
@@ -307,7 +311,7 @@ class ExitPatch(PatchModel):
     door_flag: DoorFlag | None = None
     is_open: bool | None = None
     is_locked: bool | None = None
-    key_vnum: int | None = Field(default=None, ge=0)
+    key_vnum: int | None = Field(default=None, ge=0, le=MAX_INT)
     target_room_id: int | None = None
     extra: dict[str, Any] | None = None
     """Dati propri del MUD; pachimud li rifiuta (422 `world.extra_unsupported`)."""
@@ -362,7 +366,7 @@ class RoomDetail(RoomOut):
 class RoomIn(NeutralIn):
     """Crea una stanza."""
 
-    vnum: int = Field(ge=0)
+    vnum: int = Field(ge=0, le=MAX_INT)
     zone_id: int
     name: str = Field(min_length=1)
     description: str = ""
@@ -412,7 +416,7 @@ class RoomPatch(NeutralPatch):
 
     nullable_fields = frozenset({"clan_id", "owner"})
 
-    vnum: int | None = Field(default=None, ge=0)
+    vnum: int | None = Field(default=None, ge=0, le=MAX_INT)
     zone_id: int | None = None
     name: str | None = Field(default=None, min_length=1)
     description: str | None = None
@@ -436,7 +440,7 @@ class RoomCloneIn(AliasedBaseModel):
     """Clona una stanza: stessi campi (non le uscite — diventerebbero collegamenti a senso
     unico verso gli stessi vicini, non utili), stesso nuovo vnum, extra description copiate."""
 
-    vnum: int = Field(ge=0)
+    vnum: int = Field(ge=0, le=MAX_INT)
     name: str | None = None
 
 
@@ -477,7 +481,7 @@ class MobOut(NeutralOut):
 class MobIn(NeutralIn):
     """Crea un mob prototype."""
 
-    vnum: int = Field(ge=0)
+    vnum: int = Field(ge=0, le=MAX_INT)
     zone_id: int
     keywords: str = Field(min_length=1)
     short_description: str = Field(min_length=1)
@@ -512,7 +516,7 @@ class MobPatch(NeutralPatch):
 
     nullable_fields = frozenset({"race_id", "class_id", "debuff_skill_id", "shop_id", "teaches_class_ids", "teaches_skill_ids"})
 
-    vnum: int | None = Field(default=None, ge=0)
+    vnum: int | None = Field(default=None, ge=0, le=MAX_INT)
     zone_id: int | None = None
     keywords: str | None = Field(default=None, min_length=1)
     short_description: str | None = Field(default=None, min_length=1)
@@ -576,7 +580,7 @@ class ObjectOut(NeutralOut):
 class ObjectIn(NeutralIn):
     """Crea un object prototype."""
 
-    vnum: int = Field(ge=0)
+    vnum: int = Field(ge=0, le=MAX_INT)
     zone_id: int
     keywords: str = Field(min_length=1)
     short_description: str = Field(min_length=1)
@@ -600,7 +604,7 @@ class ObjectPatch(NeutralPatch):
 
     nullable_fields = frozenset({"action_description", "value_0", "value_1", "value_2", "value_3"})
 
-    vnum: int | None = Field(default=None, ge=0)
+    vnum: int | None = Field(default=None, ge=0, le=MAX_INT)
     zone_id: int | None = None
     keywords: str | None = Field(default=None, min_length=1)
     short_description: str | None = Field(default=None, min_length=1)

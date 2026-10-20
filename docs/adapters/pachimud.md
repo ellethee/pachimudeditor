@@ -49,6 +49,11 @@ webeditor_worlds:
   sono saltati con un avviso nel log, le classi con `disabled: true` non sono caricate.
 - Trasferimento zone (`pachimudeditor_adapter_pachimud/transfer/`): `schemas.py` (copie dei `Loader*`), `files.py` (writer dei cinque file
   `zone/rooms/mobs/objects/resets.yaml`), `importer.py` (upsert per vnum come l'importer del gioco), `preview.py` (dry-run).
+  Limiti dell'upload (`apps/transfer/archive.py`, `importer.py`): al massimo 10 file/zip e 200 voci di zona in totale, 20 MB complessivi
+  e 2 MB per ogni YAML (413 `transfer.file_too_large`), 5000 record per file (422 `transfer.invalid_file`); piu' zone nello stesso upload
+  -> 422 `transfer.multiple_zones`. Il parsing YAML gira fuori dal loop (threadpool) e le query `IN` sono a blocchi.
+- Interi: vnum e argomenti dei reset hanno `le=MAX_INT` (2^31-1, `common/adapters/models.py`); id/page/pageSize oltre i 64 bit di SQLite
+  rispondono 422 `world.value_out_of_range` (rete di sicurezza in `PachimudSupport.session()`).
 
 ## Controllo di compatibilita' dello schema
 
