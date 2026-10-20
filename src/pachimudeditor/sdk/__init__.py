@@ -40,6 +40,7 @@ from pachimudeditor.common.adapters.registry import (
 )
 from pachimudeditor.common.editor.errors import conflict, not_found
 from pachimudeditor.common.editor.schemas import PatchModel
+from pachimudeditor.sdk.files import atomic_write_bytes
 
 __all__ = [
     "ENTRY_POINT_GROUP",
@@ -62,6 +63,7 @@ __all__ = [
     "WorldAdapter",
     "WorldConfig",
     "WriteAdapterDep",
+    "atomic_write_bytes",
     "conflict",
     "convert_helpers",
     "convert_tables",

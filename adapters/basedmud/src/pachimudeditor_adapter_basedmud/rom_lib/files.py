@@ -8,7 +8,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .model import Area
+from .errors import RomParseError, RomUnencodableError, RomWriteError
 from .parser import parse_area
+from pachimudeditor.sdk import atomic_write_bytes
+
 from .writer import write_area
 
 
@@ -19,32 +22,6 @@ def decode_bytes(data: bytes) -> tuple[str, str]:
         return data.decode("utf-8"), "utf-8"
     except UnicodeDecodeError:
         return data.decode("latin-1"), "latin-1"
-
-
-def atomic_write_bytes(path: str | os.PathLike[str], data: bytes) -> None:
-    """Scrive `data` su `path` in modo atomico (file temporaneo nella stessa cartella + `os.replace`).
-
-    Se `path` esiste ne copia i permessi. Il file temporaneo e' rimosso in caso di errore.
-    """
-    target = Path(path)
-    directory = target.parent
-    fd, tmp_name = tempfile.mkstemp(dir=directory, prefix=f".{target.name}.", suffix=".tmp")
-    try:
-        with os.fdopen(fd, "wb") as fh:
-            fh.write(data)
-            fh.flush()
-            os.fsync(fh.fileno())
-        try:
-            os.chmod(tmp_name, target.stat().st_mode & 0o7777)
-        except FileNotFoundError:
-            os.chmod(tmp_name, 0o644)
-        os.replace(tmp_name, target)
-    except BaseException:
-        try:
-            os.unlink(tmp_name)
-        except FileNotFoundError:
-            pass
-        raise
 
 
 # -- file .are --------------------------------------------------------------------------------
@@ -62,16 +39,49 @@ def load_area_file(path: str | os.PathLike[str]) -> Area:
     return area
 
 
+def _shape(items: list) -> list[tuple[str, object]]:
+    """Tipo e vnum (se c'e') di ogni record: il parser, come il gioco, scarta gli spazi iniziali dei testi, quindi non si
+    confrontano i campi ma la sequenza dei record."""
+    return [(type(i).__name__, getattr(i, "vnum", getattr(i, "keeper", getattr(i, "mob_vnum", None)))) for i in items]
+
+
+def render_area_file(area: Area, *, preserve: bool = True) -> bytes:
+    """Serializza l'`Area` nei byte del file, senza toccare il disco, e li verifica.
+
+    Raises:
+        RomUnencodableError: un carattere non e' rappresentabile nell'encoding del file.
+        RomWriteError: valore non serializzabile, oppure il testo generato, riletto, non coincide con l'area
+            (record persi o spostati: un valore ha inserito righe che il parser interpreta come altro).
+    """
+    text = write_area(area, preserve=preserve)
+    try:
+        data = text.encode(area.encoding)
+    except UnicodeEncodeError as error:
+        raise RomUnencodableError(f"carattere {text[error.start]!r} non rappresentabile in {area.encoding}") from error
+    try:
+        back = parse_area(text)
+    except RomParseError as error:
+        raise RomWriteError(f"il file generato non e' rileggibile: {error}") from error
+    for sec in area.sections:
+        if sec.kind in ("RAW", "AREA", "AREADATA"):
+            continue
+        other = back.section(sec.kind, create=False)
+        if _shape(sec.items) != _shape(other.items if other is not None else []):
+            raise RomWriteError(f"sezione {sec.kind}: il file generato, riletto, ha record diversi dai dati (testo o token non ammesso)")
+    return data
+
+
 def save_area_file(path: str | os.PathLike[str], area: Area, *, preserve: bool = True) -> None:
     """Scrive l'`Area` su `path` in modo atomico, con lo stile newline/encoding dell'area e il `#$` finale.
+
+    Il contenuto e' verificato (`render_area_file`) prima di toccare il disco.
 
     Args:
         path: file di destinazione.
         area: area da serializzare.
         preserve: se True (default) il testo non modificato e' riemesso identico (vedi `write_area`).
     """
-    text = write_area(area, preserve=preserve)
-    atomic_write_bytes(path, text.encode(area.encoding))
+    atomic_write_bytes(path, render_area_file(area, preserve=preserve))
 
 
 # -- area.lst ---------------------------------------------------------------------------------

@@ -11,7 +11,7 @@ Uso tipico::
 Vedi README.md nel pacchetto.
 """
 
-from .errors import RomParseError, RomWriteError
+from .errors import RomParseError, RomUnencodableError, RomWriteError
 from .files import (
     AreaList,
     add_area_to_list,
@@ -20,6 +20,7 @@ from .files import (
     parse_area_list,
     read_area_list,
     remove_area_from_list,
+    render_area_file,
     save_area_file,
     write_area_list,
 )

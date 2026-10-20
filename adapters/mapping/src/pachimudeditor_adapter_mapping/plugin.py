@@ -4,7 +4,7 @@ from pachimudeditor.sdk import AdapterPlugin
 
 plugin = AdapterPlugin(
     kind="mapping",
-    sdk_version="1.0",
+    sdk_version="1.2",
     description="qualunque MUD su file descritto da un YAML di mappatura (param `mapping`, esempi rom.yaml / diku_classic.yaml)",
     factory="pachimudeditor_adapter_mapping.adapter:MappingAdapter",
     modules=("pachimudeditor_adapter_mapping.module:module",),

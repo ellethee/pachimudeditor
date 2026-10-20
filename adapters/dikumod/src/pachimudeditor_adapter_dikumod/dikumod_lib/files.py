@@ -17,7 +17,7 @@ from .parser import (
     parse_zon,
     parse_zone_override,
 )
-from .writer import atomic_write_bytes, format_zone_override, write_file
+from .writer import atomic_write_bytes, encode_latin1, format_zone_override, write_file
 
 OVERRIDE_NAME = re.compile(r"[0-9]+")
 """Nome ammesso per i file per-vnum (`atoi(nome)` del gioco: i backup `40033~` sono rumore)."""
@@ -218,4 +218,4 @@ def save_zone_override(path: Path, zone: ZoneOverride, *, canonical: bool = Fals
         text = zone._src
     else:
         text = format_zone_override(zone, canonical=canonical)
-    atomic_write_bytes(path, text.encode("latin-1"))
+    atomic_write_bytes(path, encode_latin1(text))

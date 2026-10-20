@@ -14,14 +14,13 @@ Cache: ogni file e' riletto solo se cambia `(mtime_ns, size)`; indice e cartelle
 import bisect
 import fnmatch
 import logging
-import os
 import re
-import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from pachifast.i18n import api_error
+from pachimudeditor.sdk import atomic_write_bytes
 
 from pachimudeditor_adapter_mapping import hooks
 from pachimudeditor_adapter_mapping.dsl import evaluate
@@ -44,24 +43,6 @@ def decode_bytes(data: bytes, encoding: str = "auto") -> tuple[str, str]:
         return data.decode("utf-8"), "utf-8"
     except UnicodeDecodeError:
         return data.decode("latin-1"), "latin-1"
-
-
-def atomic_write_bytes(path: Path, data: bytes) -> None:
-    """Scrive `data` su `path` in modo atomico (file temporaneo nella stessa cartella + `os.replace`)."""
-    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
-    try:
-        with os.fdopen(fd, "wb") as fh:
-            fh.write(data)
-            fh.flush()
-            os.fsync(fh.fileno())
-        try:
-            os.chmod(tmp, path.stat().st_mode & 0o7777)
-        except FileNotFoundError:
-            os.chmod(tmp, 0o644)
-        os.replace(tmp, path)
-    except BaseException:
-        Path(tmp).unlink(missing_ok=True)
-        raise
 
 
 @dataclass

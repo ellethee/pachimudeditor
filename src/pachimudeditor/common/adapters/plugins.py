@@ -20,7 +20,7 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 
-SDK_VERSION = "1.1"
+SDK_VERSION = "1.2"
 """Versione dell'API pubblica per gli adapter (`pachimudeditor.sdk.SDK_VERSION`): minor per le aggiunte, major per le rotture."""
 
 ENTRY_POINT_GROUP = "pachimudeditor.adapters"

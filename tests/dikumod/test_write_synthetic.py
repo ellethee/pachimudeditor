@@ -23,6 +23,7 @@ from pachimudeditor.common.adapters.models import (
     ResetCommandIn,
     ResetScriptIn,
     RoomIn,
+    RoomPageParams,
     RoomPatch,
     ZoneIn,
     ZonePatch,
@@ -296,3 +297,26 @@ async def test_failed_update_leaves_cache_clean(rw: DikumodAdapter, lib: Path) -
     assert await rw.get_room(1) == before
     await rw.update_mob(1, MobPatch(level=9))
     assert "Mutata" not in read_text(lib / "dikumoddata.wld")
+
+
+async def test_unencodable_text_is_422_and_writes_nothing(rw: DikumodAdapter, lib: Path) -> None:
+    """Un'emoji non sta in latin-1: 422 `dikumod.unencodable_text` (non 500) per stanza, mob e zona, nessun byte scritto."""
+    before = digest(lib)
+    with expect_error(422, "dikumod.unencodable_text"):
+        await rw.update_room(1, RoomPatch(name="Valle \U0001f600"))
+    with expect_error(422, "dikumod.unencodable_text"):
+        await rw.update_mob(1, MobPatch(level=3, short_description="mob €"))
+    with expect_error(422, "dikumod.unencodable_text"):
+        await rw.update_zone(1, ZonePatch(name="Zona \U0001f600"))
+    assert digest(lib) == before
+    assert (await rw.update_mob(1, MobPatch(level=5))).level == 5
+
+
+async def test_hash_lines_in_room_text_are_safe_and_roundtrip(rw: DikumodAdapter, lib: Path) -> None:
+    """`.wld` e `.zon` non sono indicizzati per riga (`boot_world`/`boot_zones` leggono in sequenza): `#N` in un testo di stanza
+    e' ammesso (a differenza di `.mob`/`.obj`) e il mondo si rilegge con le stesse stanze."""
+    rooms = [r.id for r in (await rw.list_rooms(RoomPageParams(page_size=100))).items]
+    await rw.update_room(1, RoomPatch(description="riga\n#2\nfine"))
+    fresh = DikumodAdapter(WorldConfig(id="syn", kind="dikumod", name="S", path=str(lib), read_only=False))
+    assert (await fresh.get_room(1)).description == "riga\n#2\nfine"
+    assert [r.id for r in (await fresh.list_rooms(RoomPageParams(page_size=100))).items] == rooms

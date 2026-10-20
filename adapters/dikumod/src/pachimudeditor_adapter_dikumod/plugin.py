@@ -4,7 +4,7 @@ from pachimudeditor.sdk import AdapterPlugin
 
 plugin = AdapterPlugin(
     kind="dikumod",
-    sdk_version="1.1",
+    sdk_version="1.2",
     description="Diku Modificato (dikumod / dikumod2): file dati Diku dikumoddata.*, scripts.dat, gilde (libreria dikumod_lib inclusa)",
     factory="pachimudeditor_adapter_dikumod.adapter:DikumodAdapter",
     modules=("pachimudeditor_adapter_dikumod.module:module",),

@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from pachimudeditor_adapter_dikumod.dikumod_lib import DikumodWriteError, Raw
+from pachimudeditor_adapter_dikumod.dikumod_lib import DikumodUnencodableError, DikumodWriteError, Raw
 from pachimudeditor_adapter_dikumod.dikumod_lib import DEFAULT_PREFIX, validate_prefix
 from pachifast.i18n import api_error
 
@@ -57,6 +57,9 @@ class DikumodSupport:
             store = self.sync()
             try:
                 yield store
+            except DikumodUnencodableError as error:
+                store.invalidate()
+                raise api_error(422, "dikumod.unencodable_text", reason=str(error)) from error
             except DikumodWriteError as error:
                 store.invalidate()
                 raise api_error(422, "dikumod.unsafe_text", reason=str(error)) from error

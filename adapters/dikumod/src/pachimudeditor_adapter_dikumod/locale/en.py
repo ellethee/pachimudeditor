@@ -1,6 +1,7 @@
 """Messages of the Diku Modificato adapter in en: stable code -> text."""
 
 MESSAGES: dict[str, str] = {
+    "dikumod.unencodable_text": "Text contains characters the Diku Modificato file encoding (latin-1) cannot represent: {reason}.",
     "dikumod.unsafe_text": "Text cannot be written to Diku Modificato files: {reason}.",
     "dikumod.unknown_flag": 'Unknown flag "{name}" in table {table}.',
     "dikumod.extra_unknown": 'Unknown extra key "{key}" (known: {known}).',

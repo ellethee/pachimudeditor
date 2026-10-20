@@ -1,6 +1,8 @@
 """Messages of the BasedMud adapter in en: stable code -> text."""
 
 MESSAGES: dict[str, str] = {
+    "basedmud.unsafe_text": "Text cannot be written to ROM area files: {reason}.",
+    "basedmud.unencodable_text": "Text contains characters the area file encoding cannot represent: {reason}.",
     "basedmud.unknown_flag": 'Unknown flag "{name}" in table {table}.',
     "basedmud.extra_unknown": 'Unknown extra key "{key}" (known: {known}).',
     "basedmud.extra_invalid": 'Invalid value for extra "{key}".',

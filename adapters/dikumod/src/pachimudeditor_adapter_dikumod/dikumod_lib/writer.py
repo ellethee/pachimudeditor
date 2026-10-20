@@ -21,7 +21,9 @@ import os
 import tempfile
 from pathlib import Path
 
-from .errors import DikumodWriteError
+from pachimudeditor.sdk import atomic_write_bytes
+
+from .errors import DikumodUnencodableError, DikumodWriteError
 from .model import (
     Dice,
     Mob,
@@ -281,28 +283,14 @@ def _with_terminator(kind: str, tail: str) -> str:
     return tail
 
 
+def encode_latin1(text: str) -> bytes:
+    """Codifica in `latin-1`; `DikumodUnencodableError` (non `UnicodeEncodeError`) se c'e' un carattere non rappresentabile."""
+    try:
+        return text.encode("latin-1")
+    except UnicodeEncodeError as error:
+        raise DikumodUnencodableError(f"carattere {text[error.start]!r} non rappresentabile in latin-1") from error
+
+
 def write_file(path: str | os.PathLike[str], rf: RecordFile, *, canonical: bool = False, ensure_terminator: bool = True) -> None:
     """Scrive il file in modo atomico (temporaneo nella stessa cartella + `os.replace`), in `latin-1`."""
-    atomic_write_bytes(path, write_text(rf, canonical=canonical, ensure_terminator=ensure_terminator).encode("latin-1"))
-
-
-def atomic_write_bytes(path: str | os.PathLike[str], data: bytes) -> None:
-    """Scrittura atomica che conserva i permessi del file esistente."""
-    target = Path(path)
-    fd, tmp = tempfile.mkstemp(dir=target.parent, prefix=f".{target.name}.", suffix=".tmp")
-    try:
-        with os.fdopen(fd, "wb") as fh:
-            fh.write(data)
-            fh.flush()
-            os.fsync(fh.fileno())
-        try:
-            os.chmod(tmp, target.stat().st_mode & 0o7777)
-        except FileNotFoundError:
-            os.chmod(tmp, 0o644)
-        os.replace(tmp, target)
-    except BaseException:
-        try:
-            os.unlink(tmp)
-        except FileNotFoundError:
-            pass
-        raise
+    atomic_write_bytes(path, encode_latin1(write_text(rf, canonical=canonical, ensure_terminator=ensure_terminator)))

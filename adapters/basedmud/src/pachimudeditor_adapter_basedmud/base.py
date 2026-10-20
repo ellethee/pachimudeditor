@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
-from pachimudeditor_adapter_basedmud.rom_lib import Reset
+from pachimudeditor_adapter_basedmud.rom_lib import Reset, RomUnencodableError, RomWriteError
 from pachifast.i18n import api_error
 from pachimudeditor.common.enums import Direction
 
@@ -46,11 +46,18 @@ class BasedMudSupport:
     @asynccontextmanager
     async def writing(self) -> AsyncIterator[AreaStore]:
         """Sezione di scrittura: lock unico e cache aggiornata; se qualcosa fallisce la cache e' invalidata (le modifiche
-        in memoria non salvate non devono restare ne' finire su disco al salvataggio successivo)."""
+        in memoria non salvate non devono restare ne' finire su disco al salvataggio successivo); `RomWriteError` diventa
+        422 `basedmud.unsafe_text` (`basedmud.unencodable_text` per i caratteri fuori dall'encoding del file)."""
         async with self.lock:
             store = self.sync()
             try:
                 yield store
+            except RomUnencodableError as error:
+                store.invalidate()
+                raise api_error(422, "basedmud.unencodable_text", reason=str(error)) from error
+            except RomWriteError as error:
+                store.invalidate()
+                raise api_error(422, "basedmud.unsafe_text", reason=str(error)) from error
             except BaseException:
                 store.invalidate()
                 raise

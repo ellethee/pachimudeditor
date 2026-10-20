@@ -278,3 +278,75 @@ async def test_concurrent_writes_are_serialized(adapter: BasedMudAdapter) -> Non
     page = await fresh.list_mobs(MobPageParams(zone_id=ZONE))
     assert page.total == before + 20 and (await fresh.get_mob(5001)).level == 10
     assert sorted(m.vnum for m in page.items if m.keywords.startswith("clone")) == list(range(5010, 5030))
+
+
+# --------------------------------------------------------------------------- regressione: iniezione di righe e testo non codificabile
+
+INJECT = "x\n#0\n#999"
+
+WORD_FIELDS = [
+    ("mob", {"size": INJECT}),
+    ("mob", {"material": INJECT}),
+    ("mob", {"startPos": INJECT}),
+    ("mob", {"defaultPos": INJECT}),
+    ("mob", {"damType": INJECT}),
+    ("mob", {"special": INJECT}),
+    ("mob", {"size": "due parole"}),
+    ("mob", {"size": "a\0b"}),
+    ("mob", {"flagRemovals": [{"word": INJECT, "value": 1}]}),
+    ("mob", {"mprogs": [{"trigger": INJECT, "vnum": 1, "phrase": "p"}]}),
+    ("object", {"itemType": INJECT}),
+    ("object", {"condition": INJECT}),
+    ("object", {"values": ["0", "0", INJECT, "0", "0"]}),
+    ("object", {"values": ["0", "0", "it's", "0", "0"]}),
+]
+
+
+async def _vnums(adapter: BasedMudAdapter) -> tuple[list[int], list[int]]:
+    """Vnum di mob e oggetti visibili da un adapter."""
+    mobs = await adapter.list_mobs(MobPageParams(page_size=100))
+    objs = await adapter.list_objects(ObjectPageParams(page_size=100))
+    return [m.vnum for m in mobs.items], [o.vnum for o in objs.items]
+
+
+@pytest.mark.parametrize(("kind", "extra"), WORD_FIELDS, ids=lambda v: str(v)[:40])
+async def test_unsafe_tokens_are_rejected_without_touching_disk(
+    kind: str, extra: dict, adapter: BasedMudAdapter, make: Callable[..., BasedMudAdapter], area: Path
+) -> None:
+    """Un token libero con a capo/spazi/NUL darebbe un `.are` troncato: 422 `basedmud.unsafe_text`, disco e cache invariati."""
+    before_vnums = await _vnums(adapter)
+    raw = (area / "prato.are").read_bytes()
+    with expect_error(422, "basedmud.unsafe_text"):
+        if kind == "mob":
+            await adapter.update_mob(MOB, MobPatch(extra=extra))
+        else:
+            await adapter.update_object(OBJ, ObjectPatch(extra=extra))
+    assert (area / "prato.are").read_bytes() == raw
+    assert await _vnums(adapter) == before_vnums == await _vnums(make())
+
+
+@pytest.mark.parametrize(
+    "text", [INJECT, "riga\n#0\nS\n", "a\n$\nb", "\n#5001\nfinta", "x~y"], ids=["inject", "section-end", "dollar", "fake-vnum", "tilde"]
+)
+async def test_free_text_never_changes_record_count(
+    text: str, adapter: BasedMudAdapter, make: Callable[..., BasedMudAdapter], area: Path
+) -> None:
+    """I testi con `~` ammettono righe qualsiasi: o sono riscritti fedelmente o rifiutati (422), ma i record non cambiano."""
+    before_vnums = await _vnums(adapter)
+    try:
+        await adapter.update_mob(MOB, MobPatch(description=text, short_description=text))
+        await adapter.update_object(OBJ, ObjectPatch(description=text))
+    except Exception as error:  # noqa: BLE001
+        assert getattr(error, "status_code", None) == 422
+    assert await _vnums(make()) == before_vnums
+
+
+async def test_unencodable_text_is_422_and_leaves_disk_untouched(make: Callable[..., BasedMudAdapter], area: Path) -> None:
+    """Un'emoji in un `.are` latin-1: 422 `basedmud.unencodable_text` (non 500), nessuna scrittura."""
+    path = area / "prato.are"
+    path.write_bytes(path.read_bytes().replace(b"passeggia qui.", b"passeggia qu\xec."))  # un byte non UTF-8: il file e' latin-1
+    adapter, raw = make(), path.read_bytes()
+    with expect_error(422, "basedmud.unencodable_text"):
+        await adapter.update_room(ROOM, RoomPatch(name="Prato \U0001f600"))
+    assert (area / "prato.are").read_bytes() == raw
+    assert (await adapter.get_room(ROOM)).name != "Prato \U0001f600"

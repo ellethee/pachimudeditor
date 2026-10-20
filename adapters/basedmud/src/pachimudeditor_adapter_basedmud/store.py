@@ -26,10 +26,11 @@ from pachimudeditor_adapter_basedmud.rom_lib import (
     RomParseError,
     load_area_file,
     parse_area_list,
+    render_area_file,
     save_area_file,
     write_area_list,
 )
-from pachimudeditor_adapter_basedmud.rom_lib.files import decode_bytes
+from pachimudeditor_adapter_basedmud.rom_lib.files import atomic_write_bytes, decode_bytes
 from pachifast.i18n import api_error
 
 log = logging.getLogger(__name__)
@@ -213,8 +214,11 @@ class AreaStore:
         """Scrive i file (atomici, `preserve=True`) e ricarica dal disco quelli scritti (i testi sorgente tornano
         coerenti); se una scrittura fallisce la cache dei file coinvolti e' invalidata."""
         try:
-            for entry in entries:
-                save_area_file(entry.path, entry.area, preserve=True)
+            rendered = [
+                (entry.path, render_area_file(entry.area, preserve=True)) for entry in entries
+            ]  # tutto verificato prima di scrivere
+            for path, data in rendered:
+                atomic_write_bytes(path, data)
         except BaseException:
             for entry in entries:
                 entry.stamp = None

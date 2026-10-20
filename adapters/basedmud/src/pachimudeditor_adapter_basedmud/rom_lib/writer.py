@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 
 from . import flags as fl
@@ -24,8 +25,27 @@ from .model import (
 
 
 def fix_string(s: str) -> str:
-    """Come `fix_string` di olc_save.c: toglie `\\r` e `~` (che chiuderebbe la stringa)."""
+    """Come `fix_string` di olc_save.c: toglie `\\r` e `~` (che chiuderebbe la stringa). Rifiuta `\\0` (RomWriteError)."""
+    if "\0" in s:
+        raise RomWriteError(f"testo non ammesso: contiene il carattere NUL ({s[:30]!r})")
     return s.replace("\r", "").replace("~", "")
+
+
+_WORD = re.compile(r"[^\s\0]+")
+
+
+def _word(value: object, what: str) -> str:
+    """Token letto dal gioco con `fread_word`: nessuno spazio ne' a capo (altrimenti inietterebbe righe nel file)."""
+    if not isinstance(value, str) or not _WORD.fullmatch(value):
+        raise RomWriteError(f"{what}: valore non ammesso {value!r} (serve una parola senza spazi ne' a capo)")
+    return value
+
+
+def _line(value: object, what: str) -> str:
+    """Testo su una sola riga (commenti, parametri): niente `\\n`, `\\r`, `\\0`."""
+    if not isinstance(value, str) or any(c in value for c in "\n\r\0"):
+        raise RomWriteError(f"{what}: valore non ammesso {value!r} (una sola riga, niente NUL)")
+    return value
 
 
 def _ffl(value: int) -> str:
@@ -35,7 +55,10 @@ def _ffl(value: int) -> str:
 
 def _tok(value: str, quote: bool) -> str:
     """Serializza un valore-token di oggetto, tra apici se richiesto o necessario."""
+    _line(value, "valore di oggetto")
     if quote or value == "" or any(c.isspace() for c in value):
+        if "'" in value:
+            raise RomWriteError(f"valore di oggetto {value!r}: l'apice non e' ammesso in un valore tra apici")
         return f"'{value}'"
     return value
 
@@ -51,16 +74,16 @@ def format_mobile(m: Mobile) -> str:
         f"{fix_string(m.description)}~",
         f"{fix_string(m.race)}~",
         f"{_ffl(m.act)} {_ffl(m.affected_by)} {m.alignment} {m.group}",
-        f"{m.level} {m.hitroll} {m.hit} {m.mana} {m.damage} {m.dam_type}",
+        f"{m.level} {m.hitroll} {m.hit} {m.mana} {m.damage} {_word(m.dam_type, 'mob dam_type')}",
         " ".join(str(v) for v in m.ac),
         f"{_ffl(m.off_flags)} {_ffl(m.imm_flags)} {_ffl(m.res_flags)} {_ffl(m.vuln_flags)}",
-        f"{m.start_pos} {m.default_pos} {m.sex} {m.wealth}",
-        f"{_ffl(m.form)} {_ffl(m.parts)} {m.size} {m.material}",
+        f"{_word(m.start_pos, 'mob startPos')} {_word(m.default_pos, 'mob defaultPos')} {m.sex} {m.wealth}",
+        f"{_ffl(m.form)} {_ffl(m.parts)} {_word(m.size, 'mob size')} {_word(m.material, 'mob material')}",
     ]
     if len(m.ac) != 4:
         raise RomWriteError(f"mob {m.vnum}: 'ac' deve avere 4 valori")
-    out += [f"F {fr.word} {_ffl(fr.value)}" for fr in m.flag_removals]
-    out += [f"M {mp.trigger} {mp.vnum} {fix_string(mp.phrase)}~" for mp in m.mprogs]
+    out += [f"F {_word(fr.word, 'mob flagRemovals')} {_ffl(fr.value)}" for fr in m.flag_removals]
+    out += [f"M {_word(mp.trigger, 'mob mprog trigger')} {mp.vnum} {fix_string(mp.phrase)}~" for mp in m.mprogs]
     return "\n".join(out) + "\n"
 
 
@@ -76,9 +99,9 @@ def format_object(o: Object) -> str:
         f"{fix_string(o.short_descr)}~",
         f"{fix_string(o.description)}~",
         f"{fix_string(o.material)}~",
-        f"{o.item_type} {_ffl(o.extra_flags)} {_ffl(o.wear_flags)}",
+        f"{_word(o.item_type, 'oggetto itemType')} {_ffl(o.extra_flags)} {_ffl(o.wear_flags)}",
         vals,
-        f"{o.level} {o.weight} {o.cost} {o.condition}",
+        f"{o.level} {o.weight} {o.cost} {_word(o.condition, 'oggetto condition')}",
     ]
     for a in o.affects:
         if a.where == "" and a.bits == 0:
@@ -139,7 +162,7 @@ def format_reset(r: Reset) -> str:
     if len(r.args) != len(names):
         raise RomWriteError(f"reset {r.command}: servono {len(names)} argomenti, trovati {len(r.args)}")
     line = fmt.format(*r.args)
-    return line + (f" {r.comment}" if r.comment else "") + "\n"
+    return line + (f" {_line(r.comment, 'commento reset')}" if r.comment else "") + "\n"
 
 
 def format_shop(s: Shop) -> str:
@@ -148,18 +171,18 @@ def format_shop(s: Shop) -> str:
         raise RomWriteError(f"negozio {s.keeper}: 'buy_types' deve avere 5 valori")
     buys = "".join(f"{b:2d} " for b in s.buy_types)
     line = f"{s.keeper:5d} {buys}{s.profit_buy:3d} {s.profit_sell:3d} {s.open_hour:2d} {s.close_hour:2d}"
-    return line + (f" {s.comment}" if s.comment else "") + "\n"
+    return line + (f" {_line(s.comment, 'commento negozio')}" if s.comment else "") + "\n"
 
 
 def format_special(s: Special) -> str:
     """Riga #SPECIALS nel formato di `save_specials`."""
-    line = f"M {s.mob_vnum:5d} {s.function:<20s}"
-    return (line + f" {s.comment}" if s.comment else line) + "\n"
+    line = f"M {s.mob_vnum:5d} {_word(s.function, 'special'):<20s}"
+    return (line + f" {_line(s.comment, 'commento special')}" if s.comment else line) + "\n"
 
 
 def format_comment(c: CommentLine) -> str:
     """Riga di commento."""
-    return c.text + "\n"
+    return _line(c.text, "commento") + "\n"
 
 
 def format_mobprog(p: MobProg) -> str:
@@ -174,8 +197,8 @@ def format_help(h: Help) -> str:
 
 def format_social(s: Social) -> str:
     """Social: nome (+parametri), 8 righe (`$` = vuota, `#` = terminazione anticipata), riga vuota."""
-    head = s.name + (f" {s.params}" if s.params else "")
-    body = ["$" if line is None else line for line in s.lines]
+    head = _word(s.name, "social") + (f" {_line(s.params, 'social')}" if s.params else "")
+    body = ["$" if line is None else _line(line, "riga di social") for line in s.lines]
     if s.truncated:
         body.append("#")
     return "\n".join([head, *body]) + "\n\n"
@@ -184,7 +207,7 @@ def format_social(s: Social) -> str:
 def format_header(h: AreaHeader) -> str:
     """Intestazione nel formato `#AREA` (vecchio) o `#AREADATA` (`save_area`)."""
     if h.style == "AREA":
-        vn = h.vnum_raw if h.vnum_raw is not None else f"{h.min_vnum} {h.max_vnum}"
+        vn = _line(h.vnum_raw, "intestazione") if h.vnum_raw is not None else f"{h.min_vnum} {h.max_vnum}"
         return f"{fix_string(h.filename)}~\n{fix_string(h.name)}~\n{fix_string(h.credits)}~\n{vn}\n\n"
     out = [
         f"Name {fix_string(h.name)}~",
@@ -193,7 +216,7 @@ def format_header(h: AreaHeader) -> str:
         f"Credits {fix_string(h.credits)}~",
         f"Security {h.security}",
     ]
-    out += [f"{k} {v}".rstrip() for k, v in h.extra]
+    out += [f"{_word(k, 'intestazione')} {_line(v, 'intestazione')}".rstrip() for k, v in h.extra]
     out.append("End")
     return "\n".join(out) + "\n\n"
 

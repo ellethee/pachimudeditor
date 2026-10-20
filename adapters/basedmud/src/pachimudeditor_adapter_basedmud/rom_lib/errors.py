@@ -42,3 +42,7 @@ class RomParseError(ValueError):
 
 class RomWriteError(ValueError):
     """Dati del modello non serializzabili in formato `.are`."""
+
+
+class RomUnencodableError(RomWriteError):
+    """Il testo contiene caratteri non rappresentabili nell'encoding del file (es. emoji in un `.are` latin-1)."""

@@ -116,6 +116,9 @@ uscite che la raggiungono e i suoi `D`, eliminarla azzera le uscite entranti e t
 `rules.validate_script`. Scrittura: `~` nei testi (non c'e' escape), righe di un record `.mob`/`.obj` che iniziano per `#` o `%%` (anche come
 frammento da 81 caratteri: `fgets(buf, 82)`) -> 422 `dikumod.unsafe_text`, nessun byte scritto. I record dei file indicizzati restano **in
 ordine di vnum** (ricerca binaria del gioco) e il file finisce con `%%`.
+Le righe che iniziano per `#` sono invece **ammesse** in nome/descrizione di stanze e zone: `.wld` e `.zon` non sono indicizzati per riga
+(`boot_world`/`boot_zones` leggono in sequenza con `fread_string`) e il test di round trip lo verifica. Un carattere non
+rappresentabile in `latin-1` (emoji, `€`) -> 422 `dikumod.unencodable_text`, prima di scrivere il primo file.
 
 ## Meta e capability
 

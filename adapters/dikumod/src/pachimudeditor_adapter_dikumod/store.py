@@ -42,7 +42,7 @@ from pachimudeditor_adapter_dikumod.dikumod_lib import (
 )
 from pachimudeditor_adapter_dikumod.dikumod_lib.files import read_text
 from pachimudeditor_adapter_dikumod.dikumod_lib.parser import parse_scripts_dat
-from pachimudeditor_adapter_dikumod.dikumod_lib.writer import atomic_write_bytes
+from pachimudeditor_adapter_dikumod.dikumod_lib.writer import atomic_write_bytes, encode_latin1, write_text
 
 log = logging.getLogger(__name__)
 
@@ -294,6 +294,9 @@ class DikumodStore:
     def save(self, *files: RecordFile) -> None:
         """Scrive i `RecordFile` (atomici, `latin-1`) e ricarica; in caso di errore invalida la cache."""
         try:
+            for rf in dict.fromkeys(files):  # prima di scrivere il primo file: nessuna scrittura parziale se un testo non e' codificabile
+                if not rf.is_clean():
+                    encode_latin1(write_text(rf))
             for rf in dict.fromkeys(files):
                 if rf.is_clean():
                     continue  # nulla da riscrivere: i byte restano quelli del disco
@@ -323,7 +326,7 @@ class DikumodStore:
     def write_text_file(self, path: Path, text: str) -> None:
         """Scrive un file di testo qualsiasi della cartella (script) in modo atomico."""
         path.parent.mkdir(parents=True, exist_ok=True)
-        atomic_write_bytes(path, text.encode("latin-1"))
+        atomic_write_bytes(path, encode_latin1(text))
         self._built = False
         self._cache.pop(path, None)
 

@@ -13,6 +13,10 @@ class DikumodWriteError(ValueError):
     """Dati del modello non serializzabili in modo che il loader del gioco li rilegga correttamente."""
 
 
+class DikumodUnencodableError(DikumodWriteError):
+    """Il testo contiene caratteri che `latin-1` (l'encoding dei file di Diku Modificato) non puo' rappresentare."""
+
+
 @dataclass(frozen=True)
 class Diagnostic:
     """Un problema trovato durante il caricamento di un file: `severity` e' `error` (record `Raw`) o `warning`."""

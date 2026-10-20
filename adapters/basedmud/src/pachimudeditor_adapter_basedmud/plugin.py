@@ -4,7 +4,7 @@ from pachimudeditor.sdk import AdapterPlugin
 
 plugin = AdapterPlugin(
     kind="basedmud",
-    sdk_version="1.0",
+    sdk_version="1.2",
     description="basedmud / ROM 2.4 / QuickMUD: file area .are (libreria rom_lib inclusa)",
     factory="pachimudeditor_adapter_basedmud.adapter:BasedMudAdapter",
     modules=("pachimudeditor_adapter_basedmud.module:module",),

@@ -8,6 +8,8 @@ Priorita': variabili d'ambiente > `.env` della cartella > `pachimudeditor.yaml` 
   `webeditor_convert_journal_dir`, `config_path` (dentro il mondo pachimud). Segreti (`PACHIFAST_SECRET_KEY`, URL con password) solo in `.env`.
 - Mondi: `WEBEDITOR_WORLDS` (JSON) e `WEBEDITOR_DEFAULT_WORLD`, con alias `PACHIMUDEDITOR_WORLDS` /
   `PACHIMUDEDITOR_DEFAULT_WORLD` (i `WEBEDITOR_*` hanno la precedenza).
+- `read_only` per mondo: `kind: dikumod` e' in sola lettura se non scritto (la scrittura va abilitata con `read_only: false`);
+  `basedmud`, `mapping` e gli altri scrivono per default (`read_only: true` per proteggerli). Vedi [Diku Modificato](../adapters/dikumod.md).
 - Mondo pachimud (`kind: pachimud`), parametri in `params`:
 
   ```yaml
