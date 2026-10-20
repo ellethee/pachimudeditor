@@ -75,8 +75,7 @@ I README del core e degli adapter usano l'URL raw assoluto del logo
 ### GitHub Pages
 
 *Settings > Pages > Build and deployment > Source = GitHub Actions*. Il workflow `Documentazione pachimudeditor` pubblica
-a ogni push su `main` che tocca la documentazione. Dopo il primo deploy aggiungi l'URL del sito in `[project.urls]`
-(`Documentation`) dei `pyproject.toml`.
+a ogni push su `main` che tocca la documentazione. L'URL del sito (`Documentation`) e' gia' in `[project.urls]` dei `pyproject.toml`.
 
 ### Trusted publisher su PyPI e TestPyPI (nessun token)
 
