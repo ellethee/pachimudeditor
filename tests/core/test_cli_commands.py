@@ -8,6 +8,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from pachifast.config import get_settings
 import typer
 from typer.testing import CliRunner
 
@@ -35,7 +36,10 @@ def workdir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
         monkeypatch.delenv(var, raising=False)
     with mock.patch.dict(os.environ):
         _fresh_process_env()
-        yield tmp_path
+        try:
+            yield tmp_path
+        finally:
+            get_settings.cache_clear()  # `init` rilegge le impostazioni: la cache non deve sopravvivere all'ambiente ripristinato
 
 
 def _fresh_process_env() -> None:
