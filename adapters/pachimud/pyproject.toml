@@ -7,7 +7,17 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.14"
 authors = [{ name = "IlPachi" }]
-classifiers = ["Private :: Do Not Upload"]
+keywords = ["mud", "pachimudeditor", "adapter", "pachimud", "sqlalchemy"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Private :: Do Not Upload",
+    "Environment :: Plugins",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: OS Independent",
+    "Topic :: Games/Entertainment :: Multi-User Dungeons (MUD)",
+]
 dependencies = [
     "pachimudeditor>=0.1.0,<0.2",
     # Il database di gioco si legge con SQLAlchemy async (nessuna dipendenza dal pacchetto `pachimud`; i modelli ORM sono copiati in `game_models/`).
@@ -17,6 +27,13 @@ dependencies = [
     "pyyaml>=6.0",
     "ruamel-yaml>=0.19.1",
 ]
+
+[project.urls]
+Homepage = "https://pachimudeditor.ilpachi.it/"
+Documentation = "https://pachimudeditor.ilpachi.it/"
+Repository = "https://github.com/ellethee/pachimudeditor"
+Issues = "https://github.com/ellethee/pachimudeditor/issues"
+Changelog = "https://github.com/ellethee/pachimudeditor/blob/main/CHANGELOG.md"
 
 [project.entry-points."pachimudeditor.adapters"]
 pachimud = "pachimudeditor_adapter_pachimud.plugin:plugin"

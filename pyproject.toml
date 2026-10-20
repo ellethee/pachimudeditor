@@ -7,12 +7,30 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.14"
 authors = [{ name = "IlPachi" }]
-classifiers = ["Private :: Do Not Upload"]
+keywords = ["mud", "editor", "web", "pachimud", "rom", "diku", "fastapi", "quasar"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Private :: Do Not Upload",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: OS Independent",
+    "Topic :: Games/Entertainment :: Multi-User Dungeons (MUD)",
+]
 dependencies = [
     "pachifast>=0.16.0",
     "typer>=0.27.2",
     "uvicorn[standard]>=0.34.0",
 ]
+
+[project.urls]
+Homepage = "https://pachimudeditor.ilpachi.it/"
+Documentation = "https://pachimudeditor.ilpachi.it/"
+Repository = "https://github.com/ellethee/pachimudeditor"
+Issues = "https://github.com/ellethee/pachimudeditor/issues"
+Changelog = "https://github.com/ellethee/pachimudeditor/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 # Gli adapter sono pacchetti a parte nello stesso monorepo (cartella `adapters/`), scoperti con gli entry point
@@ -51,6 +69,8 @@ include = [
     "/migrations",
     "/*.md",
     "/LICENSE",
+    "/mkdocs.yml",
+    "/overrides",
     "/pachimudeditor.example.yaml",
     "/pachimudeditor.service",
     "/pachifast.schema.json",

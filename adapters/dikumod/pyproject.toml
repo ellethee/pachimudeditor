@@ -7,10 +7,27 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.14"
 authors = [{ name = "IlPachi" }]
-classifiers = ["Private :: Do Not Upload"]
+keywords = ["mud", "pachimudeditor", "adapter", "diku", "dikumod"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Private :: Do Not Upload",
+    "Environment :: Plugins",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: OS Independent",
+    "Topic :: Games/Entertainment :: Multi-User Dungeons (MUD)",
+]
 dependencies = [
     "pachimudeditor>=0.1.0,<0.2",
 ]
+
+[project.urls]
+Homepage = "https://pachimudeditor.ilpachi.it/"
+Documentation = "https://pachimudeditor.ilpachi.it/"
+Repository = "https://github.com/ellethee/pachimudeditor"
+Issues = "https://github.com/ellethee/pachimudeditor/issues"
+Changelog = "https://github.com/ellethee/pachimudeditor/blob/main/CHANGELOG.md"
 
 [project.entry-points."pachimudeditor.adapters"]
 dikumod = "pachimudeditor_adapter_dikumod.plugin:plugin"

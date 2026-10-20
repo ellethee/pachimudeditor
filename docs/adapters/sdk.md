@@ -71,6 +71,7 @@ from pachimudeditor.sdk import AdapterPlugin
 
 plugin = AdapterPlugin(
     kind="miomud",
+    sdk_version="1.2",  # il valore di `pachimudeditor.sdk.SDK_VERSION` con cui scrivi e provi l'adapter (letterale, non importato)
     description="il mio MUD (file dati)",
     factory="pachimudeditor_adapter_miomud.adapter:MioMudAdapter",  # (WorldConfig) -> WorldAdapter
     modules=("pachimudeditor_adapter_miomud.module:module",),  # solo se esiste un mondo miomud
@@ -80,18 +81,79 @@ plugin = AdapterPlugin(
 )
 ```
 
-`module.py`: `module = AppModule(name="pachimudeditor_adapter_miomud", kind="common", locale_package="pachimudeditor_adapter_miomud.locale")`
+`adapter.py` minimo (scheletro provato: viene scoperto da `adapters list` e `worlds check` risponde `ok`; `check` chiama `list_zones`, gli altri
+metodi astratti di `WorldAdapter` vanno implementati prima di usare il mondo davvero):
+
+```python
+from typing import Any
+
+from pachimudeditor.common.adapters.models import ZoneOut, ZonePageParams
+from pachimudeditor.sdk import AdapterCapabilities, AdapterInfo, WorldAdapter, WorldConfig, make_page
+
+
+def _todo(*args: Any, **kwargs: Any) -> Any:
+    raise NotImplementedError
+
+
+_Base = type("_Base", (WorldAdapter,), {n: _todo for n in WorldAdapter.__abstractmethods__})  # segnaposto: sostituire con i metodi veri
+
+
+class MioMudAdapter(_Base):
+    def __init__(self, config: WorldConfig) -> None:
+        self.config = config
+
+    async def list_zones(self, params: ZonePageParams):
+        return make_page(ZoneOut, [], 0, params)
+
+    def capabilities(self) -> AdapterCapabilities:
+        return AdapterCapabilities(read_only=True)
+
+    def describe(self) -> AdapterInfo:
+        return AdapterInfo(id=self.config.id, kind=self.config.kind, name=self.config.name or "", capabilities=self.capabilities(), resources=[])
+
+
+def validate_world(config: WorldConfig) -> None:
+    if not config.path:
+        raise ValueError("manca path")
+```
+
+`module.py` (`AppModule` si importa da `pachifast`, non dall'SDK):
+
+```python
+from pachifast import AppModule
+
+module = AppModule(name="pachimudeditor_adapter_miomud", kind="common", locale_package="pachimudeditor_adapter_miomud.locale")
+```
+
 (per route proprie aggiungere `router_modules=(...)`, vedi `adapters/pachimud/.../apps/`).
 
 Per usare l'adapter nel monorepo basta aggiungerlo a `adapters/` (workspace member), a `[tool.uv.sources]` e al gruppo `dev` del
 `pyproject.toml` del core, e come extra (`miomud = ["pachimudeditor-adapter-miomud>=0.1.0"]`); fuori dal monorepo basta
 `pip install pachimudeditor pachimudeditor-adapter-miomud`. La checklist qui sotto vale come per ogni adapter.
 
+## Helper SDK disponibili
+
+Riepilogo di `pachimudeditor.sdk.__all__`, per famiglia:
+
+| Famiglia | Simboli |
+|---|---|
+| Scoperta | `AdapterPlugin`, `AdapterUnavailable`, `ENTRY_POINT_GROUP`, `SDK_VERSION` |
+| Contratto | `WorldAdapter`, `AdapterCapabilities`, `AdapterInfo`, `ResourceInfo`, `ResourceType`, `FieldDescriptor`, `ExtraFieldDescriptor` |
+| Registro/dipendenze | `WorldConfig`, `register_kind`, `get_registry`, `AdapterDep`, `WriteAdapterDep`, `require_capability` |
+| Descrizione campi | `describe_resource`, `finish_resource`, `xf`, `diagnostic` |
+| Liste | `make_page`, `paginate_list` |
+| Errori/DTO | `conflict`, `not_found`, `PatchModel` |
+| Regole | `rules` (reset, uscite, range, grafo, uso) |
+| Conversione | `Flavor`, `ComposedConverter`, `PairConverter`, `ConvertContext`, `Converted`, `loss`, `to_in`, `extra_dropped`, `convert_helpers`, `convert_tables` |
+| File (SDK 1.2) | `atomic_write_bytes(path, data)`: scrittura atomica (temporaneo nella stessa cartella, `fsync`, `os.replace`); segue i symlink, preserva permessi e proprietario, pulisce il temporaneo in caso di errore |
+
+Per scrivere un file dell'adapter usa `atomic_write_bytes` invece di `open(..., "w")`: un crash a meta' non lascia file troncati.
+
 ## API pubblica del core (`pachimudeditor.sdk`)
 
 Gli adapter importano dal core **solo** questi moduli (verificato da `tests/core/test_boundaries.py`); il resto e' interno:
 
-- `pachimudeditor.sdk`: `AdapterPlugin`, `AdapterUnavailable`, `ENTRY_POINT_GROUP`, `SDK_VERSION`;
+- `pachimudeditor.sdk`: `AdapterPlugin`, `AdapterUnavailable`, `ENTRY_POINT_GROUP`, `SDK_VERSION`, `atomic_write_bytes`;
   `WorldAdapter`, `AdapterCapabilities`, `AdapterInfo`, `ResourceInfo`, `ResourceType`, `FieldDescriptor`, `ExtraFieldDescriptor`;
   `WorldConfig`, `register_kind`, `get_registry`, `AdapterDep`, `WriteAdapterDep`, `require_capability`;
   `describe_resource`, `finish_resource`, `xf`, `diagnostic` (descrittori dei campi); `make_page`, `paginate_list` (paginazione in memoria);
@@ -102,11 +164,13 @@ Gli adapter importano dal core **solo** questi moduli (verificato da `tests/core
 - `pachimudeditor.common.enums`: le enum dei DTO (`Direction`, `DoorFlag`, `SectorType`, `Sex`, `ObjectType`, `Position`, `ZoneCommandType`, `ZoneResetMode`).
 - `pachimudeditor.common.adapters.convert.helpers`: stesse funzioni di `sdk.convert_helpers`, importabili per nome.
 
-Compatibilita': `SDK_VERSION` (`"1.1"`) sale di minor per le aggiunte e di major per le rotture; gli adapter dichiarano
-`pachimudeditor>=X,<Y` e, nel loro `AdapterPlugin`, `sdk_version="1.0"` (l'SDK con cui sono stati scritti). Regola applicata dal core
-alla scoperta: **major diversa** (piu' nuova o piu' vecchia) = il plugin e' rifiutato, il `kind` risulta in errore (`broken` in
-`adapters list`, 'SDK incompatibile ...' nel messaggio dei mondi) e il resto del core funziona; **minor diversa** = compatibile.
-Storia: 1.1 aggiunge `AdapterInfo.params` (dict informativo, default vuoto; additivo, gli adapter 1.0 restano validi).
+Compatibilita': `pachimudeditor.sdk.SDK_VERSION` (la costante e' la fonte di verita': `python -c "from pachimudeditor.sdk import SDK_VERSION; print(SDK_VERSION)"`)
+sale di **minor** per le aggiunte e di **major** per le rotture. Gli adapter dichiarano `pachimudeditor>=X,<Y` e, nel loro `AdapterPlugin`,
+`sdk_version="<major>.<minor>"` con l'SDK con cui sono stati scritti (un adapter che usa un helper aggiunto in 1.2 dichiara almeno "1.2"
+e un `pachimudeditor` che lo offre). Regola applicata dal core alla scoperta: **major diversa** (piu' nuova o piu' vecchia) = il plugin e'
+rifiutato, il `kind` risulta in errore (`broken` in `adapters list`, 'SDK incompatibile ...' nel messaggio dei mondi) e il resto del core
+funziona; **minor diversa** = compatibile. Le aggiunte di minor sono additive (gli adapter scritti per un minor precedente restano validi);
+la storia delle versioni e' nel [CHANGELOG](../changelog.md).
 Senza `sdk_version` (adapter datati) non c'e' controllo. Provato da `tests/core/test_plugins.py`. I test del core NON richiedono nessun adapter: `tests/core/` usa adapter fittizi registrati con entry point
 sintetici (`tests/core/fake_adapter`), un buon modello per testare la scoperta nel tuo adapter.
 
