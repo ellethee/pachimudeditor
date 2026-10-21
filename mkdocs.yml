@@ -73,6 +73,7 @@ nav:
       - World: backend/contract-world.md
       - Players: backend/contract-players.md
       - Giocatori su file: backend/contract-players-files.md
+      - Canale di controllo live: backend/live-control-protocol.md
       - Instances: backend/contract-instances.md
       - Transfer: backend/contract-transfer.md
       - Content: backend/contract-content.md
@@ -83,6 +84,7 @@ nav:
       - pachimud: adapters/pachimud.md
       - basedmud: adapters/basedmud.md
       - dikumod: adapters/dikumod.md
+      - dikumod, canale live: adapters/dikumod-live.md
       - mapping: adapters/mapping.md
       - Guida alla mappatura: adapters/mapping-guide.md
   - Formati:
