@@ -1,6 +1,6 @@
 # Canale di controllo live (protocollo `livectl`)
 
-**Stato: protocollo v1 specificato; implementati il modulo C di riferimento per Diku Modificato (DikuMod1, `adapters/dikumod/mud-module/`), un finto server Python, la suite di conformita' (`tests/live/`) e, lato editor (SDK 1.5), il client, `LiveAdapter`, le rotte [`/api/world/live`](contract-live.md) e la pagina Giocatori. Non implementati: comandi CLI `pachimudeditor live` (solo specificati), componente per pachimud.** Descrive un canale tra l'editor (o un altro client) e un MUD **in esecuzione**: il client chiede informazioni
+**Stato: protocollo v1 specificato; implementati il modulo C di riferimento per Diku Modificato (DikuMod1, `adapters/dikumod/mud-module/`), un finto server Python, la suite di conformita' (`tests/live/`) e, lato editor (SDK 1.5), il client, `LiveAdapter`, le rotte [`/api/world/live`](contract-live.md) e la pagina Giocatori. i comandi CLI `pachimudeditor live` (client sottile). Non implementato: componente per pachimud.** Descrive un canale tra l'editor (o un altro client) e un MUD **in esecuzione**: il client chiede informazioni
 (chi e' connesso, stato del server) e fa modifiche immediate (giocatori connessi, reset di zona, creazione di mob/oggetti,
 messaggi) senza fermare il gioco e senza toccare i file. Il caso di riferimento e' Diku Modificato ([profilo dikumod](../adapters/dikumod-live.md));
 per pachimud (Python) e' **previsto** lo stesso protocollo servito da un componente `asyncio` nello stesso processo, come passo successivo a dikumod.
@@ -484,7 +484,7 @@ non supportato dall'editor) ma **non** controlla che il socket esista o che il M
 
 ## Client da riga di comando
 
-Specifica (non implementata) dei comandi `pachimudeditor live`, un client sottile dello stesso protocollo per script esterni. Il superuser vale per le **rotte HTTP**
+Stato: **implementata** (`src/pachimudeditor/cli/commands/live.py`, test in `tests/live/test_cli.py` contro finto server e MUD reale). Comandi `pachimudeditor live`, un client sottile dello stesso protocollo per script esterni. Il superuser vale per le **rotte HTTP**
 dell'editor; per la CLI vale il possesso del token e dell'accesso al socket (stessi permessi del file del socket e di `.env`).
 
 ```
@@ -524,6 +524,18 @@ elabora con `jq` senza dover separare stderr: `{"ok": true, "result": {...}}` op
 | 5 | esito sconosciuto: timeout o connessione persa **dopo** l'invio di un comando di scrittura (non ritentare senza verificare con `player get` / `who`) |
 
 I comandi di scrittura non vengono mai ritentati automaticamente.
+
+Scelte dell'implementazione dove la specifica lasciava margine (sempre la via piu' conservativa):
+
+- `--world` e `--socket` sono **mutuamente esclusivi** e uno dei due e' obbligatorio; `--socket` deve essere assoluto; un mondo con `enabled: false` o senza `params.live` e' exit 2. `--token-env` prevale sul `token_env` del mondo; vuole un **nome** di variabile (un valore che non lo sia e' rifiutato senza stamparlo).
+- Timeout: `--timeout` esplicito, altrimenti `timeout_ms` del mondo, altrimenti 5 s.
+- Token: prima l'ambiente, poi il `.env` della cartella di lavoro; mai da argomenti. Il token viene anche rimosso (`***`) da qualunque testo stampato.
+- Ogni comando fa prima l'`hello`: i suoi fallimenti sono exit 3 (socket assente, timeout) o 4 (`auth_failed`, `protocol_unsupported`, `rate_limited`, `too_many_connections`, risposta non valida); gli errori **dopo** il handshake sono exit 1, salvo `unreachable`/`timeout` di una lettura (3) e `outcome_unknown` di una scrittura (5).
+- Un comando non dichiarato da `hello` (classe `write` disattivata) non viene inviato: `command_disabled`, exit 1.
+- `live status` fa `hello` + `ping` (senza `info`, che resta in `live info`). `idempotency_key` non viene mai inviata (il client condiviso non la implementa e le scritture non si ritentano).
+- `CAMPO=VALORE`: i valori che sembrano interi sono numeri, il resto stringhe (la validazione e' del MUD); `a.b=v` diventa `{"a": {"b": v}}`. Salva di default (`--no-save` per non salvare).
+- `who` invia solo i filtri dati (`prefix`, `limit`, `linkdead:false` con `--no-linkdead`); `zone reset`, `load`, `echo` richiedono **esattamente una** destinazione, altrimenti exit 2.
+- Gli errori di sintassi rilevati da typer/click (argomento mancante o sconosciuto) escono con 2 ma con il testo standard su stderr, non in JSON.
 
 ## Rischi aperti e decisioni
 

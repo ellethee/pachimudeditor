@@ -59,6 +59,7 @@ Senza nessun mondo configurato il server parte lo stesso (`/api/worlds` vuoto) e
 | `pachimudeditor users create\|ls\|update\|delete` | i comandi utenti di pachifast sulla cartella di lavoro |
 | `pachimudeditor adapters list` | gli adapter (plugin) scoperti: kind, stato, pacchetto, versione; per i ufficiali non installati il comando per aggiungerli |
 | `pachimudeditor worlds list\|check` | mondi configurati (id/kind/capability/sola lettura) e salute (path, numero di zone, per pachimud revisione e stato dello schema con gli avvisi), piu' i kind disponibili e quelli da installare; `check` esce 1 se fallisce |
+| `pachimudeditor live (--world ID \| --socket PATH) [--token-env VAR] <comando>` | client sottile del canale live verso un MUD acceso (`status`, `ping`, `info`, `who`, `player get\|set`, `zone list\|reset`, `load mob\|obj`, `echo`): JSON su stdout, exit code 0-5; token solo da variabile d'ambiente (vedi `docs/backend/live-control-protocol.md`) |
 | `pachimudeditor build-frontend [--skip-install] [--frontend-dir D]` | solo sviluppo: `pnpm install/build` + copia in `src/pachimudeditor/static` |
 | `pachimudeditor info [-w DIR]` | versioni, adapter installati/mancanti, cartella di lavoro, file di config, frontend presente |
 | `pachimudeditor --version`, `--workdir` (globale) | |

@@ -1,4 +1,4 @@
-"""CLI `pachimudeditor`: init, serve, users, worlds, adapters, build-frontend, info."""
+"""CLI `pachimudeditor`: init, serve, users, worlds, adapters, live, build-frontend, info."""
 
 from typing import Annotated
 
@@ -6,7 +6,7 @@ import typer
 from pachifast.cli.helpers import console
 
 from pachimudeditor import __version__
-from pachimudeditor.cli.commands import adapters, frontend, info, init, serve, users, worlds
+from pachimudeditor.cli.commands import adapters, frontend, info, init, live, serve, users, worlds
 from pachimudeditor.cli.helpers.workdir import WorkdirOption
 
 
@@ -23,6 +23,7 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 app.add_typer(adapters.app, name="adapters")
+app.add_typer(live.app, name="live")
 app.add_typer(users.app, name="users")
 app.add_typer(worlds.app, name="worlds")
 app.command("init")(init.init)
