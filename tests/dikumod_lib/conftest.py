@@ -26,15 +26,27 @@ def real_name(name: str) -> str:
     return PREFIX + name[len("dikumoddata") :] if name.startswith("dikumoddata") else name
 
 
-def digest(lib: Path) -> dict[str, str]:
-    """SHA-256 dei file che i test copiano (dati principali e cartelle per-vnum)."""
+def game_running_on(lib: Path) -> bool:
+    """True se un processo ha come cartella corrente `lib/` o la sua radice (un gioco acceso la riscrive: giocatori e rent cambiano da soli)."""
+    roots = {lib.resolve(), lib.resolve().parent}
+    for proc in Path("/proc").glob("[0-9]*"):
+        try:
+            if proc.joinpath("cwd").resolve() in roots and "leu" in proc.joinpath("cmdline").read_bytes().decode(errors="ignore"):
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def digest(lib: Path, *, players: bool = True) -> dict[str, str]:
+    """SHA-256 dei file che i test copiano (dati principali e cartelle per-vnum); `players=False` salta giocatori e rent."""
     out: dict[str, str] = {}
     if not lib.is_dir():
         return out
     for name in _COPIED:
         if (lib / real_name(name)).is_file():
             out[name] = hashlib.sha256((lib / real_name(name)).read_bytes()).hexdigest()
-    for d in (*_COPIED_DIRS, *_HASHED_ONLY_DIRS):
+    for d in (*_COPIED_DIRS, *(_HASHED_ONLY_DIRS if players else ())):
         for p in sorted((lib / d).glob("*")) if (lib / d).is_dir() else []:
             if p.is_file():
                 out[f"{d}/{p.name}"] = hashlib.sha256(p.read_bytes()).hexdigest()
@@ -44,9 +56,10 @@ def digest(lib: Path) -> dict[str, str]:
 @pytest.fixture(scope="session", autouse=True)
 def _originals_untouched() -> Iterator[None]:
     """A fine sessione i dati originali di Diku Modificato devono avere gli stessi hash di prima."""
-    before = digest(LIB)
+    players = not game_running_on(LIB)  # un gioco acceso su leu riscrive giocatori e rent: non sono piu' una prova
+    before = digest(LIB, players=players)
     yield
-    after = digest(LIB)
+    after = digest(LIB, players=players)
     assert after == before, "i dati originali di Diku Modificato non devono essere modificati"
 
 
