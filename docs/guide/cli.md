@@ -3,7 +3,8 @@
 
 | Comando | Cosa fa |
 | --- | --- |
-| `pachimudeditor init [-w DIR] [-u NOME] [--password P] [--email E] [--database-url URL] [--no-user]` | crea la cartella di lavoro, `pachimudeditor.yaml` (nessun mondo attivo, esempi commentati per ogni kind), `.env` (secret key), DB auth con migration, primo superuser; ripetibile |
+| `pachimudeditor init [-w DIR] [-u NOME] [--password P] [--email E] [--database-url URL] [--no-user]` | crea la cartella di lavoro, `pachimudeditor.yaml` (nessun mondo attivo, esempi commentati per ogni kind), `.env` (secret key), DB auth con migration, primo superuser, `pachimudeditor.schema.json`; ripetibile |
+| `pachimudeditor schema [-o FILE\|-] [--write] [-w DIR]` | stampa su stdout il JSON Schema di `pachimudeditor.yaml` (pachifast piu' `webeditor_*`, `params` per kind); `-o FILE` lo scrive, `--write` crea `pachimudeditor.schema.json` nella cartella di lavoro |
 | `pachimudeditor serve [-w DIR] [--host H] [--port P] [--reload/--no-reload] [--open] [--log-level L]` | API + SPA su un solo processo (default 127.0.0.1:8123) |
 | `pachimudeditor users create\|ls\|update\|delete` | i comandi utenti di pachifast sulla cartella di lavoro |
 | `pachimudeditor adapters list` | gli adapter (plugin) scoperti: kind, stato, pacchetto, versione; per i ufficiali non installati il comando per aggiungerli |

@@ -6,6 +6,7 @@ from typing import Annotated
 import typer
 from pachifast.cli.helpers import console, handle_errors
 
+from pachimudeditor.cli.helpers.schema import SCHEMA_NAME, render_schema
 from pachimudeditor.cli.helpers.templates import PROJECT_MODULES_SOURCE, render_config
 from pachimudeditor.cli.helpers.workdir import (
     CONFIG_NAMES,
@@ -57,6 +58,11 @@ def init(
     ):
         created.append(CONFIG_NAMES[0])
         use_workdir(root)  # ora il file c'e': pachifast lo legge
+    schema_file = root / SCHEMA_NAME  # derivato: si riallinea sempre agli adapter installati
+    schema_text = render_schema()
+    if not schema_file.exists() or schema_file.read_text(encoding="utf-8") != schema_text:
+        schema_file.write_text(schema_text, encoding="utf-8")
+        created.append(SCHEMA_NAME)
     report = init_project(
         base_dir=str(root),
         username=username,

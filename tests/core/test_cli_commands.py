@@ -408,3 +408,27 @@ def test_build_frontend_pnpm_failure_is_reported(workdir: Path, monkeypatch: pyt
     monkeypatch.setattr(frontend.subprocess, "run", failing)
     result = runner.invoke(app, ["build-frontend", "--frontend-dir", str(fe)])
     assert result.exit_code != 0 and not (workdir / "pkg" / "static").exists()
+
+
+def test_init_writes_schema_and_header_and_repeats(workdir: Path) -> None:
+    """`init` scrive lo schema e l'intestazione nel yaml; rieseguito riscrive lo schema solo se diverso e non tocca il yaml."""
+    args = ["init", "--workdir", str(workdir), "--password", PASSWORD]
+    assert runner.invoke(app, args).exit_code == 0
+    schema = workdir / "pachimudeditor.schema.json"
+    assert schema.is_file() and (workdir / "pachimudeditor.yaml").read_text(encoding="utf-8").startswith(
+        "# yaml-language-server: $schema=./pachimudeditor.schema.json\n"
+    )
+    _fresh_process_env()
+    result = runner.invoke(app, args)
+    assert result.exit_code == 0 and "Creato pachimudeditor.schema.json" not in result.output
+    schema.write_text("{}", encoding="utf-8")  # schema obsoleto: viene riallineato
+    _fresh_process_env()
+    assert runner.invoke(app, args).exit_code == 0 and schema.read_text(encoding="utf-8") != "{}"
+
+
+def test_schema_command_stdout_and_write(workdir: Path) -> None:
+    """`schema` stampa il JSON su stdout; `--write` lo scrive nella cartella di lavoro."""
+    out = runner.invoke(app, ["schema"])
+    assert out.exit_code == 0 and '"title": "pachimudeditor.yaml"' in out.output
+    assert runner.invoke(app, ["schema", "--write", "--workdir", str(workdir)]).exit_code == 0
+    assert (workdir / "pachimudeditor.schema.json").is_file()

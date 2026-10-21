@@ -6,6 +6,10 @@ Priorita': variabili d'ambiente > `.env` della cartella > `pachimudeditor.yaml` 
 - `pachimudeditor.yaml` e' il file YAML di pachifast (sezioni `server`, `app`, `auth`, `events`; il CLI imposta
   `PACHIFAST_CONFIG_FILE`). Chiavi del webeditor: `webeditor_worlds`, `webeditor_default_world`,
   `webeditor_convert_journal_dir`, `config_path` (dentro il mondo pachimud). Segreti (`PACHIFAST_SECRET_KEY`, URL con password) solo in `.env`.
+- Completamento e validazione nell'editor: `pachimudeditor init` scrive `pachimudeditor.schema.json` nella cartella di lavoro e il
+  `pachimudeditor.yaml` generato inizia con `# yaml-language-server: $schema=./pachimudeditor.schema.json`. Lo schema comprende le chiavi
+  pachifast e `webeditor_*`, con `kind` come enum e i `params` del kind scelto (kind ufficiali e adapter installati). Per rigenerarlo (dopo
+  aver installato un adapter): `pachimudeditor schema --write` o `pachimudeditor schema -o FILE` (senza opzioni stampa su stdout).
 - Limite di richieste su conversioni e import zone: `rate_limit.default` (env `PACHIFAST_RATE_LIMIT_DEFAULT`, default dell'editor 60, `0` = spento) e
   `rate_limit.window_seconds` (default 60); alias deprecati `WEBEDITOR_HEAVY_RATE_LIMIT`/`_WINDOW`. Vedi [Sicurezza](security.md).
 - Sessione: `auth.refresh_mode` (env `PACHIFAST_REFRESH_MODE`) vale `cookie` per default nell'editor (pachifast ha `body`): il

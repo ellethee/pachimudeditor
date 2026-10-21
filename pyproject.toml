@@ -73,6 +73,7 @@ include = [
     "/pachimudeditor.example.yaml",
     "/pachimudeditor.service",
     "/pachifast.schema.json",
+    "/pachimudeditor.schema.json",
     "/.env.example",
 ]
 exclude = ["node_modules", ".quasar", "frontend/dist", "e2e/.tmp", "__pycache__"]

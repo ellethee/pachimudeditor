@@ -11,6 +11,7 @@ MODULES = build_modules()
 '''
 
 CONFIG_TEMPLATE = """\
+# yaml-language-server: $schema=./pachimudeditor.schema.json
 # Configurazione di pachimudeditor (formato pachifast: sezioni server/app/auth/events).
 # Priorita': variabili d'ambiente (PACHIFAST_*, anche da .env) > questo file > default.
 # I segreti (secret_key, URL con password) stanno in .env, non qui.

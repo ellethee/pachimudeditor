@@ -54,7 +54,8 @@ Senza nessun mondo configurato il server parte lo stesso (`/api/worlds` vuoto) e
 
 | Comando | Cosa fa |
 | --- | --- |
-| `pachimudeditor init [-w DIR] [-u NOME] [--password P] [--email E] [--database-url URL] [--no-user]` | crea la cartella di lavoro, `pachimudeditor.yaml` (nessun mondo attivo, esempi commentati per ogni kind), `.env` (secret key), DB auth con migration, primo superuser; ripetibile |
+| `pachimudeditor init [-w DIR] [-u NOME] [--password P] [--email E] [--database-url URL] [--no-user]` | crea la cartella di lavoro, `pachimudeditor.yaml` (nessun mondo attivo, esempi commentati per ogni kind), `.env` (secret key), DB auth con migration, primo superuser, `pachimudeditor.schema.json`; ripetibile |
+| `pachimudeditor schema [-o FILE\|-] [--write] [-w DIR]` | stampa su stdout il JSON Schema di `pachimudeditor.yaml` (pachifast piu' `webeditor_*`, `params` per kind); `-o FILE` lo scrive, `--write` crea `pachimudeditor.schema.json` nella cartella di lavoro |
 | `pachimudeditor serve [-w DIR] [--host H] [--port P] [--reload/--no-reload] [--open] [--log-level L]` | API + SPA su un solo processo (default 127.0.0.1:8123) |
 | `pachimudeditor users create\|ls\|update\|delete` | i comandi utenti di pachifast sulla cartella di lavoro |
 | `pachimudeditor adapters list` | gli adapter (plugin) scoperti: kind, stato, pacchetto, versione; per i ufficiali non installati il comando per aggiungerli |
@@ -73,6 +74,10 @@ Priorita': variabili d'ambiente > `.env` della cartella > `pachimudeditor.yaml` 
 - `pachimudeditor.yaml` e' il file YAML di pachifast (sezioni `server`, `app`, `auth`, `events`; il CLI imposta
   `PACHIFAST_CONFIG_FILE`). Chiavi del webeditor: `webeditor_worlds`, `webeditor_default_world`,
   `webeditor_convert_journal_dir`, `config_path` (dentro il mondo pachimud). Segreti (`PACHIFAST_SECRET_KEY`, URL con password) solo in `.env`.
+- Completamento e validazione nell'editor: `pachimudeditor init` scrive `pachimudeditor.schema.json` nella cartella di lavoro e il
+  `pachimudeditor.yaml` generato inizia con `# yaml-language-server: $schema=./pachimudeditor.schema.json`. Lo schema comprende le chiavi
+  pachifast e `webeditor_*`, con `kind` come enum e i `params` del kind scelto (kind ufficiali e adapter installati). Per rigenerarlo (dopo
+  aver installato un adapter): `pachimudeditor schema --write` o `pachimudeditor schema -o FILE` (senza opzioni stampa su stdout).
 - Mondi: `WEBEDITOR_WORLDS` (JSON) e `WEBEDITOR_DEFAULT_WORLD`, con alias `PACHIMUDEDITOR_WORLDS` /
   `PACHIMUDEDITOR_DEFAULT_WORLD` (i `WEBEDITOR_*` hanno la precedenza).
 - Mondo pachimud (`kind: pachimud`), parametri in `params`:
