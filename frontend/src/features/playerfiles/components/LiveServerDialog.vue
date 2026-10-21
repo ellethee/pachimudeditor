@@ -98,7 +98,22 @@
           />
           <div class="row q-col-gutter-sm q-mt-xs">
             <div class="col-12 col-sm-4">
-              <q-input v-model.number="loadVnum" type="number" dense outlined :label="t('playerFiles.inventory.vnum')" data-testid="live-load-vnum" />
+              <q-select
+                v-model="loadPick"
+                :options="loadFound"
+                :label="loadKind === 'mob' ? t('playerFiles.live.server.pickMob') : t('playerFiles.live.server.pickObj')"
+                use-input
+                input-debounce="250"
+                dense
+                outlined
+                option-label="label"
+                data-testid="live-load-vnum"
+                @filter="onFilterLoad"
+              >
+                <template #no-option>
+                  <q-item><q-item-section class="text-grey">{{ t('playerFiles.live.server.pickNone') }}</q-item-section></q-item>
+                </template>
+              </q-select>
             </div>
             <div class="col-12 col-sm-4">
               <q-input v-model.number="loadCount" type="number" min="1" max="10" dense outlined :label="t('playerFiles.live.server.count')" data-testid="live-load-count" />
@@ -115,7 +130,24 @@
               { label: t('playerFiles.live.server.toPlayer'), value: 'player', 'data-testid': 'live-load-where-player' },
             ]"
           />
-          <q-input v-if="loadWhere === 'room'" v-model.number="loadRoom" type="number" dense outlined class="q-mt-sm" :label="t('playerFiles.col.roomVnum')" data-testid="live-load-room" />
+          <q-select
+            v-if="loadWhere === 'room'"
+            v-model="loadRoomPick"
+            :options="roomFound"
+            :label="t('playerFiles.live.server.pickRoom')"
+            use-input
+            input-debounce="250"
+            dense
+            outlined
+            class="q-mt-sm"
+            option-label="label"
+            data-testid="live-load-room"
+            @filter="onFilterRoom"
+          >
+            <template #no-option>
+              <q-item><q-item-section class="text-grey">{{ t('playerFiles.live.server.pickNone') }}</q-item-section></q-item>
+            </template>
+          </q-select>
           <q-select
             v-else
             v-model="loadPlayer"
@@ -127,7 +159,7 @@
             data-testid="live-load-player"
           />
           <div class="q-mt-sm">
-            <q-btn color="primary" :label="t('playerFiles.live.server.create')" :disable="busy || loadVnum === null" data-testid="live-load-go" @click="doLoad()" />
+            <q-btn color="primary" :label="t('playerFiles.live.server.create')" :disable="busy || !loadPick" data-testid="live-load-go" @click="doLoad()" />
           </div>
         </q-tab-panel>
 
@@ -155,7 +187,24 @@
             :label="t('playerFiles.live.server.player')"
             data-testid="live-echo-player"
           />
-          <q-input v-if="echoWhere === 'room'" v-model.number="echoRoom" type="number" dense outlined class="q-mt-sm" :label="t('playerFiles.col.roomVnum')" data-testid="live-echo-room" />
+          <q-select
+            v-if="echoWhere === 'room'"
+            v-model="echoRoomPick"
+            :options="roomFound"
+            :label="t('playerFiles.live.server.pickRoom')"
+            use-input
+            input-debounce="250"
+            dense
+            outlined
+            class="q-mt-sm"
+            option-label="label"
+            data-testid="live-echo-room"
+            @filter="onFilterRoom"
+          >
+            <template #no-option>
+              <q-item><q-item-section class="text-grey">{{ t('playerFiles.live.server.pickNone') }}</q-item-section></q-item>
+            </template>
+          </q-select>
           <div class="q-mt-sm">
             <q-btn color="primary" :label="t('playerFiles.live.server.send')" :disable="busy || !echoText.trim()" data-testid="live-echo-go" @click="sendEcho()" />
           </div>
@@ -174,7 +223,7 @@
  * scrittura compaiono solo se il MUD ha la classe `write` attiva e il mondo non è in sola lettura. Nessun ritentativo automatico:
  * un esito sconosciuto (timeout) lo dice il messaggio d'errore.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDialogPluginComponent, useQuasar } from 'quasar'
 import { mdiRefresh } from '@quasar/extras/mdi-v7'
@@ -182,6 +231,9 @@ import { PachiDialog } from '@ilpachi/pachi-kit/dialog'
 import { describeError } from '../../players/helpers/describe-error'
 import { useLive } from '../helpers/live-state'
 import { formatDuration } from '../helpers/format'
+import { listMobs } from '../../mobs/services/mobs-api'
+import { listObjects } from '../../objects/services/objects-api'
+import { searchRooms } from '../../rooms/services/rooms-api'
 import { echoLive, getLiveInfo, getLiveWho, getLiveZones, loadLive, resetLiveZone } from '../services/live-api'
 import type { ILiveInfo, ILiveWho, ILiveZone } from '../types/live'
 
@@ -191,6 +243,12 @@ const { t, te } = useI18n()
 const $q = useQuasar()
 const { dialogRef, onDialogHide, onDialogCancel } = useDialogPluginComponent()
 const { canWrite } = useLive()
+
+/** Elemento scelto in un selettore filtrabile: `value` e' il vnum da inviare. */
+interface PickOption {
+  value: number
+  label: string
+}
 
 const tab = ref('who')
 const error = ref('')
@@ -203,14 +261,16 @@ const zone = ref<number | null>(null)
 const onlyIfEmpty = ref(false)
 const loadKind = ref<'mob' | 'obj'>('mob')
 const loadWhere = ref<'room' | 'player'>('room')
-const loadVnum = ref<number | null>(null)
+const loadPick = ref<PickOption | null>(null)
+const loadFound = ref<PickOption[]>([])
 const loadCount = ref(1)
-const loadRoom = ref<number | null>(null)
+const loadRoomPick = ref<PickOption | null>(null)
+const roomFound = ref<PickOption[]>([])
 const loadPlayer = ref<string | null>(null)
 const echoText = ref('')
 const echoWhere = ref<'all' | 'player' | 'room'>('all')
 const echoPlayer = ref<string | null>(null)
-const echoRoom = ref<number | null>(null)
+const echoRoomPick = ref<PickOption | null>(null)
 
 /** Zone nell'ordine del gioco, con l'indice da inviare. */
 const zoneOptions = computed(() => zones.value.filter((z) => z.index > 0).map((z) => ({ label: `${z.name} (#${z.index})`, value: z.index })))
@@ -272,12 +332,40 @@ function resetZone(): void {
   })
 }
 
+/**
+ * Cerca mob o oggetti esistenti (secondo il tipo scelto) per nome o vnum.
+ *
+ * @param text - testo digitato
+ * @param update - callback di q-select
+ */
+function onFilterLoad(text: string, update: (fn: () => void) => void): void {
+  const search = loadKind.value === 'mob' ? listMobs({ search: text, pageSize: 20 }) : listObjects({ search: text, pageSize: 20 })
+  void search
+    .then((page) => page.items.map((e) => ({ value: e.vnum, label: `#${e.vnum} ${e.shortDescription}` })))
+    .catch(() => [])
+    .then((items) => update(() => (loadFound.value = items)))
+}
+
+/**
+ * Cerca stanze esistenti per nome o vnum.
+ *
+ * @param text - testo digitato
+ * @param update - callback di q-select
+ */
+function onFilterRoom(text: string, update: (fn: () => void) => void): void {
+  void searchRooms(text)
+    .then((rooms) => rooms.map((r) => ({ value: r.vnum, label: `#${r.vnum} ${r.name}` })))
+    .catch(() => [])
+    .then((items) => update(() => (roomFound.value = items)))
+}
+
 /** Crea mob o oggetti nella destinazione scelta. */
 function doLoad(): void {
-  if (loadVnum.value === null) return
-  const target = loadWhere.value === 'room' ? { room: loadRoom.value ?? undefined } : { player: loadPlayer.value ?? undefined }
+  const picked = loadPick.value
+  if (!picked) return
+  const target = loadWhere.value === 'room' ? { room: loadRoomPick.value?.value } : { player: loadPlayer.value ?? undefined }
   void run(async () => {
-    const out = await loadLive(loadKind.value, { vnum: loadVnum.value ?? 0, count: loadCount.value, notify: false, ...target })
+    const out = await loadLive(loadKind.value, { vnum: picked.value, count: loadCount.value, notify: false, ...target })
     return t('playerFiles.live.server.created', { n: out.loaded.length })
   })
 }
@@ -285,12 +373,18 @@ function doLoad(): void {
 /** Manda il messaggio alla destinazione scelta. */
 function sendEcho(): void {
   const to =
-    echoWhere.value === 'all' ? { all: true } : echoWhere.value === 'player' ? { player: echoPlayer.value ?? undefined } : { room: echoRoom.value ?? undefined }
+    echoWhere.value === 'all' ? { all: true } : echoWhere.value === 'player' ? { player: echoPlayer.value ?? undefined } : { room: echoRoomPick.value?.value }
   void run(async () => {
     const out = await echoLive({ text: echoText.value.trim(), ...to })
     return t('playerFiles.live.server.sent', { n: out.recipients })
   })
 }
+
+/** Cambiando tipo (mob/oggetto) la scelta precedente non vale piu'. */
+watch(loadKind, () => {
+  loadPick.value = null
+  loadFound.value = []
+})
 
 onMounted(() => void loadWho())
 </script>

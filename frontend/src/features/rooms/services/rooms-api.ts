@@ -49,6 +49,17 @@ export async function listAllRooms(): Promise<IRoom[]> {
   return page.items
 }
 
+/**
+ * Cerca stanze per nome o vnum (poche righe, per i selettori filtrabili).
+ *
+ * @param search - testo digitato
+ * @param pageSize - massimo di risultati
+ */
+export async function searchRooms(search: string, pageSize = 20): Promise<IRoom[]> {
+  const page = await http().Get<IPaginatedRooms>('/rooms', { params: { search, pageSize }, cacheFor: 0 })
+  return page.items
+}
+
 /** Grafo (nodi e archi) delle stanze di una zona. */
 export async function getRoomGraph(zoneId: number): Promise<IRoomGraph> {
   return http().Get<IRoomGraph>('/rooms/graph', { params: { zoneId }, cacheFor: 0 })
