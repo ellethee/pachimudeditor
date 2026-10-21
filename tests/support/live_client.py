@@ -30,16 +30,20 @@ class LiveClient:
         line = await asyncio.wait_for(self.reader.readline(), timeout)
         return json.loads(line) if line else None
 
-    async def call(self, cmd: str, params: dict[str, Any] | None = None, *, timeout: float = 10.0) -> dict[str, Any]:
-        """Invia una richiesta e legge la risposta (la prima: le richieste sono in ordine)."""
-        self._id += 1
-        msg: dict[str, Any] = {"id": self._id, "cmd": cmd}
-        if params is not None:
-            msg["params"] = params
-        await self.send_raw(json.dumps(msg).encode() + b"\n")
-        resp = await self.read(timeout)
-        assert resp is not None, "connessione chiusa dal server"
-        assert resp["id"] == self._id
+    async def call(self, cmd: str, params: dict[str, Any] | None = None, *, timeout: float = 10.0, retries: int = 30) -> dict[str, Any]:
+        """Invia una richiesta e legge la risposta (la prima: le richieste sono in ordine). Su `rate_limited` aspetta e ripete (`retries`)."""
+        for _ in range(retries + 1):
+            self._id += 1
+            msg: dict[str, Any] = {"id": self._id, "cmd": cmd}
+            if params is not None:
+                msg["params"] = params
+            await self.send_raw(json.dumps(msg).encode() + b"\n")
+            resp = await self.read(timeout)
+            assert resp is not None, "connessione chiusa dal server"
+            assert resp["id"] == self._id, (cmd, params, resp)
+            if resp.get("ok") or resp["error"]["code"] != "rate_limited":
+                return resp
+            await asyncio.sleep(resp["error"].get("params", {}).get("retry_after_ms", 100) / 1000)
         return resp
 
     async def hello(self, token: str, actor: str = "test") -> dict[str, Any]:

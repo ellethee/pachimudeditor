@@ -61,6 +61,7 @@ extern int top_of_zone_table, top_of_mobt, top_of_objt;
 extern long Uptime;
 extern int pulse;
 extern struct reset_q_type gReset_q;
+extern struct index_data *obj_index;
 long GetLagIndex(void);
 
 /* ---------------------------------------------------------------- stato */
@@ -1033,6 +1034,9 @@ static int cmd_load_obj(struct req *r, struct jw *w)
     }
     jw_char(w, '}');
   }
+  jw_raw(w, "],\"warnings\":[");
+  if (target && vnum > 32767) /* il rent salva item_number come sh_int: oltre 32767 il vnum si corrompe al salvataggio */
+    jw_raw(w, "\"vnum_not_saveable\"");
   jw_raw(w, "]}");
   if (notify)
     send_to_room((char *)"Qualcosa di nuovo appare.\n\r", (int)room);
@@ -1116,6 +1120,700 @@ static int cmd_echo(struct req *r, struct jw *w)
   return 0;
 }
 
+/* ---------------------------------------------------------------- inventario e oggetti istanza (feature "inventory") */
+
+#define LC_MAX_REF_DEPTH 8     /* profondita' massima di annidamento nei contenitori */
+#define LC_MAX_INV_ITEMS 200
+#define LC_LEN_NAME      127   /* obj_file_elem.name[128]: put_obj_in_store usa strcpy senza limite */
+#define LC_LEN_SHORT     127   /* obj_file_elem.sd[128] */
+#define LC_LEN_DESC      255   /* obj_file_elem.desc[256] */
+#define LC_MAX_APPLY     64    /* APPLY_T_MANA, l'ultimo valore di affect_modify */
+
+/* Un riferimento a un oggetto e' un PERCORSO, mai un puntatore: "eq:<slot>" o "inv:<indice>", seguito da "/<indice>" per ogni
+ * contenitore attraversato (indici nella lista contains). Va risolto a ogni richiesta e accompagnato da un controllo di impronta. */
+struct oref {
+  int eq, first, npath;
+  int path[LC_MAX_REF_DEPTH];
+};
+
+static int parse_ref(const char *s, struct oref *r)
+{
+  const char *p = s;
+  char *end;
+  long v;
+  memset(r, 0, sizeof *r);
+  if (strncmp(p, "eq:", 3) == 0) {
+    r->eq = 1;
+    p += 3;
+  } else if (strncmp(p, "inv:", 4) == 0) {
+    p += 4;
+  } else {
+    return -1;
+  }
+  if (!isdigit((unsigned char)*p))
+    return -1;
+  v = strtol(p, &end, 10);
+  if (v < 0 || v > 100000 || end - p > 6)
+    return -1;
+  r->first = (int)v;
+  p = end;
+  while (*p == '/') {
+    p++;
+    if (!isdigit((unsigned char)*p) || r->npath >= LC_MAX_REF_DEPTH)
+      return -1;
+    v = strtol(p, &end, 10);
+    if (v < 0 || v > 100000 || end - p > 6)
+      return -1;
+    r->path[r->npath++] = (int)v;
+    p = end;
+  }
+  return *p ? -1 : 0;
+}
+
+static struct obj_data *nth(struct obj_data *list, int n)
+{
+  int guard = 0;
+  while (list && n > 0 && guard++ < 100000) {
+    list = list->next_content;
+    n--;
+  }
+  return n == 0 ? list : 0;
+}
+
+static struct obj_data *resolve_ref(struct char_data *ch, const struct oref *r)
+{
+  struct obj_data *o;
+  if (r->eq)
+    o = r->first >= 0 && r->first < MAX_WEAR ? ch->equipment[r->first] : 0;
+  else
+    o = nth(ch->carrying, r->first);
+  for (int i = 0; o && i < r->npath; i++)
+    o = nth(o->contains, r->path[i]);
+  return o;
+}
+
+static int obj_vnum(const struct obj_data *o)
+{
+  return o->item_number >= 0 && o->item_number < top_of_objt ? obj_index[o->item_number].iVNum : -1;
+}
+
+static unsigned fp_bytes(unsigned h, const void *p, size_t n)
+{
+  const unsigned char *b = (const unsigned char *)p;
+  while (n--)
+    h = (h ^ *b++) * 16777619u;
+  return h;
+}
+
+static unsigned fp_str(unsigned h, const char *s)
+{
+  return fp_bytes(h, s ? s : "", s ? strlen(s) + 1 : 1);
+}
+
+/* impronta (FNV-1a a 32 bit) di vnum, testi, flag, valori e affect: NON include peso e timer, che cambiano da soli */
+static unsigned obj_fp(const struct obj_data *o)
+{
+  unsigned h = 2166136261u;
+  int v = obj_vnum(o), type = o->obj_flags.type_flag;
+  unsigned long ef = o->obj_flags.extra_flags;
+  h = fp_bytes(h, &v, sizeof v);
+  h = fp_bytes(h, &type, sizeof type);
+  h = fp_str(h, o->name);
+  h = fp_str(h, o->short_description);
+  h = fp_str(h, o->description);
+  h = fp_bytes(h, &ef, sizeof ef);
+  h = fp_bytes(h, o->obj_flags.value, sizeof o->obj_flags.value);
+  for (int i = 0; i < MAX_OBJ_AFFECT; i++) {
+    int loc = o->affected[i].location, mod = o->affected[i].modifier;
+    h = fp_bytes(h, &loc, sizeof loc);
+    h = fp_bytes(h, &mod, sizeof mod);
+  }
+  return h;
+}
+
+static struct obj_data *top_of(struct obj_data *o)
+{
+  int guard = 0;
+  while (o->in_obj && guard++ < 64)
+    o = o->in_obj;
+  return o;
+}
+
+/* campi modificabili e di sola lettura di un oggetto */
+static void emit_obj_fields(struct jw *w, const struct obj_data *o)
+{
+  jw_raw(w, ",\"description\":");
+  jw_str_latin1(w, o->description);
+  jw_raw(w, ",\"values\":[");
+  for (int i = 0; i < 4; i++) {
+    if (i)
+      jw_char(w, ',');
+    jw_int(w, o->obj_flags.value[i]);
+  }
+  jw_raw(w, "],\"weight\":");
+  jw_int(w, o->obj_flags.weight);
+  jw_raw(w, ",\"extra_flags\":");
+  jw_int(w, (long long)o->obj_flags.extra_flags);
+  jw_raw(w, ",\"timer\":");
+  jw_int(w, o->obj_flags.timer);
+  jw_raw(w, ",\"affects\":[");
+  for (int i = 0; i < MAX_OBJ_AFFECT; i++) {
+    if (i)
+      jw_char(w, ',');
+    jw_raw(w, "{\"location\":");
+    jw_int(w, o->affected[i].location);
+    jw_raw(w, ",\"modifier\":");
+    jw_int(w, o->affected[i].modifier);
+    jw_char(w, '}');
+  }
+  jw_char(w, ']');
+}
+
+static void emit_obj(struct jw *w, const struct obj_data *o, const char *ref, int slot, int depth, int brief, int full)
+{
+  const struct obj_data *c;
+  int n = 0, v = obj_vnum(o);
+  char fp[12];
+  snprintf(fp, sizeof fp, "%08x", obj_fp(o));
+  for (c = o->contains; c && n < 100000; c = c->next_content)
+    n++;
+  jw_raw(w, "{\"ref\":");
+  jw_str(w, ref);
+  jw_raw(w, ",\"fp\":\"");
+  jw_raw(w, fp);
+  jw_raw(w, "\",\"vnum\":");
+  if (v < 0)
+    jw_raw(w, "null");
+  else
+    jw_int(w, v);
+  jw_raw(w, ",\"slot\":");
+  if (slot < 0)
+    jw_raw(w, "null");
+  else
+    jw_int(w, slot);
+  jw_raw(w, ",\"depth\":");
+  jw_int(w, depth);
+  jw_raw(w, ",\"name\":");
+  jw_str_latin1(w, o->name);
+  jw_raw(w, ",\"short_description\":");
+  jw_str_latin1(w, o->short_description);
+  jw_raw(w, ",\"type\":");
+  jw_int(w, o->obj_flags.type_flag);
+  jw_raw(w, ",\"contents\":");
+  jw_int(w, n);
+  if (!brief)
+    emit_obj_fields(w, o);
+  if (full) {
+    jw_raw(w, ",\"wear_flags\":");
+    jw_int(w, (long long)o->obj_flags.wear_flags);
+    jw_raw(w, ",\"cost\":");
+    jw_int(w, o->obj_flags.cost);
+    jw_raw(w, ",\"cost_per_day\":");
+    jw_int(w, o->obj_flags.cost_per_day);
+    jw_raw(w, ",\"bitvector\":");
+    jw_int(w, o->obj_flags.bitvector);
+  }
+  jw_char(w, '}');
+}
+
+struct walk {
+  struct jw *w;
+  int brief, count, limit, first, truncated;
+};
+
+static void walk_list(struct walk *k, struct obj_data *list, const char *prefix, int depth, int slot_known)
+{
+  int idx = 0, guard = 0;
+  struct obj_data *o;
+  (void)slot_known;
+  for (o = list; o && guard++ < 100000; o = o->next_content, idx++) {
+    char ref[96];
+    snprintf(ref, sizeof ref, "%s%s%d", prefix, depth == 0 ? "" : "/", idx);
+    if (k->count >= k->limit || k->w->len > LC_MAX_RESP - 4000) {
+      k->truncated = 1;
+      return;
+    }
+    if (!k->first)
+      jw_char(k->w, ',');
+    k->first = 0;
+    emit_obj(k->w, o, ref, -1, depth, k->brief, 0);
+    k->count++;
+    if (o->contains) {
+      if (depth + 1 >= LC_MAX_REF_DEPTH)
+        k->truncated = 1;
+      else
+        walk_list(k, o->contains, ref, depth + 1, 0);
+    }
+  }
+}
+
+static int cmd_player_inventory(struct req *r, struct jw *w)
+{
+  KEYS("name", "brief", "limit");
+  const char *name = 0;
+  long long limit = 100;
+  int brief = 0;
+  struct descriptor_data *d;
+  struct char_data *ch;
+  struct walk k;
+  if (check_keys(r->doc, r->params, keys) < 0 || p_str(r->doc, r->params, "name", 1, &name) < 0 ||
+      p_bool(r->doc, r->params, "brief", &brief) < 0 || p_int(r->doc, r->params, "limit", 0, &limit) < 0 ||
+      find_player(name, &d, &ch) < 0)
+    return -1;
+  if (limit < 1 || limit > LC_MAX_INV_ITEMS)
+    return EP("value_out_of_range", "limit fuori intervallo", "{\"field\":\"limit\",\"min\":1,\"max\":%d}", LC_MAX_INV_ITEMS);
+  set_target("%s", ch->player.name);
+  k.w = w;
+  k.brief = brief;
+  k.count = 0;
+  k.limit = (int)limit;
+  k.first = 1;
+  k.truncated = 0;
+  jw_raw(w, "{\"name\":");
+  jw_str_latin1(w, ch->player.name);
+  jw_raw(w, ",\"carry_weight\":");
+  jw_int(w, IS_CARRYING_W(ch));
+  jw_raw(w, ",\"carry_items\":");
+  jw_int(w, IS_CARRYING_N(ch));
+  jw_raw(w, ",\"items\":[");
+  for (int slot = 0; slot < MAX_WEAR && !k.truncated; slot++) {
+    char ref[32];
+    struct obj_data *o = ch->equipment[slot];
+    if (!o)
+      continue;
+    if (k.count >= k.limit || w->len > LC_MAX_RESP - 4000) {
+      k.truncated = 1;
+      break;
+    }
+    snprintf(ref, sizeof ref, "eq:%d", slot);
+    if (!k.first)
+      jw_char(w, ',');
+    k.first = 0;
+    emit_obj(w, o, ref, slot, 0, brief, 0);
+    k.count++;
+    if (o->contains)
+      walk_list(&k, o->contains, ref, 1, 1);
+  }
+  if (!k.truncated) {
+    /* inventario: gli indici dei livelli annidati si accodano al riferimento "inv:<i>" */
+    struct obj_data *o;
+    int idx = 0, guard = 0;
+    for (o = ch->carrying; o && guard++ < 100000; o = o->next_content, idx++) {
+      char ref[32];
+      if (k.count >= k.limit || w->len > LC_MAX_RESP - 4000) {
+        k.truncated = 1;
+        break;
+      }
+      snprintf(ref, sizeof ref, "inv:%d", idx);
+      if (!k.first)
+        jw_char(w, ',');
+      k.first = 0;
+      emit_obj(w, o, ref, -1, 0, brief, 0);
+      k.count++;
+      if (o->contains) {
+        if (LC_MAX_REF_DEPTH <= 1)
+          k.truncated = 1;
+        else
+          walk_list(&k, o->contains, ref, 1, 0);
+      }
+      if (k.truncated)
+        break;
+    }
+  }
+  jw_raw(w, "],\"count\":");
+  jw_int(w, k.count);
+  jw_raw(w, ",\"truncated\":");
+  jw_raw(w, k.truncated ? "true}" : "false}");
+  return 0;
+}
+
+/* parametri comuni a obj.*: name, ref (+ expect); risolve l'oggetto. need_expect: obbligatorio nelle scritture. */
+static int obj_target(struct req *r, int need_expect, struct descriptor_data **dp, struct char_data **chp, struct obj_data **op)
+{
+  const char *name = 0, *refs = 0;
+  const struct jnode *ex;
+  struct oref ref;
+  struct obj_data *o;
+  if (p_str(r->doc, r->params, "name", 1, &name) < 0 || p_str(r->doc, r->params, "ref", 1, &refs) < 0)
+    return -1;
+  if (parse_ref(refs, &ref) < 0)
+    return EP("bad_params", "ref non valido", "{\"field\":\"ref\"}");
+  if (find_player(name, dp, chp) < 0)
+    return -1;
+  set_target("%s", (*chp)->player.name);
+  add_extra("ref=%s ", refs);
+  ex = json_get(r->doc, r->params, "expect");
+  if (need_expect && !ex)
+    return EP("bad_params", "expect obbligatorio nelle scritture", "{\"field\":\"expect\"}");
+  o = resolve_ref(*chp, &ref);
+  if (!o)
+    return need_expect || ex ? E("stale_ref", "l'oggetto non e' piu' li'") : EP("not_found", "oggetto inesistente", "{\"what\":\"object\"}");
+  if (ex) {
+    const char *fp = 0;
+    long long vn = 0;
+    char mine[12];
+    static const char *const ekeys[] = {"vnum", "fp", 0};
+    if (ex->type != J_OBJ || check_keys(r->doc, ex, ekeys) < 0)
+      return EP("bad_params", "expect non valido", "{\"field\":\"expect\"}");
+    {
+      const struct jnode *vv = json_get(r->doc, ex, "vnum"), *ff = json_get(r->doc, ex, "fp");
+      if (!vv || !ff || ff->type != J_STR || (vv->type != J_INT && vv->type != J_NULL))
+        return EP("bad_params", "expect richiede vnum e fp", "{\"field\":\"expect\"}");
+      fp = ff->s;
+      vn = vv->type == J_INT ? vv->i : -1;
+    }
+    snprintf(mine, sizeof mine, "%08x", obj_fp(o));
+    if (vn != obj_vnum(o) || strcmp(fp, mine) != 0)
+      return E("stale_ref", "l'oggetto e' cambiato dopo l'ultima lettura");
+  }
+  *op = o;
+  return 0;
+}
+
+static int ref_depth(const char *ref)
+{
+  int n = 0;
+  for (; *ref; ref++)
+    n += *ref == '/';
+  return n;
+}
+
+static int cmd_obj_get(struct req *r, struct jw *w)
+{
+  KEYS("name", "ref", "expect");
+  struct descriptor_data *d;
+  struct char_data *ch;
+  struct obj_data *o;
+  if (check_keys(r->doc, r->params, keys) < 0 || obj_target(r, 0, &d, &ch, &o) < 0)
+    return -1;
+  jw_raw(w, "{\"name\":");
+  jw_str_latin1(w, ch->player.name);
+  jw_raw(w, ",\"item\":");
+  {
+    struct jnode *ref = (struct jnode *)json_get(r->doc, r->params, "ref");
+    emit_obj(w, o, ref->s, o->equipped_by ? o->eq_pos : -1, ref_depth(ref->s), 0, 1);
+  }
+  jw_char(w, '}');
+  return 0;
+}
+
+/* testo di un oggetto: latin-1, lunghezza massima del record di rent, niente controlli/$/~ */
+static int obj_text(const char *utf8, int maxlen, const char *field, char *out, int cap)
+{
+  int n = utf8_to_latin1(utf8, out, cap);
+  if (n == -1)
+    return EP("unencodable_text", "testo non rappresentabile in latin-1", "{\"field\":\"%s\"}", field);
+  if (n < 0 || n > maxlen)
+    return EP("bad_params", "testo troppo lungo", "{\"field\":\"%s\",\"max\":%d}", field, maxlen);
+  if (n == 0)
+    return EP("bad_params", "testo vuoto", "{\"field\":\"%s\"}", field);
+  for (int i = 0; i < n; i++) {
+    unsigned char c = (unsigned char)out[i];
+    if (c < 0x20 || c == 0x7f || c == '$' || c == '~')
+      return EP("bad_params", "carattere non ammesso ($, ~ o di controllo)", "{\"field\":\"%s\"}", field);
+  }
+  return 0;
+}
+
+/* true se p e' una stringa posseduta dal prototipo (indice o copia in memoria): non va mai liberata dall'istanza */
+static int proto_owns(const struct obj_data *o, const char *p)
+{
+  const struct obj_data *pd;
+  if (!p || o->item_number < 0 || o->item_number >= top_of_objt)
+    return 0;
+  if (p == obj_index[o->item_number].name || p == obj_index[o->item_number].short_desc || p == obj_index[o->item_number].long_desc)
+    return 1;
+  pd = (const struct obj_data *)obj_index[o->item_number].data;
+  return pd && (p == pd->name || p == pd->short_description || p == pd->description || p == pd->action_description);
+}
+
+/* sostituisce *field con una copia allocata di nuovo; la vecchia si libera solo se non e' del prototipo */
+static void replace_string(struct obj_data *o, char **field, char *fresh)
+{
+  char *old = *field;
+  *field = fresh;
+  if (old && !proto_owns(o, old))
+    free(old);
+}
+
+enum { OC_NAME, OC_SHORT, OC_DESC, OC_VALUE, OC_WEIGHT, OC_EXTRA, OC_TIMER, OC_AFFECT };
+
+struct ochg {
+  int kind, idx;
+  long long v, v2;
+  char *text; /* copia allocata (latin-1) per i testi */
+};
+
+static void free_chg(struct ochg *c, int n)
+{
+  for (int i = 0; i < n; i++)
+    free(c[i].text);
+}
+
+static void reattach(struct char_data *ch, struct obj_data *top, int pos)
+{
+  /* ripete la parte finale di equip_char SENZA i controlli (ego, allineamento, ...) che potrebbero buttare l'oggetto a terra */
+  ch->equipment[pos] = top;
+  top->equipped_by = ch;
+  top->eq_pos = pos;
+  if (GET_ITEM_TYPE(top) == ITEM_ARMOR)
+    GET_AC(ch) -= apply_ac(ch, pos);
+  for (int j = 0; j < MAX_OBJ_AFFECT; j++)
+    affect_modify(ch, top->affected[j].location, top->affected[j].modifier, top->obj_flags.bitvector, TRUE);
+  affect_total(ch);
+  if (pos != WEAR_BACK) /* NO_PESO_ON_BACK */
+    IS_CARRYING_W(ch) += GET_OBJ_WEIGHT(top);
+}
+
+static int cmd_obj_set(struct req *r, struct jw *w)
+{
+  KEYS("name", "ref", "expect", "set", "save");
+  static const char *const okeys[] = {"name", "short_description", "description", "values", "weight", "extra_flags", "timer", "affects", 0};
+  struct descriptor_data *d;
+  struct char_data *ch;
+  struct obj_data *o, *top;
+  const struct jnode *set, *m, *e;
+  struct ochg chg[16];
+  char buf[300];
+  int n = 0, save = 1, saved = 0, pos = -1, equipped;
+  time_t before;
+  char path[80];
+  struct stat st;
+  if (check_keys(r->doc, r->params, keys) < 0 || p_bool(r->doc, r->params, "save", &save) < 0)
+    return -1;
+  set = json_get(r->doc, r->params, "set");
+  if (!set || set->type != J_OBJ || set->n < 1)
+    return EP("bad_params", "set deve essere un oggetto non vuoto", "{\"field\":\"set\"}");
+  if (check_keys(r->doc, set, okeys) < 0 || obj_target(r, 1, &d, &ch, &o) < 0 || writable_player(d) < 0)
+    return -1;
+  /* il controllo di coerenza evita un assert del gioco: un oggetto annidato non deve risultare anche portato/equipaggiato */
+  if (o->in_obj && (o->carried_by || o->equipped_by))
+    return E("internal", "oggetto in uno stato incoerente");
+
+  memset(chg, 0, sizeof chg);
+  for (m = json_child(r->doc, set); m; m = json_next(r->doc, m)) {
+    const char *k = m->key;
+    if (!strcmp(k, "name") || !strcmp(k, "short_description") || !strcmp(k, "description")) {
+      int kind = !strcmp(k, "name") ? OC_NAME : !strcmp(k, "short_description") ? OC_SHORT : OC_DESC;
+      int maxlen = kind == OC_NAME ? LC_LEN_NAME : kind == OC_SHORT ? LC_LEN_SHORT : LC_LEN_DESC;
+      if (m->type != J_STR) {
+        free_chg(chg, n);
+        return EP("bad_params", "tipo non valido", "{\"field\":\"%s\"}", k);
+      }
+      if (obj_text(m->s, maxlen, k, buf, sizeof buf) < 0) {
+        free_chg(chg, n);
+        return -1;
+      }
+      chg[n].kind = kind;
+      chg[n].text = strdup(buf);
+      if (!chg[n].text) {
+        free_chg(chg, n);
+        return E("internal", "memoria esaurita");
+      }
+      n++;
+    } else if (!strcmp(k, "values")) {
+      int i = 0;
+      if (m->type != J_ARR || m->n < 1 || m->n > 4) {
+        free_chg(chg, n);
+        return EP("bad_params", "values: array di 1-4 elementi", "{\"field\":\"values\"}");
+      }
+      for (e = json_child(r->doc, m); e; e = json_next(r->doc, e), i++) {
+        if (e->type == J_NULL)
+          continue;
+        if (e->type != J_INT) {
+          free_chg(chg, n);
+          return EP("bad_params", "tipo non valido", "{\"field\":\"values.%d\"}", i);
+        }
+        if (e->i < -2147483647LL || e->i > 2147483647LL) {
+          free_chg(chg, n);
+          return EP("value_out_of_range", "valore fuori intervallo", "{\"field\":\"values.%d\",\"min\":-2147483647,\"max\":2147483647}", i);
+        }
+        chg[n].kind = OC_VALUE;
+        chg[n].idx = i;
+        chg[n++].v = e->i;
+      }
+    } else if (!strcmp(k, "weight") || !strcmp(k, "extra_flags") || !strcmp(k, "timer")) {
+      long long lo = 0, hi = 2147483647LL;
+      int kind = !strcmp(k, "weight") ? OC_WEIGHT : !strcmp(k, "extra_flags") ? OC_EXTRA : OC_TIMER;
+      if (kind == OC_WEIGHT)
+        hi = 32767;
+      if (m->type != J_INT) {
+        free_chg(chg, n);
+        return EP("bad_params", "tipo non valido", "{\"field\":\"%s\"}", k);
+      }
+      if (kind == OC_TIMER && m->i == OBJ_NOTIMER) {
+        /* nessun timer */
+      } else if (m->i < lo || m->i > (kind == OC_TIMER ? 1000000 : hi)) {
+        free_chg(chg, n);
+        return EP("value_out_of_range", "valore fuori intervallo", "{\"field\":\"%s\",\"min\":%lld,\"max\":%lld}", k, lo,
+                  kind == OC_TIMER ? 1000000LL : hi);
+      }
+      chg[n].kind = kind;
+      chg[n++].v = m->i;
+    } else if (!strcmp(k, "affects")) {
+      int i = 0;
+      static const char *const akeys[] = {"location", "modifier", 0};
+      if (m->type != J_ARR || m->n < 1 || m->n > MAX_OBJ_AFFECT) {
+        free_chg(chg, n);
+        return EP("bad_params", "affects: array di 1-5 elementi", "{\"field\":\"affects\"}");
+      }
+      for (e = json_child(r->doc, m); e; e = json_next(r->doc, e), i++) {
+        const struct jnode *lo, *mo;
+        if (e->type == J_NULL)
+          continue;
+        lo = json_get(r->doc, e, "location");
+        mo = json_get(r->doc, e, "modifier");
+        if (e->type != J_OBJ || !lo || !mo || lo->type != J_INT || mo->type != J_INT || check_keys(r->doc, e, akeys) < 0) {
+          free_chg(chg, n);
+          return EP("bad_params", "affect: {location, modifier} interi", "{\"field\":\"affects.%d\"}", i);
+        }
+        if (lo->i < 0 || lo->i > LC_MAX_APPLY || mo->i < -32768 || mo->i > 32767) {
+          free_chg(chg, n);
+          return EP("value_out_of_range", "affect fuori intervallo",
+                    "{\"field\":\"affects.%d\",\"location\":{\"min\":0,\"max\":%d},\"modifier\":{\"min\":-32768,\"max\":32767}}", i, LC_MAX_APPLY);
+        }
+        chg[n].kind = OC_AFFECT;
+        chg[n].idx = i;
+        chg[n].v = lo->i;
+        chg[n++].v2 = mo->i;
+      }
+    }
+    if (n >= 15) {
+      free_chg(chg, n);
+      return E("bad_params", "troppe modifiche");
+    }
+  }
+  if (n == 0) {
+    return E("bad_params", "nessuna modifica");
+  }
+
+  /* ---- applicazione: nessun errore possibile da qui ---- */
+  top = top_of(o);
+  equipped = top->equipped_by == ch && top->eq_pos >= 0;
+  if (equipped) {
+    pos = top->eq_pos;
+    unequip_char(ch, pos); /* toglie bonus e peso; il ripristino non rifa' i controlli di equip_char */
+  }
+  for (int i = 0; i < n; i++) {
+    struct ochg *c = &chg[i];
+    switch (c->kind) {
+    case OC_NAME: replace_string(o, &o->name, c->text); c->text = 0; add_extra("name "); break;
+    case OC_SHORT: replace_string(o, &o->short_description, c->text); c->text = 0; add_extra("short_description "); break;
+    case OC_DESC: replace_string(o, &o->description, c->text); c->text = 0; add_extra("description "); break;
+    case OC_VALUE:
+      add_extra("values.%d:%d>%lld ", c->idx, o->obj_flags.value[c->idx], c->v);
+      o->obj_flags.value[c->idx] = (int)c->v;
+      break;
+    case OC_EXTRA:
+      add_extra("extra_flags:%lu>%lld ", o->obj_flags.extra_flags, c->v);
+      o->obj_flags.extra_flags = (unsigned long)c->v;
+      break;
+    case OC_TIMER:
+      add_extra("timer:%d>%lld ", o->obj_flags.timer, c->v);
+      o->obj_flags.timer = (int)c->v;
+      break;
+    case OC_AFFECT:
+      add_extra("affects.%d ", c->idx);
+      o->affected[c->idx].location = (short)c->v;
+      o->affected[c->idx].modifier = (int32_t)c->v2;
+      break;
+    case OC_WEIGHT: {
+      int delta = (int)c->v - o->obj_flags.weight;
+      struct obj_data *a;
+      int guard = 0;
+      add_extra("weight:%d>%lld ", o->obj_flags.weight, c->v);
+      o->obj_flags.weight = (int)c->v;
+      /* il peso di un contenitore comprende il contenuto: lo stesso delta sale lungo i contenitori e al personaggio che porta */
+      for (a = o->in_obj; a && guard++ < 64; a = a->in_obj) {
+        a->obj_flags.weight += delta;
+        if (a->obj_flags.weight < 0)
+          a->obj_flags.weight = 0;
+      }
+      if (!equipped && top->carried_by == ch) {
+        IS_CARRYING_W(ch) += delta;
+        if (IS_CARRYING_W(ch) < 0)
+          IS_CARRYING_W(ch) = 0;
+      }
+      break;
+    }
+    }
+  }
+  free_chg(chg, n);
+  if (equipped)
+    reattach(ch, top, pos);
+
+  if (save) {
+    before = time(0);
+    snprintf(path, sizeof path, "players/%s.dat", lower(ch->player.name));
+    do_save(ch, (char *)"", 0);
+    saved = stat(path, &st) == 0 && st.st_mtime >= before;
+  }
+  add_extra("saved=%d", saved);
+  {
+    char fp[12];
+    snprintf(fp, sizeof fp, "%08x", obj_fp(o));
+    jw_raw(w, "{\"name\":");
+    jw_str_latin1(w, ch->player.name);
+    jw_raw(w, ",\"fp\":\"");
+    jw_raw(w, fp);
+    jw_raw(w, "\",\"saved\":");
+    jw_raw(w, saved ? "true" : "false");
+    jw_raw(w, ",\"warnings\":[");
+    if (save && !saved)
+      jw_raw(w, "\"save_failed\"");
+    jw_raw(w, "],\"item\":");
+    {
+      struct jnode *ref = (struct jnode *)json_get(r->doc, r->params, "ref");
+      emit_obj(w, o, ref->s, equipped ? pos : -1, ref_depth(ref->s), 0, 1);
+    }
+    jw_char(w, '}');
+  }
+  return 0;
+}
+
+static int cmd_obj_remove(struct req *r, struct jw *w)
+{
+  KEYS("name", "ref", "expect", "save");
+  struct descriptor_data *d;
+  struct char_data *ch;
+  struct obj_data *o;
+  int save = 1, saved = 0, destroyed = 0;
+  time_t before;
+  char path[80];
+  struct stat st;
+  const struct obj_data *c;
+  if (check_keys(r->doc, r->params, keys) < 0 || p_bool(r->doc, r->params, "save", &save) < 0 || obj_target(r, 1, &d, &ch, &o) < 0 ||
+      writable_player(d) < 0)
+    return -1;
+  if (o->in_obj && (o->carried_by || o->equipped_by))
+    return E("internal", "oggetto in uno stato incoerente");
+  destroyed = 1;
+  for (c = o->contains; c && destroyed < 100000; c = c->next_content)
+    destroyed++; /* conta solo il primo livello: informativo */
+  add_extra("vnum=%d items=%d ", obj_vnum(o), destroyed);
+  if (o->in_obj)
+    obj_from_obj(o); /* aggiorna i pesi dei contenitori e di chi li porta */
+  extract_obj(o);    /* se e' un contenitore distrugge anche il contenuto; gestisce anche l'oggetto equipaggiato */
+  if (save) {
+    before = time(0);
+    snprintf(path, sizeof path, "players/%s.dat", lower(ch->player.name));
+    do_save(ch, (char *)"", 0);
+    saved = stat(path, &st) == 0 && st.st_mtime >= before;
+  }
+  add_extra("saved=%d", saved);
+  jw_raw(w, "{\"name\":");
+  jw_str_latin1(w, ch->player.name);
+  jw_raw(w, ",\"removed\":true,\"destroyed\":");
+  jw_int(w, destroyed);
+  jw_raw(w, ",\"saved\":");
+  jw_raw(w, saved ? "true" : "false");
+  jw_raw(w, ",\"warnings\":[");
+  if (save && !saved)
+    jw_raw(w, "\"save_failed\"");
+  jw_raw(w, "]}");
+  return 0;
+}
+
 /* ---------------------------------------------------------------- tabella dei comandi */
 
 struct cmddef {
@@ -1128,7 +1826,8 @@ static const struct cmddef CMDS[] = {
     {"ping", 0, cmd_ping},         {"info", 0, cmd_info},         {"who", 0, cmd_who},
     {"player.get", 0, cmd_player_get}, {"zone.list", 0, cmd_zone_list}, {"player.set", 1, cmd_player_set},
     {"zone.reset", 1, cmd_zone_reset}, {"load.mob", 1, cmd_load_mob}, {"load.obj", 1, cmd_load_obj},
-    {"echo", 1, cmd_echo}};
+    {"echo", 1, cmd_echo},         {"player.inventory", 0, cmd_player_inventory}, {"obj.get", 0, cmd_obj_get},
+    {"obj.set", 1, cmd_obj_set},   {"obj.remove", 1, cmd_obj_remove}};
 #define NCMDS ((int)(sizeof CMDS / sizeof CMDS[0]))
 
 static const struct cmddef *find_cmd(const char *name)
@@ -1250,7 +1949,7 @@ static void emit_hello(struct jw *w)
   jw_int(w, LC_MAX_PENDING);
   jw_raw(w, ",\"request_timeout_ms\":2000,\"max_text\":");
   jw_int(w, LC_MAX_TEXT);
-  jw_raw(w, "},\"features\":[],\"commands\":{");
+  jw_raw(w, "},\"features\":[\"inventory\"],\"commands\":{");
   for (int i = 0, first = 1; i < NCMDS; i++) {
     if (CMDS[i].write && !L.write_enabled)
       continue;

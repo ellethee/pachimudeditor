@@ -94,6 +94,9 @@ La stanza di un personaggio e' un **vnum** (`char_to_room(ch, vnum)`); l'indice 
 | `zone.reset` | `reset_zone(i)` (`db.c` 2509) | `do_zload` (`act.wizard.c` 453-495) e `zone_update` (`db.c` 2404) |
 | `load.mob` | `real_mobile` -> `read_mobile(nr, REAL)` (`db.c` 1591) -> `char_to_room(mob, room)` (`handler.c` 940) | `do_mload` (`act.wizard.c` 3376) |
 | `load.obj` | `real_object` -> `read_object(nr, REAL)` (`db.c` 2294) -> `obj_to_room` o `obj_to_char` | `do_oload` (`act.wizard.c` 3424) |
+| `player.inventory`, `obj.get` | `ch->equipment[]`, `ch->carrying`, `obj->contains`/`next_content`, `obj_index[].iVNum`; ref e impronta come sopra | `do_inventory`/`do_equipment` (`act.info.c`) |
+| `obj.set` | scrittura dei campi con `unequip_char`/`reattach` per gli indossati, `proto_owns` + `free` per i testi, `do_save` | `ObjEdit` (`create.obj.c`) |
+| `obj.remove` | `obj_from_obj` (se annidato) + `extract_obj`, `do_save` | `extract_obj` (`handler.c` 1799) |
 | `echo` | `send_to_char(msg, ch)`, `send_to_room(msg, room)`, `send_to_all(msg)` (`comm.c` 1970/2155/1989) | |
 
 ### Trovare un giocatore per nome
@@ -229,12 +232,84 @@ Interruttore di emergenza: se nella cartella dati esiste il file `livectl.disabl
 flag `livectl_init`/`livectl_poll` sono vuote e una build e' identica a oggi. Codice, patch e istruzioni: `adapters/dikumod/mud-module/` (README).
 Sorgente di riferimento: solo **DikuMod1** (`/dati/luca/muds/leu`); le altre varianti non sono considerate.
 
+## Inventario e oggetti istanza
+
+Feature `inventory` ([comandi](../backend/live-control-protocol.md#riferimenti-agli-oggetti)): `player.inventory`, `obj.get`, `obj.set`, `obj.remove`. Sorgente: `struct obj_data` (`structs.h` 526), `struct obj_flag_data` (505), `handler.c`, `db.c`, `reception.c`.
+
+### Dove stanno gli oggetti
+
+| Cosa | Dove |
+|---|---|
+| inventario | `ch->carrying`, lista concatenata con `next_content` (l'oggetto nuovo entra **in testa**: gli indici scalano) |
+| equipaggiamento | `ch->equipment[0..MAX_WEAR-1]` (`MAX_WEAR` = 23, `WEAR_BODY` = 5, `WEAR_BACK` = 18), con `obj->equipped_by` e `obj->eq_pos` |
+| contenuto | `obj->contains` (testa) e `next_content`, con `obj->in_obj` al contrario; il peso di un contenitore **include** il contenuto (`obj_to_obj` somma il peso all'intera catena di contenitori e a `carry_weight` di chi li porta) |
+| vnum | `obj_index[obj->item_number].iVNum` (`item_number` = -1 per gli oggetti creati dal codice, es. la bacca di `magic3.c`) |
+
+I ref `eq:<slot>` e `inv:<i>[/<j>...]` si risolvono scorrendo queste liste a ogni richiesta (limite di 100000 passi e 8 livelli). Nessun puntatore sopravvive fra due richieste.
+
+### Impronta (`fp`)
+
+FNV-1a a 32 bit sulla sequenza: vnum, `type_flag`, `name`, `short_description`, `description` (con il terminatore), `extra_flags`, i quattro `value`, e per ognuno dei 5 affect `location` e `modifier`.
+Peso e `timer` sono esclusi di proposito. Si ricalcola a ogni risoluzione e si confronta con `expect.fp` insieme al vnum; la risposta di `obj.set` ne riporta il nuovo valore.
+
+### Testi di un oggetto istanza
+
+Come il gioco gestisce `name`, `short_description`, `description`, `action_description`:
+
+- `read_object` (`db.c` 2294) crea l'istanza con `CREATE` + `clear_object`, poi o legge i testi dal file (`fread_string`, `malloc`) o li **duplica** dal prototipo in memoria con `clone_obj_to_obj` (`db.c` 2083: un `strdup` per testo).
+  Anche il caricamento dal rent (`reception.c` 359, 1414) usa `malloc`. Nessun percorso del sorgente fa puntare un'istanza ai testi di `obj_index[]` (`name`, `short_desc`, `long_desc` dell'indice o `data`): grep di tutte le assegnazioni a `->name`, `short_description`, `description` nei `.c`.
+- `free_obj` (`db.c` 3502, ramo `EMANUELE`) fa `free()` di ognuno; `extract_obj` (`handler.c` 1799) lo chiama in coda. L'editor di oggetti in-gioco (`create.obj.c` 380-460) fa gia' `free(vecchio); nuovo = strdup(arg)`.
+
+**Regola del modulo**: allocare con `strdup` la nuova stringa **prima** di toccare l'oggetto (se l'allocazione fallisse non si e' modificato nulla), poi assegnare il puntatore e liberare il vecchio con `free()` **solo se non e' di proprieta' del prototipo**
+(`proto_owns`: uguale a `obj_index[nr].name`, `.short_desc`, `.long_desc`, oppure a `name`/`short_description`/`description`/`action_description` della copia `obj_index[nr].data`). Con il sorgente attuale la condizione non scatta mai, e' una difesa contro modifiche future o strutture create altrove:
+liberare un testo del prototipo corromperebbe tutti gli oggetti di quel vnum e farebbe un `free()` invalido alla loro distruzione. Un puntatore `NULL` si sostituisce senza liberare. Verificato dal vivo: cambiare i testi di un'istanza non cambia una seconda istanza dello stesso vnum creata dopo,
+e distruggere l'istanza modificata non fa cadere il gioco.
+
+**Lunghezze**: `put_obj_in_store` (`reception.c` 556) copia con `strcpy` in `obj_file_elem.name[128]`, `sd[128]`, `desc[256]` **senza** controllo: ogni testo piu' lungo di 127/127/255 byte sovrascrive il record successivo (e, nello stack di `do_save`, la memoria vicina).
+Il modulo rifiuta quindi `name` e `short_description` oltre 127 byte e `description` oltre 255. Rifiuta anche `$` (il testo passa da `ParseAnsiColors`/`act`), `~` e i caratteri di controllo.
+
+### Campi e rent
+
+| Campo del protocollo | C | Persiste nel rent? |
+|---|---|---|
+| `name`, `short_description`, `description` | `name`, `short_description`, `description` | si' (`oe->name/sd/desc`) |
+| `values[0..3]` | `obj_flags.value[]` | si' |
+| `weight` | `obj_flags.weight` | si' |
+| `extra_flags` | `obj_flags.extra_flags` (`unsigned long`) | si' (come `int`) |
+| `timer` | `obj_flags.timer` (`OBJ_NOTIMER` = -7000000; un timer negativo diverso da `OBJ_NOTIMER` fa buttare l'oggetto al salvataggio, per questo il minimo e' 0) | si' |
+| `affects[0..4]` | `affected[].location` (`short`), `.modifier` (`int32_t`) | si' |
+| `cost`, `cost_per_day`, `wear_flags`, `type_flag` | `obj_flags` | no: tornano quelli del prototipo; sola lettura |
+
+`location` ammesso 0..64 (`APPLY_NONE`..`APPLY_T_MANA`, `structs.h` 823-891; `affect_modify` segnala `default` per i valori ignoti). `bitvector` (bit di `affected_by` dati dall'oggetto) e' leggibile, non modificabile.
+
+### Oggetto indossato e pesi
+
+- `unequip_char` (`handler.c` 1281) toglie `affect_modify(..., FALSE)` di ogni affect, ricalcola `affect_total` e sottrae il peso (`NO_PESO_ON_BACK`: tranne in `WEAR_BACK`); `equip_char` (1134) fa il contrario **dopo** controlli che possono buttare l'oggetto a terra
+  (`CheckEgoEquip`, `CheckGetBarbarianOK`, `ItemAlignClash` + `do_save`). Il modulo, per un oggetto (o un contenitore) indossato, chiama `unequip_char`, applica la patch e ripete **solo la coda** di `equip_char` (`reattach`: slot, `equipped_by`/`eq_pos`, correzione AC per le armature, `affect_modify(..., TRUE)`,
+  `affect_total`, peso). Cosi' i bonus (massimo di punti vita, tiri salvezza, ...) restano coerenti e un cambio di `extra_flags` non puo' far cadere l'oggetto.
+- **Peso**: delta = nuovo - vecchio; si aggiunge all'oggetto, a ogni contenitore antenato (minimo 0) e, se la radice e' portata (non indossata), a `IS_CARRYING_W(ch)` (minimo 0); se la radice e' indossata il peso rientra con `reattach`. Verificato dal vivo per oggetto sciolto, annidato e indossato.
+- **`obj.remove`**: un oggetto annidato passa prima da `obj_from_obj` (aggiorna i pesi dei contenitori e di `carry_weight`), poi `extract_obj` (che per un contenitore estrae ricorsivamente il contenuto, per un indossato chiama `unequip_char`, per uno portato `obj_from_char`).
+  `obj_from_obj` ha un `assert` se l'oggetto risulta contemporaneamente annidato e portato/indossato (`object_list_new_owner` imposta `carried_by` sugli annidati; `obj_from_char` in quel caso si limita a loggare): il modulo controlla e risponde `internal` invece di arrivare all'`assert`.
+
+### `load.obj` e vnum alti
+
+`read_object(vnum, VIRTUAL)` accetta qualunque vnum; il rent salva `item_number` come `short` (`obj_file_elem`, `put_obj_in_store`): con vnum > 32767 il salvataggio scrive un numero diverso e al login l'oggetto cambia identita' o viene saltato. `load.obj` a un giocatore con `vnum` > 32767 risponde con `warnings: ["vnum_not_saveable"]`.
+Nei dati reali esistono oggetti con vnum 35000 e 35001.
+
+### Da verificare (inventario)
+
+- Il peso di un oggetto annidato in un contenitore **indossato**: `obj_to_obj` non somma a `carry_weight` per i contenitori indossati ma `unequip_char` sottrae il peso cumulativo; il gioco stesso ha questa asimmetria, il modulo applica il delta solo se la radice e' portata e lascia a `reattach` il caso indossato (non provato con un contenitore indossato).
+- `GiveMinStrToWield` (solo PNG) non e' replicato in `reattach`.
+- Oggetti con `item_number` -1 (creati dal codice) non hanno vnum (`null` nel protocollo): letti e modificati come gli altri, non provati dal vivo.
+- Il `timer` scala da solo nel gioco; la lettura subito dopo la scrittura puo' differire di poco.
+- Nessuna modifica di `action_description` ne' delle descrizioni extra (`ex_description`).
+
 ## Righe effettive
 
 | Parte | Righe |
 |---|---|
 | `livectl_json.c` / `.h`: parser e serializzatore JSON a limiti fissi | ~540 |
-| `livectl.c`: socket, framing, limiti, token, classi, audit, i 10 comandi, configurazione | ~1700 |
+| `livectl.c`: socket, framing, limiti, token, classi, audit, i 14 comandi, configurazione | ~2400 |
 | `livectl.h`, harness di fuzz (`fuzz/fuzz_json.c`) | ~110 |
 | modifiche ai file originali (`leu-livectl.patch`) | 12 righe in `comm.c` (include, `livectl_init();`, `livectl_poll();`), 2 nel `Makefile` (`$(LIVECTL_FLAGS)` e due oggetti) |
 

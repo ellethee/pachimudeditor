@@ -8,7 +8,7 @@
 
 #define LC_MAX_LINE   4096   /* lunghezza massima di una riga di richiesta */
 #define LC_MAX_NODES  160
-#define LC_MAX_DEPTH  4
+#define LC_MAX_DEPTH  5
 #define LC_MAX_KEYS   32
 #define LC_MAX_ARRAY  32
 #define LC_MAX_STR    512

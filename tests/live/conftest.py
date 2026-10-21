@@ -39,6 +39,7 @@ class Target:
     obj_vnum: int = 3001
     denied_obj: int = 1600
     max_conn: int = 4
+    high_obj: int = 35000  # vnum > 32767
 
 
 def _real_params() -> list[str]:

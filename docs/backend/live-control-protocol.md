@@ -76,7 +76,7 @@ canale e' locale; fuori da loopback **NON DEVE** essere esposto (se serve, tunne
 - lunghezza massima di una riga di richiesta: `max_line` (default 4096 byte, massimo configurabile 16384). Una riga piu' lunga produce
   `line_too_long` e la **chiusura** della connessione (non si puo' risincronizzare in modo sicuro);
 - il JSON e' un solo oggetto per riga, senza `\n` interni; byte non UTF-8 o NUL: `bad_json`;
-- profondita' massima 4, al massimo 32 chiavi per oggetto, stringhe fino a 512 byte, array fino a 32 elementi;
+- profondita' massima 5 (un `obj.set` con `affects` arriva a `params.set.affects[i]`), al massimo 32 chiavi per oggetto, stringhe fino a 512 byte, array fino a 32 elementi;
 - **numeri solo interi** (nessun `1.5`, nessun esponente): servono ai campi dei MUD e evitano ambiguita' di arrotondamento;
 - chiavi duplicate nello stesso oggetto: `bad_json`; chiavi sconosciute in `params`: `bad_params` (strict, vedi [compatibilita'](#compatibilita-e-versioni));
 - le risposte possono superare `max_line` fino a `max_response` (default 65536 byte); se una risposta non ci sta, il comando
@@ -115,7 +115,7 @@ Risposta di successo:
   "protocol": 1,
   "mud": {"kind": "dikumod", "name": "LeU", "version": "1.7.0 cdrom", "module": "livectl 0.1"},
   "limits": {"max_line": 4096, "max_response": 65536, "max_pending": 8, "request_timeout_ms": 2000, "max_text": 400},
-  "features": [],
+  "features": ["inventory"],
   "commands": {
     "ping":       {"class": "read"},
     "info":       {"class": "read"},
@@ -126,14 +126,18 @@ Risposta di successo:
     "zone.reset": {"class": "write"},
     "load.mob":   {"class": "write"},
     "load.obj":   {"class": "write"},
-    "echo":       {"class": "write"}
+    "echo":       {"class": "write"},
+    "player.inventory": {"class": "read"},
+    "obj.get":    {"class": "read"},
+    "obj.set":    {"class": "write"},
+    "obj.remove": {"class": "write"}
   }
 }}
 ```
 
 **Capability discovery**: l'editor costruisce l'interfaccia da `commands` e `fields` e non da una versione del MUD. Un comando assente
 da `commands` (non implementato, classe disattivata o fuori allowlist) NON DEVE essere inviato; se lo e' risponde `unknown_command` o
-`command_disabled`. `features` e' un elenco di stringhe per estensioni opzionali dello stesso protocollo (es. `idempotency_key`).
+`command_disabled`. `features` e' un elenco di stringhe per estensioni opzionali dello stesso protocollo (es. `idempotency_key`; `inventory` = i comandi [`player.inventory`, `obj.get`, `obj.set`, `obj.remove`](#riferimenti-agli-oggetti)). Una feature dichiarata implica che i suoi comandi siano presenti in `commands` (la classe `write` resta quella configurata: con le scritture spente compaiono solo `player.inventory` e `obj.get`).
 
 Dopo 3 `hello` falliti sulla stessa connessione, o `hello_timeout`, la connessione viene chiusa. Una connessione autenticata resta
 aperta; se resta senza richieste per `idle_timeout` (default 300 s) il server la chiude e il client riconnette (e rifa' `hello`).
@@ -177,6 +181,7 @@ Un errore su una riga che non si riesce a interpretare (`bad_json`, `line_too_lo
 | `value_out_of_range` | valore fuori dall'intervallo (`params.field`, `params.min`, `params.max`) | no |
 | `unencodable_text` | testo non rappresentabile nella codifica del MUD (es. emoji in latin-1) | no |
 | `not_found` | giocatore, zona, vnum o stanza inesistente (`params.what`) | no |
+| `stale_ref` | il riferimento a un oggetto non punta piu' all'oggetto letto (vnum o impronta diversi, oggetto spostato o sparito): nessuna modifica ([riferimenti](#riferimenti-agli-oggetti)) | si', dopo aver riletto l'inventario |
 | `player_not_playing` | il giocatore esiste ma non e' nello stato di gioco normale (login, menu, link morto) | si', piu' tardi |
 | `player_busy` | il giocatore e' in uno stato che il comando non gestisce (trasformato, in editor di testo, switch di un immortale) | si', piu' tardi |
 | `forbidden_by_policy` | regola del MUD (es. non creare immortali, vnum in deny-list) | no |
@@ -260,6 +265,8 @@ ne' per chiamare funzioni per nome. La configurazione puo' solo **togliere** com
 | `hello_timeout`, `idle_timeout` | 5 s, 300 s | chiusura |
 | `max_text` | 400 byte (dopo conversione) | `bad_params` |
 | `who` | al massimo 200 voci | `truncated: true` |
+| `player.inventory` | `limit` 1..200 oggetti (default 100), e comunque entro `max_response` | `truncated: true` |
+| testi di un oggetto | `name` 127, `short_description` 127, `description` 255 byte (latin-1) | `bad_params` |
 
 Il modulo NON DEVE fare allocazioni la cui dimensione dipende dall'input oltre questi limiti: buffer di riga e di risposta sono
 array di dimensione fissa per connessione, il parser lavora in-place senza `malloc` proporzionale al testo.
@@ -283,6 +290,13 @@ a partire dal `hello`:
 ```
 2026-10-21T14:03:11+0200 conn=3 uid=1000 pid=4242 actor=mario.rossi cmd=player.set target=Mario result=ok fields=gold,exp saved=1
 2026-10-21T14:03:40+0200 conn=3 uid=1000 pid=4242 actor=mario.rossi cmd=load.obj target=room:3001 vnum=3012 result=error code=not_found
+```
+
+Per gli oggetti la riga porta il comando, il giocatore, il `ref` e i **nomi** dei campi cambiati (per i campi numerici anche `vecchio>nuovo`; per i testi mai il contenuto):
+
+```
+2026-10-21T16:48:07+0200 conn=8 uid=1000 pid=4242 actor=mario.rossi cmd=obj.set target=Tester result=ok ref=inv:0 values.1:8>5 extra_flags:0>3 name saved=1
+2026-10-21T16:48:09+0200 conn=8 uid=1000 pid=4242 actor=mario.rossi cmd=obj.remove target=Tester result=ok ref=eq:5 vnum=9 items=1 saved=1
 ```
 
 Contenuto: data, connessione, UID/PID del peer, `actor` dichiarato, comando, bersaglio, esito o `code`, e per le scritture i **nomi** dei campi (e
@@ -402,12 +416,97 @@ istanze (a differenza del reset di zona). Errori: `not_found` (vnum, stanza o gi
 
 Classe `write`. Parametri: `vnum`, **uno solo** tra `room` e `player` (l'oggetto va nell'inventario del giocatore), `count` (1..10, default 1),
 `notify`. Risposta `{"loaded": [{"vnum": 3012, "name": "...", "where": "room:3001"}]}`. Il MUD puo' avere una **deny-list** di vnum non
-creabili a mano (il gioco ne ha una per il comando degli immortali): vnum in lista -> `forbidden_by_policy`. Non idempotente.
+creabili a mano (il gioco ne ha una per il comando degli immortali): vnum in lista -> `forbidden_by_policy`. La risposta ha sempre `warnings`: con destinazione `player` e `vnum` > 32767 contiene `"vnum_not_saveable"` (il rent del gioco salva il vnum come intero a 16 bit: al salvataggio l'oggetto si corrompe; l'editor DEVE mostrare l'avviso). Non idempotente.
 
 ### `echo`
 
 Classe `write`. Parametri: `text` (1..`max_text` byte), `to` (oggetto con **una sola** chiave: `all` (`true`), `player` (nome), `room` (vnum)). Risposta
 `{"recipients": 12}`. `all` raggiunge i giocatori in stato `playing`. Il testo e' neutralizzato come descritto in [validazione e testi](#validazione-e-testi). Non idempotente.
+
+### Riferimenti agli oggetti
+
+Feature `inventory`. Un oggetto del gioco e' una struttura in memoria che puo' sparire, essere spostata o ricreata fra due richieste (il giocatore raccoglie, posa,
+indossa, muore, un reset di zona distrugge): un puntatore, o un indirizzo, tenuto dal client non e' mai valido. Il **`ref`** e' percio' un **percorso**, risolto dal MUD a ogni
+richiesta, e nelle scritture e' accompagnato da un controllo `expect` obbligatorio.
+
+- **`ref`**: stringa `eq:<slot>` per un oggetto indossato (`slot` = posizione di equipaggiamento del gioco) oppure `inv:<i>` per un oggetto portato (`i` = posizione nell'elenco
+  dell'inventario, da 0), seguita da `/<j>` per ogni contenitore attraversato (`j` = posizione nel contenuto). Esempi: `eq:5`, `inv:2`, `inv:2/0` (primo oggetto nel terzo oggetto portato),
+  `inv:2/0/1`. Al massimo 8 livelli; indici da 0 a 100000. Una stringa che non rispetta la grammatica e' `bad_params`.
+- **`expect`**: oggetto `{"vnum": <intero|null>, "fp": "<8 cifre esadecimali>"}` con i valori letti dal client in `player.inventory`/`obj.get`. `vnum` e' il numero del prototipo (`null` per un
+  oggetto creato dal gioco senza prototipo); `fp` e' l'**impronta**, un hash a 32 bit calcolato dal MUD su vnum, tipo, `name`, `short_description`, `description`, `extra_flags`, i quattro valori e
+  gli affect; **non** include `weight` (cambia da solo per il contenuto di un contenitore) ne' `timer` (scala da solo). L'impronta e' opaca: il client la confronta e la rimanda, non la calcola.
+- Se il `ref` non risolve a nessun oggetto o `expect` non coincide: **`stale_ref`**, senza modificare nulla. In `obj.get` `expect` e' facoltativo (senza `expect` un `ref` inesistente e' `not_found`).
+- Gli indici si spostano: una bottiglia nuova in testa all'inventario fa scalare tutti gli `inv:i`. Un client DEVE rileggere (`player.inventory`) subito prima di scrivere, usare `ref` e `fp`
+  dell'ultima lettura e, su `stale_ref`, rileggere e chiedere di nuovo all'utente: mai ritentare in automatico con un `ref` ricalcolato.
+
+### `player.inventory`
+
+Classe `read`, feature `inventory`. Parametri: `name`, `brief` (bool, default `false`: solo `ref`, `fp`, `vnum`, `slot`, `depth`, `name`, `short_description`, `type`, `contents`), `limit` (1..200, default 100). Risposta:
+
+```json
+{"name": "Tester", "carry_weight": 12, "carry_items": 2, "count": 4, "truncated": false,
+ "items": [
+  {"ref": "eq:5", "fp": "9f3c01aa", "vnum": 9, "slot": 5, "depth": 0, "name": "giubbotto pelle", "short_description": "Un giubbotto di pelle",
+   "type": 9, "contents": 0, "description": "C'e' un giubbotto di pelle per terra", "values": [2, 2, 0, 0], "weight": 6, "extra_flags": 0, "timer": 0,
+   "affects": [{"location": 0, "modifier": 0}, {"location": 0, "modifier": 0}, {"location": 0, "modifier": 0}, {"location": 0, "modifier": 0}, {"location": 0, "modifier": 0}]},
+  {"ref": "inv:1", "fp": "01b2c3d4", "vnum": 14, "slot": null, "depth": 0, "name": "borsa piccola", "contents": 1, "...": "..."},
+  {"ref": "inv:1/0", "fp": "a3ba504d", "vnum": 3001, "slot": null, "depth": 1, "name": "birra bottiglia", "contents": 0, "...": "..."}
+ ]}
+```
+
+Elenco **piatto** di tutti gli oggetti del giocatore, prima quelli indossati (per `slot`), poi quelli portati; il contenuto di un contenitore segue il contenitore, con `depth` + 1 (in preordine). Le stesse
+liste del gioco sono percorse con un limite: oltre 8 livelli o `limit` oggetti o `max_response` il resto e' omesso e `truncated` vale `true`. `carry_weight` e `carry_items` sono i contatori del gioco.
+Il peso `weight` di un contenitore **comprende il contenuto**, come nel gioco. Solo giocatori `playing`; un link morto e' `player_not_playing`. Effetti collaterali: nessuno. Idempotente.
+
+### `obj.get`
+
+Classe `read`, feature `inventory`. Parametri: `name`, `ref`, `expect` (facoltativo). Risposta `{"name": ..., "item": {...}}` con tutti i campi di `player.inventory` e in piu' quelli di sola lettura
+`wear_flags`, `cost`, `cost_per_day`, `bitvector`. Errori: `bad_params` (`ref`), `not_found`, `stale_ref`, `player_not_playing`. Idempotente.
+
+### `obj.set`
+
+Classe `write`, feature `inventory`. Parametri: `name`, `ref`, `expect` (**obbligatorio**), `set`, `save` (default `true`, come in [`player.set`](#playerset)). `set` e' una patch **parziale** (1-8 chiavi tra le seguenti, nessun'altra):
+
+| Campo | Tipo e intervallo |
+|---|---|
+| `name` | parole chiave: 1..127 byte (latin-1) |
+| `short_description` | 1..127 byte |
+| `description` | la descrizione a terra: 1..255 byte |
+| `values` | array di 1-4 elementi, ciascuno `null` (invariato) o intero a 32 bit con segno; la posizione e' l'indice del valore |
+| `weight` | 0..32767 |
+| `extra_flags` | 0..2147483647 |
+| `timer` | 0..1000000, oppure -7000000 (nessun timer) |
+| `affects` | array di 1-5 elementi, ciascuno `null` (invariato) o `{"location": 0..64, "modifier": -32768..32767}`; la posizione e' lo slot di affect; `{"location": 0, "modifier": 0}` svuota lo slot |
+
+Regole e semantica:
+
+1. **Validazione completa prima di toccare qualcosa**: un campo non valido annulla l'intera richiesta (`bad_params`, `value_out_of_range`, `unencodable_text`); `stale_ref` se `ref`/`expect` non coincidono.
+2. **Testi**: UTF-8 convertito in latin-1 (`unencodable_text` se non rappresentabile); lunghezze massime = quelle del record di rent del gioco (127/127/255 byte): il gioco copia i testi con `strcpy` senza controllo e un
+   testo piu' lungo corromperebbe la memoria al salvataggio. Niente caratteri di controllo (neppure `\n`: il gioco aggiunge i terminatori), niente `$` (codici colore e sostituzioni del gioco) e niente `~`
+   (terminatore delle stringhe nei file del mondo). A differenza di `echo`, qui `$` non viene neutralizzato con un escape ma **rifiutato**: il testo resta salvato nel rent e usato per cercare l'oggetto per parole chiave, un escape
+   resterebbe visibile come `\$`.
+3. **Memoria** (profilo dikumod): le stringhe di un'istanza sono copie allocate e di sua proprieta'; il MUD ne alloca una nuova e libera la vecchia **solo** se non appartiene al prototipo ([regola esatta](../adapters/dikumod-live.md#testi-di-un-oggetto-istanza)).
+4. **Oggetto indossato**: il MUD toglie temporaneamente i bonus dell'oggetto, applica la patch e li ripristina senza rieseguire i controlli di indossabilita' (allineamento, classe): l'oggetto non cade a terra e il personaggio mantiene
+   coerenti punti, abilita' e peso trasportato.
+5. **Peso**: il `weight` dell'oggetto cambia di un delta; lo stesso delta e' applicato ai contenitori che lo contengono e al peso trasportato dal giocatore.
+6. Con `save: true` il giocatore e' salvato con la stessa procedura di `player.set`. Il rent salva `name`, `short_description`, `description`, i valori, `extra_flags`, `weight`, `timer`, `bitvector` e gli affect; `cost` e `wear_flags` tornano quelli
+   del prototipo al login (per questo non sono modificabili).
+
+Risposta: `{"name", "fp", "saved", "warnings", "item"}`, con `item` come in `obj.get` dopo la modifica e `fp` la nuova impronta (il `ref` resta valido). Non e' idempotente in senso stretto ma ripetere la stessa patch con la nuova `expect`
+produce lo stesso stato; dopo un timeout il client rilegge con `obj.get`. Audit: comando, giocatore, `ref`, nomi dei campi.
+
+### `obj.remove`
+
+Classe `write`, feature `inventory`. Parametri: `name`, `ref`, `expect` (obbligatorio), `save` (default `true`). Estrae l'oggetto dal giocatore e lo **distrugge**; se e' un contenitore distrugge anche tutto il suo contenuto, a qualunque livello.
+Pesi dei contenitori e peso trasportato sono aggiornati dal gioco. Risposta `{"name", "removed": true, "destroyed": <oggetti del primo livello distrutti, contenitore compreso>, "saved", "warnings"}`. Non idempotente: un secondo tentativo con lo stesso `ref`
+e' `stale_ref`. L'operazione non si annulla.
+
+### Contratto per l'editor (inventario)
+
+Per le rotte e l'adapter dell'editor (da realizzare): il pannello dell'inventario di un giocatore connesso legge `player.inventory` e mostra l'albero (profondita' e `slot`);
+a ogni scrittura (`obj.set`, `obj.remove`) invia `ref` e `expect` presi dall'ultima lettura **della stessa riga**; su `stale_ref` ricarica l'elenco e avvisa l'utente senza ripetere; mostra sempre `warnings` (`vnum_not_saveable`
+di `load.obj`, `save_failed`); chiede conferma esplicita per `obj.remove` (azione distruttiva, il contenitore porta con se' il contenuto); non consente di scrivere un testo con `$`, `~` o oltre i limiti (li ricava da questa
+pagina e da `hello.limits`, non li inventa); abilita i comandi in base a `hello.commands` e `hello.features`, quindi con le scritture spente mostra l'inventario in sola lettura. Solo superuser, come le altre rotte `live`.
 
 ### Comandi riservati e non definiti
 
@@ -559,6 +658,9 @@ Scelte dell'implementazione dove la specifica lasciava margine (sempre la via pi
    ancora cercati nei sorgenti: **da verificare**.
 9. **Token a riposo.** Chi puo' leggere l'ambiente del processo del MUD o il `.env` dell'editor ha il canale: stessi permessi del `.env`.
 
+10. **Oggetti istanza.** Le strutture degli oggetti sono puntatori a liste concatenate, con stringhe allocate e pesi cumulativi: un errore nel modulo corromperebbe memoria del gioco. Mitigazioni: nessun puntatore tra due richieste (`ref` come percorso + impronta), validazione completa prima di applicare, lunghezze dei testi pari ai record di rent, rifiuto degli oggetti in stato incoerente, nessun reindossamento tramite le funzioni con controlli. Restano rischi di bilanciamento (un `obj.set` puo' creare oggetti arbitrari) e di concorrenza con il salvataggio: una modifica non salvata si perde al crash.
+11. **Rent e vnum.** Il rent salva il vnum a 16 bit: un oggetto con vnum > 32767 portato da un giocatore si corrompe al salvataggio (avviso `vnum_not_saveable` in `load.obj`). I testi piu' lunghi del record di rent corromperebbero memoria: per questo i limiti.
+
 ### Decisioni prese
 
 1. **Token** del MUD in variabile d'ambiente `LIVECTL_TOKEN` (cancellata dopo la lettura); lato editor `token_env`.
@@ -570,4 +672,5 @@ Scelte dell'implementazione dove la specifica lasciava margine (sempre la via pi
 7. **`idempotency_key`**: feature opzionale, annunciata in `features` solo se il modulo la implementa (il modulo di riferimento non la implementa: `features` e' vuoto).
 8. **Client**: il protocollo e' indipendente dall'editor; il token autentica qualunque client. L'editor e' il client di riferimento, la CLI `pachimudeditor live` un client sottile ([specifica](#client-da-riga-di-comando)); per la CLI vale il possesso di token e socket, il superuser vale per le rotte HTTP.
 9. **pachimud**: componente `asyncio` nello stesso processo con lo stesso protocollo, **previsto** come passo successivo a dikumod (solo descritto qui).
-10. **Un solo MUD C per ora**: Diku Modificato nella variante DikuMod1 (sorgenti nella cartella ufficiale `/dati/luca/muds/leu`); altre varianti e basedmud non sono coperti.
+10. **Inventario live** (v1.1, feature `inventory`): `player.inventory`, `obj.get`, `obj.set`, `obj.remove`; `ref` come percorso + `expect` obbligatorio nelle scritture; testi senza `$`/`~` e entro i limiti del rent; vedi il [profilo](../adapters/dikumod-live.md#inventario-e-oggetti-istanza).
+11. **Un solo MUD C per ora**: Diku Modificato nella variante DikuMod1 (sorgenti nella cartella ufficiale `/dati/luca/muds/leu`); altre varianti e basedmud non sono coperti.

@@ -14,6 +14,7 @@ import ctypes
 import os
 import shutil
 import socket
+import struct
 import subprocess
 import tempfile
 import time
@@ -81,11 +82,37 @@ def _build(root: Path) -> None:
     """Copia la radice (senza `bin/`, `.o`, `lib/`), installa il modulo se manca e compila in `root/bin/leu`."""
     ignore = shutil.ignore_patterns("*.o", "bin", "lib", ".git", ".depend", "*~", "gmon.out")
     shutil.copytree(SRC, root, ignore=ignore, dirs_exist_ok=True)
-    if not (root / "src" / "livectl.c").is_file():  # modulo non ancora installato: patch ai file del gioco + file del modulo
+    if "livectl_init" not in (root / "src" / "comm.c").read_text(errors="replace"):  # agganci assenti: patch ai file del gioco
         subprocess.run(["git", "apply", str(MODULE_DIR / "leu-livectl.patch")], cwd=root, check=True, capture_output=True)
-        for f in MODULE_DIR.glob("livectl*.[ch]"):
-            shutil.copy(f, root / "src" / f.name)
+    for f in MODULE_DIR.glob(
+        "livectl*.[ch]"
+    ):  # il sorgente di riferimento del modulo e' sempre quello di mud-module/, non la copia nel gioco
+        shutil.copy(f, root / "src" / f.name)
     subprocess.run(["make", "-j8", "LIVECTL_FLAGS=-DLIVECTL"], cwd=root, check=True, capture_output=True, timeout=600)
+
+
+def _rent_elem(vnum: int, name: str, short: str, desc: str, values: tuple[int, ...], weight: int, wearpos: int, depth: int) -> bytes:
+    """Un `obj_file_elem` da 592 byte (vedi docs/formats/dikumod.md)."""
+    b = bytearray(592)
+    struct.pack_into("<h2x4iiiii", b, 0, vnum, *values, 0, weight, -7000000, 0)
+    b[36 : 36 + len(name)] = name.encode("latin-1")
+    b[164 : 164 + len(short)] = short.encode("latin-1")
+    b[292 : 292 + len(desc)] = desc.encode("latin-1")
+    b[548], b[549] = wearpos, depth
+    return bytes(b)
+
+
+def _make_rent(lib: Path) -> None:
+    """Rent di Tester: giubbotto indossato (slot 5), borsa con una bottiglia, una bottiglia sciolta."""
+    bottle = ("birra bottiglia", "una bottiglia", "Una bottiglia di Moretti e' qui.")
+    elems = [
+        _rent_elem(9, "giubbotto pelle", "Un giubbotto di pelle", "C'e' un giubbotto di pelle per terra", (2, 2, 0, 0), 6, 6, 0),
+        _rent_elem(14, "borsa piccola", "una piccola borsa", "C'e' una piccola borsa qui", (20, 0, 0, 0), 2, 0, 0),
+        _rent_elem(3001, *bottle, (8, 8, 1, 0), 1, 0, 1),
+        _rent_elem(3001, *bottle, (8, 8, 1, 0), 1, 0, 0),
+    ]
+    head = b"Tester".ljust(20, b"\0") + struct.pack("<5i", 100000, 0, int(time.time()), 0, len(elems))
+    (lib / "rent" / "tester").write_bytes(head + b"".join(elems))
 
 
 def _make_tester(lib: Path) -> None:
@@ -97,7 +124,7 @@ def _make_tester(lib: Path) -> None:
     data[2924:2944] = b"Tester".ljust(20, b"\0")
     data[2974:2985] = _crypt(PASSWORD, "ab")[:10].encode().ljust(11, b"\0")
     (lib / "players" / "tester.dat").write_bytes(data)
-    (lib / "rent" / "tester").unlink(missing_ok=True)
+    _make_rent(lib)
 
 
 async def _login(port: int) -> tuple[asyncio.StreamWriter, asyncio.Task[None]]:

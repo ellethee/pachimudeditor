@@ -5,7 +5,7 @@ Canale di controllo live (protocollo `livectl` v1) tra l'editor, o un altro clie
 
 | File | Contenuto |
 |---|---|
-| `livectl.c`, `livectl.h` | socket Unix, framing, token, limiti, audit, i 10 comandi (`ping info who player.get player.set zone.list zone.reset load.mob load.obj echo`) |
+| `livectl.c`, `livectl.h` | socket Unix, framing, token, limiti, audit, i 14 comandi (`ping info who player.get player.set zone.list zone.reset load.mob load.obj echo` e, con la feature `inventory`, `player.inventory obj.get obj.set obj.remove`) |
 | `livectl_json.c`, `livectl_json.h` | parser/serializzatore JSON a limiti fissi, senza `malloc`, senza dipendenze dal gioco |
 | `leu-livectl.patch` | gli unici cambi ai file del gioco di `leu`: `src/comm.c` (12 righe) e `Makefile` (nella radice, 2 righe) |
 | `fuzz/fuzz_json.c` | fuzz semplice del parser (ASan + UBSan) |
@@ -14,7 +14,7 @@ Sorgente di riferimento: **DikuMod1**, cartella ufficiale `/dati/luca/muds/leu` 
 
 ## Applicare
 
-Non modificare mai i sorgenti originali: lavora su una copia (in `/dati/luca/muds/leu` il modulo e' gia' installato; i passi servono per una radice pulita).
+Non modificare mai i sorgenti originali: lavora su una copia (in `/dati/luca/muds/leu` il modulo e' gia' installato, ma la copia in `leu/src` puo' essere meno recente di questa cartella: il sorgente di riferimento e' sempre `mud-module/`, e i test `tests/live` la sovrascrivono nella copia temporanea; i passi servono per una radice pulita).
 
 ```bash
 M=/percorso/pachimudeditor/adapters/dikumod/mud-module
