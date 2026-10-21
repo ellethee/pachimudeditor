@@ -148,6 +148,7 @@ Riepilogo di `pachimudeditor.sdk.__all__`, per famiglia:
 | Regole | `rules` (reset, uscite, range, grafo, uso) |
 | Conversione | `Flavor`, `ComposedConverter`, `PairConverter`, `ConvertContext`, `Converted`, `loss`, `to_in`, `extra_dropped`, `convert_helpers`, `convert_tables` |
 | Giocatori su file (SDK 1.3, scrittura 1.4) | `PlayersAdapter` (mixin), `PlayersInfo`, `PlayerColumn`, `PlayerListInfo`, `PlayerListColumn`, `PlayerSummary`, `PlayerDetail`, `PlayerInventory`, `PlayerItem`, `PlayerPageParams`, `PlayersStatus`; 1.4: `PlayerWriteOptions`, `PlayerPatch`, `PlayerItemAdd`, `PlayerItemUpdate` |
+| Canale live (SDK 1.5) | `LiveAdapter` (mixin), `LiveClient`, `LiveSession`, `LiveError`, `LiveStatus`, `LiveWho`, `LiveWhoPlayer`, `LiveServerInfo`, `LiveZone`, `LiveZones`, `LivePlayerState`, `LivePlayerSetIn`, `LivePlayerSetOut`, `LiveZoneResetIn`, `LiveZoneResetOut`, `LiveLoadIn`, `LiveLoadOut`, `LiveEchoIn`, `LiveEchoOut` |
 | File (SDK 1.2) | `atomic_write_bytes(path, data)`: scrittura atomica (temporaneo nella stessa cartella, `fsync`, `os.replace`); segue i symlink, preserva permessi e proprietario, pulisce il temporaneo in caso di errore |
 
 Per scrivere un file dell'adapter usa `atomic_write_bytes` invece di `open(..., "w")`: un crash a meta' non lascia file troncati.
@@ -239,6 +240,17 @@ Un nuovo adapter non riscrive la logica di integrita': la riusa passando un picc
 - Uso: `USAGE_FIELDS` (quali argomenti dei reset contengono un vnum) e `raise_if_used(usage, code)`.
 - Grafo: `build_room_graph(GraphRoom[], GraphExit[])`.
 
+## Canale live (SDK 1.5)
+
+Mixin **opzionale** `LiveAdapter` (`pachimudeditor.sdk`), capability `supports_live`, per i MUD con un modulo di controllo che parla il [protocollo `livectl`](../backend/live-control-protocol.md).
+Contratto HTTP: [canale live, rotte](../backend/contract-live.md). I metodi (`live_status`, `live_who`, `live_server_info`, `live_zones`, `live_player_get`, `live_player_set`, `live_zone_reset`, `live_load`, `live_echo`)
+alzano `LiveError` e il router li traduce in `worldlive.*`; il core controlla superuser, capability e `read_only`. Per non riscrivere il protocollo l'SDK offre **`LiveClient(socket, token_callable, timeout=)`**: connessione unica con lock, `hello`,
+riconnessione pigra, limiti di `hello`, scritture mai ritentate, token mai in log o errori; i metodi tipizzati (`who`, `info`, `zones`, `player_get`, `player_set`, `zone_reset`, `load`, `echo`, `status`) restituiscono gia' i DTO.
+Un adapter tipico crea il client dalla propria configurazione (dikumod: `params.live`, `adapters/dikumod/.../live.py`) e lo chiude in `close()`.
+
+Per i giocatori su file, `PlayersAdapter` ottiene `player_connected(id) -> bool | None` (1.5, default `None`): se ritorna `True` la scrittura su file richiede `confirmServerRunning` anche se `players_status` non rileva nulla.
+`PlayerSummary.online` puo' ora valere anche `False` (il canale risponde e il giocatore non c'e').
+
 ## Giocatori su file (SDK 1.3, scrittura 1.4)
 
 Mixin **opzionale** `PlayersAdapter` (`pachimudeditor.sdk`): un adapter lo aggiunge alle sue classi base (prima di `WorldAdapter`) e
@@ -285,6 +297,7 @@ Modello completo: `adapters/dikumod/src/pachimudeditor_adapter_dikumod/players.p
 | `supports_player_inventory` | inventario/equipaggiamento dei giocatori su file (`/api/world/players/{id}/inventory`; SDK 1.3) | idem |
 | `supports_player_write` | modifica dei campi dei giocatori su file (`PATCH /api/world/players/{id}`; SDK 1.4) | idem; con `read_only` 409 `world.read_only` |
 | `supports_player_inventory_write` | aggiungi/sposta/togli oggetti (`.../inventory/items`; SDK 1.4) | idem |
+| `supports_live` | canale di controllo live verso il MUD acceso (`/api/world/live/...`, solo superuser; SDK 1.5) | idem; scritture con `read_only` 409 `world.read_only` |
 | `supports_transfer` | `export_zone_bundle` / `import_zone_dir` (`/api/transfer`) | idem |
 | `supports_content_races` | razze/classi YAML (`/api/content`) | idem |
 | `supports_reset_scripts` | script di reset modificabile (default vero) | informativa per il frontend |

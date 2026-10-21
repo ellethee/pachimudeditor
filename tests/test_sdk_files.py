@@ -11,7 +11,7 @@ from pachimudeditor.sdk import SDK_VERSION, atomic_write_bytes
 
 def test_sdk_version_exposes_helper() -> None:
     """L'helper e' un'aggiunta compatibile: SDK 1.2."""
-    assert SDK_VERSION == "1.4"
+    assert SDK_VERSION == "1.5"
 
 
 def test_symlink_stays_a_symlink_and_target_changes(tmp_path: Path) -> None:

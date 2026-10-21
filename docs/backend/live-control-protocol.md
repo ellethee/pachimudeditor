@@ -1,6 +1,6 @@
 # Canale di controllo live (protocollo `livectl`)
 
-**Stato: protocollo v1 specificato; implementati il modulo C di riferimento per Diku Modificato (DikuMod1, `adapters/dikumod/mud-module/`), un finto server Python e la suite di conformita' (`tests/live/`). Non ancora implementati: `LiveAdapter` e rotte dell'editor, comandi CLI `pachimudeditor live`, componente per pachimud.** Descrive un canale tra l'editor (o un altro client) e un MUD **in esecuzione**: il client chiede informazioni
+**Stato: protocollo v1 specificato; implementati il modulo C di riferimento per Diku Modificato (DikuMod1, `adapters/dikumod/mud-module/`), un finto server Python, la suite di conformita' (`tests/live/`) e, lato editor (SDK 1.5), il client, `LiveAdapter`, le rotte [`/api/world/live`](contract-live.md) e la pagina Giocatori. Non implementati: comandi CLI `pachimudeditor live` (solo specificati), componente per pachimud.** Descrive un canale tra l'editor (o un altro client) e un MUD **in esecuzione**: il client chiede informazioni
 (chi e' connesso, stato del server) e fa modifiche immediate (giocatori connessi, reset di zona, creazione di mob/oggetti,
 messaggi) senza fermare il gioco e senza toccare i file. Il caso di riferimento e' Diku Modificato ([profilo dikumod](../adapters/dikumod-live.md));
 per pachimud (Python) e' **previsto** lo stesso protocollo servito da un componente `asyncio` nello stesso processo, come passo successivo a dikumod.
@@ -447,53 +447,40 @@ Il client apre il socket, poi (una riga per messaggio; `>` client -> server, `<`
 - Il modulo di un MUD dichiara il proprio profilo in `mud.kind`; i comandi e i campi realmente disponibili sono quelli di `hello`, non
   quelli di questa pagina.
 
-## Lato editor (descrizione, non implementato)
+## Lato editor (implementato, SDK 1.5)
 
-L'editor e' il client di riferimento.
+L'editor e' il client di riferimento. Contratto HTTP: [canale live, rotte](contract-live.md).
 
-Una capability dell'SDK, `LiveAdapter` (mixin opzionale come `PlayersAdapter`), con flag `supports_live_control`:
+- **SDK** (`pachimudeditor.sdk`): mixin opzionale `LiveAdapter` (capability `supports_live`), DTO neutri (`LiveStatus`, `LiveWho`, `LiveServerInfo`, `LiveZones`, `LivePlayerState`, `LivePlayerSetIn/Out`, `LiveZoneResetIn/Out`, `LiveLoadIn/Out`, `LiveEchoIn/Out`),
+  `LiveError` (codice del protocollo o locale: `unreachable`, `timeout`, `outcome_unknown`, `token_missing`, `response_too_large`, ...) e `LiveClient`, il client asincrono riusabile dagli adapter.
+- **Client**: una connessione per mondo (socket Unix), richieste serializzate da un lock, `hello` con token letto dall'ambiente a ogni connessione, riconnessione **pigra** a ogni richiesta (un MUD spento non e' un errore dell'editor),
+  rispetto di `max_line` (richiesta troppo grande = errore locale, non inviata) e `max_response` (risposta o flusso senza `\n` troppo grande = errore e connessione chiusa), un comando non dichiarato da `hello` non viene inviato.
+  Le letture si ritentano una volta se la connessione era caduta; le scritture **mai** dopo l'invio (timeout o caduta = `outcome_unknown`). Una scrittura con un `actor` diverso da quello della connessione la riapre,
+  cosi' l'audit del MUD registra l'utente dell'editor (nome dichiarato, non prova d'identita'). Nessun circuit breaker: il tentativo su un socket assente costa pochi microsecondi.
+  `idempotency_key` non viene mai inviata (il modulo di riferimento non la dichiara in `features`).
+- **Permessi**: tutte le rotte solo **superuser**; capability `supports_live`; scritture anche con mondo non `read_only`.
+- **Percorso di un giocatore** (dikumod): connesso e `playing` con canale scrivibile = modifica live; non connesso = file; canale spento = file (con la conferma «server acceso» solo se il server e' rilevato); `auth_failed` = errore chiaro
+  (`worldlive.auth_failed`), nessun ripiego silenzioso nelle rotte live. Un giocatore connesso scritto **su file** richiede `confirmServerRunning`; il caso di un non connesso a server acceso resta l'avviso best-effort (corsa possibile
+  tra il controllo e la scrittura: vedi i rischi).
 
-| Metodo (async) | Compito |
-|---|---|
-| `live_info()` (sincrono, nessun I/O) | descrittore: comandi attesi, etichette i18n, campi modificabili dichiarati in `hello` |
-| `live_status()` | prova di connessione (`hello` + `ping`), mai blocca oltre il timeout; esito `connected / unreachable / auth_failed` |
-| `live_who()`, `live_player_get(name)`, `live_player_set(name, fields)` | giocatori connessi |
-| `live_zone_reset(zone)`, `live_load(...)`, `live_echo(...)` | azioni di servizio |
-
-Rotte neutre del core sotto `/api/world/live/...` (envelope e codici come il [contratto API](contract.md); 409 `world.capability_missing`
-senza capability; errori del canale mappati sui codici di questa pagina con prefisso `live.`). **Permessi**: sono operazioni con effetto immediato sul
-gioco e oggi l'editor non ha permessi per mondo ([sicurezza](../guide/security.md#modello-dei-permessi-per-utente)); le rotte `live` richiedono **superuser** (decisione presa; un permesso per mondo e' un'evoluzione possibile).
-
-Scelta del percorso nell'adapter, per un giocatore:
-
-| Situazione | Percorso |
-|---|---|
-| canale raggiungibile e `who` lo mostra connesso | **live** (`player.set`) |
-| canale raggiungibile e il giocatore **non** e' connesso | **file** (modifica L3); il flag di conferma «server acceso» non e' piu' necessario per quel giocatore |
-| canale non raggiungibile e server forse acceso | **file** con il flag di conferma attuale |
-| canale dichiarato ma `auth_failed` | errore chiaro all'utente, nessun ripiego silenzioso sui file |
-
-Il ripiego sui file con server acceso e canale presente resta soggetto a una corsa (il giocatore puo' collegarsi tra il controllo e
-la scrittura): vedi i rischi.
-
-Configurazione del mondo (`params`, nel yaml; il segreto sta nel `.env`):
+Configurazione del mondo (`params.live`, nel yaml; il segreto sta nel `.env` / ambiente):
 
 ```yaml
 webeditor_worlds:
   - id: dikumod
     kind: dikumod
     path: /percorso/dikumod/lib
-    read_only: false
+    read_only: false                                 # le scritture live richiedono un mondo non read_only
     params:
       live:
-        transport: unix                              # unix (default) | tcp
-        socket: /percorso/dikumod/livectl.sock      # assoluto, max 107 caratteri; per tcp: host: 127.0.0.1, port: 9001
-        token_env: DIKUMOD_LIVE_TOKEN               # NOME della variabile in .env, mai il valore
-        timeout_ms: 3000
+        socket: /percorso/dikumod/livectl.sock      # ASSOLUTO, al massimo 107 byte (sun_path)
+        token_env: DIKUMOD_LIVE_TOKEN               # NOME della variabile d'ambiente, mai il valore
+        timeout_ms: 3000                            # 200..60000, default 3000
+        enabled: true                               # false = canale spento senza togliere la configurazione
 ```
 
-Il client dell'editor mantiene una connessione, serializza le richieste, riconnette con backoff, interrompe i tentativi dopo ripetuti
-errori (circuit breaker), passa `actor` = utente autenticato nell'`hello`, scrive il proprio audit e non ritenta le operazioni non idempotenti.
+All'avvio `validate` rifiuta parametri incoerenti (percorso relativo o troppo lungo, `token_env` non valido, timeout fuori scala, chiavi sconosciute -- anche un `token` scritto per errore --, `transport: tcp`
+non supportato dall'editor) ma **non** controlla che il socket esista o che il MUD sia acceso, e non fallisce se la variabile del token manca (lo stato del canale dira' `token_missing`).
 
 ## Client da riga di comando
 

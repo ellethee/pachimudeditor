@@ -22,6 +22,7 @@ Convenzioni (dettagli in `docs/adapters/index.md`):
 
 from __future__ import annotations
 
+from pachimudeditor_adapter_dikumod.live import LiveMixin
 from pachimudeditor_adapter_dikumod.meta import MetaMixin
 from pachimudeditor_adapter_dikumod.players import PlayersMixin
 from pachimudeditor_adapter_dikumod.prototypes import PrototypesMixin
@@ -62,7 +63,7 @@ def _finish(info: ResourceInfo) -> ResourceInfo:
     )
 
 
-class DikumodAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, PlayersMixin, WorldAdapter):
+class DikumodAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, PlayersMixin, LiveMixin, WorldAdapter):
     """Adapter dei file dati di Diku Modificato (vedi docstring del modulo)."""
 
     def capabilities(self) -> AdapterCapabilities:
@@ -76,6 +77,7 @@ class DikumodAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, Players
             supports_player_inventory=True,
             supports_player_write=True,
             supports_player_inventory_write=True,
+            supports_live=self.live_settings is not None,
         )
 
     def describe(self) -> AdapterInfo:

@@ -1,0 +1,26 @@
+"""Messages of worldlive in en: stable code -> text."""
+
+MESSAGES: dict[str, str] = {
+    "worldlive.not_found": "Not found in the game ({what}): the player must be connected, the zone, room or object must exist.",
+    "worldlive.player_not_playing": "The player exists but is not in the game (login, menu or dropped link): try again later.",
+    "worldlive.player_busy": "The player is in a state the command does not handle (polymorphed or in a text editor): try again later.",
+    "worldlive.bad_params": "Request not accepted by the game ({field}).",
+    "worldlive.unencodable_text": "The text contains characters the game cannot represent.",
+    "worldlive.value_out_of_range": 'Value out of range for "{field}" (from {min} to {max}).',
+    "worldlive.command_disabled": "The game does not have this command enabled (are writes disabled in the MUD configuration?).",
+    "worldlive.rate_limited": "Too many requests to the game: try again shortly.",
+    "worldlive.busy": "The game is busy: try again shortly.",
+    "worldlive.unavailable": "The game is shutting down.",
+    "worldlive.unreachable": "The live channel is unreachable: the MUD is stopped or has no control module.",
+    "worldlive.auth_failed": "The MUD rejected the live channel token: check the token environment variable.",
+    "worldlive.token_missing": "The live channel token is not set (environment variable named by token_env).",
+    "worldlive.timeout": "The game did not answer in time.",
+    "worldlive.outcome_unknown": "No answer after sending: the operation may have been executed. Check before repeating.",
+    "worldlive.protocol_error": "Unexpected answer from the live channel ({proto}).",
+    "worldlive.protocol_unsupported": "The MUD does not speak a protocol version supported by the editor.",
+    "worldlive.forbidden_by_policy": "Operation forbidden by the game rules ({reason}).",
+    "worldlive.immortal_confirmation_required": "You are creating an immortal (level {level}): they will have the powers of a god in the game. Explicit confirmation required.",
+    "worldlive.class_not_owned": 'The player does not have the class "{class_name}": only classes already owned can be changed.',
+    "worldlive.zone_forbidden": "This zone cannot be reset through the channel.",
+    "worldlive.object_denied": "Object {vnum} cannot be created through the channel (the game's deny list).",
+}

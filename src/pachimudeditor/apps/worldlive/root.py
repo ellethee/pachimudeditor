@@ -1,0 +1,139 @@
+"""Canale live verso il MUD acceso (SDK 1.5): prefisso `/api/world/live` (X-World come le altre rotte).
+
+Solo **superuser** (401 senza sessione, 403 `access.superuser_required` altrimenti): sono operazioni con effetto immediato sul gioco.
+Capability `supports_live` (409 `world.capability_missing`); le scritture anche mondo non `read_only` (409 `world.read_only`).
+Gli errori del canale diventano `worldlive.*` (vedi `common.adapters.live.http_error`). Router sottile sopra il mixin `LiveAdapter`:
+`status` non e' mai un errore (un canale spento e' `state: unreachable`).
+"""
+
+from typing import Annotated
+
+from fastapi import Depends
+from pachifast.auth.dependencies import get_current_active_user
+from pachifast.i18n import api_error
+from pachifast.router_factory import get_router
+
+from pachimudeditor.common.adapters.live import (
+    LIVE_NAME_RE,
+    LiveAdapter,
+    LiveEchoIn,
+    LiveEchoOut,
+    LiveLoadIn,
+    LiveLoadOut,
+    LivePlayerSetIn,
+    LivePlayerSetOut,
+    LivePlayerState,
+    LiveServerInfo,
+    LiveStatus,
+    LiveWho,
+    LiveZoneResetIn,
+    LiveZoneResetOut,
+    LiveZones,
+    live_errors,
+)
+from pachimudeditor.common.adapters.registry import AdapterDep, WriteAdapterDep, require_capability
+
+router = get_router(name="world/live", require_superuser=True, deps=[Depends(require_capability("supports_live"))])
+
+
+def live_of(adapter: AdapterDep) -> LiveAdapter:
+    """L'adapter come `LiveAdapter` (409 `world.capability_missing` se non implementa il mixin)."""
+    if not isinstance(adapter, LiveAdapter):
+        raise api_error(409, "world.capability_missing", capability="supports_live")
+    return adapter
+
+
+def write_live_of(adapter: WriteAdapterDep) -> LiveAdapter:
+    """Come `live_of` ma 409 `world.read_only` se il mondo e' in sola lettura."""
+    return live_of(adapter)
+
+
+LiveDep = Annotated[LiveAdapter, Depends(live_of)]
+WriteLiveDep = Annotated[LiveAdapter, Depends(write_live_of)]
+
+
+async def actor_of(user: Annotated[object, Depends(get_current_active_user)]) -> str:
+    """Il nome dell'utente dell'editor: va nell'`hello` (audit del MUD) come informazione dichiarata."""
+    return str(getattr(user, "username", "") or "editor")
+
+
+ActorDep = Annotated[str, Depends(actor_of)]
+
+
+def player_name(name: str) -> str:
+    """404 `worldlive.not_found` se il nome non e' ammesso dal protocollo (`[A-Za-z][A-Za-z0-9_-]{0,19}`)."""
+    if not LIVE_NAME_RE.fullmatch(name):
+        raise api_error(404, "worldlive.not_found", what="player")
+    return name
+
+
+PlayerName = Annotated[str, Depends(player_name)]
+
+
+@router.get("/status", response_model=LiveStatus)
+async def status(adapter: LiveDep) -> LiveStatus:
+    """Il canale e' raggiungibile? Versione, classi e comandi dichiarati, latenza. Non espone socket ne' token; non e' mai un errore."""
+    return await adapter.live_status()
+
+
+@router.get("/who", response_model=LiveWho)
+async def who(adapter: LiveDep) -> LiveWho:
+    """Giocatori connessi (anche con il collegamento caduto)."""
+    with live_errors():
+        return await adapter.live_who()
+
+
+@router.get("/info", response_model=LiveServerInfo)
+async def server_info(adapter: LiveDep) -> LiveServerInfo:
+    """Uptime, giocatori e contatori del mondo."""
+    with live_errors():
+        return await adapter.live_server_info()
+
+
+@router.get("/zones", response_model=LiveZones)
+async def zones(adapter: LiveDep) -> LiveZones:
+    """Le zone come le vede il gioco (`index` da usare in `zones/reset`)."""
+    with live_errors():
+        return await adapter.live_zones()
+
+
+@router.get("/players/{name}", response_model=LivePlayerState)
+async def get_player(name: PlayerName, adapter: LiveDep) -> LivePlayerState:
+    """Valori correnti in memoria di un giocatore connesso (404 `worldlive.not_found`, 409 `worldlive.player_not_playing`)."""
+    with live_errors():
+        return await adapter.live_player_get(name)
+
+
+@router.patch("/players/{name}", response_model=LivePlayerSetOut)
+async def set_player(name: PlayerName, change: LivePlayerSetIn, adapter: WriteLiveDep, actor: ActorDep) -> LivePlayerSetOut:
+    """Modifica un giocatore connesso (`save` vero di default); promuovere a >= 51 richiede `confirmImmortal` (409 senza)."""
+    with live_errors():
+        return await adapter.live_player_set(name, change, actor=actor)
+
+
+@router.post("/zones/reset", response_model=LiveZoneResetOut)
+async def reset_zone(reset: LiveZoneResetIn, adapter: WriteLiveDep, actor: ActorDep) -> LiveZoneResetOut:
+    """Forza il reset di una zona (`zone` = indice di `GET /zones`, oppure `room`). Mai ritentato: dopo un timeout l'esito e' sconosciuto."""
+    with live_errors():
+        return await adapter.live_zone_reset(reset, actor=actor)
+
+
+@router.post("/load/mob", response_model=LiveLoadOut)
+async def load_mob(load: LiveLoadIn, adapter: WriteLiveDep, actor: ActorDep) -> LiveLoadOut:
+    """Crea mob in una stanza o nella stanza di un giocatore."""
+    with live_errors():
+        return await adapter.live_load("mob", load, actor=actor)
+
+
+@router.post("/load/obj", response_model=LiveLoadOut)
+async def load_obj(load: LiveLoadIn, adapter: WriteLiveDep, actor: ActorDep) -> LiveLoadOut:
+    """Crea oggetti in una stanza o nell'inventario di un giocatore (deny-list del MUD: 409 `worldlive.object_denied`)."""
+    with live_errors():
+        return await adapter.live_load("obj", load, actor=actor)
+
+
+@router.post("/echo", response_model=LiveEchoOut)
+async def echo(message: LiveEchoIn, adapter: WriteLiveDep, actor: ActorDep) -> LiveEchoOut:
+    """Manda un messaggio a tutti i giocatori, a uno o a una stanza."""
+    with live_errors():
+        return await adapter.live_echo(message, actor=actor)

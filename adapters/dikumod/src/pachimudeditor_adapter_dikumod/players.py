@@ -240,9 +240,29 @@ class PlayersMixin(PlayersAdapter, DikumodSupport):
         )
 
     async def players_status(self) -> PlayersStatus:
-        """`serverRunning: true` se si trova il server; altrimenti `null` (non si puo' escludere)."""
+        """`serverRunning: true` se il canale live risponde (certo, `detection: live`) o se si trova il server in `/proc`; altrimenti `null`
+        (non si puo' escludere)."""
+        if await self.live_reachable():
+            return PlayersStatus(server_running=True, detection="live")
         running = await asyncio.to_thread(_server_running, self.store.lib)
         return PlayersStatus(server_running=running, detection="proc")
+
+    async def player_connected(self, player_id: str) -> bool | None:
+        """`True` se il canale live mostra il giocatore connesso (anche con il collegamento caduto: il gioco lo ha in memoria e lo salvera'
+        sopra il file); altrimenti `None`."""
+        return await self.live_online(player_id) or None
+
+    async def _with_online(self, rows: list[PlayerSummary]) -> None:
+        """Valorizza `online` (e `extra.liveState`) delle righe col canale live: vero/falso se risponde, invariato altrimenti."""
+        players, complete = await self.live_players()
+        if players is None:
+            return
+        for row in rows:
+            who = players.get(row.id.lower()) or players.get((row.name or "").lower())
+            if who is not None:
+                row.online, row.extra["liveState"] = True, who.state
+            elif complete:
+                row.online = False
 
     async def list_players(self, params: PlayerPageParams) -> PaginatedResponse[PlayerSummary]:
         """Tutti i `players/*.dat` validi per nome di file, con ricerca per nome e ordinamento."""
@@ -255,12 +275,14 @@ class PlayersMixin(PlayersAdapter, DikumodSupport):
             lambda p, f: (getattr(p, f) is None, getattr(p, f)),
             orders,
         )
+        await self._with_online(items)
         return make_page(PlayerSummary, items, total, params)
 
     async def get_player(self, player_id: str) -> PlayerDetail:
         """Il dettaglio; un file corrotto restituisce `problem` e nessun dato (mai un 500)."""
         summary, rec = await asyncio.to_thread(self._read_safe, player_id)
         detail = PlayerDetail(**summary.model_dump())
+        await self._with_online([detail])
         if rec is not None:
             detail.details = self._details(rec)
             detail.lists = {

@@ -38,6 +38,21 @@
       <q-btn flat round :icon="mdiRefresh" :aria-label="t('playerFiles.reload')" @click="reload">
         <q-tooltip>{{ t('playerFiles.reload') }}</q-tooltip>
       </q-btn>
+      <template v-if="live.enabled.value">
+        <q-chip dense :color="liveColor" text-color="white" :icon="mdiServerNetwork" role="status" data-testid="live-status">
+          {{ liveLabel }}
+          <q-tooltip v-if="!live.connected.value">{{ t('playerFiles.live.fallback') }}</q-tooltip>
+        </q-chip>
+        <q-btn
+          v-if="live.connected.value"
+          outline
+          dense
+          color="primary"
+          :label="t('playerFiles.live.server.open')"
+          data-testid="live-open"
+          @click="openLive"
+        />
+      </template>
     </div>
 
     <q-table
@@ -60,6 +75,16 @@
       <template #body-cell-name="{ row, value }">
         <q-td>
           <span class="text-weight-medium">{{ value }}</span>
+          <q-chip
+            v-if="row.online === true"
+            dense
+            :color="row.extra.liveState === 'playing' ? 'positive' : 'orange'"
+            text-color="white"
+            class="q-ml-sm"
+            :data-testid="`player-online-${row.id}`"
+          >
+            {{ row.extra.liveState === 'playing' || !row.extra.liveState ? t('playerFiles.live.online') : t('playerFiles.live.state.' + String(row.extra.liveState)) }}
+          </q-chip>
           <q-chip v-if="row.problem" dense color="negative" text-color="white" class="q-ml-sm" data-testid="player-problem">
             {{ problemLabel(row.problem) }}
           </q-chip>
@@ -89,15 +114,19 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import type { QTableColumn, QTableProps } from 'quasar'
-import { mdiAlertOutline, mdiCardAccountDetails, mdiMagnify, mdiRefresh } from '@quasar/extras/mdi-v7'
+import { mdiAlertOutline, mdiCardAccountDetails, mdiMagnify, mdiRefresh, mdiServerNetwork } from '@quasar/extras/mdi-v7'
 import { describeError } from '../../players/helpers/describe-error'
 import { formatCell } from '../helpers/format'
 import { getPlayersInfo, getPlayersStatus, listPlayers } from '../services/player-files-api'
 import type { IPlayerSummary, IPlayersInfo, IPlayersStatus } from '../types/player-files'
 import PlayerDetailDialog from '../components/PlayerDetailDialog.vue'
+import LiveServerDialog from '../components/LiveServerDialog.vue'
+import { ensureWorlds } from '../../shared/helpers/world-state'
+import { useLive } from '../helpers/live-state'
 
 const { t, te, locale } = useI18n()
 const $q = useQuasar()
+const live = useLive()
 
 const info = ref<IPlayersInfo>()
 const status = ref<IPlayersStatus>()
@@ -179,6 +208,24 @@ function open(row: IPlayerSummary): void {
   $q.dialog({ component: PlayerDetailDialog, componentProps: { playerId: row.id, playerName: row.name } }).onDismiss(() => void load()) // le modifiche cambiano i valori dell'elenco
 }
 
+/** Colore del chip dello stato del canale live. */
+const liveColor = computed(() => (live.connected.value ? 'positive' : 'grey-7'))
+/** Testo dello stato del canale live (mai un errore: senza canale i dati vengono dai file). */
+const liveLabel = computed(() => {
+  const state = live.status.value?.state
+  if (!state) return t('playerFiles.live.channel.unknown')
+  const latency = live.status.value?.latencyMs
+  return t(`playerFiles.live.channel.${state}`, { ms: latency ?? '?' })
+})
+
+/** Apre il pannello «Server live»; alla chiusura rilegge elenco e stato (le azioni possono cambiare i dati). */
+function openLive(): void {
+  $q.dialog({ component: LiveServerDialog }).onDismiss(() => {
+    void live.refresh()
+    void load()
+  })
+}
+
 /** Descrittore, stato del server ed elenco. */
 async function init(): Promise<void> {
   error.value = ''
@@ -191,6 +238,8 @@ async function init(): Promise<void> {
   getPlayersStatus()
     .then((s) => (status.value = s))
     .catch(() => undefined) // stato non rilevabile: resta l'avviso generico
+  await ensureWorlds()
+  if (live.enabled.value) await live.refresh() // prima dell'elenco: `online` dipende dal canale
   await load()
 }
 

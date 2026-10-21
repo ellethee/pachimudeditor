@@ -148,6 +148,19 @@ Robustezza: file di dimensione diversa da 3036 -> riga con `problem: bad_size`; 
 -> `not_regular`; rent troncato / `number` > 200 / byte in eccesso / proprietario diverso dal giocatore (il gioco in quel caso scarta gli oggetti) ->
 `problem` dell'inventario con gli oggetti leggibili. Nessuna eccezione verso il client.
 
+### Canale live (SDK 1.5)
+
+Con `params.live` il mondo dichiara `supportsLive` e usa il modulo `livectl` del gioco (profilo: [canale live](dikumod-live.md); rotte: [contratto](../backend/contract-live.md)):
+
+```yaml
+params:
+  live: {socket: /percorso/assoluto/livectl.sock, token_env: DIKUMOD_LIVE_TOKEN, timeout_ms: 3000, enabled: true}
+```
+
+Il socket e' **assoluto** (max 107 byte), `token_env` e' il **nome** della variabile d'ambiente con il token (mai nel yaml; di norma nel `.env`). All'avvio si segnalano solo parametri incoerenti: il canale e' opzionale e si riprova a ogni richiesta, quindi un MUD spento non impedisce l'avvio.
+Effetti sui giocatori su file: `online` diventa vero/falso (anche per un link caduto, `extra.liveState`), `GET /api/world/players/status` dice `serverRunning: true` con `detection: live`, e scrivere su file un giocatore connesso richiede `confirmServerRunning`.
+Le scritture live richiedono anche `read_only: false` (che per dikumod va scritto esplicitamente).
+
 ### Scrittura (SDK 1.4)
 
 Il writer (`dikumod_lib/players_write.py`, solo byte in memoria) parte dai **byte attuali** del file e sovrascrive solo i campi richiesti con gli stessi

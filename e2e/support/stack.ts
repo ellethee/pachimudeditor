@@ -25,6 +25,23 @@ export const DIKUMOD_SRC = process.env.E2E_DIKUMOD ?? ''
 /** Prefisso dei file dati (`E2E_DIKUMOD_PREFIX`, default `dikumoddata`). */
 export const DIKUMOD_PREFIX = process.env.E2E_DIKUMOD_PREFIX || 'dikumoddata'
 export const HAS_DIKUMOD = DIKUMOD_SRC !== '' && existsSync(DIKUMOD_SRC)
+/** Token del finto server live (solo test: nessun segreto reale). */
+export const LIVE_TOKEN = 'e2e-live-token-' + 'x'.repeat(24)
+/** Percorso del socket del finto server live (assoluto e corto: il limite di `sun_path` e' 107 byte). */
+export const LIVE_SOCKET = (workdir: string): string => join(workdir, 'live.sock')
+/** Avvia il finto server `livectl` (processo Python) e attende `ready`; restituisce il processo. */
+export function startFakeLive(workdir: string): Promise<ChildProcess> {
+  return new Promise((done, fail) => {
+    const child = spawn(join(BACKEND, '.venv', 'bin', 'python'), ['-m', 'tests.support.live_fake_cli', LIVE_SOCKET(workdir), LIVE_TOKEN], {
+      cwd: BACKEND,
+      stdio: ['ignore', 'pipe', 'inherit'],
+    })
+    child.once('exit', () => fail(new Error('il finto server live e\' terminato')))
+    child.stdout!.on('data', (chunk: Buffer) => {
+      if (chunk.toString().includes('ready')) done(child)
+    })
+  })
+}
 /** Cartella temporanea (ignorata da git) che contiene i DB di test. */
 export const TMP_ROOT = join(ROOT, 'e2e', '.tmp')
 
@@ -75,12 +92,19 @@ function prepareExtras(workdir: string, pachimud: { databaseUrl: string; definit
     cpSync(DIKUMOD_SRC, dikumodRw, { recursive: true })
     // giocatori e rent: sempre quelli SINTETICI (mai dati o hash reali nelle copie di lavoro)
     execFileSync(join(BACKEND, '.venv', 'bin', 'python'), ['-m', 'tests.support.dikumod_players', dikumodRo, dikumodRw], { cwd: BACKEND })
+    // canale live: due mondi sul finto server `livectl` (avviato da `startStack`); il token sta nell'ambiente (`E2E_LIVE_TOKEN`), non nella config
+    const live = { socket: LIVE_SOCKET(workdir), token_env: 'E2E_LIVE_TOKEN', timeout_ms: 2000 }
+    const dikumodLive = join(workdir, 'dikumod-live', 'lib')
+    cpSync(DIKUMOD_SRC, dikumodLive, { recursive: true })
+    execFileSync(join(BACKEND, '.venv', 'bin', 'python'), ['-m', 'tests.support.dikumod_players', dikumodRo, dikumodRw, dikumodLive], { cwd: BACKEND })
     worlds.push(
+      { id: 'dikumod-live', kind: 'dikumod', name: 'Diku Modificato (live)', path: dikumodLive, read_only: false, params: { data_prefix: DIKUMOD_PREFIX, live } },
+      { id: 'dikumod-live-ro', kind: 'dikumod', name: 'Diku Modificato (live, sola lettura)', path: dikumodRo, read_only: true, params: { data_prefix: DIKUMOD_PREFIX, live } },
       { id: 'dikumod', kind: 'dikumod', name: 'Diku Modificato (sola lettura)', path: dikumodRo, read_only: true, params: { data_prefix: DIKUMOD_PREFIX } },
       { id: 'dikumod-rw', kind: 'dikumod', name: 'Diku Modificato (scrivibile)', path: dikumodRw, read_only: false, params: { data_prefix: DIKUMOD_PREFIX } },
     )
   }
-  return { WEBEDITOR_WORLDS: JSON.stringify(worlds), WEBEDITOR_DEFAULT_WORLD: 'pachimud' }
+  return { WEBEDITOR_WORLDS: JSON.stringify(worlds), WEBEDITOR_DEFAULT_WORLD: 'pachimud', E2E_LIVE_TOKEN: LIVE_TOKEN }
 }
 
 /**
@@ -121,6 +145,12 @@ export async function startStack(port = Number(process.env.E2E_PORT ?? 8124), op
     options.noWorlds ? { WEBEDITOR_WORLDS: '[]' } : prepareExtras(workdir, { databaseUrl: env.PACHIMUD_DATABASE_URL, definitionsPath: env.PACHIMUD_DEFINITIONS_PATH }),
   )
 
+  let fakeLive: ChildProcess | undefined
+  if (HAS_DIKUMOD && !options.noWorlds) {
+    fakeLive = await startFakeLive(workdir)
+    process.env.E2E_LIVE_SOCKET_DIR = workdir // per i test che fermano/riavviano il finto server (ereditata da `node --test`)
+    process.env.E2E_LIVE_PID = String(fakeLive.pid)
+  }
   const child: ChildProcess = spawn(
     python,
     ['-m', 'uvicorn', 'pachimudeditor.app:create_editor_app', '--factory', '--host', '127.0.0.1', '--port', String(port), '--log-level', 'warning'],
@@ -163,6 +193,15 @@ export async function startStack(port = Number(process.env.E2E_PORT ?? 8124), op
           done()
         })
       })
+    }
+    fakeLive?.kill('SIGKILL') // il PID puo' essere stato cambiato da un test che l'ha riavviato: vedi `E2E_LIVE_PID`
+    const restarted = Number(process.env.E2E_LIVE_PID)
+    if (restarted && restarted !== fakeLive?.pid) {
+      try {
+        process.kill(restarted, 'SIGKILL')
+      } catch {
+        /* gia' terminato */
+      }
     }
     rmSync(workdir, { recursive: true, force: true })
   }

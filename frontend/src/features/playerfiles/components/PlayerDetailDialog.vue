@@ -17,6 +17,9 @@
       <q-banner v-else rounded class="bg-grey-3 text-black q-mb-sm" role="note" data-testid="player-write-note">
         {{ t('playerFiles.detail.writable') }}
       </q-banner>
+      <q-banner v-if="detail?.online === true" rounded class="bg-blue-1 text-black q-mb-sm" role="note" data-testid="player-online-note">
+        {{ liveEditable ? t('playerFiles.live.detail.connectedLive') : t('playerFiles.live.detail.connectedFile') }}
+      </q-banner>
       <q-banner v-if="canWrite && status?.serverRunning" rounded class="bg-warning text-black q-mb-sm" role="alert" data-testid="player-server-running">
         <div>{{ t('playerFiles.edit.serverRunning') }}</div>
         <q-checkbox v-model="confirmServer" :label="t('playerFiles.edit.confirmServer')" data-testid="confirm-server" />
@@ -116,7 +119,16 @@
       </template>
       <template v-else>
         <q-btn
-          v-if="canWrite && detail && !detail.problem"
+          v-if="liveEditable"
+          outline
+          color="negative"
+          :icon="mdiLightningBolt"
+          :label="t('playerFiles.live.detail.editLive')"
+          data-testid="live-edit-start"
+          @click="startLiveEdit"
+        />
+        <q-btn
+          v-if="canWrite && detail && !detail.problem && !liveEditable"
           outline
           color="primary"
           :icon="mdiPencil"
@@ -135,7 +147,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDialogPluginComponent, useQuasar } from 'quasar'
 import type { QTableColumn } from 'quasar'
-import { mdiPencil } from '@quasar/extras/mdi-v7'
+import { mdiLightningBolt, mdiPencil } from '@quasar/extras/mdi-v7'
 import { PachiDialog } from '@ilpachi/pachi-kit/dialog'
 import { describeError } from '../../players/helpers/describe-error'
 import JsonField from '../../shared/components/JsonField.vue'
@@ -147,6 +159,8 @@ import type { IPlayerDetail, IPlayerListInfo, IPlayersInfo, IPlayersStatus } fro
 import type { IExtraFieldDescriptor } from '../../shared/types/worlds'
 import PlayerFieldEditor from './PlayerFieldEditor.vue'
 import PlayerInventoryPanel from './PlayerInventoryPanel.vue'
+import LivePlayerDialog from './LivePlayerDialog.vue'
+import { useLive } from '../helpers/live-state'
 
 const props = defineProps<{
   /** Id opaco del giocatore. */
@@ -161,6 +175,7 @@ const { t, te, locale } = useI18n()
 const $q = useQuasar()
 const { dialogRef, onDialogHide, onDialogCancel } = useDialogPluginComponent()
 const { capabilities } = useWorld()
+const live = useLive()
 
 const tab = ref<'details' | 'lists' | 'inventory'>('details')
 const info = ref<IPlayersInfo>()
@@ -183,6 +198,9 @@ const canWrite = computed(() => capabilities.value?.supportsPlayerWrite === true
 const canWriteInventory = computed(() => capabilities.value?.supportsPlayerInventoryWrite === true && !readOnlyWorld.value)
 /** Server acceso e conferma non data: nessuna scrittura. */
 const serverBlocked = computed(() => status.value?.serverRunning === true && !confirmServer.value)
+
+/** Il giocatore e' in gioco e il canale permette di scrivere: la modifica passa dal canale (subito nel gioco) invece che dal file. */
+const liveEditable = computed(() => live.canWrite.value && detail.value?.online === true && detail.value.extra.liveState === 'playing')
 
 /** Campi del dettaglio raggruppati per sezione, nell'ordine dichiarato dall'adapter. */
 const sections = computed(() => {
@@ -255,6 +273,13 @@ function listColumns(list: IPlayerListInfo): QTableColumn[] {
     align: 'right' as const,
     format: (v: unknown) => formatCell(v, c.type, locale.value, t('playerFiles.yes'), t('playerFiles.no')),
   }))
+}
+
+/** Apre la modifica live; alla chiusura rilegge il dettaglio (i valori del file possono essere cambiati dal salvataggio del gioco). */
+function startLiveEdit(): void {
+  $q.dialog({ component: LivePlayerDialog, componentProps: { playerName: props.playerName } }).onDismiss(() => {
+    void getPlayer(props.playerId).then((d) => (detail.value = d))
+  })
 }
 
 /** Entra in modifica con una copia dei valori correnti. */

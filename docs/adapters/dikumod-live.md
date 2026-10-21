@@ -1,6 +1,6 @@
 # Diku Modificato: profilo del canale live
 
-**Stato: implementato (modulo C di riferimento in `adapters/dikumod/mud-module/`, provato su una copia del gioco).** Applica il [protocollo `livectl`](../backend/live-control-protocol.md) a Diku Modificato: dove si
+**Stato: implementato (modulo C di riferimento in `adapters/dikumod/mud-module/`, provato su una copia del gioco; lato editor: adapter `params.live`, rotte `/api/world/live` e pagina Giocatori, provati contro il MUD reale su una copia).** Applica il [protocollo `livectl`](../backend/live-control-protocol.md) a Diku Modificato: dove si
 aggancia il modulo C nel sorgente, quali funzioni del gioco usano i comandi, quali campi si possono cambiare a gioco acceso e quali
 insidie ci sono. Il protocollo (trasporto, sicurezza, comandi, errori) e' in [canale di controllo live](../backend/live-control-protocol.md);
 qui c'e' solo cio' che dipende dal sorgente.

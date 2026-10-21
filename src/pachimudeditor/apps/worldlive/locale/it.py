@@ -1,0 +1,26 @@
+"""Messaggi di worldlive in it: codice stabile -> testo."""
+
+MESSAGES: dict[str, str] = {
+    "worldlive.not_found": "Non trovato nel gioco ({what}): il giocatore deve essere connesso, la zona, la stanza o l'oggetto devono esistere.",
+    "worldlive.player_not_playing": "Il giocatore esiste ma non è in gioco (login, menu o collegamento caduto): riprova più tardi.",
+    "worldlive.player_busy": "Il giocatore è in uno stato che il comando non gestisce (trasformato o in un editor di testo): riprova più tardi.",
+    "worldlive.bad_params": "Richiesta non accettata dal gioco ({field}).",
+    "worldlive.unencodable_text": "Il testo contiene caratteri che il gioco non sa rappresentare.",
+    "worldlive.value_out_of_range": "Valore fuori intervallo per «{field}» (da {min} a {max}).",
+    "worldlive.command_disabled": "Il gioco non ha attivo questo comando (le scritture sono disattivate nella configurazione del MUD?).",
+    "worldlive.rate_limited": "Troppe richieste al gioco: riprova fra poco.",
+    "worldlive.busy": "Il gioco è occupato: riprova fra poco.",
+    "worldlive.unavailable": "Il gioco si sta spegnendo.",
+    "worldlive.unreachable": "Il canale live non è raggiungibile: il MUD è spento o senza modulo di controllo.",
+    "worldlive.auth_failed": "Il MUD ha rifiutato il token del canale live: controllare la variabile d'ambiente del token.",
+    "worldlive.token_missing": "Il token del canale live non è impostato (variabile d'ambiente indicata da token_env).",
+    "worldlive.timeout": "Il gioco non ha risposto in tempo.",
+    "worldlive.outcome_unknown": "Nessuna risposta dopo l'invio: l'operazione potrebbe essere stata eseguita. Verifica prima di ripetere.",
+    "worldlive.protocol_error": "Risposta inattesa dal canale live ({proto}).",
+    "worldlive.protocol_unsupported": "Il MUD non parla una versione del protocollo supportata dall'editor.",
+    "worldlive.forbidden_by_policy": "Operazione vietata dalle regole del gioco ({reason}).",
+    "worldlive.immortal_confirmation_required": "Stai creando un immortale (livello {level}): avrà i poteri di un dio nel gioco. Serve una conferma esplicita.",
+    "worldlive.class_not_owned": "Il giocatore non ha la classe «{class_name}»: si possono cambiare solo le classi già possedute.",
+    "worldlive.zone_forbidden": "Questa zona non può essere resettata dal canale.",
+    "worldlive.object_denied": "L'oggetto {vnum} non può essere creato dal canale (elenco di esclusione del gioco).",
+}

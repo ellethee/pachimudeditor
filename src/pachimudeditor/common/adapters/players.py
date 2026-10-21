@@ -35,7 +35,7 @@ class PlayerSummary(NeutralOut):
     has_password: bool | None = None
     """Esiste una password nel file (mai il valore). `None` = non determinabile."""
     online: bool | None = None
-    """`True` solo se il MUD sa dire con certezza che e' connesso; `None` = sconosciuto (il caso normale su file)."""
+    """`True`/`False` solo se il MUD sa dirlo con certezza (SDK 1.5: canale live); `None` = sconosciuto (il caso normale su file)."""
     problem: str | None = None
     """Codice stabile se il file e' illeggibile/corrotto (`bad_size`, ...): la riga resta visibile, senza dati."""
     revision: str | None = None
@@ -180,6 +180,12 @@ class PlayersAdapter:
     async def players_status(self) -> PlayersStatus:
         """Stato del server di gioco (best effort)."""
         return PlayersStatus()
+
+    async def player_connected(self, player_id: str) -> bool | None:
+        """Il giocatore e' connesso adesso? (SDK 1.5, tipicamente via canale live.) `True` = certo: la scrittura su file richiede la conferma
+        «server acceso» anche se `players_status` non rileva nulla. `False`/`None` = non lo si sa (o non e' connesso): resta l'avviso
+        best-effort di `players_status`. Mai un'eccezione: un canale spento vale `None`."""
+        return None
 
     async def list_players(self, params: PlayerPageParams) -> PaginatedResponse[PlayerSummary]:
         """Giocatori paginati."""

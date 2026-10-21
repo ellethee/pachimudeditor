@@ -13,6 +13,7 @@ from pachimudeditor_adapter_dikumod.dikumod_lib import DEFAULT_PREFIX, validate_
 from pachifast.i18n import api_error
 
 from pachimudeditor_adapter_dikumod import mapping
+from pachimudeditor_adapter_dikumod.live_config import LiveSettings, parse_live_settings
 from pachimudeditor_adapter_dikumod.store import DikumodStore, Ref, ZoneRef, resolve
 from pachimudeditor.sdk import rules
 from pachimudeditor.common.adapters.models import EntityKind, ResetUsage
@@ -32,10 +33,22 @@ class DikumodSupport:
         self.lock = asyncio.Lock()
         """Un solo scrittore per volta: una scrittura puo' toccare piu' file (uscite entranti, negozio, script)."""
         self.read_only = config.read_only if "read_only" in config.model_fields_set else True
+        self.live_settings: LiveSettings | None = parse_live_settings(config.params)
+        """Parametri del canale live (`params.live`), `None` se non configurato o spento: senza, niente capability `supports_live`."""
         variant = config.params.get("variant")
         if variant is not None and variant not in VARIANTS:
             raise ValueError(f"params.variant deve essere uno tra {VARIANTS}, non {variant!r}")
         self.variant: str = variant or ("dikumod2" if self.store.paths.gui.exists() or self.store.paths.overrides("room") else "dikumod")
+
+    # ------------------------------------------------------------------ canale live (sovrascritti da `LiveMixin`)
+
+    async def live_online(self, name: str) -> bool | None:
+        """Il giocatore e' connesso? `None` = non si sa (nessun canale live o canale spento)."""
+        return None
+
+    async def live_reachable(self) -> bool:
+        """Il canale live risponde (il server e' acceso con certezza)?"""
+        return False
 
     # ------------------------------------------------------------------ scrittura
 

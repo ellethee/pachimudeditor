@@ -14,6 +14,7 @@ from pachimudeditor.apps.meta.module import module as meta_module
 from pachimudeditor.apps.mobs.module import module as mobs_module
 from pachimudeditor.apps.objects.module import module as objects_module
 from pachimudeditor.apps.rooms.module import module as rooms_module
+from pachimudeditor.apps.worldlive.module import module as worldlive_module
 from pachimudeditor.apps.worldplayers.module import module as worldplayers_module
 from pachimudeditor.apps.zones.module import module as zones_module
 from pachimudeditor.common.adapters import plugins
@@ -32,6 +33,7 @@ def build_modules(kinds: Iterable[str] = ()) -> tuple[AppModule, ...]:
         objects_module,
         convert_module,
         worldplayers_module,
+        worldlive_module,
     ]
     kinds = set(kinds)
     names = {m.name for m in modules}

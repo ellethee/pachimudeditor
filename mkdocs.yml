@@ -74,12 +74,14 @@ nav:
       - Players: backend/contract-players.md
       - Giocatori su file: backend/contract-players-files.md
       - Canale di controllo live: backend/live-control-protocol.md
+      - Canale live, rotte: backend/contract-live.md
       - Instances: backend/contract-instances.md
       - Transfer: backend/contract-transfer.md
       - Content: backend/contract-content.md
   - Frontend: frontend/index.md
   - Adapter:
       - Panoramica: adapters/index.md
+      - Famiglie di adapter: adapters/families.md
       - SDK e adapter esterni: adapters/sdk.md
       - pachimud: adapters/pachimud.md
       - basedmud: adapters/basedmud.md

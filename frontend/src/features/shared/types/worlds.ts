@@ -10,6 +10,8 @@ export interface IWorldCapabilities {
   supportsPlayerInventory: boolean
   supportsPlayerWrite: boolean
   supportsPlayerInventoryWrite: boolean
+  /** Canale di controllo live verso il MUD acceso (rotte `/api/world/live`, solo superuser). */
+  supportsLive: boolean
   supportsTransfer: boolean
   supportsContentRaces: boolean
   supportsResetScripts: boolean

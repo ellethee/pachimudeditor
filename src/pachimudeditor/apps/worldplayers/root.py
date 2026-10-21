@@ -51,9 +51,12 @@ def write_players_of(adapter: WriteAdapterDep) -> PlayersAdapter:
 WritePlayersDep = Annotated[PlayersAdapter, Depends(write_players_of)]
 
 
-async def confirm_server(adapter: PlayersAdapter, options: PlayerWriteOptions) -> None:
-    """409 `worldplayers.server_running` se il server e' acceso (rilevato) e la richiesta non lo conferma; non rilevabile = si scrive."""
-    if not options.confirm_server_running and (await adapter.players_status()).server_running:
+async def confirm_server(adapter: PlayersAdapter, options: PlayerWriteOptions, player_id: str | None = None) -> None:
+    """409 `worldplayers.server_running` se il server e' acceso (rilevato) o il giocatore risulta connesso (SDK 1.5, certo) e la
+    richiesta non lo conferma; non rilevabile = si scrive."""
+    if options.confirm_server_running:
+        return
+    if (player_id is not None and await adapter.player_connected(player_id)) or (await adapter.players_status()).server_running:
         raise api_error(409, "worldplayers.server_running")
 
 
@@ -112,21 +115,21 @@ async def update_player(player_id: CheckedId, patch: PlayerPatch, adapter: Write
 
     409 `worldplayers.server_running` (server acceso senza conferma), `worldplayers.conflict` (file cambiato), 422 `worldplayers.invalid_value`.
     """
-    await confirm_server(adapter, patch)
+    await confirm_server(adapter, patch, player_id)
     return await adapter.update_player(player_id, patch)
 
 
 @router.post("/{player_id}/inventory/items", response_model=PlayerInventory, status_code=201, dependencies=_INVENTORY_WRITE)
 async def add_player_item(player_id: CheckedId, item: PlayerItemAdd, adapter: WritePlayersDep) -> PlayerInventory:
     """Aggiunge un oggetto dal prototipo del mondo (per `vnum`), portato, equipaggiato o in un contenitore."""
-    await confirm_server(adapter, item)
+    await confirm_server(adapter, item, player_id)
     return await adapter.add_player_item(player_id, item)
 
 
 @router.patch("/{player_id}/inventory/items/{item_id}", response_model=PlayerInventory, dependencies=_INVENTORY_WRITE)
 async def update_player_item(player_id: CheckedId, item_id: int, change: PlayerItemUpdate, adapter: WritePlayersDep) -> PlayerInventory:
     """Cambia lo slot di un oggetto di primo livello (`item_id` = `PlayerItem.id`)."""
-    await confirm_server(adapter, change)
+    await confirm_server(adapter, change, player_id)
     return await adapter.update_player_item(player_id, item_id, change)
 
 
@@ -135,5 +138,5 @@ async def remove_player_item(
     player_id: CheckedId, item_id: int, options: Annotated[PlayerWriteOptions, Query()], adapter: WritePlayersDep
 ) -> PlayerInventory:
     """Toglie l'oggetto con il suo contenuto (`revision` e `confirmServerRunning` come query)."""
-    await confirm_server(adapter, options)
+    await confirm_server(adapter, options, player_id)
     return await adapter.remove_player_item(player_id, item_id, options)

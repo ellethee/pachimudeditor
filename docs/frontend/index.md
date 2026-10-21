@@ -13,6 +13,7 @@ buildata e viene servita dal backend alla radice del dominio (`/assets/...`: un 
 | Istanze | mob e oggetti vivi nel gioco | capability `supportsInstances` |
 | Giocatori | account, personaggi, inventario | capability `supportsPlayers` |
 | Giocatori (file) | elenco e dettaglio dei giocatori salvati nei file del MUD, con inventario/equipaggiamento; pagina `/player-files` guidata dal descrittore dell'adapter, avviso «il server potrebbe essere in esecuzione»; modifica dei campi (salvataggio con conferma se il server e' acceso) e dell'inventario (aggiungi da catalogo, cambia slot, togli) nei mondi non `read_only` | capability `supportsPlayerRecords` (inventario: `supportsPlayerInventory`; scrittura: `supportsPlayerWrite`, `supportsPlayerInventoryWrite`) |
+| Canale live | nella pagina Giocatori (file): chip dello stato del canale, badge «online» (o «link morto»), per un giocatore connesso la modifica passa dal canale (salvataggio nel gioco di default, avvertenza e conferma esplicita per i livelli >= 51) e il pannello «Server live» (giocatori connessi, uptime e contatori, reset di una zona da elenco con conferma, crea mob/oggetti in una stanza o a un giocatore, messaggi). Solo superuser; con il canale spento stato chiaro e ripiego sui file; mondo `read_only` senza controlli di scrittura | capability `supportsLive` |
 | Trasferimento | export/import di zone in YAML | capability `supportsTransfer` |
 | Contenuti | razze e classi | capability `supportsContentRaces` |
 | Conversione | copia di zone fra due mondi | almeno due mondi configurati |
