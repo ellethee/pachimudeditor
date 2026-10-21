@@ -40,6 +40,7 @@ DIKUMOD_TYPE_TABLES: dict[str, list[str]] = {
     "dikumodApplyType": T.APPLY_TYPES,
     "dikumodWearPos": T.WEAR_POSITIONS,
     "dikumodRace": T.RACES,
+    "dikumodSex": T.SEXES,
     "dikumodLiquid": T.LIQUIDS,
     "dikumodDoorState": [s.lower() for s in T.DOOR_STATES],
     "dikumodMobKind": ["S", "A", "N", "B", "L"],

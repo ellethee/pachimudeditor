@@ -125,6 +125,7 @@ class CharRecord:
     spells_to_learn: int
     skills: tuple[SkillEntry, ...] = field(default_factory=tuple)
     affects: tuple[AffectEntry, ...] = field(default_factory=tuple)
+    extra_str: str = ""
 
     def __repr__(self) -> str:
         """Breve e senza dati sensibili (nome e livello)."""
@@ -215,6 +216,7 @@ def parse_char_record(data: bytes) -> CharRecord:
         spells_to_learn=data[_O_SPELLS_TO_LEARN],
         skills=tuple(skills),
         affects=tuple(affects),
+        extra_str=_text(data[128:383]),
     )
 
 
@@ -355,8 +357,8 @@ def read_confined(directory: Path, filename: str, max_bytes: int) -> tuple[bytes
         raise PlayerFileError("unreadable", error.__class__.__name__) from error
 
 
-def read_char_file(players_dir: Path, name: str) -> tuple[CharRecord, float]:
-    """`(record, mtime)` di `players/<name>.dat`.
+def read_char_bytes(players_dir: Path, name: str) -> tuple[bytes, float]:
+    """`(byte, mtime)` di `players/<name>.dat`, solo se sono esattamente 3036 byte.
 
     Raises:
         FileNotFoundError: manca. PlayerFileError: dimensione diversa da 3036, symlink fuori cartella, non regolare, illeggibile.
@@ -364,11 +366,19 @@ def read_char_file(players_dir: Path, name: str) -> tuple[CharRecord, float]:
     if not NAME_RE.fullmatch(name):
         raise FileNotFoundError(name)
     data, st = read_confined(players_dir, f"{name}.dat", CHAR_FILE_SIZE)
-    return parse_char_record(data), st.st_mtime
+    if len(data) != CHAR_FILE_SIZE:
+        raise PlayerFileError("bad_size", f"il record deve essere di {CHAR_FILE_SIZE} byte")
+    return data, st.st_mtime
 
 
-def read_rent_file(rent_dir: Path, name: str) -> RentFile | None:
-    """Il rent di `name` (`rent/<name>`), `None` se il file non esiste.
+def read_char_file(players_dir: Path, name: str) -> tuple[CharRecord, float]:
+    """`(record, mtime)` di `players/<name>.dat` (stesse eccezioni di `read_char_bytes`)."""
+    data, mtime = read_char_bytes(players_dir, name)
+    return parse_char_record(data), mtime
+
+
+def read_rent_bytes(rent_dir: Path, name: str) -> bytes | None:
+    """I byte di `rent/<name>`, `None` se il file non esiste o il nome non e' ammesso.
 
     Raises:
         PlayerFileError: symlink fuori cartella, non regolare, illeggibile.
@@ -379,4 +389,32 @@ def read_rent_file(rent_dir: Path, name: str) -> RentFile | None:
         data, _ = read_confined(rent_dir, name, RENT_HEADER_SIZE + MAX_OBJ_SAVE * RENT_ELEM_SIZE + RENT_ELEM_SIZE)
     except FileNotFoundError:
         return None
-    return parse_rent(data)
+    return data
+
+
+def read_rent_file(rent_dir: Path, name: str) -> RentFile | None:
+    """Il rent di `name` (`rent/<name>`), `None` se il file non esiste (stesse eccezioni di `read_rent_bytes`)."""
+    data = read_rent_bytes(rent_dir, name)
+    return None if data is None else parse_rent(data)
+
+
+def write_target(directory: Path, filename: str) -> Path:
+    """Il percorso reale su cui scrivere `directory/filename` (un symlink e' risolto), solo se resta dentro `directory` e non e'
+    una cartella o un file speciale. Un file che non esiste ancora e' ammesso (verra' creato).
+
+    Raises:
+        PlayerFileError: `outside_dir`, `not_regular`, `unreadable`.
+    """
+    if filename != os.path.basename(filename) or filename in ("", ".", ".."):
+        raise PlayerFileError("outside_dir", "nome di file non valido")
+    try:
+        real_dir = directory.resolve(strict=True)
+        path = directory / filename
+        real = path.resolve(strict=True) if os.path.lexists(path) else real_dir / filename
+    except OSError as error:
+        raise PlayerFileError("unreadable", error.__class__.__name__) from error
+    if real.parent != real_dir:
+        raise PlayerFileError("outside_dir", "il file risolve fuori dalla cartella")
+    if real.exists() and not stat.S_ISREG(real.stat().st_mode):
+        raise PlayerFileError("not_regular", "non e' un file regolare")
+    return real

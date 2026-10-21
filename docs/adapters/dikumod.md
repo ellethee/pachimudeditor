@@ -127,10 +127,10 @@ rappresentabile in `latin-1` (emoji, `€`) -> 422 `dikumod.unencodable_text`, p
 `dikumodPosition`, `dikumodApplyType`, `dikumodWearPos`, `dikumodRace`, `dikumodLiquid`, `dikumodDoorState`, `dikumodMobKind` (flag: `value` = bit; tipi: indice).
 `races()` = le 85 razze di `race.h`, `classes()` vuota. Capability: solo `supportsResetScripts` e `supportsExtraDescriptions`.
 
-## Giocatori in sola lettura
+## Giocatori
 
-Capability `supportsPlayerRecords` e `supportsPlayerInventory` ([contratto](../backend/contract-players-files.md)); nessuna
-scrittura sui file giocatore, **neanche con `read_only: false`** (le scritture L3 non esistono). Fonti dentro `lib/`:
+Capability `supportsPlayerRecords` e `supportsPlayerInventory` (lettura, SDK 1.3), `supportsPlayerWrite` e `supportsPlayerInventoryWrite` (scrittura, SDK 1.4;
+[contratto](../backend/contract-players-files.md)). **Un mondo `read_only` (il default del kind) non scrive nulla**: le scritture rispondono 409 `world.read_only`. Fonti dentro `lib/`:
 
 - `players/<nome>.dat`: un `char_file_u` da **3036 byte** per giocatore (build `EMANUELE`; non esiste una tabella indice, l'elenco e'
   la cartella). Ammessi solo i nomi `[a-z][a-z0-9_-]{0,19}.dat`: `*.dat~`, backup, maiuscole e nomi con percorso sono ignorati;
@@ -148,10 +148,39 @@ Robustezza: file di dimensione diversa da 3036 -> riga con `problem: bad_size`; 
 -> `not_regular`; rent troncato / `number` > 200 / byte in eccesso / proprietario diverso dal giocatore (il gioco in quel caso scarta gli oggetti) ->
 `problem` dell'inventario con gli oggetti leggibili. Nessuna eccezione verso il client.
 
+### Scrittura (SDK 1.4)
+
+Il writer (`dikumod_lib/players_write.py`, solo byte in memoria) parte dai **byte attuali** del file e sovrascrive solo i campi richiesti con gli stessi
+offset del parser: nessuna modifica = file identico, e tutto cio' che l'editor non conosce (padding, puntatori `next`, `talks`, `abilities.extra`, i byte dopo il NUL
+dei campi char, la **password**) resta com'e'. Il valore invariato non si valida (esistono file reali con maschere di classe fuori dall'intervallo di gioco e titoli da 80 byte
+pieni). Ogni scrittura: lock unico dell'adapter, `revision` (SHA-256 troncato dei byte, senza la password), copia `<file>.bak` (una generazione; stessi permessi del file, perche' il
+giocatore contiene l'hash della password) e `atomic_write_bytes`.
+
+- **Campi** (`PlayersInfo.detailFields` con `readOnly: false`): tutti quelli del `char_file_u` tranne password, nome (e' l'identita' del file) e livello (derivato da `levels`);
+  `autoRent` e' derivato da `loadRoom` (-2) e sola lettura. Validazione: tipo (nessun bool/float/stringa al posto di un intero), intervallo del tipo C (`abilities` e `hitroll/damroll`
+  sbyte, punti int16, oro/banca/esp int32 con oro e banca >= 0, `levels` 0..255, `classMask` 0..2047, `sex` 0..2, `race` nella tabella `race.h`), lunghezze dei campi char
+  (`title` 79, `alias` 29, `description` 239, `extraStr` 254 caratteri), latin-1, nessun carattere di controllo (la tab si': il lettore la conserva; a capo no, il lettore li scarta, quindi il testo e' su una riga),
+  flag per nome (i bit senza nome restano), date ISO 8601 (`birth`, `lastLogon`; null = 0). Tabelle: `skills` (indice 0..349 senza duplicati, byte 0..255; le voci non elencate dal lettore
+  perche' `learned == 0 e flags == 0` restano) e `affects` (al massimo 40, compattati).
+  I valori di `levels`/`classMask` non sono verificati tra loro (la coerenza e' dell'utente).
+- **Oro**: se `gold` cambia, `gold_left` del rent (se esiste, coerente e del proprietario giusto) viene allineato (scrittura separata con il suo `.bak`): al boot `update_obj_file`
+  confronta `total_cost * giorni` con `gold_left` e azzera chi non puo' pagare.
+- **Oggetti**: creati dal prototipo con i valori di `read_object` appena caricato (`value`, `extra_flags`, `weight`, nomi, fino a 5 effetti; `timer` 0, `bitvector` 0, effetti non usati 0;
+  stringhe tagliate a 127/127/255 caratteri). Solo prototipi che esistono nel mondo e con vnum <= 32767 (`item_number` e' `sh_int`). Come il gioco (`obj_store_to_char`): un solo oggetto per
+  slot (409 `slot_taken`), mai equipaggiato **e** contenuto (`slot_in_container`), un oggetto in un contenitore va subito dopo l'ultimo contenuto di quel contenitore con `depth` + 1 (massimo 60), il
+  contenitore deve essere un oggetto il cui prototipo e' di tipo `container` (altrimenti i figli resterebbero orfani: `container_invalid`), al massimo 200 oggetti. Non si controlla la compatibilita'
+  tra l'oggetto e lo slot (`wear_flags`): il gioco equipaggia qualunque cosa.
+  Togliere un oggetto toglie anche il suo contenuto. Lo slot si cambia solo agli oggetti di primo livello.
+- **Rent (testata)**: un file assente o vuoto diventa una testata nuova (`owner` = nome del personaggio, `gold_left` = oro, `total_cost` 100 come il minimo di `recep_offer`, `last_update` = adesso, `minimum_stay` 0);
+  uno esistente conserva testata e byte di `owner` (anche i residui dopo il NUL) tranne `number` (ricalcolato) e `total_cost`, che aumenta/diminuisce del costo giornaliero (`rent` del prototipo, se >= 0) degli oggetti
+  aggiunti/tolti. Un rent incoerente (troncato, `number` > 200, byte in eccesso) o di un altro proprietario **non si modifica** (409 `file_unwritable`): il gioco, al boot, fa `assert(0)` se `owner` non coincide col nome.
+- **Il `.bak` e il boot del gioco**: il gioco legge **ogni** file non nascosto di `players/` (`db.c` all'avvio e `update_obj_file` in `reception.c`) come un giocatore. Un `players/<nome>.dat.bak` e' quindi un duplicato
+  per il gioco (come i `*.dat~` gia' presenti): meglio spostarlo fuori da `players/` prima di riavviare il server. In `rent/` il `.bak` non e' mai letto (il gioco apre solo `rent/<nome>`).
+
 **Server acceso.** Su disco non esiste un elenco dei connessi (il gioco riscrive il record con `fopen("r+b")`, non atomico): il giocatore e'
 sempre `online: null` e il frontend mostra l'avviso generico «il server potrebbe essere in esecuzione». In piu' `GET /api/world/players/status`
 cerca un processo dello stesso utente con **cwd = `lib/`** (il server fa `chdir` nella cartella dati) e socket aperti: se c'e', `serverRunning: true`
-e il banner lo dice; altrimenti `null` (non rilevabile: altro utente, altra macchina, niente `/proc`). Non blocca mai la lettura.
+e il banner lo dice; altrimenti `null` (non rilevabile: altro utente, altra macchina, niente `/proc`). Non blocca mai la lettura; per le **scritture** `serverRunning: true` richiede `confirmServerRunning: true` (409 `worldplayers.server_running` altrimenti), e il gioco puo' comunque riscrivere il file del giocatore connesso (ultima scrittura vince).
 
 ## Limiti noti
 

@@ -548,3 +548,12 @@ Rent (`obj_file_u`): `owner[20]`, `gold_left`, `total_cost`, `last_update`, `min
 (`location` int16 + `modifier` int32, 8 byte l'uno). `ReadObjs` non controlla `number <= MAX_OBJ_SAVE` (200): un valore corrotto manda in overflow il gioco, l'editor lo rifiuta.
 Se `owner` non coincide con il nome del giocatore, il gioco scarta gli oggetti ("Bad item-file write"). File vuoti (0 byte) o da 40 byte = rent azzerato.
 I file `rent/<nome>.aux` (alias, email) e `.qst` non sono letti.
+
+**Scrittura (semantica del gioco, `reception.c`).** `save_obj` scrive prima gli oggetti equipaggiati (`wearpos` = slot + 1, `depth` 0) e poi quelli portati, ciascuno seguito dal proprio
+contenuto in preordine (`depth` + 1); `obj_store_to_char` lo rilegge cosi': un record con `depth` > 0 va nell'ultimo oggetto di `depth` inferiore, un record con `depth` e `wearpos` insieme
+viene azzerato ("weird"), `depth` > 60 pure, un `item_number` senza prototipo e' saltato (i suoi figli restano orfani), due oggetti nello stesso slot rompono `equip_char`.
+`put_obj_in_store` copia dal prototipo `value[4]`, `extra_flags`, `weight`, `timer`, `bitvector`, `name`, `sd`, `desc` (con `strcpy`: 127/127/255 caratteri al massimo) e `affected[5]`; un oggetto appena
+letto con `read_object` ha `timer` e `bitvector` a 0. `total_cost` e' 100 piu' la somma dei `cost_per_day` (il campo `rent` del `.obj`) degli oggetti con costo >= 0; `gold_left` e' l'oro del
+personaggio e `last_update` l'istante del salvataggio. Al boot `update_obj_file` fa `assert(0)` se `owner` non coincide col nome del file giocatore e azzera il personaggio se
+`total_cost * giorni > gold_left`; al login, con `owner` diverso, gli oggetti sono scartati. L'editor riscrive i file rispettando queste regole (vedi [adapter](../adapters/dikumod.md#scrittura-sdk-14)).
+Nel file giocatore `save_char` riscrive i 3036 byte: i campi che l'editor non conosce restano come li ha lasciati il gioco.

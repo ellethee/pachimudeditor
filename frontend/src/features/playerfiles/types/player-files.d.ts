@@ -36,6 +36,8 @@ export interface IPlayersInfo {
   detailLists: IPlayerListInfo[]
   hasAccounts: boolean
   onlinePolicy: 'unknown' | 'warn'
+  /** Slot di equipaggiamento ammessi, nell'ordine del MUD. */
+  wearSlots: string[]
 }
 
 /** Stato del server di gioco (`GET /status`); `serverRunning` nullo = non rilevabile. */
@@ -60,6 +62,8 @@ export interface IPlayerSummary {
   online: boolean | null
   /** Codice stabile se il file è illeggibile/corrotto. */
   problem: string | null
+  /** Impronta del file letto: da rimandare nelle scritture per rilevare modifiche concorrenti. */
+  revision: string | null
   extra: Record<string, unknown>
 }
 
@@ -85,6 +89,8 @@ export interface IPlayerItem {
 export interface IPlayerInventory {
   items: IPlayerItem[]
   problem: string | null
+  /** Impronta del file dell'inventario. */
+  revision: string | null
   extra: Record<string, unknown>
 }
 
@@ -92,4 +98,27 @@ export interface IPlayerInventory {
 export interface IPlayerPage {
   items: IPlayerSummary[]
   total: number
+}
+
+/** Opzioni comuni di ogni scrittura. */
+export interface IPlayerWriteOptions {
+  /** La `revision` letta (se il file è cambiato: 409 `worldplayers.conflict`). */
+  revision?: string | null
+  /** Obbligatoria se il server di gioco risulta acceso. */
+  confirmServerRunning?: boolean
+}
+
+/** Modifica parziale del dettaglio (`PATCH /{id}`). */
+export interface IPlayerPatch extends IPlayerWriteOptions {
+  details?: Record<string, unknown>
+  lists?: Record<string, Record<string, unknown>[]>
+}
+
+/** Aggiunta di un oggetto dal prototipo del mondo (`POST /{id}/inventory/items`). */
+export interface IPlayerItemAdd extends IPlayerWriteOptions {
+  vnum: number
+  /** Nome dello slot, `null` = portato. */
+  wearSlot?: string | null
+  /** `id` del contenitore in cui metterlo. */
+  containerId?: number | null
 }

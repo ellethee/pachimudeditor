@@ -12,7 +12,7 @@ buildata e viene servita dal backend alla radice del dominio (`/assets/...`: un 
 | Mondo | panoramica, grafo tra zone, ricerca trasversale | capability `supportsWorldOverview` |
 | Istanze | mob e oggetti vivi nel gioco | capability `supportsInstances` |
 | Giocatori | account, personaggi, inventario | capability `supportsPlayers` |
-| Giocatori (file) | elenco e dettaglio in sola lettura dei giocatori salvati nei file del MUD, con inventario/equipaggiamento; pagina `/player-files` guidata dal descrittore dell'adapter, avviso «il server potrebbe essere in esecuzione» | capability `supportsPlayerRecords` (inventario: `supportsPlayerInventory`) |
+| Giocatori (file) | elenco e dettaglio dei giocatori salvati nei file del MUD, con inventario/equipaggiamento; pagina `/player-files` guidata dal descrittore dell'adapter, avviso «il server potrebbe essere in esecuzione»; modifica dei campi (salvataggio con conferma se il server e' acceso) e dell'inventario (aggiungi da catalogo, cambia slot, togli) nei mondi non `read_only` | capability `supportsPlayerRecords` (inventario: `supportsPlayerInventory`; scrittura: `supportsPlayerWrite`, `supportsPlayerInventoryWrite`) |
 | Trasferimento | export/import di zone in YAML | capability `supportsTransfer` |
 | Contenuti | razze e classi | capability `supportsContentRaces` |
 | Conversione | copia di zone fra due mondi | almeno due mondi configurati |

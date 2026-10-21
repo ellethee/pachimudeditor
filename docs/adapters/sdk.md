@@ -147,7 +147,7 @@ Riepilogo di `pachimudeditor.sdk.__all__`, per famiglia:
 | Errori/DTO | `conflict`, `not_found`, `PatchModel` |
 | Regole | `rules` (reset, uscite, range, grafo, uso) |
 | Conversione | `Flavor`, `ComposedConverter`, `PairConverter`, `ConvertContext`, `Converted`, `loss`, `to_in`, `extra_dropped`, `convert_helpers`, `convert_tables` |
-| Giocatori su file (SDK 1.3) | `PlayersAdapter` (mixin), `PlayersInfo`, `PlayerColumn`, `PlayerListInfo`, `PlayerListColumn`, `PlayerSummary`, `PlayerDetail`, `PlayerInventory`, `PlayerItem`, `PlayerPageParams`, `PlayersStatus` |
+| Giocatori su file (SDK 1.3, scrittura 1.4) | `PlayersAdapter` (mixin), `PlayersInfo`, `PlayerColumn`, `PlayerListInfo`, `PlayerListColumn`, `PlayerSummary`, `PlayerDetail`, `PlayerInventory`, `PlayerItem`, `PlayerPageParams`, `PlayersStatus`; 1.4: `PlayerWriteOptions`, `PlayerPatch`, `PlayerItemAdd`, `PlayerItemUpdate` |
 | File (SDK 1.2) | `atomic_write_bytes(path, data)`: scrittura atomica (temporaneo nella stessa cartella, `fsync`, `os.replace`); segue i symlink, preserva permessi e proprietario, pulisce il temporaneo in caso di errore |
 
 Per scrivere un file dell'adapter usa `atomic_write_bytes` invece di `open(..., "w")`: un crash a meta' non lascia file troncati.
@@ -158,7 +158,7 @@ Gli adapter importano dal core **solo** questi moduli (verificato da `tests/core
 
 - `pachimudeditor.sdk`: `AdapterPlugin`, `AdapterUnavailable`, `ENTRY_POINT_GROUP`, `SDK_VERSION`, `atomic_write_bytes`;
   `WorldAdapter`, `AdapterCapabilities`, `AdapterInfo`, `ResourceInfo`, `ResourceType`, `FieldDescriptor`, `ExtraFieldDescriptor`;
-  giocatori (SDK 1.3): `PlayersAdapter`, `PlayersInfo`, `PlayerColumn`, `PlayerListInfo`, `PlayerListColumn`, `PlayerSummary`, `PlayerDetail`, `PlayerInventory`, `PlayerItem`, `PlayerPageParams`, `PlayersStatus`;
+  giocatori (SDK 1.3, scrittura 1.4): `PlayersAdapter`, `PlayersInfo`, `PlayerColumn`, `PlayerListInfo`, `PlayerListColumn`, `PlayerSummary`, `PlayerDetail`, `PlayerInventory`, `PlayerItem`, `PlayerPageParams`, `PlayersStatus`, `PlayerWriteOptions`, `PlayerPatch`, `PlayerItemAdd`, `PlayerItemUpdate`;
   `WorldConfig`, `register_kind`, `get_registry`, `AdapterDep`, `WriteAdapterDep`, `require_capability`;
   `describe_resource`, `finish_resource`, `xf`, `diagnostic` (descrittori dei campi); `make_page`, `paginate_list` (paginazione in memoria);
   `rules` (modulo: validazione reset, uscite, range, grafo, uso nei reset); `conflict`, `not_found` (errori HTTP con codice), `PatchModel`;
@@ -239,12 +239,12 @@ Un nuovo adapter non riscrive la logica di integrita': la riusa passando un picc
 - Uso: `USAGE_FIELDS` (quali argomenti dei reset contengono un vnum) e `raise_if_used(usage, code)`.
 - Grafo: `build_room_graph(GraphRoom[], GraphExit[])`.
 
-## Giocatori su file (SDK 1.3)
+## Giocatori su file (SDK 1.3, scrittura 1.4)
 
 Mixin **opzionale** `PlayersAdapter` (`pachimudeditor.sdk`): un adapter lo aggiunge alle sue classi base (prima di `WorldAdapter`) e
 dichiara `supports_player_records` (e `supports_player_inventory`). Il core registra sempre le rotte neutre `/api/world/players...`
 ([contratto](../backend/contract-players-files.md)); senza il mixin o la capability rispondono 409 `world.capability_missing`.
-Non c'e' nessuna scrittura: L1 (elenco) e L2 (dettaglio + inventario) soltanto.
+L1 (elenco) e L2 (dettaglio + inventario) sono in lettura (1.3); **L3 (1.4)** aggiunge la scrittura, descritta sotto.
 
 | Metodo | Compito |
 |---|---|
@@ -253,11 +253,24 @@ Non c'e' nessuna scrittura: L1 (elenco) e L2 (dettaglio + inventario) soltanto.
 | `list_players(PlayerPageParams)` | pagina di `PlayerSummary` (usa `paginate_list` + `make_page`) |
 | `get_player(id)` | `PlayerDetail` (`details` per i campi dichiarati, `lists` per le tabelle); 404 `worldplayers.not_found` |
 | `player_inventory(id)` | `PlayerInventory` (oggetti con slot e annidamento, `problem` stabile per file troncati/corrotti) |
+| `update_player(id, PlayerPatch)` | 1.4, `supports_player_write`: modifica parziale di `details` (campi non `read_only` di `PlayersInfo`) e sostituzione di `lists`; ritorna il `PlayerDetail` riletto |
+| `add_player_item(id, PlayerItemAdd)` | 1.4, `supports_player_inventory_write`: oggetto per `vnum` dal prototipo del mondo, con slot (`PlayersInfo.wear_slots`) o in un contenitore |
+| `update_player_item(id, item_id, PlayerItemUpdate)` | 1.4: cambia lo slot (null = portato) |
+| `remove_player_item(id, item_id, PlayerWriteOptions)` | 1.4: toglie l'oggetto con il suo contenuto |
 
 Regole: l'`id` e' **opaco** e va validato dall'adapter (path traversal: whitelist del nome, risoluzione dei symlink confinata alla
 cartella, mai `open(id)` diretto); i file corrotti producono `problem` e dati vuoti, mai un 500; **mai** password, hash o loro
 prefissi/lunghezze nei DTO, nei log o nei messaggi d'errore (solo `has_password`); le etichette si dichiarano con `label_key`
 (il frontend le traduce con le sue chiavi, ripiegando sul nome). Il frontend (`/player-files`) e' interamente guidato da `PlayersInfo`.
+**Scrittura (1.4).** Di tutto cio' che e' comune a ogni adapter si occupa il core: mondo `read_only` (409 `world.read_only`),
+capability, id validato, e **conferma del server acceso** (se `players_status()` dice `server_running` vero e la richiesta non ha
+`confirm_server_running`, 409 `worldplayers.server_running` prima di chiamare l'adapter). All'adapter restano: lock di scrittura;
+`PlayerWriteOptions.revision` (impronta del file letto: se non coincide piu', 409 `worldplayers.conflict`; `None` = nessun
+controllo); validazione di ogni valore (422 `worldplayers.invalid_value` con `field`, `reason` e i limiti in `params`; stati
+dell'inventario incompatibili 409 `worldplayers.item_invalid`; indice inesistente 404 `worldplayers.item_not_found`; file non scrivibile 409
+`worldplayers.file_unwritable` con `params.problem`); **copia di sicurezza** del file attuale prima di sovrascriverlo e scrittura
+atomica con `atomic_write_bytes` (mai `open(..., "w")`). La password non si scrive mai e non e' un campo del patch. Il DTO e' neutro:
+`PlayerPatch.details` ha come chiavi i nomi di `PlayersInfo.detail_fields`; un campo e' scrivibile se `read_only` e' falso.
 Modello completo: `adapters/dikumod/src/pachimudeditor_adapter_dikumod/players.py`.
 
 # Capability (`AdapterCapabilities`)
@@ -270,6 +283,8 @@ Modello completo: `adapters/dikumod/src/pachimudeditor_adapter_dikumod/players.p
 | `supports_players` | account/personaggi/inventario (`/api/players`) | idem |
 | `supports_player_records` | giocatori su file in sola lettura (`/api/world/players`: info, stato, elenco, dettaglio; SDK 1.3) | idem |
 | `supports_player_inventory` | inventario/equipaggiamento dei giocatori su file (`/api/world/players/{id}/inventory`; SDK 1.3) | idem |
+| `supports_player_write` | modifica dei campi dei giocatori su file (`PATCH /api/world/players/{id}`; SDK 1.4) | idem; con `read_only` 409 `world.read_only` |
+| `supports_player_inventory_write` | aggiungi/sposta/togli oggetti (`.../inventory/items`; SDK 1.4) | idem |
 | `supports_transfer` | `export_zone_bundle` / `import_zone_dir` (`/api/transfer`) | idem |
 | `supports_content_races` | razze/classi YAML (`/api/content`) | idem |
 | `supports_reset_scripts` | script di reset modificabile (default vero) | informativa per il frontend |

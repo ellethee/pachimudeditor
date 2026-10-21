@@ -1,5 +1,14 @@
 import { getUseAlovaInstance } from '@ilpachi/use-alova'
-import type { IPlayerDetail, IPlayerInventory, IPlayerPage, IPlayersInfo, IPlayersStatus } from '../types/player-files'
+import type {
+  IPlayerDetail,
+  IPlayerInventory,
+  IPlayerItemAdd,
+  IPlayerPage,
+  IPlayerPatch,
+  IPlayersInfo,
+  IPlayersStatus,
+  IPlayerWriteOptions,
+} from '../types/player-files'
 
 /** Client HTTP dell'app (auth, refresh e `X-World` già gestiti), risolto a ogni chiamata. */
 function http() {
@@ -44,4 +53,60 @@ export async function getPlayer(id: string): Promise<IPlayerDetail> {
  */
 export async function getPlayerInventory(id: string): Promise<IPlayerInventory> {
   return http().Get<IPlayerInventory>(`/${encodeURIComponent(id)}/inventory`, OPTS)
+}
+
+/**
+ * Modifica i campi di un giocatore (solo quelli presenti nel patch).
+ *
+ * @param id - id opaco
+ * @param patch - `details`/`lists` da cambiare, `revision` letta e conferma del server acceso
+ */
+export async function updatePlayer(id: string, patch: IPlayerPatch): Promise<IPlayerDetail> {
+  return http().Patch<IPlayerDetail>(`/${encodeURIComponent(id)}`, patch, OPTS)
+}
+
+/**
+ * Aggiunge un oggetto (per vnum) all'inventario o all'equipaggiamento.
+ *
+ * @param id - id opaco del giocatore
+ * @param item - vnum, slot o contenitore, `revision` e conferma
+ */
+export async function addPlayerItem(id: string, item: IPlayerItemAdd): Promise<IPlayerInventory> {
+  return http().Post<IPlayerInventory>(`/${encodeURIComponent(id)}/inventory/items`, item, OPTS)
+}
+
+/**
+ * Cambia lo slot di un oggetto di primo livello.
+ *
+ * @param id - id opaco del giocatore
+ * @param itemId - posizione dell'oggetto (`IPlayerItem.id`)
+ * @param wearSlot - nuovo slot, `null` = portato
+ * @param options - `revision` e conferma
+ */
+export async function updatePlayerItem(
+  id: string,
+  itemId: number,
+  wearSlot: string | null,
+  options: IPlayerWriteOptions,
+): Promise<IPlayerInventory> {
+  return http().Patch<IPlayerInventory>(`/${encodeURIComponent(id)}/inventory/items/${itemId}`, { ...options, wearSlot }, OPTS)
+}
+
+/**
+ * Toglie un oggetto con il suo contenuto.
+ *
+ * @param id - id opaco del giocatore
+ * @param itemId - posizione dell'oggetto
+ * @param options - `revision` e conferma (vanno in query)
+ */
+export async function removePlayerItem(id: string, itemId: number, options: IPlayerWriteOptions): Promise<IPlayerInventory> {
+  const params: Record<string, string> = {}
+  if (options.revision) params.revision = options.revision
+  if (options.confirmServerRunning) params.confirmServerRunning = 'true'
+  return http().Delete<IPlayerInventory>(`/${encodeURIComponent(id)}/inventory/items/${itemId}`, undefined, { ...OPTS, params })
+}
+
+/** Opzioni degli enum del mondo (`GET /api/meta/enums`: chiave -> `[{value, label}]`). */
+export async function getPlayerEnums(): Promise<Record<string, unknown>> {
+  return getUseAlovaInstance()({ url: '/api/meta' }).alova.Get<Record<string, unknown>>('/enums', OPTS)
 }

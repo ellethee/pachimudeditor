@@ -15,6 +15,7 @@ from pachimudeditor.common.adapters import registry as registry_module
 from pachimudeditor.common.adapters.registry import WorldConfig, WorldRegistry, set_registry
 from tests.helpers import data, error_code
 from tests.support import stack
+from pachimudeditor_adapter_dikumod.dikumod_lib.players_write import rent_revision
 from tests.support.dikumod_players import PWD_MARKER, make_char, make_item, make_rent, standard_players, write_players
 
 H = {"X-World": "dikumod"}
@@ -111,6 +112,7 @@ async def test_inventory(client: httpx.AsyncClient) -> None:
     assert data(await client.get(f"{BASE}/caio/inventory", headers=H)) == {
         "items": [],
         "problem": None,
+        "revision": rent_revision(b""),
         "extra": {"rentFile": True, "goldLeft": 0, "totalCost": 0, "lastUpdate": None, "minimumStay": 0, "declaredNumber": 0},
     }
     assert data(await client.get(f"{BASE}/sempronio/inventory", headers=H))["extra"] == {"rentFile": False}
@@ -155,7 +157,7 @@ async def test_capability_missing_and_unknown_world(client: httpx.AsyncClient) -
 
 
 async def test_read_only_and_no_writes(client: httpx.AsyncClient, lib: Path) -> None:
-    """Nessun metodo di scrittura e nessun file toccato (hash e mtime di players/ e rent/ invariati)."""
+    """Mondo in sola lettura: ogni scrittura e' 409 `world.read_only` e nessun file e' toccato (hash e mtime di players/ e rent/ invariati)."""
 
     def snapshot() -> dict[str, tuple[int, int, bytes]]:
         return {
@@ -167,8 +169,11 @@ async def test_read_only_and_no_writes(client: httpx.AsyncClient, lib: Path) -> 
     before = snapshot()
     for path in ("/info", "/status", "", "/tizio", "/tizio/inventory", "/caio/inventory"):
         data(await client.get(BASE + path, headers=H))
-    for method in ("post", "put", "patch", "delete"):
+    for method in ("post", "put"):
         assert (await getattr(client, method)(f"{BASE}/tizio", headers=H)).status_code in {404, 405}
+    for method, path in (("patch", ""), ("post", "/inventory/items"), ("patch", "/inventory/items/0"), ("delete", "/inventory/items/0")):
+        response = await client.request(method, f"{BASE}/tizio{path}", headers=H, json={"vnum": 1, "wearSlot": None})
+        assert error_code(response, 409) == "world.read_only"  # il mondo e' in sola lettura (default del kind)
     assert snapshot() == before
 
 

@@ -11,8 +11,15 @@
       <q-banner v-if="detail?.problem" rounded class="bg-negative text-white q-mb-sm" data-testid="player-detail-problem">
         {{ problemLabel(detail.problem) }}
       </q-banner>
-      <q-banner rounded class="bg-grey-3 text-black q-mb-sm" role="note" data-testid="player-readonly-note">
+      <q-banner v-if="!canWrite" rounded class="bg-grey-3 text-black q-mb-sm" role="note" data-testid="player-readonly-note">
         {{ t('playerFiles.detail.readOnly') }}
+      </q-banner>
+      <q-banner v-else rounded class="bg-grey-3 text-black q-mb-sm" role="note" data-testid="player-write-note">
+        {{ t('playerFiles.detail.writable') }}
+      </q-banner>
+      <q-banner v-if="canWrite && status?.serverRunning" rounded class="bg-warning text-black q-mb-sm" role="alert" data-testid="player-server-running">
+        <div>{{ t('playerFiles.edit.serverRunning') }}</div>
+        <q-checkbox v-model="confirmServer" :label="t('playerFiles.edit.confirmServer')" data-testid="confirm-server" />
       </q-banner>
 
       <div v-if="detail && !detail.problem" class="q-mb-sm text-body2" data-testid="player-summary">
@@ -38,12 +45,19 @@
                 <tr v-for="field in section.fields" :key="field.name">
                   <th class="text-left" style="width: 35%">{{ labelOf(field.labelKey, field.name) }}</th>
                   <td :data-testid="`field-${field.name}`">
-                    <template v-if="field.type === 'flags'">
+                    <player-field-editor
+                      v-if="editing && !field.readOnly"
+                      v-model="draft[field.name]"
+                      :field="field"
+                      :enums="enums"
+                      :label="labelOf(field.labelKey, field.name)"
+                    />
+                    <template v-else-if="field.type === 'flags'">
                       <q-chip v-for="flag in asList(detail?.details[field.name])" :key="flag" dense>{{ flag }}</q-chip>
                       <span v-if="asList(detail?.details[field.name]).length === 0">—</span>
                     </template>
                     <pre v-else-if="field.type === 'json'" class="q-ma-none">{{ prettyJson(detail?.details[field.name]) }}</pre>
-                    <span v-else class="text-pre-wrap">{{ cell(detail?.details[field.name], field.type) }}</span>
+                    <span v-else class="text-pre-wrap">{{ cell(detail?.details[field.name], field.type, field) }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -54,7 +68,15 @@
         <q-tab-panel v-if="lists.length" name="lists" class="q-px-none" data-testid="panel-lists">
           <div v-for="list in lists" :key="list.name" class="q-mb-md">
             <div class="text-subtitle2 q-mb-xs">{{ labelOf(list.labelKey, list.name) }}</div>
+            <json-field
+              v-if="editing"
+              v-model="draftLists[list.name]"
+              :label="labelOf(list.labelKey, list.name)"
+              :hint="t('playerFiles.edit.listHint')"
+              :data-testid="`edit-list-${list.name}`"
+            />
             <q-table
+              v-else
               :rows="listRows(list.name)"
               :columns="listColumns(list)"
               row-key="__row"
@@ -69,38 +91,41 @@
           </div>
         </q-tab-panel>
 
-        <q-tab-panel v-if="inventoryEnabled" name="inventory" class="q-px-none" data-testid="panel-inventory">
-          <q-banner v-if="inventory?.problem" rounded class="bg-warning text-black q-mb-sm" data-testid="inventory-problem">
-            {{ problemLabel(inventory.problem) }}
-          </q-banner>
-          <div v-if="rentInfo" class="text-caption q-mb-sm" data-testid="inventory-rent">{{ rentInfo }}</div>
-          <q-table
-            :rows="inventory?.items ?? []"
-            :columns="inventoryColumns"
-            row-key="id"
-            dense
-            flat
-            bordered
-            :loading="inventoryLoading"
-            :rows-per-page-options="[0]"
-            hide-pagination
-            :no-data-label="t('playerFiles.inventory.empty')"
-            data-testid="inventory-table"
-          >
-            <template #body-cell-name="{ row }">
-              <q-td>
-                <span :style="{ paddingLeft: `${row.depth * 16}px` }">{{ row.name || '—' }}</span>
-                <q-chip v-if="!row.known" dense color="grey-6" text-color="white" class="q-ml-sm">
-                  {{ t('playerFiles.inventory.unknown') }}
-                </q-chip>
-              </q-td>
-            </template>
-          </q-table>
+        <q-tab-panel v-if="inventoryEnabled" name="inventory" class="q-px-none">
+          <player-inventory-panel
+            :player-id="playerId"
+            :can-write="canWriteInventory"
+            :wear-slots="info?.wearSlots ?? []"
+            :blocked="serverBlocked"
+            :confirm-server-running="confirmServer"
+          />
         </q-tab-panel>
       </q-tab-panels>
     </div>
     <template #actions>
-      <q-btn flat :label="t('playerFiles.close')" @click="onDialogCancel" />
+      <template v-if="editing">
+        <q-btn flat :label="t('playerFiles.cancel')" data-testid="edit-cancel" @click="editing = false" />
+        <q-btn
+          color="primary"
+          :label="t('playerFiles.edit.save')"
+          :disable="saving || serverBlocked"
+          :loading="saving"
+          data-testid="edit-save"
+          @click="save"
+        />
+      </template>
+      <template v-else>
+        <q-btn
+          v-if="canWrite && detail && !detail.problem"
+          outline
+          color="primary"
+          :icon="mdiPencil"
+          :label="t('playerFiles.edit.start')"
+          data-testid="edit-start"
+          @click="startEdit"
+        />
+        <q-btn flat :label="t('playerFiles.close')" @click="onDialogCancel" />
+      </template>
     </template>
   </pachi-dialog>
 </template>
@@ -108,15 +133,20 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useDialogPluginComponent } from 'quasar'
+import { useDialogPluginComponent, useQuasar } from 'quasar'
 import type { QTableColumn } from 'quasar'
+import { mdiPencil } from '@quasar/extras/mdi-v7'
 import { PachiDialog } from '@ilpachi/pachi-kit/dialog'
 import { describeError } from '../../players/helpers/describe-error'
+import JsonField from '../../shared/components/JsonField.vue'
 import { useWorld } from '../../shared/helpers/world-state'
+import { errorCode } from '../helpers/error-code'
 import { formatCell } from '../helpers/format'
-import { getPlayer, getPlayerInventory, getPlayersInfo } from '../services/player-files-api'
-import type { IPlayerDetail, IPlayerInventory, IPlayerListInfo, IPlayersInfo } from '../types/player-files'
+import { getPlayer, getPlayerEnums, getPlayersInfo, getPlayersStatus, updatePlayer } from '../services/player-files-api'
+import type { IPlayerDetail, IPlayerListInfo, IPlayersInfo, IPlayersStatus } from '../types/player-files'
 import type { IExtraFieldDescriptor } from '../../shared/types/worlds'
+import PlayerFieldEditor from './PlayerFieldEditor.vue'
+import PlayerInventoryPanel from './PlayerInventoryPanel.vue'
 
 const props = defineProps<{
   /** Id opaco del giocatore. */
@@ -128,18 +158,31 @@ const props = defineProps<{
 defineEmits([...useDialogPluginComponent.emits])
 
 const { t, te, locale } = useI18n()
+const $q = useQuasar()
 const { dialogRef, onDialogHide, onDialogCancel } = useDialogPluginComponent()
 const { capabilities } = useWorld()
 
 const tab = ref<'details' | 'lists' | 'inventory'>('details')
 const info = ref<IPlayersInfo>()
 const detail = ref<IPlayerDetail>()
-const inventory = ref<IPlayerInventory>()
-const inventoryLoading = ref(false)
+const status = ref<IPlayersStatus>()
+const enums = ref<Record<string, unknown>>()
 const error = ref('')
+const editing = ref(false)
+const saving = ref(false)
+const confirmServer = ref(false)
+const draft = ref<Record<string, unknown>>({})
+const draftLists = ref<Record<string, unknown>>({})
 
 const inventoryEnabled = computed(() => capabilities.value?.supportsPlayerInventory === true)
 const lists = computed<IPlayerListInfo[]>(() => info.value?.detailLists ?? [])
+const readOnlyWorld = computed(() => capabilities.value?.readOnly === true)
+/** Il mondo permette di modificare i campi del giocatore. */
+const canWrite = computed(() => capabilities.value?.supportsPlayerWrite === true && !readOnlyWorld.value)
+/** Il mondo permette di modificare l'inventario. */
+const canWriteInventory = computed(() => capabilities.value?.supportsPlayerInventoryWrite === true && !readOnlyWorld.value)
+/** Server acceso e conferma non data: nessuna scrittura. */
+const serverBlocked = computed(() => status.value?.serverRunning === true && !confirmServer.value)
 
 /** Campi del dettaglio raggruppati per sezione, nell'ordine dichiarato dall'adapter. */
 const sections = computed(() => {
@@ -181,8 +224,19 @@ function prettyJson(value: unknown): string {
   return value === null || value === undefined ? '—' : JSON.stringify(value, null, 1)
 }
 
-/** Valore semplice formattato per il tipo del campo (`number`/`boolean`/`text`). */
-function cell(value: unknown, type: string): string {
+/**
+ * Valore semplice formattato per il tipo del campo (`number`/`boolean`/`text`); gli `enum` mostrano l'etichetta dell'opzione.
+ *
+ * @param value - valore grezzo
+ * @param type - tipo dichiarato
+ * @param field - descrittore (per l'enum)
+ */
+function cell(value: unknown, type: string, field?: IExtraFieldDescriptor): string {
+  if (type === 'enum' && field?.enum) {
+    const options = enums.value?.[field.enum]
+    const hit = Array.isArray(options) ? (options as { value: unknown; label: string }[]).find((o) => o.value === value) : undefined
+    if (hit) return hit.label
+  }
   const kind = type === 'number' ? 'number' : type === 'boolean' ? 'boolean' : 'text'
   return formatCell(value, kind, locale.value, t('playerFiles.yes'), t('playerFiles.no'))
 }
@@ -203,24 +257,57 @@ function listColumns(list: IPlayerListInfo): QTableColumn[] {
   }))
 }
 
-const inventoryColumns = computed<QTableColumn[]>(() => [
-  { name: 'vnum', label: t('playerFiles.inventory.vnum'), field: 'vnum', align: 'left' },
-  { name: 'name', label: t('playerFiles.inventory.name'), field: 'name', align: 'left' },
-  {
-    name: 'where',
-    label: t('playerFiles.inventory.where'),
-    field: (row: { wearSlot: string | null; depth: number }) =>
-      row.wearSlot ? labelOf(`playerFiles.slots.${row.wearSlot}`, row.wearSlot) : row.depth > 0 ? t('playerFiles.inventory.inContainer') : t('playerFiles.inventory.carried'),
-    align: 'left',
-  },
-])
+/** Entra in modifica con una copia dei valori correnti. */
+function startEdit(): void {
+  draft.value = structuredClone(JSON.parse(JSON.stringify(detail.value?.details ?? {})) as Record<string, unknown>)
+  draftLists.value = structuredClone(JSON.parse(JSON.stringify(detail.value?.lists ?? {})) as Record<string, unknown>)
+  error.value = ''
+  editing.value = true
+}
 
-/** Riga con testata del rent («oro lasciato», «costo giornaliero»), se il file esiste. */
-const rentInfo = computed(() => {
-  const extra = inventory.value?.extra
-  if (!extra || extra.rentFile !== true) return ''
-  return t('playerFiles.inventory.rent', { gold: extra.goldLeft ?? 0, cost: extra.totalCost ?? 0, n: extra.declaredNumber ?? 0 })
-})
+/** I soli campi/tabelle cambiati rispetto al dettaglio letto. */
+function changes(): { details: Record<string, unknown>; lists: Record<string, unknown> } {
+  const same = (a: unknown, b: unknown): boolean => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
+  const details: Record<string, unknown> = {}
+  for (const field of info.value?.detailFields ?? []) {
+    if (field.readOnly) continue
+    if (!same(draft.value[field.name], detail.value?.details[field.name])) details[field.name] = draft.value[field.name]
+  }
+  const changed: Record<string, unknown> = {}
+  for (const list of lists.value) {
+    if (draftLists.value[list.name] !== undefined && !same(draftLists.value[list.name], detail.value?.lists[list.name]))
+      changed[list.name] = draftLists.value[list.name]
+  }
+  return { details, lists: changed }
+}
+
+/** Salva le modifiche; in caso di errore resta in modifica con il messaggio. */
+async function save(): Promise<void> {
+  const { details, lists: changedLists } = changes()
+  if (Object.keys(details).length === 0 && Object.keys(changedLists).length === 0) {
+    editing.value = false
+    return
+  }
+  saving.value = true
+  error.value = ''
+  try {
+    detail.value = await updatePlayer(props.playerId, {
+      revision: detail.value?.revision ?? null,
+      details,
+      lists: changedLists as Record<string, Record<string, unknown>[]>,
+      confirmServerRunning: confirmServer.value,
+    })
+    editing.value = false
+    $q.notify({ type: 'positive', message: t('playerFiles.edit.saved') })
+  } catch (e) {
+    const code = await errorCode(e)
+    error.value = await describeError(e)
+    if (code === 'worldplayers.server_running') status.value = { serverRunning: true, detection: status.value?.detection ?? 'proc' }
+    if (code === 'worldplayers.conflict') editing.value = false
+  } finally {
+    saving.value = false
+  }
+}
 
 onMounted(async () => {
   try {
@@ -230,15 +317,11 @@ onMounted(async () => {
     error.value = await describeError(e)
     return
   }
-  if (inventoryEnabled.value) {
-    inventoryLoading.value = true
-    try {
-      inventory.value = await getPlayerInventory(props.playerId)
-    } catch (e) {
-      error.value = await describeError(e)
-    } finally {
-      inventoryLoading.value = false
-    }
-  }
+  getPlayersStatus()
+    .then((s) => (status.value = s))
+    .catch(() => undefined) // stato non rilevabile: nessuna conferma richiesta
+  getPlayerEnums()
+    .then((e) => (enums.value = e))
+    .catch(() => undefined) // senza enum i campi enum/flags restano visibili ma senza opzioni
 })
 </script>

@@ -34,13 +34,17 @@ from pachimudeditor.common.adapters.players import (
     PlayerDetail,
     PlayerInventory,
     PlayerItem,
+    PlayerItemAdd,
+    PlayerItemUpdate,
     PlayerListColumn,
     PlayerListInfo,
     PlayerPageParams,
+    PlayerPatch,
     PlayersAdapter,
     PlayersInfo,
     PlayerSummary,
     PlayersStatus,
+    PlayerWriteOptions,
 )
 from pachimudeditor.common.adapters.plugins import ENTRY_POINT_GROUP, SDK_VERSION, AdapterPlugin, AdapterUnavailable
 from pachimudeditor.common.adapters.registry import (
@@ -73,6 +77,10 @@ __all__ = [
     "PairConverter",
     "PatchModel",
     "PlayerColumn",
+    "PlayerItemAdd",
+    "PlayerItemUpdate",
+    "PlayerPatch",
+    "PlayerWriteOptions",
     "PlayerDetail",
     "PlayerInventory",
     "PlayerItem",

@@ -176,7 +176,7 @@ function onRequest(props: Parameters<NonNullable<QTableProps['onRequest']>>[0]):
  * @param row - riga scelta
  */
 function open(row: IPlayerSummary): void {
-  $q.dialog({ component: PlayerDetailDialog, componentProps: { playerId: row.id, playerName: row.name } })
+  $q.dialog({ component: PlayerDetailDialog, componentProps: { playerId: row.id, playerName: row.name } }).onDismiss(() => void load()) // le modifiche cambiano i valori dell'elenco
 }
 
 /** Descrittore, stato del server ed elenco. */

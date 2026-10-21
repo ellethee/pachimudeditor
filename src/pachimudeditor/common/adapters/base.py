@@ -88,6 +88,10 @@ class AdapterCapabilities(AliasedBaseModel):
     """`/api/world/players`: elenco e dettaglio dei giocatori in sola lettura (mixin `PlayersAdapter`, SDK 1.3)."""
     supports_player_inventory: bool = False
     """`/api/world/players/{id}/inventory`: inventario ed equipaggiamento dei giocatori (richiede `supports_player_records`)."""
+    supports_player_write: bool = False
+    """`PATCH /api/world/players/{id}`: modifica dei campi del giocatore (richiede `supports_player_records`, SDK 1.4)."""
+    supports_player_inventory_write: bool = False
+    """`POST/PATCH/DELETE /api/world/players/{id}/inventory/items`: oggetti dell'inventario (richiede `supports_player_inventory`, SDK 1.4)."""
     supports_transfer: bool = False
     """`export_zone_bundle`/`import_zone_dir` (cartella YAML di zona)."""
     supports_content_races: bool = False

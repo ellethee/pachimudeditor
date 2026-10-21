@@ -145,8 +145,9 @@ def test_rent_missing_and_symlink(tmp_path: Path) -> None:
     assert read_rent_file(rent, "big").problem == "trailing_data"  # type: ignore[union-attr]
 
 
-def test_player_modules_are_read_only_and_never_touch_pwd() -> None:
-    """Guardia (AST): i moduli dei giocatori non scrivono/cancellano file e non leggono i byte del campo `pwd` oltre a «e' vuoto?»."""
+def test_player_modules_write_only_through_the_sdk_and_never_touch_pwd() -> None:
+    """Guardia (AST): le librerie `dikumod_lib` dei giocatori non fanno I/O di scrittura (il writer lavora su byte); l'adapter scrive
+    solo con `atomic_write_bytes` (piu' la copia `.bak`); i byte del campo `pwd` sono letti solo per «e' vuoto?»."""
     import ast
 
     import pachimudeditor_adapter_dikumod as pkg
@@ -157,12 +158,23 @@ def test_player_modules_are_read_only_and_never_touch_pwd() -> None:
         "remove", "removedirs", "utime", "chown",
     }  # fmt: skip
     forbidden_names = {"atomic_write_bytes", "save", "shutil"}
-    for path in (base / "dikumod_lib" / "players.py", base / "players.py"):
+    adapter_allowed_attrs = {"unlink", "chmod"}  # copia `.bak`: rimozione di un symlink al suo posto e stessi permessi del file
+    for path in (base / "dikumod_lib" / "players.py", base / "dikumod_lib" / "players_write.py", base / "players.py"):
+        is_adapter = path.parent == base
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if isinstance(node, ast.Attribute):
-                assert node.attr not in forbidden_attrs, (path.name, node.lineno, node.attr)
+                assert node.attr not in forbidden_attrs - (adapter_allowed_attrs if is_adapter else set()), (
+                    path.name,
+                    node.lineno,
+                    node.attr,
+                )
             if isinstance(node, ast.Name | ast.alias):
-                assert getattr(node, "id", getattr(node, "name", "")) not in forbidden_names, (path.name, node.lineno)
+                assert getattr(node, "id", getattr(node, "name", "")) not in forbidden_names - (
+                    {"atomic_write_bytes"} if is_adapter else set()
+                ), (
+                    path.name,
+                    node.lineno,
+                )
             if isinstance(node, ast.Call) and getattr(node.func, "id", getattr(node.func, "attr", "")) == "open":
                 modes = [
                     a.value for a in [*node.args[1:2], *[k.value for k in node.keywords if k.arg == "mode"]] if isinstance(a, ast.Constant)

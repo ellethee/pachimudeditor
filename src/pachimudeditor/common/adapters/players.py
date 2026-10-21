@@ -1,7 +1,7 @@
-"""Giocatori dei MUD su file (SDK 1.3): DTO neutri, descrittore dichiarativo e mixin opzionale `PlayersAdapter`.
+"""Giocatori dei MUD su file (SDK 1.3 lettura, 1.4 scrittura): DTO neutri, descrittore dichiarativo e mixin opzionale `PlayersAdapter`.
 
-Solo lettura (L1 elenco, L2 dettaglio + inventario/equipaggiamento). L'`id` di un giocatore e' opaco per il client
-(file: il nome del file senza estensione). Mai password o hash nei DTO: solo `has_password`.
+L1 elenco, L2 dettaglio + inventario/equipaggiamento (1.3); L3 scrittura dei campi e dell'inventario (1.4). L'`id` di un giocatore
+e' opaco per il client (file: il nome del file senza estensione). Mai password o hash nei DTO: solo `has_password`.
 """
 
 from datetime import datetime
@@ -38,6 +38,8 @@ class PlayerSummary(NeutralOut):
     """`True` solo se il MUD sa dire con certezza che e' connesso; `None` = sconosciuto (il caso normale su file)."""
     problem: str | None = None
     """Codice stabile se il file e' illeggibile/corrotto (`bad_size`, ...): la riga resta visibile, senza dati."""
+    revision: str | None = None
+    """Impronta del file letto (SDK 1.4): da rimandare in `PlayerWriteOptions.revision` per rilevare modifiche concorrenti."""
 
 
 class PlayerDetail(PlayerSummary):
@@ -68,6 +70,8 @@ class PlayerInventory(AliasedBaseModel):
     items: list[PlayerItem] = Field(default_factory=list)
     problem: str | None = None
     """Codice stabile (`truncated`, `too_many_items`, `owner_mismatch`, ...): gli oggetti leggibili sono comunque elencati."""
+    revision: str | None = None
+    """Impronta del file dell'inventario (SDK 1.4), come `PlayerSummary.revision`."""
     extra: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -107,6 +111,8 @@ class PlayersInfo(AliasedBaseModel):
     has_accounts: bool = False
     online_policy: Literal["unknown", "warn"] = "unknown"
     """`warn`: il frontend mostra l'avviso «il server potrebbe essere in esecuzione» (lettura sempre permessa)."""
+    wear_slots: list[str] = Field(default_factory=list)
+    """Gli slot di equipaggiamento ammessi (SDK 1.4), nell'ordine del MUD: i valori di `PlayerItem.wear_slot` e di `PlayerItemAdd.wear_slot`."""
 
 
 class PlayersStatus(AliasedBaseModel):
@@ -125,10 +131,45 @@ class PlayerPageParams(PageParams):
     order_fields = ["id", "name", "level", "class_label", "race_label", "gold", "room_vnum", "last_login_at", "played_seconds"]
 
 
+class PlayerWriteOptions(AliasedBaseModel):
+    """Opzioni comuni di ogni scrittura (SDK 1.4)."""
+
+    revision: str | None = None
+    """La `revision` letta: se il file e' cambiato nel frattempo la scrittura e' rifiutata (409 `worldplayers.conflict`). `None` = nessun controllo."""
+    confirm_server_running: bool = False
+    """Obbligatorio se `GET /status` dice `serverRunning: true` (altrimenti 409 `worldplayers.server_running`)."""
+
+
+class PlayerPatch(PlayerWriteOptions):
+    """Modifica parziale del dettaglio: solo i campi presenti cambiano. Le chiavi sono quelle di `PlayersInfo.detail_fields`
+    non `read_only` (`details`) e delle `detail_lists` (`lists`, sostituzione dell'intera tabella)."""
+
+    details: dict[str, Any] = Field(default_factory=dict)
+    lists: dict[str, list[dict[str, Any]]] = Field(default_factory=dict)
+
+
+class PlayerItemAdd(PlayerWriteOptions):
+    """Aggiunge un oggetto dal prototipo del mondo (`vnum`)."""
+
+    vnum: int
+    wear_slot: str | None = None
+    """Uno di `PlayersInfo.wear_slots`; `None` = portato."""
+    container_id: int | None = None
+    """`PlayerItem.id` del contenitore in cui metterlo (incompatibile con `wear_slot`)."""
+
+
+class PlayerItemUpdate(PlayerWriteOptions):
+    """Cambia lo slot di un oggetto di primo livello."""
+
+    wear_slot: str | None
+    """Il nuovo slot (uno di `PlayersInfo.wear_slots`) oppure `None` = portato; obbligatorio."""
+
+
 class PlayersAdapter:
     """Mixin opzionale di un `WorldAdapter` con giocatori leggibili. Default: 409 `world.capability_missing`.
 
-    Va dichiarata la capability `supports_player_records` (e `supports_player_inventory` se c'e' l'inventario).
+    Va dichiarata la capability `supports_player_records` (e `supports_player_inventory` se c'e' l'inventario); le scritture (1.4)
+    richiedono `supports_player_write` / `supports_player_inventory_write`.
     Gli id non validi o inesistenti sono 404 `worldplayers.not_found` (un adapter su file deve validarli contro il path traversal).
     """
 
@@ -152,6 +193,23 @@ class PlayersAdapter:
         """Inventario ed equipaggiamento (capability `supports_player_inventory`)."""
         raise api_error(409, "world.capability_missing", capability="supports_player_inventory")
 
+    async def update_player(self, player_id: str, patch: PlayerPatch) -> PlayerDetail:
+        """Modifica i campi (capability `supports_player_write`). 409 `worldplayers.conflict` se la `revision` non e' piu' quella del
+        file, 422 `worldplayers.invalid_value` per un valore non valido. Il core ha gia' controllato `read_only` e il server acceso."""
+        raise api_error(409, "world.capability_missing", capability="supports_player_write")
+
+    async def add_player_item(self, player_id: str, item: PlayerItemAdd) -> PlayerInventory:
+        """Aggiunge un oggetto (capability `supports_player_inventory_write`)."""
+        raise api_error(409, "world.capability_missing", capability="supports_player_inventory_write")
+
+    async def update_player_item(self, player_id: str, item_id: int, change: PlayerItemUpdate) -> PlayerInventory:
+        """Cambia lo slot di un oggetto (capability `supports_player_inventory_write`)."""
+        raise api_error(409, "world.capability_missing", capability="supports_player_inventory_write")
+
+    async def remove_player_item(self, player_id: str, item_id: int, options: PlayerWriteOptions) -> PlayerInventory:
+        """Toglie un oggetto con il suo contenuto (capability `supports_player_inventory_write`)."""
+        raise api_error(409, "world.capability_missing", capability="supports_player_inventory_write")
+
 
 __all__ = [
     "ColumnType",
@@ -160,8 +218,12 @@ __all__ = [
     "PlayerInventory",
     "PlayerItem",
     "PlayerListColumn",
+    "PlayerItemAdd",
+    "PlayerItemUpdate",
     "PlayerListInfo",
     "PlayerPageParams",
+    "PlayerPatch",
+    "PlayerWriteOptions",
     "PlayerSummary",
     "PlayersAdapter",
     "PlayersInfo",

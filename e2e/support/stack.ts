@@ -70,6 +70,7 @@ function prepareExtras(workdir: string, pachimud: { databaseUrl: string; definit
   if (HAS_DIKUMOD) {
     const dikumodRo = join(workdir, 'dikumod', 'lib')
     const dikumodRw = join(workdir, 'dikumod-rw', 'lib')
+    process.env.E2E_DIKUMOD_RW_LIB = dikumodRw // per i test che simulano il server acceso (processo con cwd = lib/); ereditata da `node --test`
     cpSync(DIKUMOD_SRC, dikumodRo, { recursive: true })
     cpSync(DIKUMOD_SRC, dikumodRw, { recursive: true })
     // giocatori e rent: sempre quelli SINTETICI (mai dati o hash reali nelle copie di lavoro)
