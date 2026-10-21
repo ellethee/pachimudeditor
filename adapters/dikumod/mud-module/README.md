@@ -28,6 +28,12 @@ Il patch aggiunge: `#include "livectl.h"` (con `#ifdef LIVECTL`), `livectl_init(
 iterazione di `game_loop` (dopo `tics++;`), `$(LIVECTL_FLAGS)` in `MYFLAGS` e `livectl.o livectl_json.o` in `OBJS`. Senza `-DLIVECTL` il modulo
 si riduce a tre funzioni vuote e il gioco si comporta come prima. Il codice compila come C++ `gnu++98`, come il resto del gioco.
 
+### Cartella ufficiale `/dati/luca/muds/leu`
+
+Qui il `Makefile` e' nella radice (non in `src/`) e usa un'altra forma di `OBJS`, quindi `dikumod1-livectl.patch` non si applica al Makefile
+(hunk respinti). Usa `leu-livectl.patch` (`git apply` dalla radice di `leu`: `Makefile` e `src/comm.c`), poi `cp livectl*.[ch] src/` e
+`make LIVECTL_FLAGS=-DLIVECTL`.
+
 ## Configurare (variabili d'ambiente del processo del MUD)
 
 | Variabile | Default | Significato |
