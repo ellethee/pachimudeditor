@@ -2,8 +2,9 @@
 
 Il backend non parla più direttamente con il database di pachimud: ogni router (zone, stanze, mob,
 oggetti, meta) chiama un **`WorldAdapter`**, l'oggetto che sa dove vivono i dati di un "mondo" (un MUD).
-Nessun mondo è implicito: i mondi sono quelli di `webeditor_worlds`. Il mondo `kind: pachimud` legge il database del gioco
-con SQLAlchemy (schema-on-read, nessun import del pacchetto `pachimud`): vedi "Adapter pachimud".
+Nessun mondo è implicito: i mondi sono quelli di `webeditor_worlds`. Gli adapter si raggruppano in tre **famiglie** (FileBased,
+DatabaseBased, Mapped): vedi [famiglie di adapter](families.md). Ad esempio `kind: pachimud` (DatabaseBased) legge il database del gioco
+con SQLAlchemy (schema-on-read, nessun import del pacchetto `pachimud`): vedi [adapter pachimud](pachimud.md).
 
 ```
 router (apps/*/root.py nel core; nei pacchetti adapter per le pagine specifiche)  ->  AdapterDep  ->  WorldAdapter  ->  DB / file .are / ...

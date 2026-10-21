@@ -33,13 +33,13 @@ pachimudeditor serve --workdir ~/pachimudeditor --open     # http://127.0.0.1:81
 
 ### Adapter (kind di mondo) ed extras
 
-| Extra | Pacchetto | `kind` | Cosa legge/scrive |
-| --- | --- | --- | --- |
-| `pachimud` | `pachimudeditor-adapter-pachimud` | `pachimud` | il database del gioco (SQLAlchemy) + pagine panoramica/giocatori/istanze/trasferimento/contenuti |
-| `basedmud` | `pachimudeditor-adapter-basedmud` | `basedmud` | file area `.are` di basedmud / ROM 2.4 / QuickMUD |
-| `dikumod` | `pachimudeditor-adapter-dikumod` | `dikumod` | file dati di Diku Modificato (`dikumod`, `dikumod2`) |
-| `mapping` | `pachimudeditor-adapter-mapping` | `mapping` | qualunque MUD su file descritto da un YAML di mappatura |
-| `all` | tutti i precedenti | | |
+| Extra | Pacchetto | `kind` | Famiglia ([dettagli](docs/adapters/families.md)) | Cosa legge/scrive |
+| --- | --- | --- | --- | --- |
+| `pachimud` | `pachimudeditor-adapter-pachimud` | `pachimud` | DatabaseBased | il database del gioco (SQLAlchemy) + pagine panoramica/giocatori/istanze/trasferimento/contenuti |
+| `basedmud` | `pachimudeditor-adapter-basedmud` | `basedmud` | FileBased | file area `.are` di basedmud / ROM 2.4 / QuickMUD |
+| `dikumod` | `pachimudeditor-adapter-dikumod` | `dikumod` | FileBased | file dati di Diku Modificato (`dikumod`, `dikumod2`) |
+| `mapping` | `pachimudeditor-adapter-mapping` | `mapping` | Mapped | qualunque MUD su file descritto da un YAML di mappatura |
+| `all` | tutti i precedenti | | | |
 
 Il core da solo parte (nessun mondo, `/api/worlds` vuoto, UI con la pagina "Nessun mondo configurato"); un mondo il cui
 `kind` non e' installato da' un errore che dice quale extra installare (es. `pip install 'pachimudeditor[dikumod]'`). Le pagine
