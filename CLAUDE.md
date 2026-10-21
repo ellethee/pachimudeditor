@@ -34,6 +34,8 @@ scripts/build_package.sh [--only core|pachimud|...]    # wheel/sdist; non pubbli
 
 Test sui dati reali (marker `real_rom`, `real_dikumod`) si saltano se mancano `BASEDMUD_AREA_DIR`, `DIKUMOD_ROOT`, `DIKUMOD_PREFIX`; `PACHIMUD_GAME_ROOT` abilita `tests/test_game_compat.py`. La CI fallisce se i test saltati superano `MAX_SKIPPED` in `.github/workflows/ci.yml`: aggiornalo dopo aver aggiunto/spostato test. Ruff: line-length 140, regole `D` e `ANN` attive (docstring e type hints obbligatori fuori da `tests/`); `dikumod_lib`, `rom_lib`, `frontend`, `e2e`, `migrations` sono esclusi.
 
+**Pacchetti locali** (pachifast, pachifastquasar): `scripts/dev-local.sh on|off|status` li usa da disco (uv source editabile, override pnpm `link:`, `paths` di tsconfig) invece di PyPI/npm. Da "on" risultano modificati `pyproject.toml`, `uv.lock`, `frontend/pnpm-workspace.yaml`, `frontend/pnpm-lock.yaml`, `frontend/tsconfig.json`: **non committarli**, prima `off` (o committa solo gli altri file). I pacchetti vue si consumano da `dist/`: dopo una modifica ai loro sorgenti `pnpm -C <pachifastquasar>/packages/<pacchetto> build`.
+
 ## Architettura
 
 **Core generico + adapter come plugin.** Il core (`src/pachimudeditor/`) non importa mai gli adapter (verificato da `tests/core/test_boundaries.py`): li scopre via entry point `pachimudeditor.adapters`, importando solo il modulo `plugin` di ciascuno (`AdapterPlugin` con riferimenti stringa `"modulo:attributo"`). Un kind viene caricato (factory, moduli API, regole di conversione) solo se esiste un mondo configurato di quel kind. `modules.py::build_modules(kinds)` assembla i moduli pachifast: quelli generici del core (`apps/zones, rooms, mobs, objects, meta, convert, worldplayers`) più quelli dei plugin.

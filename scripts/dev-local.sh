@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Sviluppo contro i sorgenti locali di pachifast e pachifastquasar (senza pubblicare/installare da PyPI/npm).
 # Uso: scripts/dev-local.sh on|off|status
-#   on  : pyproject.toml (uv source editabile) e frontend/pnpm-workspace.yaml (override link:) + sync/install
+#   on  : pyproject.toml (uv source editabile), frontend/pnpm-workspace.yaml (override link:) e frontend/tsconfig.json (paths) + sync/install
 #   off : toglie i due blocchi, ripristina uv.lock e pnpm-lock.yaml da git e risincronizza
-# I due file modificati NON vanno committati finche' e' "on" (i blocchi sono tra i marker LOCAL-DEV).
+# I file modificati (e uv.lock/pnpm-lock.yaml) NON vanno committati finche' e' "on" (blocchi tra i marker LOCAL-DEV; ripristina con `off`).
 # Dopo ogni modifica ai sorgenti di pachifastquasar: pnpm -C "$PFQ/packages/<pacchetto>" build (si consuma dist/).
 set -euo pipefail
 
@@ -33,18 +33,35 @@ frontend_block() {
     printf '%s\n' "$END"
 }
 
+typescript_paths() {
+    # Un'unica copia di vue/pinia/vue-router/quasar/vue-i18n per i tipi: i pacchetti linkati hanno le loro in node_modules.
+    (cd "$ROOT/frontend" && node -e '
+const fs = require("fs"), path = require("path");
+const base = JSON.parse(fs.readFileSync(".quasar/tsconfig.json", "utf8")).compilerOptions.paths;
+const paths = {};
+for (const [k, v] of Object.entries(base)) paths[k] = v.map((x) => path.resolve(".quasar", x));
+for (const m of ["vue", "pinia", "vue-router", "quasar", "vue-i18n"]) {
+  const dir = path.resolve("node_modules", m);
+  paths[m] = [dir];
+  paths[m + "/*"] = [dir + "/*"];
+}
+fs.writeFileSync("tsconfig.json", JSON.stringify({ extends: "./.quasar/tsconfig.json", compilerOptions: { paths } }, null, 2) + "\n");
+')
+}
+
 turn_on() {
     is_on && { echo "gia' attivo"; return; }
     python_block >>"$ROOT/pyproject.toml"
     frontend_block >>"$ROOT/frontend/pnpm-workspace.yaml"
     (cd "$ROOT" && uv sync --all-packages)
     (cd "$ROOT/frontend" && pnpm install --no-frozen-lockfile)
+    typescript_paths
 }
 
 turn_off() {
     strip_block "$ROOT/pyproject.toml"
     strip_block "$ROOT/frontend/pnpm-workspace.yaml"
-    (cd "$ROOT" && git checkout -- uv.lock frontend/pnpm-lock.yaml)
+    (cd "$ROOT" && git checkout -- uv.lock frontend/pnpm-lock.yaml frontend/tsconfig.json)
     (cd "$ROOT" && uv sync --all-packages)
     (cd "$ROOT/frontend" && pnpm install --frozen-lockfile)
 }
