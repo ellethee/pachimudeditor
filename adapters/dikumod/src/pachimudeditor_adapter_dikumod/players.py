@@ -2,7 +2,7 @@
 
 Fonti: `lib/players/<nome>.dat` (un `char_file_u` da 3036 byte per file) e `lib/rent/<nome>` (oggetti).
 La password non esce mai (solo `hasPassword`) e non si scrive mai: il writer (`dikumod_lib/players_write.py`) parte dai byte attuali e
-cambia solo i campi richiesti. Ogni scrittura: lock unico, controllo della `revision`, copia `<file>.bak` (una generazione, stessi
+cambia solo i campi richiesti. Ogni scrittura: lock unico, controllo della `revision`, copia nascosta `.<file>.bak` (una generazione, stessi
 permessi del file) e poi scrittura atomica (`pachimudeditor.sdk.atomic_write_bytes`). Il «server acceso» si rileva (best effort) cercando un processo con cwd = `lib/`
 che abbia socket aperti (il server fa `chdir` nella cartella dati); un elenco dei connessi su disco non esiste.
 """
@@ -329,7 +329,7 @@ class PlayersMixin(PlayersAdapter, DikumodSupport):
         """Copia `<file>.bak` del contenuto attuale (una sola generazione, stessi permessi del file: il giocatore ha l'hash della
         password) e poi scrittura atomica. `old` nullo = il file non esiste ancora: nessuna copia."""
         if old is not None:
-            bak = target.with_name(target.name + ".bak")
+            bak = target.with_name(f".{target.name}.bak")  # nascosto: il gioco salta i file che iniziano con "."
             if bak.is_symlink():
                 bak.unlink()
             if not bak.exists():

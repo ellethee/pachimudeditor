@@ -163,7 +163,7 @@ describe('giocatori su file (dikumod)', { skip: HAS_DIKUMOD ? false : 'E2E_DIKUM
     assert.equal((await rw.get('/api/world/players/caio')).data.gold, 321)
     const lib = process.env.E2E_DIKUMOD_RW_LIB
     if (lib) {
-      assert.ok(existsSync(join(lib, 'players', 'caio.dat.bak')))
+      assert.ok(existsSync(join(lib, 'players', '.caio.dat.bak')))
       const file = readFileSync(join(lib, 'players', 'caio.dat'))
       assert.equal(file.subarray(2974, 2974 + 9).toString('latin1'), 'SYNTH-PW9') // la password non e' mai cambiata
     }

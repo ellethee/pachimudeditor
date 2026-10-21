@@ -127,7 +127,7 @@ async def test_real_write_on_copies_only(real_rw: tuple[DikumodAdapter, Path]) -
     out = await adapter.update_player(name, PlayerPatch(revision=detail.revision, details={"gold": 424242, "title": "Provato"}))
     assert out.gold == 424242 and out.details["title"] == "Provato" and out.level == detail.level
     new = path.read_bytes()
-    assert (lib / "players" / f"{name}.dat.bak").read_bytes() == before and new[2974:2985] == before[2974:2985]
+    assert (lib / "players" / f".{name}.dat.bak").read_bytes() == before and new[2974:2985] == before[2974:2985]
     assert {i for i, (a, b) in enumerate(zip(before, new, strict=True)) if a != b} <= {*range(48, 128), *range(676, 680)}  # titolo e oro
     inv = await adapter.player_inventory(name)
     plain = next(v for v, r in adapter.sync().objs.items() if r.item.type != 15 and 0 < v < 32768)
@@ -137,4 +137,4 @@ async def test_real_write_on_copies_only(real_rw: tuple[DikumodAdapter, Path]) -
     assert moved.items[-1].wear_slot == "about"
     removed = await adapter.remove_player_item(name, len(moved.items) - 1, PlayerWriteOptions())
     assert [i.vnum for i in removed.items] == [i.vnum for i in inv.items] and removed.problem is None
-    assert (lib / "rent" / f"{name}.bak").exists() and rent.read_bytes()[:20] == rent_before[:20]
+    assert (lib / "rent" / f".{name}.bak").exists() and rent.read_bytes()[:20] == rent_before[:20]

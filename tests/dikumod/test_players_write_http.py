@@ -95,17 +95,22 @@ async def test_patch_details_writes_backup_and_keeps_everything_else(client: htt
     assert out["lists"]["skills"] == [{"index": 7, "learned": 55, "flags": 1, "special": 0, "nummem": 0}]
     after = files(lib)
     assert (
-        after["players/tizio.dat.bak"] == before["players/tizio.dat"]
-        and stat.S_IMODE((lib / "players/tizio.dat.bak").stat().st_mode) == 0o640
+        after["players/.tizio.dat.bak"] == before["players/tizio.dat"]
+        and stat.S_IMODE((lib / "players/.tizio.dat.bak").stat().st_mode) == 0o640
     )
     assert stat.S_IMODE(path.stat().st_mode) == 0o640 and after["players/tizio.dat"][PWD] == before["players/tizio.dat"][PWD]
     assert parse_rent(after["rent/tizio"]).gold_left == 777 and after["rent/tizio"][24:] == before["rent/tizio"][24:]
-    assert {k for k in after if after[k] != before.get(k)} == {"players/tizio.dat", "players/tizio.dat.bak", "rent/tizio", "rent/tizio.bak"}
+    assert {k for k in after if after[k] != before.get(k)} == {
+        "players/tizio.dat",
+        "players/.tizio.dat.bak",
+        "rent/tizio",
+        "rent/.tizio.bak",
+    }
     assert {p.name for p in (lib / "players").iterdir()} == {f"{n}.dat" for n in ("tizio", "caio", "sempronio", "mevio")} | {
-        "tizio.dat.bak"
+        ".tizio.dat.bak"
     }
     again = data(await client.patch(f"{BASE}/tizio", json={"details": {"gold": 5}}, headers=H))
-    assert again["gold"] == 5 and (lib / "players/tizio.dat.bak").read_bytes() == after["players/tizio.dat"]  # una sola generazione
+    assert again["gold"] == 5 and (lib / "players/.tizio.dat.bak").read_bytes() == after["players/tizio.dat"]  # una sola generazione
 
 
 async def test_noop_patch_does_not_touch_files(client: httpx.AsyncClient, lib: Path) -> None:
@@ -280,7 +285,7 @@ async def test_inventory_add_equip_container_and_backup(client: httpx.AsyncClien
         len(inv["items"]) == 4 and inv["items"][-1]["vnum"] == plain and inv["items"][-1]["wearSlot"] is None and inv["items"][-1]["known"]
     )
     assert inv["items"][-1]["extra"]["values"] == list(proto.values) and inv["items"][-1]["extra"]["timer"] == 0
-    assert (lib / "rent" / "tizio.bak").read_bytes() == rent_before and inv["problem"] is None
+    assert (lib / "rent" / ".tizio.bak").read_bytes() == rent_before and inv["problem"] is None
     assert inv["extra"]["totalCost"] == 10 + max(proto.rent, 0) and inv["extra"]["goldLeft"] == 500
     worn = data(await client.post(f"{BASE}/tizio/inventory/items", json={"vnum": plain, "wearSlot": "head"}, headers=H), 201)
     assert worn["items"][-1]["wearSlot"] == "head"
@@ -329,8 +334,8 @@ async def test_inventory_creates_the_rent_file_when_missing_or_empty(client: htt
         rent = parse_rent((lib / "rent" / pid).read_bytes())
         assert (rent.owner, rent.gold_left, rent.number, rent.problem, rent.minimum_stay) == (name, gold, 1, None, 0)
         assert rent.total_cost >= 100 and rent.last_update > 1_700_000_000
-        assert not (lib / "rent" / f"{pid}.bak").exists() or pid == "caio"
-    assert (lib / "rent" / "caio.bak").read_bytes() == b""  # il file esisteva (vuoto): una copia c'e'
+        assert not (lib / "rent" / f".{pid}.bak").exists() or pid == "caio"
+    assert (lib / "rent" / ".caio.bak").read_bytes() == b""  # il file esisteva (vuoto): una copia c'e'
 
 
 async def test_inventory_change_slot_and_remove(client: httpx.AsyncClient, lib: Path) -> None:
@@ -373,7 +378,7 @@ async def test_password_never_changes_or_leaks(client: httpx.AsyncClient, lib: P
         (await client.patch(f"{BASE}/nessuno", json={}, headers=H)).text,
     ]
     assert (lib / "players" / "tizio.dat").read_bytes()[PWD] == pwd == PWD_MARKER + b"\0\0"
-    assert (lib / "players" / "tizio.dat.bak").read_bytes()[PWD] == pwd
+    assert (lib / "players" / ".tizio.dat.bak").read_bytes()[PWD] == pwd
     marker = PWD_MARKER.decode()
     assert not any(marker.lower() in t.lower() for t in texts) and marker not in caplog.text
 

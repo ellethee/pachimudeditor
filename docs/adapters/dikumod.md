@@ -153,7 +153,7 @@ Robustezza: file di dimensione diversa da 3036 -> riga con `problem: bad_size`; 
 Il writer (`dikumod_lib/players_write.py`, solo byte in memoria) parte dai **byte attuali** del file e sovrascrive solo i campi richiesti con gli stessi
 offset del parser: nessuna modifica = file identico, e tutto cio' che l'editor non conosce (padding, puntatori `next`, `talks`, `abilities.extra`, i byte dopo il NUL
 dei campi char, la **password**) resta com'e'. Il valore invariato non si valida (esistono file reali con maschere di classe fuori dall'intervallo di gioco e titoli da 80 byte
-pieni). Ogni scrittura: lock unico dell'adapter, `revision` (SHA-256 troncato dei byte, senza la password), copia `<file>.bak` (una generazione; stessi permessi del file, perche' il
+pieni). Ogni scrittura: lock unico dell'adapter, `revision` (SHA-256 troncato dei byte, senza la password), copia nascosta `.<file>.bak` (una generazione; stessi permessi del file, perche' il
 giocatore contiene l'hash della password) e `atomic_write_bytes`.
 
 - **Campi** (`PlayersInfo.detailFields` con `readOnly: false`): tutti quelli del `char_file_u` tranne password, nome (e' l'identita' del file) e livello (derivato da `levels`);
@@ -163,7 +163,7 @@ giocatore contiene l'hash della password) e `atomic_write_bytes`.
   flag per nome (i bit senza nome restano), date ISO 8601 (`birth`, `lastLogon`; null = 0). Tabelle: `skills` (indice 0..349 senza duplicati, byte 0..255; le voci non elencate dal lettore
   perche' `learned == 0 e flags == 0` restano) e `affects` (al massimo 40, compattati).
   I valori di `levels`/`classMask` non sono verificati tra loro (la coerenza e' dell'utente).
-- **Oro**: se `gold` cambia, `gold_left` del rent (se esiste, coerente e del proprietario giusto) viene allineato (scrittura separata con il suo `.bak`): al boot `update_obj_file`
+- **Oro**: se `gold` cambia, `gold_left` del rent (se esiste, coerente e del proprietario giusto) viene allineato (scrittura separata con il suo `.bak` nascosto): al boot `update_obj_file`
   confronta `total_cost * giorni` con `gold_left` e azzera chi non puo' pagare.
 - **Oggetti**: creati dal prototipo con i valori di `read_object` appena caricato (`value`, `extra_flags`, `weight`, nomi, fino a 5 effetti; `timer` 0, `bitvector` 0, effetti non usati 0;
   stringhe tagliate a 127/127/255 caratteri). Solo prototipi che esistono nel mondo e con vnum <= 32767 (`item_number` e' `sh_int`). Come il gioco (`obj_store_to_char`): un solo oggetto per
@@ -174,8 +174,7 @@ giocatore contiene l'hash della password) e `atomic_write_bytes`.
 - **Rent (testata)**: un file assente o vuoto diventa una testata nuova (`owner` = nome del personaggio, `gold_left` = oro, `total_cost` 100 come il minimo di `recep_offer`, `last_update` = adesso, `minimum_stay` 0);
   uno esistente conserva testata e byte di `owner` (anche i residui dopo il NUL) tranne `number` (ricalcolato) e `total_cost`, che aumenta/diminuisce del costo giornaliero (`rent` del prototipo, se >= 0) degli oggetti
   aggiunti/tolti. Un rent incoerente (troncato, `number` > 200, byte in eccesso) o di un altro proprietario **non si modifica** (409 `file_unwritable`): il gioco, al boot, fa `assert(0)` se `owner` non coincide col nome.
-- **Il `.bak` e il boot del gioco**: il gioco legge **ogni** file non nascosto di `players/` (`db.c` all'avvio e `update_obj_file` in `reception.c`) come un giocatore. Un `players/<nome>.dat.bak` e' quindi un duplicato
-  per il gioco (come i `*.dat~` gia' presenti): meglio spostarlo fuori da `players/` prima di riavviare il server. In `rent/` il `.bak` non e' mai letto (il gioco apre solo `rent/<nome>`).
+- **Il backup e il boot del gioco**: il gioco legge ogni file non nascosto di `players/` (`db.c` all'avvio, `update_obj_file`) come un giocatore; per questo il backup si chiama `players/.<nome>.dat.bak` (e `rent/.<nome>.bak`): inizia con `.` e il gioco lo salta.
 
 **Server acceso.** Su disco non esiste un elenco dei connessi (il gioco riscrive il record con `fopen("r+b")`, non atomico): il giocatore e'
 sempre `online: null` e il frontend mostra l'avviso generico «il server potrebbe essere in esecuzione». In piu' `GET /api/world/players/status`

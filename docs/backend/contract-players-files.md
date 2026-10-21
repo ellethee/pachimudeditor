@@ -46,7 +46,7 @@ caratteri di controllo sono 404 gia' nel core; l'adapter li valida di nuovo con 
 Ogni scrittura, in quest'ordine: mondo non `read_only` (409 `world.read_only`) -> capability (409 `world.capability_missing`) -> id valido (404) ->
 **server acceso**: se `GET /status` dice `serverRunning: true` serve `confirmServerRunning: true`, altrimenti 409 `worldplayers.server_running` (non rilevabile o
 spento: si scrive normalmente) -> adapter: `revision` (409 `worldplayers.conflict` se il file e' cambiato dopo la lettura; assente = nessun controllo),
-validazione, **copia `<file>.bak`** del contenuto precedente (una sola generazione, stessi permessi) e scrittura atomica.
+validazione, **copia nascosta `<cartella>/.<file>.bak`** del contenuto precedente (una sola generazione, stessi permessi) e scrittura atomica.
 
 `revision` (in `PlayerDetail` e `PlayerInventory`) e' un'impronta del contenuto del file letto (per Diku: SHA-256 troncato; per il file giocatore **senza** i byte della
 password), non l'mtime: non cambia se il file non cambia e non rivela nulla. L'inventario ha una revisione propria (il file rent); dopo una scrittura
