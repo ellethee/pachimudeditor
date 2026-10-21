@@ -3,39 +3,30 @@
 Le rotte costose usano la dipendenza `heavy_rate_limit()`: contatore per utente autenticato (ripiego: indirizzo IP),
 scope `heavy` condiviso tra le rotte. Limite e finestra sono le impostazioni di pachifast `rate_limit.default` e
 `rate_limit.window_seconds` (env `PACHIFAST_RATE_LIMIT_DEFAULT`/`PACHIFAST_RATE_LIMIT_WINDOW_SECONDS`); a differenza di
-pachifast (spento), l'editor le imposta a 60/60 s se non sono scritte, e `0` le spegne.
+pachifast (spento), l'editor usa 60 richieste se `rate_limit.default` non e' scritto (`rate_limit(default=60)`), e `0` le spegne.
 """
 
 import os
 from typing import Any
 
 from fastapi import Depends
-from pachifast.config import get_settings
 from pachifast.ratelimit import rate_limit
 
 HEAVY_LIMIT_DEFAULT = 60
 
 
+def _legacy(name: str, default: int | None) -> int | None:
+    """Alias deprecato `WEBEDITOR_HEAVY_RATE_*` (intero positivo), altrimenti `default`."""
+    value = os.environ.get(name)
+    return int(value) if value is not None and value.isdigit() and int(value) > 0 else default
+
+
 def heavy_rate_limit() -> Any:
-    """Dipendenza FastAPI per le rotte costose (`dependencies=[heavy_rate_limit()]`)."""
-    return Depends(rate_limit(key="user", scope="heavy"))
+    """Dipendenza FastAPI per le rotte costose (`dependencies=[heavy_rate_limit()]`).
 
-
-def apply_rate_limit_defaults() -> None:
-    """Default dell'editor: 60 richieste per finestra, salvo `rate_limit.*` esplicito (yaml/env di pachifast).
-
-    Alias deprecati `WEBEDITOR_HEAVY_RATE_LIMIT`/`WEBEDITOR_HEAVY_RATE_WINDOW`: valgono solo se la chiave pachifast
-    corrispondente non e' scritta.
+    Il limite e' `rate_limit.default` di pachifast se scritto (`0` = spento), altrimenti l'alias
+    `WEBEDITOR_HEAVY_RATE_LIMIT`, altrimenti 60. La finestra e' `rate_limit.window_seconds`, o l'alias
+    `WEBEDITOR_HEAVY_RATE_WINDOW` (che in tal caso vince).
     """
-    settings = get_settings()
-    for field, legacy, default in (
-        ("rate_limit_default", "WEBEDITOR_HEAVY_RATE_LIMIT", HEAVY_LIMIT_DEFAULT),
-        ("rate_limit_window_seconds", "WEBEDITOR_HEAVY_RATE_WINDOW", None),
-    ):
-        if field in settings.model_fields_set:
-            continue
-        value = os.environ.get(legacy)
-        if value is not None and value.isdigit() and (int(value) > 0 or field == "rate_limit_default"):
-            setattr(settings, field, int(value))
-        elif default is not None:
-            setattr(settings, field, default)
+    default = _legacy("WEBEDITOR_HEAVY_RATE_LIMIT", HEAVY_LIMIT_DEFAULT)
+    return Depends(rate_limit(window=_legacy("WEBEDITOR_HEAVY_RATE_WINDOW", None), key="user", scope="heavy", default=default))

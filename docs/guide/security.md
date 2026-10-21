@@ -26,7 +26,7 @@ verifica nel browser che SPA e `/docs` funzionino senza violazioni CSP.
 ## Limite di richieste sugli endpoint costosi
 
 Le conversioni (`POST /api/convert/preview` e `/run`) e l'import di zone (`POST /api/transfer/zones/import`) usano il
-`rate_limit` di pachifast (`pachifast>=0.18`) come dipendenza di rotta: contatore a finestra fissa per **utente autenticato**
+`rate_limit` di pachifast (`pachifast>=0.19`) come dipendenza di rotta: contatore a finestra fissa per **utente autenticato**
 (ripiego: indirizzo IP, IPv6 come rete /64), con un solo budget (scope `heavy`) condiviso dalle tre rotte, nella cache di pachifast
 (memoria del processo; condivisa tra worker solo con `cache.url` Redis). Le richieste non autenticate sono rifiutate (401) prima
 del conteggio. Oltre il limite: `429` con `Retry-After`, codice `api.rate_limited` e header `X-RateLimit-Limit`/`-Remaining`/`-Reset`
@@ -39,8 +39,8 @@ Configurazione con le impostazioni di pachifast (yaml o env):
 | `default` | `PACHIFAST_RATE_LIMIT_DEFAULT` | `60` | richieste per finestra e utente; `0` = nessun limite |
 | `window_seconds` | `PACHIFAST_RATE_LIMIT_WINDOW_SECONDS` | `60` | durata della finestra in secondi |
 
-pachifast lascia il limite spento; l'editor lo imposta a 60/60 s se non e' scritto. Gli env `WEBEDITOR_HEAVY_RATE_LIMIT` e
-`WEBEDITOR_HEAVY_RATE_WINDOW` restano come **alias deprecati**: valgono solo se la chiave pachifast corrispondente non e' scritta.
+pachifast lascia il limite spento; l'editor usa 60 richieste per finestra se `rate_limit.default` non e' scritto (`rate_limit(default=60)`: `rate_limit.default: 0` lo spegne). Gli env `WEBEDITOR_HEAVY_RATE_LIMIT` e
+`WEBEDITOR_HEAVY_RATE_WINDOW` restano come **alias deprecati**: il limite vale solo se `rate_limit.default` non e' scritto; la finestra, se impostata, vince su `rate_limit.window_seconds`.
 Dietro un reverse proxy avvia uvicorn con `--proxy-headers` (`pachifast serve` lo fa), altrimenti i client anonimi condividono
 l'indirizzo del proxy. Nota: il codice di errore e' passato da `auth.rate_limited` ad `api.rate_limited`.
 

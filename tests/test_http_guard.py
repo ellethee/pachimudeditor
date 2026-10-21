@@ -11,7 +11,7 @@ from pachifast.config import get_settings
 from pachifast.ratelimit import rate_limit
 
 from pachimudeditor.common.http_guard import CSP_APP, CSP_DOCS
-from pachimudeditor.common.rate_limit import apply_rate_limit_defaults
+from pachimudeditor.common.rate_limit import _legacy
 
 SECURITY = {"x-content-type-options": "nosniff", "x-frame-options": "DENY", "referrer-policy": "no-referrer"}
 
@@ -61,14 +61,12 @@ async def test_rate_limit_key_is_per_user() -> None:
 
 
 def test_legacy_env_alias(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Gli env `WEBEDITOR_HEAVY_RATE_*` valgono solo se `rate_limit.*` non e' scritto; senza nulla: 60/60."""
-    settings = get_settings().model_copy()
-    settings.__pydantic_fields_set__.difference_update({"rate_limit_default", "rate_limit_window_seconds"})
-    monkeypatch.setattr("pachimudeditor.common.rate_limit.get_settings", lambda: settings)
+    """Gli env `WEBEDITOR_HEAVY_RATE_*` valgono se interi positivi; altrimenti il default (60 per il limite, nessuna finestra)."""
+    monkeypatch.delenv("WEBEDITOR_HEAVY_RATE_LIMIT", raising=False)
+    assert _legacy("WEBEDITOR_HEAVY_RATE_LIMIT", 60) == 60
     monkeypatch.setenv("WEBEDITOR_HEAVY_RATE_LIMIT", "5")
-    apply_rate_limit_defaults()
-    assert settings.rate_limit_default == 5
-    monkeypatch.delenv("WEBEDITOR_HEAVY_RATE_LIMIT")
-    settings.__pydantic_fields_set__.difference_update({"rate_limit_default", "rate_limit_window_seconds"})
-    apply_rate_limit_defaults()
-    assert settings.rate_limit_default == 60 and settings.rate_limit_window_seconds == 60
+    assert _legacy("WEBEDITOR_HEAVY_RATE_LIMIT", 60) == 5
+    monkeypatch.setenv("WEBEDITOR_HEAVY_RATE_LIMIT", "0")
+    assert _legacy("WEBEDITOR_HEAVY_RATE_LIMIT", 60) == 60
+    monkeypatch.delenv("WEBEDITOR_HEAVY_RATE_WINDOW", raising=False)
+    assert _legacy("WEBEDITOR_HEAVY_RATE_WINDOW", None) is None
