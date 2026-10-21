@@ -60,7 +60,10 @@ def _originals_untouched() -> Iterator[None]:
     before = digest(LIB, players=players)
     yield
     after = digest(LIB, players=players)
-    assert after == before, "i dati originali di Diku Modificato non devono essere modificati"
+    changed = sorted(k for k in before.keys() | after.keys() if before.get(k) != after.get(k))
+    assert not changed, (
+        f"i dati originali di Diku Modificato non devono essere modificati (cambiati: {', '.join(changed)}; se stai usando l'editor su leu in parallelo e' lui)"
+    )
 
 
 def copy_lib(dest: Path) -> Path:

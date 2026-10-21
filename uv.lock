@@ -1220,7 +1220,7 @@ wheels = [
 
 [[package]]
 name = "pachimudeditor"
-version = "0.1.1"
+version = "0.1.2"
 source = { editable = "." }
 dependencies = [
     { name = "pachifast" },
@@ -1313,7 +1313,7 @@ requires-dist = [{ name = "pachimudeditor", editable = "." }]
 
 [[package]]
 name = "pachimudeditor-adapter-dikumod"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "adapters/dikumod" }
 dependencies = [
     { name = "pachimudeditor" },

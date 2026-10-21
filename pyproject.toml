@@ -1,6 +1,6 @@
 [project]
 name = "pachimudeditor"
-version = "0.1.1"
+version = "0.1.2"
 description = "Editor web di MUD (pachimud, basedmud, ROM/dikumod e altri tramite adapter): backend pachifast con frontend Quasar incluso"
 readme = "README.md"
 license = "MIT"
@@ -36,12 +36,12 @@ Changelog = "https://github.com/ellethee/pachimudeditor/blob/main/CHANGELOG.md"
 # del gruppo `pachimudeditor.adapters`. Le sorgenti di sviluppo sono in `[tool.uv.sources]`.
 pachimud = ["pachimudeditor-adapter-pachimud>=0.1.1"]
 basedmud = ["pachimudeditor-adapter-basedmud>=0.1.0"]
-dikumod = ["pachimudeditor-adapter-dikumod>=0.1.0"]
+dikumod = ["pachimudeditor-adapter-dikumod>=0.1.1"]
 mapping = ["pachimudeditor-adapter-mapping>=0.1.0"]
 all = [
     "pachimudeditor-adapter-pachimud>=0.1.1",
     "pachimudeditor-adapter-basedmud>=0.1.0",
-    "pachimudeditor-adapter-dikumod>=0.1.0",
+    "pachimudeditor-adapter-dikumod>=0.1.1",
     "pachimudeditor-adapter-mapping>=0.1.0",
 ]
 

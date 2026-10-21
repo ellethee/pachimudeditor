@@ -1,6 +1,6 @@
 [project]
 name = "pachimudeditor-adapter-dikumod"
-version = "0.1.0"
+version = "0.1.1"
 description = "Adapter Diku Modificato di pachimudeditor: file dati Diku (libreria dikumod_lib inclusa)"
 readme = "README.md"
 license = "MIT"
@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Games/Entertainment :: Multi-User Dungeons (MUD)",
 ]
 dependencies = [
-    "pachimudeditor>=0.1.0,<0.2",
+    "pachimudeditor>=0.1.2,<0.2",
 ]
 
 [project.urls]
