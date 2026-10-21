@@ -1,6 +1,6 @@
 # Diku Modificato: profilo del canale live
 
-**Stato: specifica, non implementata.** Applica il [protocollo `livectl`](../backend/live-control-protocol.md) a Diku Modificato: dove si
+**Stato: implementato (modulo C di riferimento in `adapters/dikumod/mud-module/`, provato su una copia del gioco).** Applica il [protocollo `livectl`](../backend/live-control-protocol.md) a Diku Modificato: dove si
 aggancia il modulo C nel sorgente, quali funzioni del gioco usano i comandi, quali campi si possono cambiare a gioco acceso e quali
 insidie ci sono. Il protocollo (trasporto, sicurezza, comandi, errori) e' in [canale di controllo live](../backend/live-control-protocol.md);
 qui c'e' solo cio' che dipende dal sorgente.
@@ -14,7 +14,6 @@ I numeri di riga sono di DikuMod1 (`/dati/luca/muds/oldlinux/DikuMod1/src`) e po
 |---|---|---|
 | `oldlinux/DikuMod1/src` | sorgenti completi (57 file `.c`, ~97 000 righe), porting x86_64 con g++ | riferimento (`DikuMod`/«dikumod») |
 | `oldlinux.save/leu/src` | identico a DikuMod1 (verificato con `diff -rq`, esclusi i `.o`) | nessuno in piu' |
-| `oldlinux/DikuMod2/src`, `dikumod-root/dikumod2/src` | **solo 4 file** (`act.wizard.c`, `comm.c`, `db.c`, `spec_assign.c`); il binario `leu` e' un a.out i386 del 2004 | confronto con DikuMod1 |
 
 Il gioco e' scritto in C ma e' **compilato come C++** (`g++ -fpermissive -std=gnu++98 -fno-operator-names -w`, `-DNETBSD -DLINUX -DNO_RENT_COST`; `Makefile`
 `CC=g++`): il modulo nuovo deve compilare cosi', quindi niente inizializzatori designati ne' VLA e attenzione ai nomi riservati del C++
@@ -128,7 +127,7 @@ gia' in esecuzione e un valore errato non e' un file sbagliato ma un crash.
 | `str` | `abilities.str` (+ `affect_total`) | `sbyte` | **0..25** | `str_app[31]`, `dex_app[26]`, `con_app[26]`, `int_app[26]`, `wis_app[26]` (`constants.c` 3101-3342): oltre l'indice il gioco legge fuori tabella |
 | `strAdd` | `abilities.str_add` | `sbyte` | 0..100 | indice di `str_app` via `STRENGTH_APPLY_INDEX` (`utils.h` 175) |
 | `int`, `wis`, `dex`, `con`, `chr` | `abilities.intel/wis/dex/con/chr` | `sbyte` | **0..25** | `chr_apply[26]` (`constants.c` 3374) |
-| `levels.<classe>` | `player.level[i]` | `byte` | 0..50, oltre solo se il MUD lo consente | il gioco rifiuta di creare immortali ai non implementatori (`do_set` `lev`, 2454-2459: livelli > 50 e `LOW_IMMORTAL` = 51): il canale ripete il divieto (`forbidden_by_policy`) |
+| `levels.<classe>` | `player.level[i]` | `byte` | 0..59; promozione a >= 51 solo con `confirm_immortal: true` | il gioco rifiuta di creare immortali ai non implementatori (`do_set` `lev`, 2454-2459: `LOW_IMMORTAL` = 51): il canale lo tratta come operazione pericolosa: una **promozione** (nuovo livello >= 51 e maggiore dell'attuale) e' rifiutata senza conferma esplicita e consentita con `confirm_immortal` (con avvertenza nella risposta e nell'audit); mantenere o abbassare un livello da immortale non richiede conferma; solo classi gia' possedute (`iClass`) |
 
 **Non modificabili in v1** (il comando risponde `bad_params`):
 
@@ -214,48 +213,62 @@ esista (`real_roomp(room)->people`, `comm.c` 2155): il modulo controlla prima. `
 9. **Check del gioco** `CheckObjectExDesc`/`CheckCharAffected` (comm.c 100-160) girano attorno ai comandi dei giocatori: segnalano strutture corrotte nel log. Il modulo non li chiama; dopo `player.set` e' opportuno eseguirli in fase di prova.
 10. **Orari di reboot automatici** (`check_reboot`, `modify.c` 1089) e `mudshutdown`: a gioco in chiusura il poll non gira piu'; i client ricevono EOF. L'editor tratta la chiusura come `unreachable`.
 
-## Differenze dikumod / dikumod2
-
-| Aspetto | DikuMod1 | DikuMod2 |
-|---|---|---|
-| Sorgenti disponibili | completi | **solo 4 file**; il resto **da verificare** (si presume uguale a DikuMod1) |
-| `comm.c` | `room_db` array (`extern struct room_data *room_db[WORLD_SIZE]`), `MAX_BAN_HOSTS` con `<` | `room_db` puntatore, ciclo con `<=` (fuori di uno, solo con `SITELOCK`); stesse funzioni e stessi punti di innesto (il confronto di `comm.c` mostra solo queste differenze e il nome del proprietario `Benem`/`Fiko`) |
-| `db.c` | `closedir(dir)` dopo ogni `opendir` (5 punti); `update_obj_file()` al boot solo con `BOOT_UPDATE_OBJ_FILE`; `store_to_char`/`char_to_store` copiano `affected` campo per campo | `closedir` **mancante** nei 5 punti: ogni lettura di cartella (`players`, `zones`, `rooms`, ...) perde un descrittore; `store_to_char` usa `affect_to_char(ch, &st->affected[i])` e `char_to_store` copia la struttura intera (incluso il puntatore `next`; effetti **da verificare**); `update_obj_file()` al boot e' **sempre** eseguita (manca l'`#ifdef`; con dati vecchi puo' azzerare il rent) |
-| `act.wizard.c` | | differisce solo per il nome del proprietario (`Fiko`) nelle eccezioni dei comandi degli immortali |
-| Binario disponibile | ricompilabile (porting x86_64) | solo `leu` a.out i386 del 2004: **non** patchabile senza i sorgenti completi |
-
-Conseguenze: lo **stesso modulo** funziona per entrambi (le funzioni usate sono quelle di `db.c`, `handler.c`, `comm.c`, `act.*`), ma per dikumod2 va prima
-ricostruita una build dai sorgenti completi (DikuMod1 + i 4 file di DikuMod2) e provata. La perdita di descrittori di DikuMod2 e' un problema preesistente che pesa di piu'
-con un canale che apre descrittori propri (da correggere o da monitorare). Nessuna differenza nei campi del giocatore: lo stesso `char_file_u` da 3036 byte
-(il [formato](../formats/dikumod.md#9-file-giocatore-e-rent) vale per entrambi).
-
 ## Configurazione del modulo
 
-Un file `livectl.conf` nella cartella dati (`lib/`), letto da `livectl_init` con un parser a righe `chiave = valore`, **senza** il token. Chiavi:
-`socket` (percorso assoluto), `token_file` (percorso assoluto, `0600`), `classes` (default `read`; `read,write` abilita le scritture), `max_connections`,
-`allow_uid`, `audit_file`, `deny_obj` (elenco di vnum), `allow_immortal_levels` (default `0`), `enabled` (default `0`). Il modulo e' compilato solo con `-DLIVECTL`
-(file `livectl.c` aggiunto a `OBJS` nel `Makefile` e, senza il flag, la funzione e' vuota): una build senza il flag e' identica a oggi.
+Solo **variabili d'ambiente** lette da `livectl_init` (il token e' un segreto, le altre seguono lo stesso canale per semplicita'):
 
-## Stima delle righe
+| Variabile | Default | Significato |
+|---|---|---|
+| `LIVECTL_SOCKET` | (nessuno) | percorso **assoluto** del socket Unix; senza, il modulo non si attiva |
+| `LIVECTL_TOKEN` | (nessuno) | segreto, almeno 32 caratteri; cancellato dall'ambiente dopo la lettura |
+| `LIVECTL_CLASSES` | `read` | `read` oppure `read,write` (le scritture sono disattivate di default) |
+| `LIVECTL_MAX_CONN` | `4` | connessioni massime (1..16) |
+| `LIVECTL_AUDIT` | `livectl.audit` | file di audit (relativo a `lib/` o assoluto) |
+| `LIVECTL_DENY_OBJ` | `150-199,1600,5311,13702,21113,21117,21120-21122` | vnum non creabili da `load.obj` (deny-list di `do_oload`) |
 
-| Parte | Righe (C, stile del sorgente) |
+Interruttore di emergenza: se nella cartella dati esiste il file `livectl.disable` il modulo non si attiva. Il modulo e' compilato solo con `-DLIVECTL`; senza il
+flag `livectl_init`/`livectl_poll` sono vuote e una build e' identica a oggi. Codice, patch e istruzioni: `adapters/dikumod/mud-module/` (README).
+Sorgente di riferimento: solo **DikuMod1** (identico a `oldlinux.save/leu/src`); le altre varianti non sono considerate.
+
+## Righe effettive
+
+| Parte | Righe |
 |---|---|
-| parser/serializzatore JSON rigoroso (a limiti fissi, in-place) | 250-350 |
-| socket, accept, buffer per connessione, framing, limiti, token bucket | 250-350 |
-| autenticazione, token (confronto a tempo costante), classi/allowlist, audit | 150-200 |
-| comandi (`ping`, `info`, `who`, `zone.*`, `player.*`, `load.*`, `echo`) | 350-450 |
-| configurazione, conversione latin-1/UTF-8, tabelle (nomi di classi, razze, posizioni) | 100-150 |
-| **Totale nuovo** (`livectl.c`, eventualmente `livectl_json.c`) | **~1100-1500** |
-| modifiche ai file esistenti | ~12: `comm.c` (+4: `livectl_init();` dopo `boot_db`, `livectl_poll();` in `game_loop`, dichiarazioni in `protos.h` o locali), `Makefile` (+1 oggetto), `protos.h` (+3) |
+| `livectl_json.c` / `.h`: parser e serializzatore JSON a limiti fissi | ~540 |
+| `livectl.c`: socket, framing, limiti, token, classi, audit, i 10 comandi, configurazione | ~1700 |
+| `livectl.h`, harness di fuzz (`fuzz/fuzz_json.c`) | ~110 |
+| modifiche ai file originali (`dikumod1-livectl.patch`) | 12 righe in `comm.c` (include, `livectl_init();`, `livectl_poll();`), 2 nel `Makefile` (`$(LIVECTL_FLAGS)` e due oggetti) |
 
-Per l'editor (Python, a parte): client asincrono ~250 righe, adapter `LiveAdapter` + rotte + DTO ~400, test con un finto server del protocollo ~300.
+La stima iniziale (1100-1500 righe) era ottimistica: gran parte del peso e' nella validazione dei parametri e nei messaggi d'errore stabili.
+Per l'editor (Python, a parte): client asincrono, adapter `LiveAdapter` + rotte + DTO, comandi CLI: non ancora scritti. Esistono invece il finto
+server (`tests/support/live_fake_server.py`) e la suite di conformita' (`tests/live/`).
+
+## Costruire e provare
+
+Il modulo non modifica i sorgenti originali: si lavora su una **copia**.
+
+```bash
+M=/percorso/pachimudeditor/adapters/dikumod/mud-module
+mkdir /tmp/mud && cp -r /percorso/DikuMod1/src /tmp/mud/src && cd /tmp/mud
+patch -p1 < $M/dikumod1-livectl.patch          # comm.c (12 righe) e Makefile (2 righe)
+cp $M/livectl*.[ch] src/ && cd src
+make depend && make leu LIVECTL_FLAGS=-DLIVECTL   # Makefile reale del gioco, g++ -std=gnu++98
+LIVECTL_SOCKET=/tmp/mud/l.sock LIVECTL_TOKEN=$(openssl rand -hex 32) LIVECTL_CLASSES=read,write ./leu -d /percorso/copia/lib 4000
+```
+
+Dettagli, variabili e istruzioni esatte: `adapters/dikumod/mud-module/README.md`. Prova automatica: `DIKUMOD_SRC=.../src DIKUMOD_LIB=.../lib uv run pytest tests/live`
+(costruisce il gioco su copie in `/tmp`, crea il giocatore `Tester`, lo fa entrare e lancia la stessa suite di conformita' del finto server).
+
+**Verificato davvero** (copia di DikuMod1 con i dati reali copiati in una cartella temporanea): compilazione con il Makefile reale (`-std=gnu++98`, senza errori) sia
+con sia senza `-DLIVECTL`, avvio del gioco con il canale, login di un giocatore, tutti i comandi della v1 contro il gioco vivo (modifica con salvataggio su
+`players/tester.dat`, reset di zona, creazione di mob e oggetti, messaggi, deny-list, limiti, raffiche, input spazzatura) e fuzz del parser con ASan/UBSan.
 
 ## Da verificare
 
-- Il comportamento effettivo dei limiti di `alignment` e `conditions` (il gioco non li impone in `do_set`).
-- Rimozione della voce da `gReset_q` dopo un `zone.reset` manuale, in prova su una copia.
-- Mob sentinella creati con `load.mob` (`lStartRoom`).
-- Verifica del salvataggio (`mtime`).
-- Sorgenti completi di DikuMod2 e riproducibilita' della sua build.
+- I limiti di `alignment` (-1000..1000) e `conditions` (-1..24) sono scelti dal modulo: il gioco non li impone in `do_set`.
+- Mob sentinella creati con `load.mob` (`lStartRoom` non impostato come dal reset di zona).
+- `saved: true` significa che `do_save` e' stato chiamato e che `mtime` di `players/<nome>.dat` e' avanzato (risoluzione di un secondo): non e' una verifica del contenuto.
+- Comportamento con `-A` (`SYS_NOANSI`) e `$c` nei testi: il modulo elimina il `$`, ma il percorso `ansi_parse` del gioco non e' stato esercitato.
+- Giocatori trasformati (`polymorph`) e link morti: la logica c'e' (`who` li elenca, le scritture rispondono `player_busy`/`player_not_playing`) ma non e' stata provata dal vivo.
+- Fuzz solo del parser: il resto del modulo (socket, comandi) e' provato dalla suite di conformita' e dal test con input spazzatura, non con un fuzzer.
 - basedmud/ROM: hook equivalenti non ancora cercati.
-- Compilazione del modulo con il `Makefile` reale (`-std=gnu++98`) e prova di fuzzing del parser JSON.

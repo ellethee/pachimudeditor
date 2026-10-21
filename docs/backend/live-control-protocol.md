@@ -1,9 +1,11 @@
 # Canale di controllo live (protocollo `livectl`)
 
-**Stato: specifica, non implementata.** Descrive un canale tra l'editor e un MUD **in esecuzione**: l'editor chiede informazioni
+**Stato: protocollo v1 specificato; implementati il modulo C di riferimento per Diku Modificato (DikuMod1, `adapters/dikumod/mud-module/`), un finto server Python e la suite di conformita' (`tests/live/`). Non ancora implementati: `LiveAdapter` e rotte dell'editor, comandi CLI `pachimudeditor live`, componente per pachimud.** Descrive un canale tra l'editor (o un altro client) e un MUD **in esecuzione**: il client chiede informazioni
 (chi e' connesso, stato del server) e fa modifiche immediate (giocatori connessi, reset di zona, creazione di mob/oggetti,
 messaggi) senza fermare il gioco e senza toccare i file. Il caso di riferimento e' Diku Modificato ([profilo dikumod](../adapters/dikumod-live.md));
-per pachimud (Python) lo stesso protocollo sarebbe servito da un componente `asyncio` nello stesso processo.
+per pachimud (Python) e' **previsto** lo stesso protocollo servito da un componente `asyncio` nello stesso processo, come passo successivo a dikumod.
+
+Il protocollo e' **indipendente dall'editor**: qualunque client in possesso del token e dell'accesso al socket puo' usarlo. L'editor e' il client di riferimento (autentica gli utenti e applica i permessi); la [riga di comando](#client-da-riga-di-comando) e' un client sottile per gli script.
 
 Il canale **affianca** la modifica su file dei giocatori ([contratto giocatori su file](contract-players-files.md)), non la sostituisce:
 i giocatori **non connessi** restano sui file, quelli connessi passano dal canale.
@@ -34,7 +36,7 @@ un errore nell'editor. Ipotesi:
 | Attore | Fiducia | Note |
 |---|---|---|
 | Il processo del MUD | si' | esegue il modulo; un bug del modulo e' un bug del gioco (puo' farlo cadere) |
-| L'editor (backend) | si', **come unico client** | autentica gli utenti e applica i permessi; il MUD non conosce gli utenti dell'editor |
+| Il client autenticato dal token (editor, CLI, script) | si' | l'editor autentica i propri utenti e applica i permessi; il MUD conosce solo il token e non distingue i client |
 | Altri processi dello stesso utente Unix | **no** | il token e' la seconda difesa dopo i permessi del socket |
 | Altri utenti della macchina | no | non devono poter nemmeno aprire il socket |
 | Rete | no | nessun ascolto fuori da loopback; il protocollo non e' pensato per Internet |
@@ -47,7 +49,7 @@ Minacce considerate e contromisure (dettaglio nella [sicurezza](#sicurezza)):
    proporzionale all'input, fail-closed (errore + chiusura), nessun comando fuori dalla allowlist.
 3. **Abuso di un client valido** (editor compromesso): classi di comandi, allowlist, limiti di frequenza, validazione dei valori
    come per i file, **audit** lato MUD indipendente da quello dell'editor. Un editor compromesso resta un rischio: il canale ne limita
-   il danno ma non lo annulla (vedi [rischi aperti](#rischi-aperti-e-domande-aperte)).
+   il danno ma non lo annulla (vedi [rischi aperti](#rischi-aperti-e-decisioni)).
 4. **Denial of service** (client lento, connessioni a raffica, richieste a raffica): connessioni massime, buffer limitati,
    budget di tempo per iterazione del ciclo di gioco, chiusura dei client che non leggono; nessuna attesa bloccante nel thread del gioco.
 5. **Perdita di segreti**: il token non compare mai nel yaml dell'editor, nei log, nei messaggi d'errore, negli esempi delle API.
@@ -113,7 +115,7 @@ Risposta di successo:
   "protocol": 1,
   "mud": {"kind": "dikumod", "name": "LeU", "version": "1.7.0 cdrom", "module": "livectl 0.1"},
   "limits": {"max_line": 4096, "max_response": 65536, "max_pending": 8, "request_timeout_ms": 2000, "max_text": 400},
-  "features": ["who.paging"],
+  "features": [],
   "commands": {
     "ping":       {"class": "read"},
     "info":       {"class": "read"},
@@ -220,16 +222,15 @@ fallimento: il comando puo' essere stato eseguito. Per questo:
 ### Token
 
 - Segreto condiviso casuale di almeno **32 byte** (64 caratteri esadecimali). Si genera con `openssl rand -hex 32` o simili.
-- Lato MUD: letto all'avvio da un **file** con permessi `0600` (`livectl.token`, percorso nella configurazione del modulo) oppure dalla variabile
-  d'ambiente `LIVECTL_TOKEN`; il file e' preferito (l'ambiente e' leggibile in `/proc/<pid>/environ` e spesso finisce nei log
-  degli script di avvio). Se il file ha permessi piu' larghi di `0600`, il token manca o e' corto, il modulo **non si attiva** e
-  lo scrive nel log del gioco (il gioco parte comunque, senza canale).
+- Lato MUD: letto all'avvio dalla variabile d'ambiente `LIVECTL_TOKEN` (decisione presa: niente file del token). Nota: l'ambiente di un
+  processo e' leggibile dallo stesso utente in `/proc/<pid>/environ` e spesso compare negli script di avvio; il modulo quindi **cancella**
+  la variabile dall'ambiente dopo averla letta (`unsetenv`) e lo script di avvio NON DEVE stamparla. Se il token manca o e' piu' corto di
+  32 caratteri il modulo **non si attiva** e lo scrive nel log del gioco (il gioco parte comunque, senza canale).
 - Lato editor: il yaml del mondo contiene solo il **nome** della variabile (`token_env`), il valore sta nel `.env` della cartella
   di lavoro (regola gia' valida per i segreti: [configurazione](../guide/configuration.md)). Il token NON DEVE comparire nel yaml, nei log, nelle
   eccezioni, nelle risposte API, nei campi `error`, nell'audit, nella cronologia dei comandi.
 - Il confronto avviene a **tempo costante** (nessuna uscita anticipata al primo byte diverso, anche con lunghezze diverse).
-- Rotazione: cambiare il token nel file del MUD e nel `.env` dell'editor; il MUD rilegge il file con un segnale dedicato o al riavvio
-  (da decidere nel profilo); le connessioni gia' autenticate restano valide fino alla chiusura.
+- Rotazione: cambiare il token nell'ambiente del MUD (richiede il riavvio del gioco) e nel `.env` dell'editor; le connessioni gia' autenticate restano valide fino alla chiusura.
 - Protezione dai tentativi: dopo 3 `hello` falliti la connessione e' chiusa; piu' di 10 fallimenti in 60 s fanno rispondere
   `rate_limited` ai `hello` per 30 s **senza nemmeno confrontare** il token. Il modulo non dorme mai nel thread del gioco.
 - Evoluzione: `hello` e' stato pensato per ammettere un secondo metodo (sfida con HMAC, cosi' il segreto non passa nel canale);
@@ -323,15 +324,14 @@ Classe `read`. Parametri facoltativi: `prefix` (stringa, solo i nomi che inizian
 ```json
 {"players": [
   {"name": "Mario", "state": "playing", "level": 34, "levels": {"warrior": 34, "thief": 12},
-   "race": "human", "sex": "male", "room": 3001, "zone": 4, "position": "standing",
-   "fighting": false, "idle_s": 12, "immortal": false, "invisible": 0}
+   "race": 3, "sex": 1, "room": 3001, "zone": 13, "position": 8,
+   "fighting": false, "idle": 12, "immortal": false, "invisible": 0}
  ],
  "count": 1, "truncated": false}
 ```
 
 `state`: `playing`, `linkdead`, `polymorph` (il personaggio e' trasformato: `name` e' quello reale). Non compaiono i collegamenti
-ancora in login. L'indirizzo di rete NON e' mai nella risposta (dato personale). I nomi dei campi di dettaglio sono quelli del
-profilo; i valori testuali (razza, classe, posizione) sono i nomi canonici delle tabelle del formato.
+ancora in login. L'indirizzo di rete NON e' mai nella risposta (dato personale). `levels` ha per chiavi i nomi di classe del formato (`magic_user`, `cleric`, `warrior`, `thief`, `druid`, `monk`, `barbarian`, `sorcerer`, `paladin`, `ranger`, `psi`); `race`, `sex` e `position` sono i **valori numerici** del MUD (le tabelle di nomi sono nelle `enums` dell'adapter), `idle` e' il contatore di inattivita' del gioco nelle sue unita'.
 Effetti collaterali: nessuno. Idempotente. Ordine: lista del gioco (non garantito stabile).
 
 ### `player.get`
@@ -342,7 +342,7 @@ giocatore con quel nome nel mondo), `player_not_playing`. Effetti collaterali: n
 
 ### `player.set`
 
-Classe `write`. Parametri: `name`, `set` (oggetto campo -> valore, da 1 a 16 campi), `save` (bool facoltativo, default `true`). Risposta:
+Classe `write`. Parametri: `name`, `set` (oggetto campo -> valore, da 1 a 16 campi), `save` (bool facoltativo, default `true`), `confirm_immortal` (bool facoltativo, default `false`). Risposta (le chiavi di `applied` sono i nomi dei campi, con il punto per quelli annidati: `conditions.drunk`, `levels.warrior`):
 
 ```json
 {"name": "Mario",
@@ -359,6 +359,13 @@ Semantica:
 3. le modifiche sono applicate in memoria e il MUD ricalcola gli effetti derivati come fa per le proprie azioni (profilo);
 4. con `save: true` il giocatore e' salvato con la stessa procedura del comando `save` del gioco; `saved` dice se e' riuscito (se
    no, la modifica resta in memoria e c'e' un `warnings` con il codice del salvataggio fallito: l'editor lo mostra, non ritenta).
+
+**Livelli e immortali (avvertenza e sblocco).** `levels` e' modificabile (oggetto classe -> livello). **Promuovere** una classe a un livello di **51 o piu'** (`LOW_IMMORTAL`; cioe' nuovo livello >= 51 e maggiore di quello attuale)
+crea o promuove un immortale: il gioco stesso lo vieta ai non implementatori. Il canale non lo impedisce in modo assoluto ma lo tratta come
+operazione pericolosa: senza `confirm_immortal: true` la richiesta intera e' rifiutata con `forbidden_by_policy` (`params.reason = "immortal_level"`, `params.level`);
+con `confirm_immortal: true` e' eseguita, la risposta ha `"warnings": ["immortal_level"]` e l'audit riporta la conferma. L'editor DEVE mostrare
+un'avvertenza esplicita («stai creando un immortale: avra' i poteri di un dio nel gioco») e inviare il flag solo dopo la conferma dell'utente.
+Mantenere o abbassare un livello gia' da immortale non richiede conferma. Si possono impostare solo classi che il giocatore ha gia' (livello > 0), altrimenti `forbidden_by_policy` (`params.reason = "class_not_owned"`); il massimo assoluto e' 59.
 
 Effetti collaterali: il giocatore puo' ricevere messaggi del gioco; il file del giocatore cambia solo con `save`. Idempotente a parita' di
 valori (vedi [esecuzione](#esecuzione-sul-thread-del-gioco)). Solo giocatori **connessi**: per un giocatore non connesso la modifica
@@ -442,6 +449,8 @@ Il client apre il socket, poi (una riga per messaggio; `>` client -> server, `<`
 
 ## Lato editor (descrizione, non implementato)
 
+L'editor e' il client di riferimento.
+
 Una capability dell'SDK, `LiveAdapter` (mixin opzionale come `PlayersAdapter`), con flag `supports_live_control`:
 
 | Metodo (async) | Compito |
@@ -453,8 +462,7 @@ Una capability dell'SDK, `LiveAdapter` (mixin opzionale come `PlayersAdapter`), 
 
 Rotte neutre del core sotto `/api/world/live/...` (envelope e codici come il [contratto API](contract.md); 409 `world.capability_missing`
 senza capability; errori del canale mappati sui codici di questa pagina con prefisso `live.`). **Permessi**: sono operazioni con effetto immediato sul
-gioco e oggi l'editor non ha permessi per mondo ([sicurezza](../guide/security.md#modello-dei-permessi-per-utente)); le rotte `live` DOVREBBERO richiedere
-almeno superuser, o un permesso dedicato (domanda aperta).
+gioco e oggi l'editor non ha permessi per mondo ([sicurezza](../guide/security.md#modello-dei-permessi-per-utente)); le rotte `live` richiedono **superuser** (decisione presa; un permesso per mondo e' un'evoluzione possibile).
 
 Scelta del percorso nell'adapter, per un giocatore:
 
@@ -472,22 +480,65 @@ Configurazione del mondo (`params`, nel yaml; il segreto sta nel `.env`):
 
 ```yaml
 webeditor_worlds:
-  - id: dikumod2
+  - id: dikumod
     kind: dikumod
-    path: /percorso/dikumod2/lib
+    path: /percorso/dikumod/lib
     read_only: false
     params:
       live:
         transport: unix                              # unix (default) | tcp
-        socket: /percorso/dikumod2/lib/livectl.sock  # per tcp: host: 127.0.0.1, port: 9001
-        token_env: DIKUMOD2_LIVE_TOKEN               # NOME della variabile in .env, mai il valore
+        socket: /percorso/dikumod/livectl.sock      # assoluto, max 107 caratteri; per tcp: host: 127.0.0.1, port: 9001
+        token_env: DIKUMOD_LIVE_TOKEN               # NOME della variabile in .env, mai il valore
         timeout_ms: 3000
 ```
 
 Il client dell'editor mantiene una connessione, serializza le richieste, riconnette con backoff, interrompe i tentativi dopo ripetuti
 errori (circuit breaker), passa `actor` = utente autenticato nell'`hello`, scrive il proprio audit e non ritenta le operazioni non idempotenti.
 
-## Rischi aperti e domande aperte
+## Client da riga di comando
+
+Specifica (non implementata) dei comandi `pachimudeditor live`, un client sottile dello stesso protocollo per script esterni. Il superuser vale per le **rotte HTTP**
+dell'editor; per la CLI vale il possesso del token e dell'accesso al socket (stessi permessi del file del socket e di `.env`).
+
+```
+pachimudeditor live [--world ID | --socket PATH] [--token-env VAR] [--timeout SECONDI] [--actor NOME] [--pretty] <comando> [argomenti]
+```
+
+- **Dove sta il canale**: `--world ID` legge `params.live` del mondo (socket, `token_env`, timeout) dalla configurazione dell'editor (`--workdir` come gli altri comandi);
+  in alternativa `--socket PATH` (assoluto). Il **token** si legge **solo** dalla variabile d'ambiente `--token-env` (default `PACHIMUDEDITOR_LIVE_TOKEN`, oppure il
+  `token_env` del mondo) e dal `.env` della cartella di lavoro: **mai** come argomento (comparirebbe in `ps` e nella cronologia della shell).
+- `--actor` va nell'`hello` (default `cli:<utente unix>`); `--timeout` default 5 s.
+- Non chiede mai conferme interattive: la conferma per gli immortali e' il flag `--confirm-immortal`.
+
+| Comando | Equivale a |
+|---|---|
+| `live status` | `hello` + `ping` (+ `info`): `{"connected": true, "protocol": 1, "mud": {...}, "commands": [...]}` |
+| `live ping`, `live info` | `ping`, `info` |
+| `live who [--prefix P] [--limit N] [--no-linkdead]` | `who` |
+| `live player get NOME` | `player.get` |
+| `live player set NOME CAMPO=VALORE... [--no-save] [--confirm-immortal]` | `player.set` (`gold=500`, `conditions.drunk=0`, `levels.warrior=40`) |
+| `live zone list` | `zone.list` |
+| `live zone reset (--zone N \| --room VNUM) [--only-if-empty]` | `zone.reset` |
+| `live load mob VNUM (--room VNUM \| --player NOME) [--count N] [--notify]` | `load.mob` |
+| `live load obj VNUM (--room VNUM \| --player NOME) [--count N] [--notify]` | `load.obj` |
+| `live echo TESTO (--all \| --player NOME \| --room VNUM)` | `echo` |
+
+**Output**: sempre **un solo documento JSON** su stdout (compatto, una riga; indentato con `--pretty`), anche per gli errori, cosi' uno script lo
+elabora con `jq` senza dover separare stderr: `{"ok": true, "result": {...}}` oppure `{"ok": false, "error": {"code": "...", "message": "...", "params": {...}}}`
+(gli stessi `code` stabili del protocollo; per i fallimenti locali `code` vale `connection_failed`, `auth_failed`, `outcome_unknown`, `usage`). Stderr resta per la diagnostica umana (mai il token).
+
+| Exit code | Significato |
+|---|---|
+| 0 | successo |
+| 1 | il MUD ha risposto con un errore (`ok: false`): comando valido ma rifiutato (`not_found`, `value_out_of_range`, `forbidden_by_policy`, ...) |
+| 2 | uso errato o configurazione incompleta (argomenti, token mancante, mondo senza `params.live`) |
+| 3 | canale non raggiungibile (socket assente, connessione rifiutata, timeout prima dell'invio) |
+| 4 | autenticazione o negoziazione fallite (`auth_failed`, `protocol_unsupported`, `rate_limited` sul `hello`) |
+| 5 | esito sconosciuto: timeout o connessione persa **dopo** l'invio di un comando di scrittura (non ritentare senza verificare con `player get` / `who`) |
+
+I comandi di scrittura non vengono mai ritentati automaticamente.
+
+## Rischi aperti e decisioni
 
 ### Rischi
 
@@ -507,18 +558,17 @@ errori (circuit breaker), passa `actor` = utente autenticato nell'`hello`, scriv
 7. **Dati personali.** `who` non espone l'indirizzo di rete; l'audit contiene nomi di giocatori e valori numerici.
 8. **Ogni MUD C ha il proprio modulo.** Il protocollo e' uguale, gli innesti no. Per basedmud (ROM/QuickMUD) gli innesti non sono stati
    ancora cercati nei sorgenti: **da verificare**.
-9. **Token a riposo.** Chi legge il file del token ha il canale: stessi permessi del `.env` dell'editor.
+9. **Token a riposo.** Chi puo' leggere l'ambiente del processo del MUD o il `.env` dell'editor ha il canale: stessi permessi del `.env`.
 
-### Domande per l'utente
+### Decisioni prese
 
-1. Il token del MUD in **file `0600`** (consigliato) o in variabile d'ambiente?
-2. Le rotte `live` dell'editor solo per **superuser**, oppure un permesso dedicato per mondo (`world.<id>.live`)?
-3. `levels` modificabile live? Il gioco vieta di creare immortali (livello >= 51) ai non implementatori: replicare il divieto (consigliato) o niente limite?
-4. `save` di default **vero** in `player.set` (consigliato) o la modifica resta in memoria finche' qualcuno salva?
-5. Deny-list dei vnum di `load.obj`: replicare quella del comando degli immortali (oggetti privati 150-199 e pochi altri) o lista vuota?
-6. Comandi `danger` (arresto, riavvio): mai nel canale, oppure in una fase 2 con secondo segreto e conferma? E' prevista anche `player.kick`?
-7. `idempotency_key` gia' nella v1 o rimandata?
-8. Dikumod2: i sorgenti completi non sono nella cartella (solo 4 file); il modulo si scrive su DikuMod1/LeU e si prova su una build di
-   dikumod2 ricostruita?
-9. Il canale e' per il **solo** editor o anche per uno script di amministrazione da riga di comando (stesso protocollo, token separato)?
-10. Il MUD pachimud: componente `asyncio` nello stesso processo con lo stesso protocollo: confermato come passo successivo?
+1. **Token** del MUD in variabile d'ambiente `LIVECTL_TOKEN` (cancellata dopo la lettura); lato editor `token_env`.
+2. **Permessi**: le rotte `live` dell'editor solo per superuser.
+3. **`levels`** modificabile live; promuovere a un livello >= 51 richiede `confirm_immortal: true` (avvertenza + sblocco esplicito, vedi [`player.set`](#playerset)).
+4. **Comandi `danger`** (arresto, riavvio, kick): fase 2, fuori dalla v1.
+5. **`save`** di `player.set` vale `true` di default (scelta conservativa: lo stato in memoria e quello su file restano allineati).
+6. **Deny-list di `load.obj`**: replicata quella di `do_oload` (default del modulo, configurabile con `LIVECTL_DENY_OBJ`).
+7. **`idempotency_key`**: feature opzionale, annunciata in `features` solo se il modulo la implementa (il modulo di riferimento non la implementa: `features` e' vuoto).
+8. **Client**: il protocollo e' indipendente dall'editor; il token autentica qualunque client. L'editor e' il client di riferimento, la CLI `pachimudeditor live` un client sottile ([specifica](#client-da-riga-di-comando)); per la CLI vale il possesso di token e socket, il superuser vale per le rotte HTTP.
+9. **pachimud**: componente `asyncio` nello stesso processo con lo stesso protocollo, **previsto** come passo successivo a dikumod (solo descritto qui).
+10. **Un solo MUD C per ora**: Diku Modificato nella variante DikuMod1 (sorgenti `oldlinux/DikuMod1`, identici a `oldlinux.save/leu/src`); altre varianti e basedmud non sono coperti.

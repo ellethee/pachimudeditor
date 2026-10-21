@@ -17,7 +17,7 @@ STACK_MODULES = (
     "pachimudeditor_adapter_mapping",
 )
 HAVE_STACK = all(find_spec(name) is not None for name in STACK_MODULES)
-_KEEP = {"core", "support", "__init__.py", "conftest.py", "helpers.py", "__pycache__"}
+_KEEP = {"core", "live", "support", "__init__.py", "conftest.py", "helpers.py", "__pycache__"}
 collect_ignore = [] if HAVE_STACK else [p.name for p in Path(__file__).parent.iterdir() if p.name not in _KEEP]
 
 if HAVE_STACK:

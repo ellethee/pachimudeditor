@@ -1,0 +1,52 @@
+--- a/src/comm.c	2026-10-21 10:38:42.312800884 +0200
++++ b/src/comm.c	2026-10-21 10:38:42.313748184 +0200
+@@ -6,6 +6,9 @@
+ */
+ 
+ 
++#ifdef LIVECTL
++#include "livectl.h"
++#endif
+ #include <errno.h>
+ #include <stdio.h>
+ #include <ctype.h>
+@@ -567,6 +570,9 @@
+  
+   boot_db();
+   
++#ifdef LIVECTL
++  livectl_init();
++#endif
+   mudlog( LOG_CHECK, "Entering game loop.");
+   
+   game_loop(s);
+@@ -1046,6 +1052,9 @@
+     }
+     
+     tics++;        /* tics since last checkpoint signal */
++#ifdef LIVECTL
++    livectl_poll();
++#endif
+     SetStatus( STATUS_ENDLOOP, NULL );
+   }
+ }
+--- a/src/Makefile	2026-10-21 10:38:42.312854932 +0200
++++ b/src/Makefile	2026-10-21 10:38:42.313785873 +0200
+@@ -15,7 +15,7 @@
+ ##  these are architecture dependent flags
+ TITANFLAGS = -g -43 -vector_c -safe=ptrs -DTITAN
+ DEBUGFLAGS = -ggdb3
+-MYFLAGS = $(DEBUGFLAGS) -w -fpermissive -std=gnu++98 -fno-strict-aliasing -fno-operator-names -include string.h -include time.h -include errno.h -include stdlib.h -DNETBSD -DLINUX -DNO_RENT_COST
++MYFLAGS = $(DEBUGFLAGS) -w -fpermissive -std=gnu++98 -fno-strict-aliasing -fno-operator-names -include string.h -include time.h -include errno.h -include stdlib.h -DNETBSD -DLINUX -DNO_RENT_COST $(LIVECTL_FLAGS)
+ ## -mno-fp-ret-in-387
+ CFLAGS = $(MYFLAGS) -DLOG_DEBUG
+ ##
+@@ -141,7 +141,7 @@
+   sound.o heap.o spec_procs2.o magic3.o security.o spec_procs3.o \
+   create.o bsd.o parser.o ansi_parser.o mail.o mindskills1.o \
+   mind_use1.o create.mob.o create.obj.o gilde.o \
+-  charlist.o breath.o 
++  charlist.o breath.o livectl.o livectl_json.o
+   
+ SRCS = $(patsubst %.o,%.c,$(OBJS))
+ 
