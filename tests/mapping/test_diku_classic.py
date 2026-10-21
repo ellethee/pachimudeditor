@@ -411,10 +411,10 @@ async def test_read_only_world_rejects_writes(dikumod_dir: Path) -> None:
 
 @pytest.mark.skipif(DIKUMOD_LIB is None or not DIKUMOD_LIB.is_dir(), reason="dati Diku Modificato non trovati")
 def test_real_dikumod_files_known_irregularities(spec: MappingSpec) -> None:
-    """Sui file Diku Modificato interi: `.zon` (93 zone), `.wld` (3856) e `.obj` (2041) si leggono e si riscrivono identici;
+    """Sui file Diku Modificato interi: `.zon` (93 zone), `.wld` (3841) e `.obj` (2025) si leggono e si riscrivono identici;
     `.mob` e `.shp` contengono record corrotti/troncati (vedi docs/formats/dikumod.md) che una grammatica rigorosa rifiuta
     con riga e colonna: cosi' si evita di scambiarli per la fine del file. Servirebbe un hook di resincronizzazione."""
-    for kind, name, count in (("zon", "dikumoddata.zon", 93), ("wld", "dikumoddata.wld", 3856), ("obj", "dikumoddata.obj", 2041)):
+    for kind, name, count in (("zon", "dikumoddata.zon", 93), ("wld", "dikumoddata.wld", 3841), ("obj", "dikumoddata.obj", 2025)):
         text = dikumod_text(name)
         doc = parse_document(spec, kind, text, name)
         assert sum(len(s.records) for s in doc.sections) == count, name

@@ -16,7 +16,6 @@ from tests.basedmud.conftest import AREA_DIR
 from tests.support import stack
 from tests.support.synthetic_worlds import write_rom_area
 from tests.dikumod_lib.conftest import (  # noqa: F401  (fixture condivise: guardia sugli hash degli originali, copie)
-    VARIANTS,
     _originals_untouched,
     copy_lib,
 )
@@ -83,15 +82,11 @@ async def pachimud_world() -> AsyncIterator[PachimudAdapter]:
 
 @pytest.fixture
 def dikumod_world(tmp_path: Path) -> Callable[..., DikumodAdapter]:
-    """Factory di mondo Diku Modificato (copia dei dati di dikumod2) scrivibile."""
-    lib = copy_lib("dikumod2", tmp_path / "dikumod")
+    """Factory di mondo Diku Modificato (copia dei dati reali di Diku Modificato) scrivibile."""
+    lib = copy_lib(tmp_path / "dikumod")
 
     def build(read_only: bool = False, world_id: str = "dikumod") -> DikumodAdapter:
         """Un adapter nuovo sulla copia."""
-        return DikumodAdapter(
-            WorldConfig(
-                id=world_id, kind="dikumod", name="Diku Modificato", path=str(lib), read_only=read_only, params={"variant": "dikumod2"}
-            )
-        )
+        return DikumodAdapter(WorldConfig(id=world_id, kind="dikumod", name="Diku Modificato", path=str(lib), read_only=read_only))
 
     return build

@@ -1,4 +1,4 @@
-"""Parte di sola lettura della suite di contratto, eseguita sulla copia dei dati REALI di dikumod e dikumod2."""
+"""Parte di sola lettura della suite di contratto, eseguita sulla copia dei dati REALI di Diku Modificato (`leu`)."""
 
 import pytest
 

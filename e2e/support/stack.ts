@@ -19,12 +19,12 @@ export const ROOT = resolve(HERE, '..', '..')
 export const BACKEND = ROOT
 /** Sorgente di basedmud (default: checkout fratello `../basedmud`; override con `E2E_BASEDMUD`) da cui si copia l'area (solo lettura: i test lavorano su una copia temporanea). */
 export const BASEDMUD_SRC = process.env.E2E_BASEDMUD ?? resolve(ROOT, '..', 'basedmud')
-/** `lib/` del Diku Modificato (solo `E2E_DIKUMOD`, nessun default) da cui si copiano i dati (solo lettura: i test lavorano su copie temporanee). */
-export const DIKUMOD_SRC = process.env.E2E_DIKUMOD ?? ''
-/** Vero se `E2E_DIKUMOD` e' impostata e punta a una cartella esistente: altrimenti i mondi `dikumod*` non esistono e i loro test si saltano. */
-/** Prefisso dei file dati (`E2E_DIKUMOD_PREFIX`, default `dikumoddata`). */
-export const DIKUMOD_PREFIX = process.env.E2E_DIKUMOD_PREFIX || 'dikumoddata'
-export const HAS_DIKUMOD = DIKUMOD_SRC !== '' && existsSync(DIKUMOD_SRC)
+/** `lib/` del Diku Modificato (`E2E_DIKUMOD`, default la `lib/` della cartella ufficiale `leu`, se esiste) da cui si copiano i dati (solo lettura: i test lavorano su copie temporanee). */
+export const DIKUMOD_SRC = process.env.E2E_DIKUMOD ?? '/dati/luca/muds/leu/lib'
+/** Prefisso dei file dati (`E2E_DIKUMOD_PREFIX`, default `leudata`). */
+export const DIKUMOD_PREFIX = process.env.E2E_DIKUMOD_PREFIX || 'leudata'
+/** Vero se `DIKUMOD_SRC` esiste: altrimenti i mondi `dikumod*` non esistono e i loro test si saltano. */
+export const HAS_DIKUMOD = existsSync(DIKUMOD_SRC)
 /** Token del finto server live (solo test: nessun segreto reale). */
 export const LIVE_TOKEN = 'e2e-live-token-' + 'x'.repeat(24)
 /** Percorso del socket del finto server live (assoluto e corto: il limite di `sun_path` e' 107 byte). */
@@ -67,7 +67,7 @@ export interface Stack {
  * Isola i dati che i test possono modificare oltre al DB di gioco: copia le definizioni di esempio (`tests/fixtures/pachimud_definitions`, razze/classi YAML)
  * nella cartella temporanea e punta la config li', copia l'area di basedmud (+ `src/tables.c` per razze/classi)
  * e configura i mondi del webeditor: `pachimud` (default), `pachimud-ro` (stesso DB, sola lettura), `basedmud` (scrivibile), `basedmud-ro` (stessa copia,
- * sola lettura), e, solo se `E2E_DIKUMOD` e' impostata, `dikumod` (copia di quella `lib/`, sola lettura) e `dikumod-rw` (seconda copia scrivibile).
+ * sola lettura), e, solo se `DIKUMOD_SRC` esiste, `dikumod` (copia di quella `lib/`, sola lettura) e `dikumod-rw` (seconda copia scrivibile).
  * @param workdir cartella temporanea dello stack
  * @param pachimud parametri del mondo pachimud (DB di gioco e definitions temporanei, preparati da `tests/support/stack.py`)
  * @returns variabili d'ambiente aggiuntive per uvicorn

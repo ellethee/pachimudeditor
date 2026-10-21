@@ -1,7 +1,7 @@
 /**
  * Canale live verso un MUD acceso (finto server `livectl`, vedi `tests/support/live_fake_cli.py`): API (permessi, capability, sola lettura, errori),
  * pagina Giocatori (stato del canale, badge online, modifica live con avvertenza per gli immortali, pannello «Server live») e ripiego sui file con il
- * canale spento. Mondi: `dikumod-live` (scrivibile), `dikumod-live-ro` (sola lettura). Se `E2E_DIKUMOD` non e' impostata la suite si salta.
+ * canale spento. Mondi: `dikumod-live` (scrivibile), `dikumod-live-ro` (sola lettura). Se i dati di Diku Modificato non esistono la suite si salta.
  */
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
@@ -56,7 +56,7 @@ async function startFake(): Promise<void> {
   })
 }
 
-describe('canale live (dikumod)', { skip: HAS_DIKUMOD ? false : 'E2E_DIKUMOD non impostata' }, () => {
+describe('canale live (dikumod)', { skip: HAS_DIKUMOD ? false : 'dati Diku Modificato non trovati (E2E_DIKUMOD)' }, () => {
   let s: Session
 
   before(async () => {

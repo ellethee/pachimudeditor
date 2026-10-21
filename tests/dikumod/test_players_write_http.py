@@ -27,16 +27,14 @@ PWD = slice(2974, 2985)
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def worlds(lib: Path, variant: str) -> AsyncIterator[None]:
+async def worlds(lib: Path) -> AsyncIterator[None]:
     """Registro con pachimud (default) e `dikumod` **scrivibile** con i giocatori sintetici standard."""
     standard_players(lib)
     set_registry(
         WorldRegistry(
             [
                 WorldConfig(id="pachimud", name="Pachimud", params=stack.current_params()),
-                WorldConfig(
-                    id="dikumod", kind="dikumod", name="Diku Modificato", path=str(lib), read_only=False, params={"variant": variant}
-                ),
+                WorldConfig(id="dikumod", kind="dikumod", name="Diku Modificato", path=str(lib), read_only=False),
             ]
         )
     )

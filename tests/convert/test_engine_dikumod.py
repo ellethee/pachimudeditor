@@ -1,4 +1,4 @@
-"""Conversioni da/verso Diku Modificato: mondo sintetico minuscolo (veloce) e una zona dei dati reali di dikumod2 (sola lettura)."""
+"""Conversioni da/verso Diku Modificato: mondo sintetico minuscolo (veloce) e una zona dei dati reali di Diku Modificato (sola lettura)."""
 
 from pathlib import Path
 
@@ -13,7 +13,7 @@ from pachimudeditor.common.adapters.models import RoomPatch
 from pachimudeditor.common.adapters.registry import WorldConfig
 from tests.convert.helpers import SCHOOL, SCHOOL_NAME, assert_zone_valid, snapshot
 from tests.dikumod.synthetic import write_world
-from tests.dikumod_lib.conftest import PREFIX, lib_of
+from tests.dikumod_lib.conftest import LIB, PREFIX
 
 
 @pytest.fixture
@@ -72,15 +72,11 @@ async def test_basedmud_and_pachimud_to_dikumod(rom_world, pachimud_world, dikum
 
 
 async def test_real_dikumod_zone_to_pachimud(pachimud_world):
-    """Una zona dei dati reali di dikumod2 (aperti in sola lettura) finisce in pachimud con perdite riportate."""
-    lib = lib_of("dikumod2")
+    """Una zona dei dati reali di Diku Modificato (aperti in sola lettura) finisce in pachimud con perdite riportate."""
+    lib = LIB
     if not (lib / f"{PREFIX}.wld").is_file():
-        pytest.skip("dati dikumod2 non trovati")
-    source = DikumodAdapter(
-        WorldConfig(
-            id="dikumod2-real", kind="dikumod", name="DIKUMOD2", path=str(lib), params={"variant": "dikumod2", "data_prefix": PREFIX}
-        )
-    )
+        pytest.skip("dati reali Diku Modificato non trovati (DIKUMOD_LIB)")
+    source = DikumodAdapter(WorldConfig(id="dikumod-real", kind="dikumod", name="DIKUMOD", path=str(lib), params={"data_prefix": PREFIX}))
     zone = next(z for z in await list_all_zones(source) if z.name == "The colossal tree")
     report = await convert(source, pachimud_world, plan(zone.id), dry_run=False, confirm=True)
     assert report.applied and not report.errors, report.errors

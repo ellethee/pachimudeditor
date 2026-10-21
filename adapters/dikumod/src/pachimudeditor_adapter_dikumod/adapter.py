@@ -2,12 +2,12 @@
 
 Configurazione (`webeditor_worlds`)::
 
-    - {id: dikumod, kind: dikumod, name: "Diku Modificato", path: /percorso/a/dikumod2/lib, params: {variant: dikumod2, data_prefix: miomondo}}
-    - {id: dikumod-rw, kind: dikumod, path: /percorso/a/dikumod2, read_only: false}   # scrittura abilitata esplicitamente
+    - {id: dikumod, kind: dikumod, name: "Diku Modificato", path: /percorso/a/leu/lib, params: {data_prefix: leudata}}
+    - {id: dikumod-rw, kind: dikumod, path: /percorso/a/leu, read_only: false}   # scrittura abilitata esplicitamente
 
 `path` e' la cartella `lib/` (quella con `dikumoddata.wld`) oppure la sua radice. **`read_only` vale `true` se non e'
 specificato** (i file monolitici sono fragili: il gioco legge mob/oggetti per offset; scrivere con il gioco acceso lo
-rompe). `params.variant` (`dikumod`|`dikumod2`) e' facoltativo e solo informativo. `params.data_prefix` (facoltativo, default
+rompe). `params.variant` (`dikumod`|`dikumod2`) e' facoltativo e solo informativo (`dikumod2` non e' piu' considerata ne' testata). `params.data_prefix` (facoltativo, default
 `dikumoddata`; solo `[A-Za-z0-9_-]`) e' il prefisso dei file dati: `<prefisso>.wld`, `.mob`, `.obj`, `.zon`, `.shp`, `.gui`.
 
 Convenzioni (dettagli in `docs/adapters/index.md`):

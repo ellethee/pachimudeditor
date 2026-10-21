@@ -1,8 +1,9 @@
-"""Avvio di un MUD reale (Diku Modificato / DikuMod1) con il modulo `livectl`, su COPIE temporanee, per i test di conformita'.
+"""Avvio di un MUD reale (Diku Modificato, cartella ufficiale `leu`) con il modulo `livectl`, su COPIE temporanee, per i test di conformita'.
 
-Richiede: `DIKUMOD_SRC` (cartella `src` di DikuMod1), `DIKUMOD_LIB` (cartella `lib` dei dati), `g++`, `make`, `patch`.
-Non tocca mai i sorgenti ne' i dati originali: copia tutto in una cartella temporanea sotto /tmp, applica la patch e il modulo,
-compila con il Makefile reale (`-DLIVECTL`), crea un giocatore `Tester` con password nota, avvia il gioco su una porta libera e fa
+Richiede: `DIKUMOD_SRC` (radice del progetto: `Makefile`, `src/`; default `/dati/luca/muds/leu`), `DIKUMOD_LIB` (cartella `lib` dei dati;
+default `<radice>/lib`), `g++`, `make`; `git` solo se il modulo non e' gia' installato nella radice.
+Non tocca mai i sorgenti ne' i dati originali: copia la radice in una cartella temporanea sotto /tmp (senza `bin/`, `.o`, `lib/`), se `src/livectl.c`
+manca applica `leu-livectl.patch` e copia i file del modulo, compila con il Makefile reale (`-DLIVECTL`), crea un giocatore `Tester` con password nota, avvia il gioco su una porta libera e fa
 entrare `Tester` con una connessione telnet che resta aperta.
 """
 
@@ -19,17 +20,24 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from tests.support import real_data
+
 MODULE_DIR = Path(__file__).resolve().parents[2] / "adapters" / "dikumod" / "mud-module"
+SRC = real_data.DIKUMOD_SRC
+"""Radice del progetto Diku Modificato (sola lettura): `DIKUMOD_SRC`, default `/dati/luca/muds/leu`."""
+LIB = Path(os.environ.get("DIKUMOD_LIB") or SRC / "lib")
+"""Cartella `lib/` con i dati (sola lettura): `DIKUMOD_LIB`, default `<DIKUMOD_SRC>/lib`."""
 TOKEN = "t" * 16 + "k" * 24
 PASSWORD = "testpw"
 
 
 def available() -> str | None:
     """None se si puo' costruire il MUD, altrimenti il motivo per cui no."""
-    src, lib = os.environ.get("DIKUMOD_SRC"), os.environ.get("DIKUMOD_LIB")
-    if not src or not lib:
-        return "DIKUMOD_SRC/DIKUMOD_LIB non impostati"
-    for tool in ("g++", "make", "patch"):
+    if not (SRC / "Makefile").is_file() or not (SRC / "src").is_dir():
+        return f"sorgenti di Diku Modificato non trovati in {SRC} (DIKUMOD_SRC)"
+    if not LIB.is_dir():
+        return f"dati di Diku Modificato non trovati in {LIB} (DIKUMOD_LIB)"
+    for tool in ("g++", "make"):
         if shutil.which(tool) is None:
             return f"{tool} non trovato"
     return None
@@ -70,14 +78,14 @@ class RealMud:
 
 
 def _build(root: Path) -> None:
-    """Copia i sorgenti, applica patch e modulo, compila."""
-    src = Path(os.environ["DIKUMOD_SRC"])
-    shutil.copytree(src, root / "src", ignore=shutil.ignore_patterns("*.o", "leu", ".depend", "*~"))
-    subprocess.run(["patch", "-p1", "-i", str(MODULE_DIR / "dikumod1-livectl.patch")], cwd=root, check=True, capture_output=True)
-    for f in MODULE_DIR.glob("livectl*.[ch]"):
-        shutil.copy(f, root / "src" / f.name)
-    subprocess.run(["make", "depend"], cwd=root / "src", check=True, capture_output=True)
-    subprocess.run(["make", "-j8", "leu", "LIVECTL_FLAGS=-DLIVECTL"], cwd=root / "src", check=True, capture_output=True, timeout=600)
+    """Copia la radice (senza `bin/`, `.o`, `lib/`), installa il modulo se manca e compila in `root/bin/leu`."""
+    ignore = shutil.ignore_patterns("*.o", "bin", "lib", ".git", ".depend", "*~", "gmon.out")
+    shutil.copytree(SRC, root, ignore=ignore, dirs_exist_ok=True)
+    if not (root / "src" / "livectl.c").is_file():  # modulo non ancora installato: patch ai file del gioco + file del modulo
+        subprocess.run(["git", "apply", str(MODULE_DIR / "leu-livectl.patch")], cwd=root, check=True, capture_output=True)
+        for f in MODULE_DIR.glob("livectl*.[ch]"):
+            shutil.copy(f, root / "src" / f.name)
+    subprocess.run(["make", "-j8", "LIVECTL_FLAGS=-DLIVECTL"], cwd=root, check=True, capture_output=True, timeout=600)
 
 
 def _make_tester(lib: Path) -> None:
@@ -113,14 +121,14 @@ async def start() -> RealMud:
     root = Path(tempfile.mkdtemp(prefix="lc-", dir="/tmp"))
     try:
         _build(root)
-        shutil.copytree(os.environ["DIKUMOD_LIB"], root / "lib")
+        shutil.copytree(LIB, root / "lib")
         _make_tester(root / "lib")
         with socket.socket() as s:
             s.bind(("127.0.0.1", 0))
             port = s.getsockname()[1]
         sock, audit = str(root / "l.sock"), root / "lib" / "livectl.audit"
         env = {**os.environ, "LIVECTL_SOCKET": sock, "LIVECTL_TOKEN": TOKEN, "LIVECTL_CLASSES": "read,write", "LIVECTL_AUDIT": str(audit)}
-        proc = subprocess.Popen([str(root / "src" / "leu"), "-d", str(root / "lib"), str(port)], cwd=root / "src", env=env,
+        proc = subprocess.Popen([str(root / "bin" / "leu"), "-d", "lib", str(port)], cwd=root, env=env,
                                 stdout=(root / "mud.log").open("wb"), stderr=subprocess.STDOUT)  # fmt: skip
         mud = RealMud(root, port, sock, audit, proc)
         deadline = time.monotonic() + 90

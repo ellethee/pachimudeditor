@@ -11,13 +11,14 @@ nome che cerca l'adapter `dikumod`. Non confonderlo con l'esempio del mapping ge
 in YAML il Diku classico "un file per tipo" senza override per-vnum, script, gilde ne' tolleranza ai record corrotti
 (vedi [adapter dikumod](../adapters/dikumod.md)).
 
-## 1. Varianti
+## 1. Variante considerata
 
-Il formato e il loader sono gli stessi per le due varianti riconosciute dall'adapter (`params.variant`):
+Si considera **solo DikuMod1** («leu»; cartella ufficiale `/dati/luca/muds/leu`, dati con prefisso `leudata`): i file principali
+`<prefisso>.{wld,mob,obj,zon,shp}`, `scripts.dat` e le cartelle `scripts/`, piu' (nei dati attuali) un solo override per-vnum, `objects/7503`.
 
-* **`dikumod`**: solo i file principali `dikumoddata.{wld,mob,obj,zon,shp}`, `scripts.dat` e le cartelle `scripts/`.
-* **`dikumod2`**: stesso formato, con in piu' (a) gli override per-vnum `rooms/` e `objects/` popolati, (b) file prodotti
-  da un editor esterno (elencati qui di seguito), (c) il file gilde `dikumoddata.gui` + `gilde/`.
+La variante `dikumod2` (override `rooms/` e `objects/` popolati, file di un editor esterno, gilde `dikumoddata.gui` + `gilde/`) **non e' piu'
+considerata ne' testata**: il codice dell'adapter che la supporta (`params.variant`, gilde, override `rooms/`) resta ma non ha dati reali di prova.
+Le descrizioni qui sotto che parlano di gilde e override `rooms/` restano valide come lettura del caricatore del gioco.
 
 Nei dati le descrizioni delle uscite possono terminare con `\n` prima della `~`, e i **flag porta** possono essere
 normalizzati in modo da avere sempre `EX_ISDOOR` (1) dove c'e' una porta (il loader lo "ripara" a runtime con

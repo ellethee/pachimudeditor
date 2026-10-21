@@ -24,15 +24,13 @@ RO = {"X-World": "dikumod-ro"}
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def worlds(lib: Path, variant: str) -> AsyncIterator[None]:
+async def worlds(lib: Path) -> AsyncIterator[None]:
     """Registro con pachimud (default), `dikumod` scrivibile e `dikumod-ro` con la configurazione di default (sola lettura)."""
     set_registry(
         WorldRegistry(
             [
                 WorldConfig(id="pachimud", name="Pachimud", params=stack.current_params()),
-                WorldConfig(
-                    id="dikumod", kind="dikumod", name="Diku Modificato", path=str(lib), read_only=False, params={"variant": variant}
-                ),
+                WorldConfig(id="dikumod", kind="dikumod", name="Diku Modificato", path=str(lib), read_only=False),
                 WorldConfig(id="dikumod-ro", kind="dikumod", path=str(lib.parent)),
             ]
         )
@@ -59,7 +57,7 @@ async def test_worlds_lists_dikumod(client: httpx.AsyncClient) -> None:
     assert next(f for f in mob["fields"] if f["name"] == "flags")["enum"] == "dikumodActFlags"
 
 
-async def test_core_routes_on_dikumod(client: httpx.AsyncClient, variant: str) -> None:
+async def test_core_routes_on_dikumod(client: httpx.AsyncClient) -> None:
     """Zone, stanze, mob (anche corrotti), oggetti, reset e meta rispondono sul mondo scelto."""
     zones = data(await client.get("/api/zones", params={"pageSize": 200}, headers=H))
     assert zones["total"] == ZONES and zones["items"][1]["name"] == ZONE_NAME

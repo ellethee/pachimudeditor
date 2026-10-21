@@ -5,15 +5,16 @@ Legge e scrive i file dati di Diku Modificato (un Diku molto modificato) con `ad
 
 ```yaml
 webeditor_worlds:
-  - {id: dikumod2, kind: dikumod, name: "Diku Modificato", path: /percorso/dikumod2, params: {variant: dikumod2}}     # sola lettura
-  - {id: dikumod2-rw, kind: dikumod, path: /percorso/dikumod2/lib, read_only: false}                            # scrittura abilitata
+  - {id: dikumod, kind: dikumod, name: "Diku Modificato", path: /dati/luca/muds/leu/lib, params: {data_prefix: leudata}}   # sola lettura
+  - {id: dikumod-rw, kind: dikumod, path: /dati/luca/muds/leu/lib, params: {data_prefix: leudata}, read_only: false}     # scrittura abilitata
 ```
 
 **Diku Modificato o `diku_classic`?** Esistono due modi di leggere un Diku: questo adapter dedicato (`kind: dikumod`: override per-vnum,
 script, gilde, record corrotti ripristinabili, scrittura a conservazione di byte) e l'esempio `diku_classic.yaml` del
 [mapping generico](mapping.md) (`kind: mapping`: il Diku classico "un file per tipo" descritto in YAML, senza questi extra).
 
-Il **prefisso dei file dati** e' `dikumoddata` (`dikumoddata.wld`, `.mob`, `.obj`, `.zon`, `.shp`, `.gui`) e si cambia con `params.data_prefix`
+L'adapter considera **solo DikuMod1** («leu», cartella ufficiale `/dati/luca/muds/leu`); la variante `dikumod2` non e' piu' considerata ne' testata
+(il codice che la riconosce resta, ma non ha dati di prova). Il **prefisso dei file dati** e' per default `dikumoddata` (`dikumoddata.wld`, `.mob`, `.obj`, `.zon`, `.shp`, `.gui`) e si cambia con `params.data_prefix`
 (facoltativo; solo lettere, cifre, `_` e `-`, nessun percorso):
 
 ```yaml
@@ -22,8 +23,8 @@ Il **prefisso dei file dati** e' `dikumoddata` (`dikumoddata.wld`, `.mob`, `.obj
 
 Se i file non si trovano l'errore e' `nessun file <prefisso>.wld in <cartella>: imposta params.data_prefix`.
 
-`path` = la cartella `lib/` (con `dikumoddata.wld`) o la sua radice. `params.variant` (`dikumod`|`dikumod2`) e' facoltativo e
-informativo (se manca: `dikumod2` quando esistono `dikumoddata.gui` o override `rooms/`).
+`path` = la cartella `lib/` (con `<prefisso>.wld`) o la sua radice. `params.variant` (`dikumod`|`dikumod2`) e' facoltativo e
+informativo e **non piu' considerato**: nei dati di `leu` vale `dikumod` (se manca diventa `dikumod2` quando esistono `<prefisso>.gui` o override `rooms/`).
 
 **`read_only` vale `true` se non e' scritto** (unico kind con questo default; `read_only: false` e' l'abilitazione esplicita).
 Motivo: i file monolitici sono fragili. `dikumoddata.mob`/`.obj` sono letti dal gioco **per offset di byte** raccolti all'avvio
@@ -101,7 +102,7 @@ con `extra.warning`.
 
 ## Record corrotti e diagnostica
 
-I 33 mob corrotti per variante (dado malformato, record troncato, `~` mancante, numero o lettera tipo corrotti) compaiono in lista e in
+I 33 mob corrotti dei dati di `leu` (dado malformato, record troncato, `~` mancante, numero o lettera tipo corrotti) compaiono in lista e in
 `GET /mobs/{vnum}` con nome/descrizione ricavati dal testo e `extra = {corrupted: true, warning: <motivo>, line, raw: <testo del record>}`;
 `PUT`/`DELETE` rispondono 409 `dikumod.record_corrupted` e la riscrittura del file li conserva identici. Idem per un negozio troncato
 (ignorato dall'API ma conservato) e una zona illeggibile (`zones` con `extra.corrupted`). I `Diagnostic` della libreria (anche gli avvisi:

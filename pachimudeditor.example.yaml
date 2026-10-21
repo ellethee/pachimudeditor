@@ -68,16 +68,17 @@ webeditor_worlds:
   #     path: /percorso/a/mymud/lib,
   #   }
   # - {
-  #     id: dikumod2,
+  #     id: dikumod,
   #     kind: dikumod,
   #     name: "Diku Modificato",
-  #     path: /percorso/a/dikumod2,
-  #     params: { variant: dikumod2 },
+  #     path: /percorso/a/leu/lib,
+  #     params: { data_prefix: leudata },
   #   } # sola lettura
   # - {
-  #     id: dikumod2-rw,
+  #     id: dikumod-rw,
   #     kind: dikumod,
-  #     path: /percorso/a/dikumod2/lib,
+  #     path: /percorso/a/leu/lib,
+  #     params: { data_prefix: leudata },
   #     read_only: false,
   #   } # scrittura abilitata
 

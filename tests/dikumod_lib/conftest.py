@@ -2,7 +2,7 @@
 
 import hashlib
 import shutil
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -10,21 +10,15 @@ import pytest
 from tests.support import real_data
 from tests.support.synthetic_worlds import write_dikumod_world
 
-# Senza `DIKUMOD_ROOT` le cartelle reali non esistono: `copy_lib` ripiega sul mondo sintetico.
-ROOT = real_data.DIKUMOD_ROOT or Path("/DIKUMOD_ROOT-non-impostata")
-"""Cartella che contiene `dikumod/lib` e `dikumod2/lib` (sola lettura), da `DIKUMOD_ROOT`."""
+# Senza dati reali la cartella non esiste e `copy_lib` ripiega sul mondo sintetico.
+LIB = real_data.DIKUMOD_LIB
+"""Cartella `lib/` reale di Diku Modificato (sola lettura): `DIKUMOD_LIB`, default `/dati/luca/muds/leu/lib`."""
 PREFIX = real_data.DIKUMOD_PREFIX
 """Prefisso dei file dati reali (`DIKUMOD_PREFIX`): nelle copie di lavoro i file diventano `dikumoddata.*`."""
-VARIANTS = ("dikumod", "dikumod2")
 _COPIED = ("dikumoddata.wld", "dikumoddata.mob", "dikumoddata.obj", "dikumoddata.zon", "dikumoddata.shp", "scripts.dat", "dikumoddata.gui")
 _COPIED_DIRS = ("rooms", "objects", "zones", "scripts", "gilde")
 _HASHED_ONLY_DIRS = ("players", "rent")
 """Giocatori e rent reali: non si copiano mai nelle copie di lavoro (hanno hash di password), ma l'hash a fine sessione li protegge."""
-
-
-def lib_of(variant: str) -> Path:
-    """`<ROOT>/<variant>/lib`."""
-    return ROOT / variant / "lib"
 
 
 def real_name(name: str) -> str:
@@ -49,16 +43,16 @@ def digest(lib: Path) -> dict[str, str]:
 
 @pytest.fixture(scope="session", autouse=True)
 def _originals_untouched() -> Iterator[None]:
-    """A fine sessione i dati originali di dikumod e dikumod2 devono avere gli stessi hash di prima."""
-    before = {v: digest(lib_of(v)) for v in VARIANTS}
+    """A fine sessione i dati originali di Diku Modificato devono avere gli stessi hash di prima."""
+    before = digest(LIB)
     yield
-    after = {v: digest(lib_of(v)) for v in VARIANTS}
+    after = digest(LIB)
     assert after == before, "i dati originali di Diku Modificato non devono essere modificati"
 
 
-def copy_lib(variant: str, dest: Path) -> Path:
-    """Copia i dati di `variant` in `dest/lib` e restituisce il percorso (mondo sintetico se mancano gli originali)."""
-    src = lib_of(variant)
+def copy_lib(dest: Path) -> Path:
+    """Copia i dati reali in `dest/lib` e restituisce il percorso (mondo sintetico se mancano gli originali)."""
+    src = LIB
     out = dest / "lib"
     if not (src / real_name("dikumoddata.wld")).is_file():
         return write_dikumod_world(out)
@@ -72,25 +66,7 @@ def copy_lib(variant: str, dest: Path) -> Path:
     return out
 
 
-@pytest.fixture(params=VARIANTS)
-def variant(request: pytest.FixtureRequest) -> str:
-    """`dikumod` e `dikumod2`."""
-    return request.param
-
-
 @pytest.fixture
-def lib(variant: str, tmp_path: Path) -> Path:
-    """Copia temporanea scrivibile della cartella `lib/` della variante."""
-    return copy_lib(variant, tmp_path)
-
-
-@pytest.fixture
-def make_lib(tmp_path: Path) -> Callable[[str], Path]:
-    """Factory: copia temporanea di una variante scelta."""
-    counter = iter(range(100))
-
-    def build(name: str) -> Path:
-        """Copia `name` in una sottocartella nuova."""
-        return copy_lib(name, tmp_path / f"w{next(counter)}")
-
-    return build
+def lib(tmp_path: Path) -> Path:
+    """Copia temporanea scrivibile della cartella `lib/` reale."""
+    return copy_lib(tmp_path)

@@ -1,8 +1,8 @@
 /**
  * Mondo Diku Modificato (Diku molto modificato, su file): descrittori dal backend, selettore, zone, stanze, mob corrotti, sola lettura,
  * scritture sulla copia scrivibile (`dikumod-rw`, con diff completo dei dati) e script di reset con `ifValue`.
- * I dati sono copie temporanee della cartella `lib/` indicata da `E2E_DIKUMOD` (vedi `support/stack.ts`); se la variabile non e'
- * impostata (o la cartella non esiste) l'intera suite viene saltata. Gli originali non si toccano.
+ * I dati sono copie temporanee della cartella `lib/` indicata da `E2E_DIKUMOD` (default: la `lib/` di `leu`) (vedi `support/stack.ts`); se la cartella
+ * non esiste l'intera suite viene saltata. Gli originali non si toccano.
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
@@ -31,7 +31,7 @@ function changedIds(before: Map<number, unknown>, after: Map<number, unknown>): 
   return [...ids].filter((id) => JSON.stringify(before.get(id)) !== JSON.stringify(after.get(id)))
 }
 
-describe('dikumod', { skip: HAS_DIKUMOD ? false : 'E2E_DIKUMOD non impostata' }, () => {
+describe('dikumod', { skip: HAS_DIKUMOD ? false : 'dati Diku Modificato non trovati (E2E_DIKUMOD)' }, () => {
   let s: Session
   let ro: Api
   let rw: Api

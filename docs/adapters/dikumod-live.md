@@ -6,14 +6,13 @@ insidie ci sono. Il protocollo (trasporto, sicurezza, comandi, errori) e' in [ca
 qui c'e' solo cio' che dipende dal sorgente.
 
 Tutto quello che segue e' stato letto nel sorgente indicato; dove non e' stato possibile verificare e' scritto **da verificare**.
-I numeri di riga sono di DikuMod1 (`/dati/luca/muds/oldlinux/DikuMod1/src`) e possono scorrere.
+I numeri di riga sono di DikuMod1, cartella ufficiale `/dati/luca/muds/leu` (`src/`), e possono scorrere.
 
 ## Sorgenti esaminati
 
 | Albero | Contenuto | Uso in questo profilo |
 |---|---|---|
-| `oldlinux/DikuMod1/src` | sorgenti completi (57 file `.c`, ~97 000 righe), porting x86_64 con g++ | riferimento (`DikuMod`/«dikumod») |
-| `oldlinux.save/leu/src` | identico a DikuMod1 (verificato con `diff -rq`, esclusi i `.o`) | nessuno in piu' |
+| `/dati/luca/muds/leu/src` | sorgenti completi (57 file `.c`, ~97 000 righe), porting x86_64 con g++; `Makefile` nella radice, binario `bin/leu` | riferimento (DikuMod1, «dikumod») |
 
 Il gioco e' scritto in C ma e' **compilato come C++** (`g++ -fpermissive -std=gnu++98 -fno-operator-names -w`, `-DNETBSD -DLINUX -DNO_RENT_COST`; `Makefile`
 `CC=g++`): il modulo nuovo deve compilare cosi', quindi niente inizializzatori designati ne' VLA e attenzione ai nomi riservati del C++
@@ -228,7 +227,7 @@ Solo **variabili d'ambiente** lette da `livectl_init` (il token e' un segreto, l
 
 Interruttore di emergenza: se nella cartella dati esiste il file `livectl.disable` il modulo non si attiva. Il modulo e' compilato solo con `-DLIVECTL`; senza il
 flag `livectl_init`/`livectl_poll` sono vuote e una build e' identica a oggi. Codice, patch e istruzioni: `adapters/dikumod/mud-module/` (README).
-Sorgente di riferimento: solo **DikuMod1** (identico a `oldlinux.save/leu/src`); le altre varianti non sono considerate.
+Sorgente di riferimento: solo **DikuMod1** (`/dati/luca/muds/leu`); le altre varianti non sono considerate.
 
 ## Righe effettive
 
@@ -237,7 +236,7 @@ Sorgente di riferimento: solo **DikuMod1** (identico a `oldlinux.save/leu/src`);
 | `livectl_json.c` / `.h`: parser e serializzatore JSON a limiti fissi | ~540 |
 | `livectl.c`: socket, framing, limiti, token, classi, audit, i 10 comandi, configurazione | ~1700 |
 | `livectl.h`, harness di fuzz (`fuzz/fuzz_json.c`) | ~110 |
-| modifiche ai file originali (`dikumod1-livectl.patch`) | 12 righe in `comm.c` (include, `livectl_init();`, `livectl_poll();`), 2 nel `Makefile` (`$(LIVECTL_FLAGS)` e due oggetti) |
+| modifiche ai file originali (`leu-livectl.patch`) | 12 righe in `comm.c` (include, `livectl_init();`, `livectl_poll();`), 2 nel `Makefile` (`$(LIVECTL_FLAGS)` e due oggetti) |
 
 La stima iniziale (1100-1500 righe) era ottimistica: gran parte del peso e' nella validazione dei parametri e nei messaggi d'errore stabili.
 Per l'editor (Python, a parte): client asincrono, adapter `LiveAdapter` + rotte + DTO, comandi CLI: non ancora scritti. Esistono invece il finto
@@ -249,17 +248,17 @@ Il modulo non modifica i sorgenti originali: si lavora su una **copia**.
 
 ```bash
 M=/percorso/pachimudeditor/adapters/dikumod/mud-module
-mkdir /tmp/mud && cp -r /percorso/DikuMod1/src /tmp/mud/src && cd /tmp/mud
-patch -p1 < $M/dikumod1-livectl.patch          # comm.c (12 righe) e Makefile (2 righe)
-cp $M/livectl*.[ch] src/ && cd src
-make depend && make leu LIVECTL_FLAGS=-DLIVECTL   # Makefile reale del gioco, g++ -std=gnu++98
-LIVECTL_SOCKET=/tmp/mud/l.sock LIVECTL_TOKEN=$(openssl rand -hex 32) LIVECTL_CLASSES=read,write ./leu -d /percorso/copia/lib 4000
+mkdir /tmp/mud && cp -r /dati/luca/muds/leu/. /tmp/mud/ && cd /tmp/mud && rm -rf bin .depend src/*.o   # copia della radice di leu
+git apply $M/leu-livectl.patch                 # solo se src/livectl.c manca: Makefile (2 righe) e src/comm.c (12 righe)
+cp $M/livectl*.[ch] src/
+make LIVECTL_FLAGS=-DLIVECTL                   # Makefile reale del gioco (nella radice), g++ -std=gnu++98 -> bin/leu
+LIVECTL_SOCKET=/tmp/mud/l.sock LIVECTL_TOKEN=$(openssl rand -hex 32) LIVECTL_CLASSES=read,write bin/leu -d lib 4000
 ```
 
-Dettagli, variabili e istruzioni esatte: `adapters/dikumod/mud-module/README.md`. Prova automatica: `DIKUMOD_SRC=.../src DIKUMOD_LIB=.../lib uv run pytest tests/live`
+Dettagli, variabili e istruzioni esatte: `adapters/dikumod/mud-module/README.md`. Prova automatica: `uv run pytest tests/live` (default: la cartella `leu`; altrimenti `DIKUMOD_SRC=<radice> DIKUMOD_LIB=<lib>`)
 (costruisce il gioco su copie in `/tmp`, crea il giocatore `Tester`, lo fa entrare e lancia la stessa suite di conformita' del finto server).
 
-**Verificato davvero** (copia di DikuMod1 con i dati reali copiati in una cartella temporanea): compilazione con il Makefile reale (`-std=gnu++98`, senza errori) sia
+**Verificato davvero** (copia della radice di `leu` con i dati reali copiati in una cartella temporanea): compilazione con il Makefile reale (`-std=gnu++98`, senza errori) sia
 con sia senza `-DLIVECTL`, avvio del gioco con il canale, login di un giocatore, tutti i comandi della v1 contro il gioco vivo (modifica con salvataggio su
 `players/tester.dat`, reset di zona, creazione di mob e oggetti, messaggi, deny-list, limiti, raffiche, input spazzatura) e fuzz del parser con ASan/UBSan.
 

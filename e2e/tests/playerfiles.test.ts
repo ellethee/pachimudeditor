@@ -2,7 +2,7 @@
  * Giocatori dei mondi su file sul mondo Diku Modificato: lettura (pagina guidata dal descrittore, avviso, dettaglio a sezioni, inventario,
  * password mai mostrata, voce di menu solo con la capability) e scrittura (mondo scrivibile `dikumod-rw`: modifica dei campi, server acceso,
  * conflitto, inventario aggiungi/sposta/togli; mondo in sola lettura senza controlli di modifica). I giocatori sono SINTETICI (vedi `tests/support/dikumod_players.py`,
- * scritti dallo stack nelle copie di lavoro); se `E2E_DIKUMOD` non e' impostata la suite si salta.
+ * scritti dallo stack nelle copie di lavoro); se i dati di Diku Modificato non esistono la suite si salta.
  */
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
@@ -22,7 +22,7 @@ async function pickWorld(s: Session, name: string): Promise<void> {
   ])
 }
 
-describe('giocatori su file (dikumod)', { skip: HAS_DIKUMOD ? false : 'E2E_DIKUMOD non impostata' }, () => {
+describe('giocatori su file (dikumod)', { skip: HAS_DIKUMOD ? false : 'dati Diku Modificato non trovati (E2E_DIKUMOD)' }, () => {
   let s: Session
 
   before(async () => {

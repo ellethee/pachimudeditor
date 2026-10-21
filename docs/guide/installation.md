@@ -18,7 +18,7 @@ pachimudeditor serve --workdir ~/pachimudeditor --open     # http://127.0.0.1:81
 | --- | --- | --- | --- |
 | `pachimud` | `pachimudeditor-adapter-pachimud` | `pachimud` | il database del gioco (SQLAlchemy) + pagine panoramica/giocatori/istanze/trasferimento/contenuti |
 | `basedmud` | `pachimudeditor-adapter-basedmud` | `basedmud` | file area `.are` di basedmud / ROM 2.4 / QuickMUD |
-| `dikumod` | `pachimudeditor-adapter-dikumod` | `dikumod` | file dati di Diku Modificato (`dikumod`, `dikumod2`) |
+| `dikumod` | `pachimudeditor-adapter-dikumod` | `dikumod` | file dati di Diku Modificato (DikuMod1) |
 | `mapping` | `pachimudeditor-adapter-mapping` | `mapping` | qualunque MUD su file descritto da un YAML di mappatura |
 | `all` | tutti i precedenti | | |
 

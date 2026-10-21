@@ -558,4 +558,4 @@ I comandi di scrittura non vengono mai ritentati automaticamente.
 7. **`idempotency_key`**: feature opzionale, annunciata in `features` solo se il modulo la implementa (il modulo di riferimento non la implementa: `features` e' vuoto).
 8. **Client**: il protocollo e' indipendente dall'editor; il token autentica qualunque client. L'editor e' il client di riferimento, la CLI `pachimudeditor live` un client sottile ([specifica](#client-da-riga-di-comando)); per la CLI vale il possesso di token e socket, il superuser vale per le rotte HTTP.
 9. **pachimud**: componente `asyncio` nello stesso processo con lo stesso protocollo, **previsto** come passo successivo a dikumod (solo descritto qui).
-10. **Un solo MUD C per ora**: Diku Modificato nella variante DikuMod1 (sorgenti `oldlinux/DikuMod1`, identici a `oldlinux.save/leu/src`); altre varianti e basedmud non sono coperti.
+10. **Un solo MUD C per ora**: Diku Modificato nella variante DikuMod1 (sorgenti nella cartella ufficiale `/dati/luca/muds/leu`); altre varianti e basedmud non sono coperti.

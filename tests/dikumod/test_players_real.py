@@ -1,6 +1,6 @@
 """Giocatori su dati reali: SOLO copie temporanee con il campo password azzerato (originali mai toccati ne' copiati interi).
 
-Si saltano se `DIKUMOD_ROOT` non e' impostata. Nessun contenuto dei file reali finisce nel repo.
+Si saltano se i dati reali (`DIKUMOD_LIB`, default la `lib/` di `leu`) mancano. Nessun contenuto dei file reali finisce nel repo.
 """
 
 from pathlib import Path
@@ -10,32 +10,32 @@ import pytest
 from pachimudeditor.sdk import PlayerPageParams, WorldConfig
 from pachimudeditor_adapter_dikumod.adapter import DikumodAdapter
 from pachimudeditor_adapter_dikumod.dikumod_lib.players import CHAR_FILE_SIZE
-from tests.dikumod_lib.conftest import lib_of, real_name
+from tests.dikumod_lib.conftest import LIB, real_name
 from tests.support.real_data import HAVE_DIKUMOD
 
-pytestmark = pytest.mark.skipif(not HAVE_DIKUMOD, reason="DIKUMOD_ROOT non impostata o dati reali assenti")
+pytestmark = pytest.mark.skipif(not HAVE_DIKUMOD, reason="dati reali Diku Modificato assenti (DIKUMOD_LIB)")
 
 PWD_START, PWD_END = 2974, 2985
 
 
-@pytest.fixture(params=("dikumod", "dikumod2"))
-def real_world(request: pytest.FixtureRequest, tmp_path: Path) -> tuple[DikumodAdapter, Path]:
+@pytest.fixture
+def real_world(tmp_path: Path) -> tuple[DikumodAdapter, Path]:
     """Adapter in sola lettura su una copia di `lib/` (mondo reale + giocatori e rent con la password azzerata)."""
-    return _real_copy(request.param, tmp_path, read_only=None)
+    return _real_copy(tmp_path, read_only=None)
 
 
-@pytest.fixture(params=("dikumod", "dikumod2"))
-def real_rw(request: pytest.FixtureRequest, tmp_path: Path) -> tuple[DikumodAdapter, Path]:
+@pytest.fixture
+def real_rw(tmp_path: Path) -> tuple[DikumodAdapter, Path]:
     """Come `real_world` ma scrivibile (sempre e solo sulla copia temporanea)."""
-    return _real_copy(request.param, tmp_path, read_only=False)
+    return _real_copy(tmp_path, read_only=False)
 
 
-def _real_copy(variant: str, tmp_path: Path, *, read_only: bool | None) -> tuple[DikumodAdapter, Path]:
+def _real_copy(tmp_path: Path, *, read_only: bool | None) -> tuple[DikumodAdapter, Path]:
     """Copia di `lib/` con giocatori e rent reali (password azzerata) e l'adapter sulla copia."""
     from tests.dikumod_lib.conftest import copy_lib
 
-    src = lib_of(variant)
-    lib = copy_lib(variant, tmp_path)
+    src = LIB
+    lib = copy_lib(tmp_path)
     (lib / "players").mkdir()
     (lib / "rent").mkdir()
     for f in (src / "players").glob("*.dat"):
@@ -47,7 +47,7 @@ def _real_copy(variant: str, tmp_path: Path, *, read_only: bool | None) -> tuple
         if f.is_file() and "." not in f.name:
             (lib / "rent" / f.name).write_bytes(f.read_bytes())
     extra = {} if read_only is None else {"read_only": read_only}
-    return DikumodAdapter(WorldConfig(id="dikumod", kind="dikumod", path=str(lib), params={"variant": variant}, **extra)), lib
+    return DikumodAdapter(WorldConfig(id="dikumod", kind="dikumod", path=str(lib), **extra)), lib
 
 
 async def test_every_real_player_is_listed_and_readable(real_world: tuple[DikumodAdapter, Path]) -> None:

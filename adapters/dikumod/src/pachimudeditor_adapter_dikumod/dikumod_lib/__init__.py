@@ -4,7 +4,7 @@ Uso tipico::
 
     from pachimudeditor_adapter_dikumod.dikumod_lib import load_world, save
 
-    world = load_world("/percorso/a/dikumod2")     # cartella lib/ o la sua radice
+    world = load_world("/percorso/a/leu")     # cartella lib/ o la sua radice
     mob = world.mob.find(3000)
     mob.level = 30
     save(world.mob)                                         # atomico; solo i record toccati cambiano

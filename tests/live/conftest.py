@@ -2,7 +2,8 @@
 
 Ogni test gira contro il **finto server** (sempre) e, se disponibile, contro il **modulo C reale**:
 - `LIVECTL_TEST_SOCKET` + `LIVECTL_TEST_TOKEN`: un MUD gia' acceso con il modulo (classi `read,write`, giocatore `Tester` in gioco);
-- oppure `DIKUMOD_SRC` + `DIKUMOD_LIB` (+ g++, make, patch): il MUD viene costruito e avviato su copie temporanee (`real_mud.py`).
+- oppure (default, se esistono) la cartella ufficiale `leu`, o `DIKUMOD_SRC` + `DIKUMOD_LIB` (+ g++, make): il MUD viene costruito e avviato su copie
+  temporanee (`real_mud.py`).
 """
 
 from __future__ import annotations

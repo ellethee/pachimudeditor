@@ -23,14 +23,14 @@ BASE = "/api/world/players"
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def worlds(lib: Path, variant: str) -> AsyncIterator[None]:
+async def worlds(lib: Path) -> AsyncIterator[None]:
     """Registro con pachimud (default) e `dikumod` (sola lettura: il default del kind) con i giocatori sintetici."""
     standard_players(lib)
     set_registry(
         WorldRegistry(
             [
                 WorldConfig(id="pachimud", name="Pachimud", params=stack.current_params()),
-                WorldConfig(id="dikumod", kind="dikumod", name="Diku Modificato", path=str(lib), params={"variant": variant}),
+                WorldConfig(id="dikumod", kind="dikumod", name="Diku Modificato", path=str(lib)),
             ]
         )
     )

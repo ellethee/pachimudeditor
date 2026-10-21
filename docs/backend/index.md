@@ -52,7 +52,7 @@ Il backend serve piu' MUD tramite `WorldAdapter` (`X-World`/`?world=`), vedi [ad
 webeditor_worlds:
   - {id: pachimud, kind: pachimud, params: {database_url: "sqlite+aiosqlite:////percorso/pachimud.db", definitions_path: /percorso/definitions}}
   - {id: basedmud, kind: basedmud, name: BasedMud, path: /percorso/basedmud, read_only: false}
-  - {id: dikumod2, kind: dikumod, name: Diku Modificato, path: /percorso/dikumod2, params: {variant: dikumod2}}   # read_only: true di default
+  - {id: dikumod, kind: dikumod, name: Diku Modificato, path: /dati/luca/muds/leu/lib, params: {data_prefix: leudata}}   # read_only: true di default
 ```
 
 **`kind: dikumod` e' in sola lettura se `read_only` non e' scritto**: i file monolitici sono fragili (il gioco legge mob e
@@ -61,7 +61,7 @@ oggetti per offset di byte: scrivere con il gioco acceso lo rompe) e le scrittur
 (`tests/rom_lib`, `tests/dikumod_lib`).
 
 I test di BasedMud (`tests/basedmud`) e di Diku Modificato (`tests/dikumod_lib`, `tests/dikumod`) lavorano su copie temporanee dei dati reali
-(`basedmud/area`, percorso sovrascrivibile con `BASEDMUD_AREA_DIR`; per il Diku Modificato solo `DIKUMOD_ROOT`, cartella con `dikumod/lib` e `dikumod2/lib`, prefisso dei file con `DIKUMOD_PREFIX`: senza la variabile quei test si saltano) e verificano a
+(`basedmud/area`, percorso sovrascrivibile con `BASEDMUD_AREA_DIR`; per il Diku Modificato `DIKUMOD_LIB`, default `/dati/luca/muds/leu/lib`, prefisso dei file con `DIKUMOD_PREFIX`, default `leudata`: se la cartella non esiste quei test si saltano) e verificano a
 fine sessione, con gli hash, che gli originali siano intatti. `uv run pytest tests/dikumod_lib -s` stampa le statistiche
 (conteggi, mob corrotti per categoria, zone viste dal loader C).
 

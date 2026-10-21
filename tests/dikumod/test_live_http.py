@@ -39,16 +39,16 @@ async def fake(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[FakeLiveServer]
     shutil.rmtree(tmp, ignore_errors=True)
 
 
-def world(world_id: str, lib: Path, variant: str, sock: str | None, **config: Any) -> WorldConfig:
+def world(world_id: str, lib: Path, sock: str | None, **config: Any) -> WorldConfig:
     """Un mondo dikumod, con il canale live se c'e' `sock`."""
-    params: dict[str, Any] = {"variant": variant}
+    params: dict[str, Any] = {}
     if sock:
         params["live"] = {"socket": sock, "token_env": ENV, "timeout_ms": 1500}
     return WorldConfig(id=world_id, kind="dikumod", name=world_id, path=str(lib), params=params, **config)
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def worlds(lib: Path, variant: str, fake: FakeLiveServer, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[None]:
+async def worlds(lib: Path, fake: FakeLiveServer, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[None]:
     """`dikumod` (scrivibile, live), `dikumod-ro` (sola lettura, live), `dikumod-nolive` (scrivibile, senza canale) e pachimud.
     La cache di `who` e' spenta (i test cambiano il MUD fra una richiesta e l'altra); `test_who_cache` la riaccende."""
     monkeypatch.setattr(live_module, "WHO_TTL", 0.0)
@@ -58,9 +58,9 @@ async def worlds(lib: Path, variant: str, fake: FakeLiveServer, monkeypatch: pyt
         WorldRegistry(
             [
                 WorldConfig(id="pachimud", name="Pachimud", params=stack.current_params()),
-                world("dikumod", lib, variant, sock, read_only=False),
-                world("dikumod-ro", lib, variant, sock),
-                world("dikumod-nolive", lib, variant, None, read_only=False),
+                world("dikumod", lib, sock, read_only=False),
+                world("dikumod-ro", lib, sock),
+                world("dikumod-nolive", lib, None, read_only=False),
             ]
         )
     )
@@ -260,7 +260,7 @@ async def test_channel_off_is_a_state_and_clear_errors(
     assert error_code(await client.post(f"{LIVE}/echo", json={"text": "x", "all": True}, headers=H), 503) == "worldlive.unreachable"
 
 
-async def test_timeout_and_unknown_outcome(client: httpx.AsyncClient, lib: Path, variant: str, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_timeout_and_unknown_outcome(client: httpx.AsyncClient, lib: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """MUD che non risponde: lettura 504 `worldlive.timeout`, scrittura 504 `worldlive.outcome_unknown` (mai ritentata)."""
     tmp = Path(tempfile.mkdtemp(prefix="lt-", dir="/tmp"))
     silent = Scripted(tmp / "s.sock", lambda *_: asyncio.sleep(0, result=False))
@@ -271,7 +271,7 @@ async def test_timeout_and_unknown_outcome(client: httpx.AsyncClient, lib: Path,
 
     silent.behavior = never
     await silent.start()
-    config = world("lento", lib, variant, str(tmp / "s.sock"), read_only=False)
+    config = world("lento", lib, str(tmp / "s.sock"), read_only=False)
     config.params["live"]["timeout_ms"] = 300
     set_registry(WorldRegistry([WorldConfig(id="pachimud", name="P", params=stack.current_params()), config]))
     try:

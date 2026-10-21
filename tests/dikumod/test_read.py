@@ -1,4 +1,4 @@
-"""Lettura dell'adapter Diku Modificato sui dati reali di dikumod e dikumod2 (copie temporanee)."""
+"""Lettura dell'adapter Diku Modificato sui dati reali di Diku Modificato (`leu`, copie temporanee)."""
 
 from pathlib import Path
 
@@ -17,9 +17,9 @@ from tests.dikumod.conftest import DUPLICATES, MOB_SPEC, SPEC
 
 
 @pytest.mark.real_dikumod
-async def test_counts_match_the_spec(ro: DikumodAdapter, variant: str, capsys) -> None:  # type: ignore[no-untyped-def]
+async def test_counts_match_the_spec(ro: DikumodAdapter, capsys) -> None:  # type: ignore[no-untyped-def]
     """Zone, stanze, mob (sani + corrotti), oggetti come da documento, tolti i vnum doppi (l'API ne mostra uno)."""
-    want, dup = SPEC[variant], DUPLICATES[variant]
+    want, dup = SPEC, DUPLICATES
     zones = await ro.list_zones(ZonePageParams(page=1, pageSize=500))
     rooms = await ro.list_rooms(RoomPageParams(page=1, pageSize=1))
     mobs = await ro.list_mobs(MobPageParams(page=1, pageSize=1))
@@ -30,12 +30,10 @@ async def test_counts_match_the_spec(ro: DikumodAdapter, variant: str, capsys) -
     assert objects.total == want["objects"] - dup["objects"]
     everyone = await ro.list_mobs(MobPageParams(page=1, pageSize=5000))
     bad = [m for m in everyone.items if m.extra.get("corrupted")]
-    ok, nbad = MOB_SPEC[variant]
+    ok, nbad = MOB_SPEC
     assert len(bad) == nbad and len(everyone.items) - len(bad) == ok - dup["mobs"]
     with capsys.disabled():
-        print(
-            f"\n[{variant}] API: zone {zones.total}, stanze {rooms.total}, mob {mobs.total} ({len(bad)} corrotti), oggetti {objects.total}"
-        )
+        print(f"\nAPI: zone {zones.total}, stanze {rooms.total}, mob {mobs.total} ({len(bad)} corrotti), oggetti {objects.total}")
 
 
 @pytest.mark.real_dikumod
@@ -63,7 +61,7 @@ async def test_content_belongs_to_the_zone_of_its_vnum(ro: DikumodAdapter) -> No
 
 
 @pytest.mark.real_dikumod
-async def test_corrupted_mobs_are_visible_with_warning_and_not_editable(ro: DikumodAdapter, rw: DikumodAdapter, variant: str) -> None:
+async def test_corrupted_mobs_are_visible_with_warning_and_not_editable(ro: DikumodAdapter, rw: DikumodAdapter) -> None:
     """I 33 mob corrotti compaiono in list/get con `extra.corrupted` e il motivo; update/delete danno 409."""
     mob = await ro.get_mob(2111)
     assert mob.extra["corrupted"] is True and mob.extra["warning"] and mob.extra["line"] > 0 and mob.extra["raw"].startswith("#2111")
@@ -79,7 +77,7 @@ async def test_corrupted_mobs_are_visible_with_warning_and_not_editable(ro: Diku
 
 
 @pytest.mark.real_dikumod
-async def test_room_fields_and_special_blocks(ro: DikumodAdapter, variant: str) -> None:
+async def test_room_fields_and_special_blocks(ro: DikumodAdapter) -> None:
     """Teleport, fiume, tunnel e settore vero stanno in `extra`; le uscite hanno id `vnum*10+dir` e info grezza."""
     tele = next(r for r in (await ro.list_rooms(RoomPageParams(page=1, pageSize=5000))).items if r.extra["tele"])
     assert set(tele.extra["tele"]) == {"time", "target", "mask", "count"} and tele.extra["sector"] >= 0
@@ -94,17 +92,12 @@ async def test_room_fields_and_special_blocks(ro: DikumodAdapter, variant: str) 
 
 
 @pytest.mark.real_dikumod
-async def test_override_files_take_precedence(ro: DikumodAdapter, lib: Path, variant: str) -> None:
-    """Con `rooms/<vnum>` e `objects/<vnum>` (dikumod2) il contenuto effettivo e' quello del file per-vnum."""
-    if variant != "dikumod2":
-        pytest.skip("gli override per-vnum popolati esistono solo in dikumod2")
-    room = await ro.get_room(3008)
-    assert room.extra["source"] == "override" and room.name == "Il Bordello"
-    assert (await ro.get_room(3001)).extra["source"] == "main"
-    obj = await ro.get_object(40022)
-    assert obj.extra["source"] == "override" and obj.object_type.name == "OTHER" and obj.extra["typeRaw"] == 24
-    assert obj.extra["extraDescs"][0]["keyword"].startswith("board")
-    assert (lib / "rooms" / "3008").is_file() and (await ro.get_zone(0)).extra["override"] is None
+async def test_override_files_take_precedence(ro: DikumodAdapter, lib: Path) -> None:
+    """Con `objects/<vnum>` (nei dati di `leu` solo il 7503) il contenuto effettivo e' quello del file per-vnum."""
+    obj = await ro.get_object(7503)
+    assert obj.extra["source"] == "override" and (lib / "objects" / "7503").is_file()
+    assert (await ro.get_object(3001)).extra["source"] == "main"
+    assert (await ro.get_room(3001)).extra["source"] == "main" and (await ro.get_zone(0)).extra["override"] is None
 
 
 @pytest.mark.real_dikumod
@@ -125,10 +118,8 @@ async def test_mob_mapping(ro: DikumodAdapter) -> None:
 
 
 @pytest.mark.real_dikumod
-async def test_script_extra_on_dikumod(ro: DikumodAdapter, variant: str) -> None:
-    """In dikumod gli script di `scripts.dat` compaiono in `extra.script` con il testo del file."""
-    if variant != "dikumod":
-        pytest.skip("scripts.dat esiste solo in dikumod")
+async def test_script_extra_on_dikumod(ro: DikumodAdapter) -> None:
+    """Gli script di `scripts.dat` compaiono in `extra.script` con il testo del file."""
     mob = await ro.get_mob(3064)
     assert mob.extra["script"]["name"] == "Drunk" and mob.extra["script"]["text"]
 
@@ -149,7 +140,7 @@ async def test_object_mapping(ro: DikumodAdapter) -> None:
 
 
 @pytest.mark.real_dikumod
-async def test_reset_commands_mapping(ro: DikumodAdapter, variant: str) -> None:
+async def test_reset_commands_mapping(ro: DikumodAdapter) -> None:
     """Comandi M O G E P D C H F: argomenti per tipo, if_value intero (anche -5), commento, `O` senza arg4 segnalata."""
     zones = (await ro.list_zones(ZonePageParams(page=1, pageSize=500))).items
     by_type: dict[int, object] = {}

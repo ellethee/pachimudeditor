@@ -73,27 +73,14 @@ async def test_editing_one_mob_and_one_room_changes_only_those_records(rw: Dikum
 
 
 @pytest.mark.real_dikumod
-async def test_overrides_are_edited_in_place(rw: DikumodAdapter, lib: Path, variant: str) -> None:
-    """Una stanza con `rooms/<vnum>` e un oggetto con `objects/<vnum>` si scrivono nel loro file; il principale non cambia."""
-    if variant != "dikumod2":
-        pytest.skip("override popolati solo in dikumod2")
+async def test_overrides_are_edited_in_place(rw: DikumodAdapter, lib: Path) -> None:
+    """Un oggetto con `objects/<vnum>` (nei dati di `leu` solo il 7503) si scrive nel suo file; il principale non cambia."""
     before = digest(lib)
-    room = await rw.update_room(3008, RoomPatch(name="Bordello nuovo"))
-    assert room.name == "Bordello nuovo" and room.extra["source"] == "override"
-    assert changed(before, digest(lib)) == {"rooms/3008"}
-    obj = await rw.update_object(40022, ObjectPatch(cost=77))
+    assert (lib / "objects" / "7503").is_file()
+    obj = await rw.update_object(7503, ObjectPatch(cost=77))
     assert obj.cost == 77 and obj.extra["source"] == "override"
-    assert changed(before, digest(lib)) == {"rooms/3008", "objects/40022"}
-    assert load_world(lib).room_overrides[3008].items[0].name == "Bordello nuovo"
-    with expect_error(422, "dikumod.override_vnum_locked"):
-        await rw.update_room(3008, RoomPatch(vnum=3999))
-    with expect_error(409, "rooms.in_reset_usage"):
-        await rw.delete_room(3008)  # usata da un reset
-    free = next(v for v in (100, 3165, 3171) if not rw.find_usage("room", v, include_exit_keys=False))
-    await rw.delete_room(free)
-    assert not (lib / "rooms" / str(free)).exists()
-    with expect_error(404, "rooms.not_found"):
-        await rw.get_room(free)
+    assert changed(before, digest(lib)) == {"objects/7503"}
+    assert load_world(lib).object_overrides[7503].items[0].cost == 77
 
 
 @pytest.mark.real_dikumod

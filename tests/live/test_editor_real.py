@@ -1,12 +1,11 @@
-"""L'adapter dikumod dell'editor contro il MUD REALE (DikuMod1 con il modulo `livectl`, su copie in /tmp).
+"""L'adapter dikumod dell'editor contro il MUD REALE (Diku Modificato `leu` con il modulo `livectl`, su copie in /tmp).
 
-Come `tests/live`: serve `DIKUMOD_SRC` (cartella `src`), `DIKUMOD_LIB` (cartella `lib`), g++, make e patch; altrimenti si salta. Il prefisso dei
-file dati e' `DIKUMOD_LIB_PREFIX` (default `leudata`: quello dei dati di DikuMod1). Il giocatore `Tester` e' creato e fatto entrare da `real_mud`.
+Come `tests/live`: serve la cartella `leu` (o `DIKUMOD_SRC`/`DIKUMOD_LIB`), g++ e make; altrimenti si salta. Il prefisso dei file dati e'
+`DIKUMOD_PREFIX` (default `leudata`). Il giocatore `Tester` e' creato e fatto entrare da `real_mud`.
 """
 
 from __future__ import annotations
 
-import os
 import time
 from collections.abc import AsyncIterator
 
@@ -16,6 +15,7 @@ from pachimudeditor.common.adapters.registry import WorldConfig
 from pachimudeditor.sdk import LiveEchoIn, LiveError, LiveLoadIn, LivePlayerSetIn, LiveZoneResetIn, PlayerPageParams
 from pachimudeditor_adapter_dikumod.adapter import DikumodAdapter
 from tests.live import real_mud
+from tests.support import real_data
 
 pytestmark = pytest.mark.skipif(real_mud.available() is not None, reason=real_mud.available() or "")
 ENV = "EDITOR_REAL_LIVE_TOKEN"
@@ -35,7 +35,7 @@ async def adapter(mud: real_mud.RealMud, monkeypatch: pytest.MonkeyPatch) -> Asy
     monkeypatch.setenv(ENV, real_mud.TOKEN)
     config = WorldConfig(
         id="real", kind="dikumod", path=str(mud.root / "lib"), read_only=False,
-        params={"data_prefix": os.environ.get("DIKUMOD_LIB_PREFIX", "leudata"), "live": {"socket": mud.socket, "token_env": ENV}},
+        params={"data_prefix": real_data.DIKUMOD_PREFIX, "live": {"socket": mud.socket, "token_env": ENV}},
     )  # fmt: skip
     live = DikumodAdapter(config)
     yield live

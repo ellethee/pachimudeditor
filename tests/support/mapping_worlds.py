@@ -2,7 +2,7 @@
 
 - ROM: le aree `.are` di basedmud (`area.lst` + `*.are`);
 - Diku classico: un mondo sintetico piccolo costruito con record **reali** di Diku Modificato (`dikumoddata.{zon,wld,mob,obj,shp}` di
-  `<DIKUMOD_ROOT>/dikumod2/lib`): le prime quattro zone e tutto cio' che cade nei loro range di vnum. I reset che puntano a vnum
+  `DIKUMOD_LIB`, default la `lib/` di `leu`): le prime quattro zone e tutto cio' che cade nei loro range di vnum. I reset che puntano a vnum
 fuori dal mondo sintetico sono tolti (`prune_resets`), cosi' gli script passano la validazione dei riferimenti.
 """
 
@@ -18,8 +18,8 @@ ROM_AREA = real_data.ROM_AREA
 """Cartella `area/` reale di basedmud (sola lettura)."""
 PREFIX = real_data.DIKUMOD_PREFIX
 """Prefisso dei file dati reali (`DIKUMOD_PREFIX`)."""
-DIKUMOD_LIB: Path | None = real_data.DIKUMOD_ROOT / "dikumod2" / "lib" if real_data.DIKUMOD_ROOT else None
-"""Cartella `lib/` reale della variante `dikumod2` (sola lettura, solo da `DIKUMOD_ROOT`); `None` se non impostata."""
+DIKUMOD_LIB: Path | None = real_data.DIKUMOD_LIB if real_data.HAVE_DIKUMOD else None
+"""Cartella `lib/` reale di Diku Modificato (sola lettura); `None` se i dati reali mancano."""
 EXAMPLES = Path(__file__).resolve().parents[2] / "adapters" / "mapping" / "src" / "pachimudeditor_adapter_mapping" / "examples"
 ROM_MAPPING = EXAMPLES / "rom.yaml"
 DIKU_MAPPING = EXAMPLES / "diku_classic.yaml"

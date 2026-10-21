@@ -7,7 +7,7 @@ vale il codice).
 ```python
 from pachimudeditor_adapter_dikumod.dikumod_lib import load_world, save
 
-world = load_world("/percorso/a/dikumod2")     # la cartella lib/ oppure la sua radice
+world = load_world("/percorso/a/leu")     # la cartella lib/ oppure la sua radice
 mob = world.mob.find(3000)                                # entita' interpretata oppure `Raw` (record corrotto)
 mob.level = 30
 save(world.mob)                                           # atomico; cambia solo il record toccato
@@ -67,13 +67,12 @@ Ogni entita' ricorda il sorgente (`_src`) e l'impronta dei campi (`_fp`):
 
 ## Test e verifica
 
-`tests/dikumod_lib/` (copie temporanee dei dati reali di `dikumod` e `dikumod2`, mai scrittura sugli originali: hash a fine
+`tests/dikumod_lib/` (copie temporanee dei dati reali di Diku Modificato, cartella `leu`, mai scrittura sugli originali: hash a fine
 sessione):
 
 - `c_loader.py`: re-implementazione rigorosa delle letture di `db.c` (`generate_indices`+`real_*`, `read_mobile`,
   `read_obj_from_file`, `load_one_room`, `boot_zones` con la trappola di `O`, `boot_the_shops`), indipendente dal parser;
-- `test_roundtrip_real.py`: conteggi (dikumod 3841 stanze / 2093+33 mob / 2025 oggetti / 93 zone / 7832 comandi; dikumod2 3856 /
-  2097+33 / 2041 / 93 / 7861), parse -> write byte-identico di tutti i file, riscrittura canonica idempotente;
+- `test_roundtrip_real.py`: conteggi (3841 stanze / 2093+33 mob / 2025 oggetti / 93 zone / 7832 comandi), parse -> write byte-identico di tutti i file, riscrittura canonica idempotente;
 - `test_loader_emulation.py`: ogni vnum raggiungibile con la ricerca binaria, parser e loader concordano su ogni campo di
   ogni mob/oggetto/stanza, 90 zone dal file originale e 93 dopo la riscrittura canonica;
 - `test_mutation.py`: modifica di un solo record, inserimento ordinato, blocchi teleport/fiume/tunnel/luce, zone, testi pericolosi.

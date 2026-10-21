@@ -1,4 +1,4 @@
-"""Round-trip sui dati REALI di dikumod e dikumod2 (copiati in una cartella temporanea): conteggi, byte-identita', idempotenza."""
+"""Round-trip sui dati REALI di Diku Modificato (`leu`) (copiati in una cartella temporanea): conteggi, byte-identita', idempotenza."""
 
 import pytest
 import collections
@@ -16,18 +16,15 @@ from pachimudeditor_adapter_dikumod.dikumod_lib import (
 )
 from pachimudeditor_adapter_dikumod.dikumod_lib.files import read_text
 
-EXPECTED = {
-    "dikumod": {"rooms": 3841, "mobs": 2093, "bad_mobs": 33, "objects": 2025, "zones": 93, "commands": 7832},
-    "dikumod2": {"rooms": 3856, "mobs": 2097, "bad_mobs": 33, "objects": 2041, "zones": 93, "commands": 7861},
-}
+EXPECTED = {"rooms": 3841, "mobs": 2093, "bad_mobs": 33, "objects": 2025, "zones": 93, "commands": 7832}
 PARSERS = {"wld": parse_wld, "mob": parse_mob, "obj": parse_obj, "zon": parse_zon, "shp": parse_shp}
 
 
 @pytest.mark.real_dikumod
-def test_counts_match_the_spec(variant: str, lib: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+def test_counts_match_the_spec(lib: Path, capsys) -> None:  # type: ignore[no-untyped-def]
     """Stanze, mob, oggetti, zone e comandi come nel documento del formato; stampa le statistiche (-s)."""
     world = load_world(lib)
-    want = EXPECTED[variant]
+    want = EXPECTED
     got = {
         "rooms": len(world.wld.entities()),
         "mobs": len(world.mob.entities()),
@@ -42,7 +39,7 @@ def test_counts_match_the_spec(variant: str, lib: Path, capsys) -> None:  # type
     shops = (len(world.shp.entities()), len(world.shp.raws())) if world.shp else (0, 0)
     with capsys.disabled():
         print(
-            f"\n[{variant}] {got} | negozi {shops[0]} + {shops[1]} corrotto | override stanze {len(world.room_overrides)}, "
+            f"\n{got} | negozi {shops[0]} + {shops[1]} corrotto | override stanze {len(world.room_overrides)}, "
             f"oggetti {len(world.object_overrides)} | mob corrotti per categoria {dict(errors)} | "
             f"diagnostiche {len(world.diagnostics)}"
         )

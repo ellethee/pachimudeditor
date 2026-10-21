@@ -37,7 +37,7 @@ pachimudeditor serve --workdir ~/pachimudeditor --open     # http://127.0.0.1:81
 | --- | --- | --- | --- | --- |
 | `pachimud` | `pachimudeditor-adapter-pachimud` | `pachimud` | DatabaseBased | il database del gioco (SQLAlchemy) + pagine panoramica/giocatori/istanze/trasferimento/contenuti |
 | `basedmud` | `pachimudeditor-adapter-basedmud` | `basedmud` | FileBased | file area `.are` di basedmud / ROM 2.4 / QuickMUD |
-| `dikumod` | `pachimudeditor-adapter-dikumod` | `dikumod` | FileBased | file dati di Diku Modificato (`dikumod`, `dikumod2`) |
+| `dikumod` | `pachimudeditor-adapter-dikumod` | `dikumod` | FileBased | file dati di Diku Modificato (DikuMod1) |
 | `mapping` | `pachimudeditor-adapter-mapping` | `mapping` | Mapped | qualunque MUD su file descritto da un YAML di mappatura |
 | `all` | tutti i precedenti | | | |
 
@@ -118,7 +118,7 @@ cd frontend && pnpm dev                  # app su http://localhost:9010, proxy /
 
 Nessun checkout del MUD pachimud serve per sviluppare o testare: i modelli del DB di gioco sono copiati nell'adapter (`game_models/`) e le definizioni di esempio in `tests/fixtures/pachimud_definitions/`. Il confronto opzionale con il MUD vero gira solo con `PACHIMUD_GAME_ROOT=<checkout>` (vedi `docs/contributing.md`).
 
-I test che usano dati reali di basedmud li cercano nel checkout fratello `../basedmud` (override con `BASEDMUD_AREA_DIR`, `ROM_AREA_DIR`, `E2E_BASEDMUD`). I dati reali del **Diku Modificato** non hanno nessun default: i test pytest leggono solo `DIKUMOD_ROOT` (una cartella con `dikumod/lib` e `dikumod2/lib`; prefisso dei file dati `dikumoddata`, o `DIKUMOD_PREFIX`) e gli e2e solo `E2E_DIKUMOD` (una cartella `lib/`; prefisso `E2E_DIKUMOD_PREFIX`); se non sono impostate (o non esistono) i test pytest marcati `real_dikumod`/`real_rom` vengono saltati (gli altri girano su mondi sintetici, vedi `docs/contributing.md`) e i mondi `dikumod*` non compaiono negli e2e. Per gli altri dati mancanti i test pytest si saltano, mentre gli e2e che li copiano falliscono con un errore esplicito.
+I test che usano dati reali di basedmud li cercano nel checkout fratello `../basedmud` (override con `BASEDMUD_AREA_DIR`, `ROM_AREA_DIR`, `E2E_BASEDMUD`). I dati reali del **Diku Modificato** (solo DikuMod1, "leu") stanno nella cartella ufficiale `/dati/luca/muds/leu`: i test pytest leggono `DIKUMOD_LIB` (la `lib/`; default `/dati/luca/muds/leu/lib`), `DIKUMOD_PREFIX` (default `leudata`) e, per `tests/live`, `DIKUMOD_SRC` (la radice con `Makefile` e `src/`; default `/dati/luca/muds/leu`); gli e2e leggono `E2E_DIKUMOD` (stessa `lib/`) e `E2E_DIKUMOD_PREFIX`. Se la cartella non esiste i test pytest marcati `real_dikumod`/`real_rom` vengono saltati (gli altri girano su mondi sintetici, vedi `docs/contributing.md`) e i mondi `dikumod*` non compaiono negli e2e. Per gli altri dati mancanti i test pytest si saltano, mentre gli e2e che li copiano falliscono con un errore esplicito.
 Per lavorare sui propri mondi copia `pachimudeditor.example.yaml` in `pachimudeditor.yaml` o `pachimudeditor.local.yaml` (entrambi ignorati da git) e con il `.local` imposta `PACHIFAST_CONFIG_FILE=pachimudeditor.local.yaml` nel `.env`.
 
 ## Test

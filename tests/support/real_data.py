@@ -6,8 +6,9 @@ asseriscono su contenuti precisi dei dati reali sono marcati `real_rom` / `real_
 Variabili d'ambiente:
 
 - `BASEDMUD_AREA_DIR` (alias `ROM_AREA_DIR`): cartella `area/` di basedmud (default: `../basedmud/area` accanto al repo);
-- `DIKUMOD_ROOT`: cartella che contiene `dikumod/lib` e `dikumod2/lib`;
-- `DIKUMOD_PREFIX`: prefisso dei file dati reali (default `dikumoddata`; i dati locali ne usano un altro).
+- `DIKUMOD_LIB`: cartella `lib/` dei dati reali di Diku Modificato (DikuMod1, "leu"); default `/dati/luca/muds/leu/lib` se esiste;
+- `DIKUMOD_PREFIX`: prefisso dei file dati (`<prefisso>.wld`, ...); default `leudata` se i file di `leu` esistono, altrimenti `dikumoddata`;
+- `DIKUMOD_SRC`: radice del progetto (Makefile, `src/`, `lib/`), usata solo da `tests/live`; default `/dati/luca/muds/leu`.
 """
 
 import os
@@ -18,13 +19,18 @@ ROM_AREA = Path(
 )
 """Cartella `area/` reale di basedmud (sola lettura)."""
 HAVE_ROM = ROM_AREA.is_dir()
-DIKUMOD_ROOT = Path(os.environ["DIKUMOD_ROOT"]) if os.environ.get("DIKUMOD_ROOT") else None
-"""Radice dei dati reali Diku Modificato (`DIKUMOD_ROOT`), `None` se non impostata."""
-DIKUMOD_PREFIX = os.environ.get("DIKUMOD_PREFIX") or "dikumoddata"
-HAVE_DIKUMOD = DIKUMOD_ROOT is not None and (DIKUMOD_ROOT / "dikumod2" / "lib").is_dir()
+LEU_ROOT = Path("/dati/luca/muds/leu")
+"""Cartella ufficiale dei sorgenti e dei dati di Diku Modificato (solo DikuMod1)."""
+DIKUMOD_SRC = Path(os.environ.get("DIKUMOD_SRC") or LEU_ROOT)
+"""Radice del progetto Diku Modificato (`DIKUMOD_SRC`)."""
+DIKUMOD_LIB = Path(os.environ.get("DIKUMOD_LIB") or LEU_ROOT / "lib")
+"""Cartella `lib/` reale (sola lettura): `DIKUMOD_LIB`, altrimenti quella di `leu`."""
+DIKUMOD_PREFIX = os.environ.get("DIKUMOD_PREFIX") or ("leudata" if (DIKUMOD_LIB / "leudata.wld").is_file() else "dikumoddata")
+"""Prefisso dei file dati reali (`DIKUMOD_PREFIX`)."""
+HAVE_DIKUMOD = (DIKUMOD_LIB / f"{DIKUMOD_PREFIX}.wld").is_file()
 
 MARKERS = {
     "real_rom": (HAVE_ROM, f"aree reali di basedmud non trovate in {ROM_AREA} (BASEDMUD_AREA_DIR)"),
-    "real_dikumod": (HAVE_DIKUMOD, "dati reali Diku Modificato non trovati (DIKUMOD_ROOT, DIKUMOD_PREFIX)"),
+    "real_dikumod": (HAVE_DIKUMOD, f"dati reali Diku Modificato non trovati in {DIKUMOD_LIB} (DIKUMOD_LIB, DIKUMOD_PREFIX)"),
 }
 """Marcatore -> (dati presenti, motivo dello skip)."""

@@ -34,12 +34,16 @@ su copie temporanee e a fine sessione si verifica che gli originali siano intatt
 | Variabile | Significato |
 |---|---|
 | `BASEDMUD_AREA_DIR` | cartella `area/` di basedmud (default: `../basedmud/area` accanto al repository) |
-| `DIKUMOD_ROOT` | cartella che contiene `dikumod/lib` e `dikumod2/lib` (senza, i test `real_dikumod` si saltano) |
-| `DIKUMOD_PREFIX` | prefisso dei file dati reali (default `dikumoddata`); i dati locali ne usano un altro: **senza il valore esatto i test sui dati reali falliscono** perche' non trovano i file |
+| `DIKUMOD_LIB` | cartella `lib/` dei dati di Diku Modificato (solo DikuMod1, "leu"); default `/dati/luca/muds/leu/lib` se esiste (senza, i test `real_dikumod` si saltano) |
+| `DIKUMOD_PREFIX` | prefisso dei file dati (`<prefisso>.wld`, ...); default `leudata` se i file di `leu` esistono, altrimenti `dikumoddata`: **con dati di un'altra cartella serve il valore esatto** perche' i test non trovino i file mancanti |
+| `DIKUMOD_SRC` | radice del progetto Diku Modificato (`Makefile`, `src/`, `lib/`), usata da `tests/live` per costruire il MUD su una copia; default `/dati/luca/muds/leu` |
 | `PACHIMUD_GAME_ROOT` | checkout del MUD pachimud per il confronto dei modelli (test `tests/test_game_compat.py`) |
 
 ```bash
-DIKUMOD_ROOT=/percorso/radice DIKUMOD_PREFIX=prefissolocale BASEDMUD_AREA_DIR=/percorso/basedmud/area uv run pytest -q -rs
+# default: usa la cartella ufficiale /dati/luca/muds/leu (sola lettura) e ../basedmud/area
+uv run pytest -q -rs
+# oppure con percorsi espliciti
+DIKUMOD_LIB=/percorso/leu/lib DIKUMOD_PREFIX=leudata DIKUMOD_SRC=/percorso/leu BASEDMUD_AREA_DIR=/percorso/basedmud/area uv run pytest -q -rs
 ```
 
 `-rs` elenca i test saltati col motivo. La CI fallisce se i test saltati superano `MAX_SKIPPED` (`.github/workflows/ci.yml`):

@@ -19,7 +19,7 @@ from pachimudeditor.sdk import rules
 from pachimudeditor.common.adapters.models import EntityKind, ResetUsage
 from pachimudeditor.sdk import WorldConfig
 
-VARIANTS = ("dikumod", "dikumod2")
+VARIANTS = ("dikumod", "dikumod2")  # `dikumod2` non e' piu' considerata ne' testata (si considera solo DikuMod1, cartella `leu`)
 
 
 class DikumodSupport:

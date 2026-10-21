@@ -14,7 +14,7 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const example = `webeditor_worlds:
   - { id: basedmud, kind: basedmud, name: BasedMud, path: /percorso/basedmud/area }
-  - { id: dikumod, kind: dikumod, name: Diku Modificato, path: /percorso/dikumod2/lib }
+  - { id: dikumod, kind: dikumod, name: Diku Modificato, path: /percorso/leu/lib }
   - { id: tba, kind: mapping, mapping: /percorso/tba.mapping.yaml, path: /percorso/tba/lib }
   - { id: pachimud, kind: pachimud, config_path: /percorso/pachimud.yaml }`
 </script>

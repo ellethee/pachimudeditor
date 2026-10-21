@@ -4,7 +4,7 @@
 # dikumoddata.wld (stanze), .mob, .obj, .zon (zone + reset), .shp (negozi). Fonte: docs/formats/dikumod.md.
 #
 # Mondo di esempio:
-#   - {id: dikumod-map, kind: mapping, name: Diku Modificato (mapping), mapping: <questo file>, path: /percorso/a/dikumod2/lib}
+#   - {id: dikumod-map, kind: mapping, name: Diku Modificato (mapping), mapping: <questo file>, path: /percorso/a/leu/lib}
 #
 # Seconda prova del MappingAdapter (la prima e' rom.yaml, un file per zona): qui le zone sono i record del `.zon` e
 # un'entita' appartiene alla zona il cui range di vnum la contiene (`top` a catena). Irregolarita' di Diku Modificato che questa

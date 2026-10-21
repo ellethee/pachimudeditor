@@ -2,7 +2,7 @@
 
 # pachimudeditor-adapter-dikumod
 
-Adapter `kind: dikumod` di **pachimudeditor** (editor web di zone, stanze, mob e oggetti per MUD): legge (e, con `read_only: false`, scrive) i file dati di Diku Modificato (`dikumod` e `dikumod2`), con la libreria standalone `dikumod_lib` e le regole di conversione da/verso gli altri mondi.
+Adapter `kind: dikumod` di **pachimudeditor** (editor web di zone, stanze, mob e oggetti per MUD): legge (e, con `read_only: false`, scrive) i file dati di Diku Modificato (DikuMod1; la variante `dikumod2` non e' piu' considerata), con la libreria standalone `dikumod_lib` e le regole di conversione da/verso gli altri mondi.
 
 Installazione (richiede Python 3.14+):
 
@@ -15,7 +15,7 @@ Esempio di mondo in `pachimudeditor.yaml`:
 
 ```yaml
 webeditor_worlds:
-  - { id: dikumod, kind: dikumod, name: Diku Modificato, path: /percorso/dikumod2/lib, params: { variant: dikumod2 } }
+  - { id: dikumod, kind: dikumod, name: Diku Modificato, path: /percorso/leu/lib, params: { data_prefix: leudata } }
 ```
 
 Parametri, capability, limiti e formati sono nella documentazione di pachimudeditor, sezione *Adapter > dikumod*.
