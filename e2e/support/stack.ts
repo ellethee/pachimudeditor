@@ -72,6 +72,8 @@ function prepareExtras(workdir: string, pachimud: { databaseUrl: string; definit
     const dikumodRw = join(workdir, 'dikumod-rw', 'lib')
     cpSync(DIKUMOD_SRC, dikumodRo, { recursive: true })
     cpSync(DIKUMOD_SRC, dikumodRw, { recursive: true })
+    // giocatori e rent: sempre quelli SINTETICI (mai dati o hash reali nelle copie di lavoro)
+    execFileSync(join(BACKEND, '.venv', 'bin', 'python'), ['-m', 'tests.support.dikumod_players', dikumodRo, dikumodRw], { cwd: BACKEND })
     worlds.push(
       { id: 'dikumod', kind: 'dikumod', name: 'Diku Modificato (sola lettura)', path: dikumodRo, read_only: true, params: { data_prefix: DIKUMOD_PREFIX } },
       { id: 'dikumod-rw', kind: 'dikumod', name: 'Diku Modificato (scrivibile)', path: dikumodRw, read_only: false, params: { data_prefix: DIKUMOD_PREFIX } },

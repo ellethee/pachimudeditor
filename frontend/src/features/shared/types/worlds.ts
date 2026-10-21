@@ -6,6 +6,8 @@ export interface IWorldCapabilities {
   supportsWorldOverview: boolean
   supportsInstances: boolean
   supportsPlayers: boolean
+  supportsPlayerRecords: boolean
+  supportsPlayerInventory: boolean
   supportsTransfer: boolean
   supportsContentRaces: boolean
   supportsResetScripts: boolean

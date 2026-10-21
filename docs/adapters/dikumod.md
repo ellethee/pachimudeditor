@@ -127,6 +127,32 @@ rappresentabile in `latin-1` (emoji, `€`) -> 422 `dikumod.unencodable_text`, p
 `dikumodPosition`, `dikumodApplyType`, `dikumodWearPos`, `dikumodRace`, `dikumodLiquid`, `dikumodDoorState`, `dikumodMobKind` (flag: `value` = bit; tipi: indice).
 `races()` = le 85 razze di `race.h`, `classes()` vuota. Capability: solo `supportsResetScripts` e `supportsExtraDescriptions`.
 
+## Giocatori in sola lettura
+
+Capability `supportsPlayerRecords` e `supportsPlayerInventory` ([contratto](../backend/contract-players-files.md)); nessuna
+scrittura sui file giocatore, **neanche con `read_only: false`** (le scritture L3 non esistono). Fonti dentro `lib/`:
+
+- `players/<nome>.dat`: un `char_file_u` da **3036 byte** per giocatore (build `EMANUELE`; non esiste una tabella indice, l'elenco e'
+  la cartella). Ammessi solo i nomi `[a-z][a-z0-9_-]{0,19}.dat`: `*.dat~`, backup, maiuscole e nomi con percorso sono ignorati;
+- `rent/<nome>`: 40 byte di testata + `number` x 592 byte per oggetto (`number` 0..200, verificato prima di leggere).
+
+Il layout e' letto con `struct` little-endian a offset espliciti (mai `struct` nativo), verificati compilando la struct di `structs.h` con g++ e sulle
+fixture sintetiche; vedi [formato](../formats/dikumod.md#9-file-giocatore-e-rent). Mappatura: `iClass` (bitmask) -> classi (`Warrior / Thief` per i multiclasse) e livello =
+massimo tra le classi accese; `race` -> `races()` (indice fuori tabella: `extra.raceRaw`, razza nulla); `gold` = monete portate; `load_room` >= 0 ->
+`roomVnum` (-1 nessuna, -2 rent automatico: `details.autoRent`); `last_logon`, `played`; abilita' (`skills[350]`) ed effetti (`affected[40]`) come tabelle (la tabella
+dei nomi delle abilita' non e' inclusa: si mostra il numero); inventario con `wearpos` -> slot di `dikumodWearPos`, `depth` = annidamento, nome
+dal file con `known`/tipo dal prototipo del mondo (vnum inesistente: `known: false`). `hasPassword` e' vero se il campo `pwd` non e' vuoto: il valore
+non viene mai letto oltre questo controllo, ne' restituito o loggato.
+
+Robustezza: file di dimensione diversa da 3036 -> riga con `problem: bad_size`; symlink che risolve fuori da `players/` o `rent/` -> `outside_dir`; non regolare
+-> `not_regular`; rent troncato / `number` > 200 / byte in eccesso / proprietario diverso dal giocatore (il gioco in quel caso scarta gli oggetti) ->
+`problem` dell'inventario con gli oggetti leggibili. Nessuna eccezione verso il client.
+
+**Server acceso.** Su disco non esiste un elenco dei connessi (il gioco riscrive il record con `fopen("r+b")`, non atomico): il giocatore e'
+sempre `online: null` e il frontend mostra l'avviso generico «il server potrebbe essere in esecuzione». In piu' `GET /api/world/players/status`
+cerca un processo dello stesso utente con **cwd = `lib/`** (il server fa `chdir` nella cartella dati) e socket aperti: se c'e', `serverRunning: true`
+e il banner lo dice; altrimenti `null` (non rilevabile: altro utente, altra macchina, niente `/proc`). Non blocca mai la lettura.
+
 ## Limiti noti
 
 - Il loader C del gioco vede **90 zone** nel file originale (431 comandi `O` a 4 numeri gli fanno fondere tre coppie di zone): l'adapter

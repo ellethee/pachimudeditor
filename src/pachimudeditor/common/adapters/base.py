@@ -84,6 +84,10 @@ class AdapterCapabilities(AliasedBaseModel):
     """`/api/instances`: istanze vive di mob/oggetti."""
     supports_players: bool = False
     """`/api/players`: account, personaggi, inventario."""
+    supports_player_records: bool = False
+    """`/api/world/players`: elenco e dettaglio dei giocatori in sola lettura (mixin `PlayersAdapter`, SDK 1.3)."""
+    supports_player_inventory: bool = False
+    """`/api/world/players/{id}/inventory`: inventario ed equipaggiamento dei giocatori (richiede `supports_player_records`)."""
     supports_transfer: bool = False
     """`export_zone_bundle`/`import_zone_dir` (cartella YAML di zona)."""
     supports_content_races: bool = False

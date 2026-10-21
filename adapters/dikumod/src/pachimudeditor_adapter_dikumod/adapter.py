@@ -23,6 +23,7 @@ Convenzioni (dettagli in `docs/adapters/index.md`):
 from __future__ import annotations
 
 from pachimudeditor_adapter_dikumod.meta import MetaMixin
+from pachimudeditor_adapter_dikumod.players import PlayersMixin
 from pachimudeditor_adapter_dikumod.prototypes import PrototypesMixin
 from pachimudeditor_adapter_dikumod.rooms import RoomsMixin
 from pachimudeditor_adapter_dikumod.zones import ZonesMixin
@@ -61,12 +62,19 @@ def _finish(info: ResourceInfo) -> ResourceInfo:
     )
 
 
-class DikumodAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, WorldAdapter):
+class DikumodAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, PlayersMixin, WorldAdapter):
     """Adapter dei file dati di Diku Modificato (vedi docstring del modulo)."""
 
     def capabilities(self) -> AdapterCapabilities:
-        """Nucleo + script di reset + extra description; niente panoramica, istanze, giocatori, trasferimento, contenuti."""
-        return AdapterCapabilities(read_only=self.read_only, supports_reset_scripts=True, supports_extra_descriptions=True)
+        """Nucleo + script di reset + extra description + giocatori in sola lettura (elenco, dettaglio, inventario); niente
+        panoramica, istanze, `/api/players`, trasferimento, contenuti."""
+        return AdapterCapabilities(
+            read_only=self.read_only,
+            supports_reset_scripts=True,
+            supports_extra_descriptions=True,
+            supports_player_records=True,
+            supports_player_inventory=True,
+        )
 
     def describe(self) -> AdapterInfo:
         """Descrittori dei campi (dai DTO) con i flag collegati alle tabelle Diku Modificato e il campo `extra`."""

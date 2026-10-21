@@ -24,7 +24,7 @@ function chromePath(): string {
 export const BASE_URL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8124'
 
 /** Chiavi i18n non risolte: `zones.form.name`, `rooms.map.title`, ... */
-const RAW_KEY = /\b(?:zones|rooms|mobs|objects|worlds|extra|world|players|instances|transfer|content|auth|errors|common|menu|dashboard|app)\.[a-zA-Z]+(?:\.[a-zA-Z]+)+\b/
+const RAW_KEY = /\b(?:zones|rooms|mobs|objects|worlds|extra|world|players|playerFiles|instances|transfer|content|auth|errors|common|menu|dashboard|app)\.[a-zA-Z]+(?:\.[a-zA-Z]+)+\b/
 
 /** Una sessione di browser isolata (contesto + pagina) con raccolta degli errori. */
 export interface Session {

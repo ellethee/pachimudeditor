@@ -512,3 +512,39 @@ Il mapping `diku_classic.yaml` e' proprio questo: una grammatica YAML generica, 
 DikuMUD II ha un **formato completamente diverso** e non riconducibile alla stessa grammatica: i dati sono sorgenti `.zon` testuali con direttive
 `%zone/%rooms/%mobiles/%objects/%reset`, macro del preprocessore C, campi nominali e programmi DIL, compilati in file binari. Non serve il mapping Diku classico:
 richiederebbe un parser dedicato.
+
+## 9. File giocatore e rent
+
+Fonte: `structs.h` (`char_file_u`, `obj_file_u`, `obj_file_elem`), `db.c` (`load_char`, `save_char`, `build_player_index`), `reception.c`
+(`ReadObjs`/`WriteObjs`, `obj_store_to_char`). Build `EMANUELE` (in uso): **un file per giocatore**, `lib/players/<nome minuscolo>.dat`, e il rent in `lib/rent/<nome>`.
+Il layout e' quello i386 storico (static assert `sizeof == 3036`), little-endian con padding naturale; gli offset sotto sono quelli di `offsetof`.
+
+| Offset | Campo | Byte |
+|---:|---|---:|
+| 0 | `iClass` (bitmask: 1 mago, 2 chierico, 4 guerriero, 8 ladro, 16 druido, 32 monaco, 64 barbaro, 128 stregone, 256 paladino, 512 ranger, 1024 psi) | 4 |
+| 4 / 5 | `sex` / `level[20]` (uno per classe) | 1 / 20 |
+| 28 / 32 / 36 | `birth` / `played` / `race` (indice di `race.h`) | 4 ciascuno |
+| 40 / 44 | `weight` / `height` | 4 / 4 |
+| 48 | `title` | 80 |
+| 128 | `extra_str` | 255 |
+| 384 / 386 | `hometown` (int16) / `description` | 2 / 240 |
+| 626 | `talks[3]` | 3 |
+| 632 / 636 | `extra_flags` / `load_room` (int16; -1 nessuna, -2 rent automatico) | 4 / 2 |
+| 638 | `abilities` (str, str_add, int, wis, dex, con, chr, extra, extra2: sbyte) | 9 |
+| 648 | `points`: mana 648, max_mana 650, hit 654, max_hit 656, move 660, max_move 662, armor 672, **gold 676**, bankgold 680, exp 684, true_exp 688, hitroll 696, damroll 697 | 52 |
+| 700 | `skills[350]` (learned, flags, special, nummem: byte) | 1400 |
+| 2100 | `affected[40]` (type int16, duration int16, modifier, location, bitvector, next: int32) | 800 |
+| 2900 | `spells_to_learn` | 1 |
+| 2904 / 2908 / 2912 | `alignment` / `affected_by` / `affected_by2` | 4 ciascuno |
+| 2916 / 2920 | `last_logon` / `act` | 4 / 4 |
+| 2924 / 2944 | `name` / `alias` | 20 / 30 |
+| **2974** | **`pwd`** (`crypt` DES troncato a 10 caratteri + NUL: l'editor non lo legge se non per sapere se e' vuoto) | 11 |
+| 2986 / 3004 | `apply_saving_throw[8]` (int16) / `conditions[5]` (drunk, full, thirst, ...) | 16 / 20 |
+| 3024 / 3028 / 3032 | `startroom` / `user_flags` / `speaks` | 4 ciascuno |
+
+Rent (`obj_file_u`): `owner[20]`, `gold_left`, `total_cost`, `last_update`, `minimum_stay`, `number` (int32 ciascuno, 40 byte), poi `number` elementi
+`obj_file_elem` da **592 byte**: `item_number` int16 (offset 0), `value[4]` 4, `extra_flags` 20, `weight` 24, `timer` 28, `bitvector` 32, `name[128]` 36,
+`sd[128]` 164, `desc[256]` 292, `wearpos` 548 (0 inventario, `n` = slot `n-1`, `MAX_WEAR` 23), `depth` 549 (annidamento, max 60), `affected[5]` 552
+(`location` int16 + `modifier` int32, 8 byte l'uno). `ReadObjs` non controlla `number <= MAX_OBJ_SAVE` (200): un valore corrotto manda in overflow il gioco, l'editor lo rifiuta.
+Se `owner` non coincide con il nome del giocatore, il gioco scarta gli oggetti ("Bad item-file write"). File vuoti (0 byte) o da 40 byte = rent azzerato.
+I file `rent/<nome>.aux` (alias, email) e `.qst` non sono letti.

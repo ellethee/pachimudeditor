@@ -147,6 +147,7 @@ Riepilogo di `pachimudeditor.sdk.__all__`, per famiglia:
 | Errori/DTO | `conflict`, `not_found`, `PatchModel` |
 | Regole | `rules` (reset, uscite, range, grafo, uso) |
 | Conversione | `Flavor`, `ComposedConverter`, `PairConverter`, `ConvertContext`, `Converted`, `loss`, `to_in`, `extra_dropped`, `convert_helpers`, `convert_tables` |
+| Giocatori su file (SDK 1.3) | `PlayersAdapter` (mixin), `PlayersInfo`, `PlayerColumn`, `PlayerListInfo`, `PlayerListColumn`, `PlayerSummary`, `PlayerDetail`, `PlayerInventory`, `PlayerItem`, `PlayerPageParams`, `PlayersStatus` |
 | File (SDK 1.2) | `atomic_write_bytes(path, data)`: scrittura atomica (temporaneo nella stessa cartella, `fsync`, `os.replace`); segue i symlink, preserva permessi e proprietario, pulisce il temporaneo in caso di errore |
 
 Per scrivere un file dell'adapter usa `atomic_write_bytes` invece di `open(..., "w")`: un crash a meta' non lascia file troncati.
@@ -157,6 +158,7 @@ Gli adapter importano dal core **solo** questi moduli (verificato da `tests/core
 
 - `pachimudeditor.sdk`: `AdapterPlugin`, `AdapterUnavailable`, `ENTRY_POINT_GROUP`, `SDK_VERSION`, `atomic_write_bytes`;
   `WorldAdapter`, `AdapterCapabilities`, `AdapterInfo`, `ResourceInfo`, `ResourceType`, `FieldDescriptor`, `ExtraFieldDescriptor`;
+  giocatori (SDK 1.3): `PlayersAdapter`, `PlayersInfo`, `PlayerColumn`, `PlayerListInfo`, `PlayerListColumn`, `PlayerSummary`, `PlayerDetail`, `PlayerInventory`, `PlayerItem`, `PlayerPageParams`, `PlayersStatus`;
   `WorldConfig`, `register_kind`, `get_registry`, `AdapterDep`, `WriteAdapterDep`, `require_capability`;
   `describe_resource`, `finish_resource`, `xf`, `diagnostic` (descrittori dei campi); `make_page`, `paginate_list` (paginazione in memoria);
   `rules` (modulo: validazione reset, uscite, range, grafo, uso nei reset); `conflict`, `not_found` (errori HTTP con codice), `PatchModel`;
@@ -237,6 +239,27 @@ Un nuovo adapter non riscrive la logica di integrita': la riusa passando un picc
 - Uso: `USAGE_FIELDS` (quali argomenti dei reset contengono un vnum) e `raise_if_used(usage, code)`.
 - Grafo: `build_room_graph(GraphRoom[], GraphExit[])`.
 
+## Giocatori su file (SDK 1.3)
+
+Mixin **opzionale** `PlayersAdapter` (`pachimudeditor.sdk`): un adapter lo aggiunge alle sue classi base (prima di `WorldAdapter`) e
+dichiara `supports_player_records` (e `supports_player_inventory`). Il core registra sempre le rotte neutre `/api/world/players...`
+([contratto](../backend/contract-players-files.md)); senza il mixin o la capability rispondono 409 `world.capability_missing`.
+Non c'e' nessuna scrittura: L1 (elenco) e L2 (dettaglio + inventario) soltanto.
+
+| Metodo | Compito |
+|---|---|
+| `players_info() -> PlayersInfo` | sincrono, nessun I/O: colonne dell'elenco (`PlayerColumn`: nome, `label_key` i18n, tipo, ordinabile, `source` field/extra), campi del dettaglio (`ExtraFieldDescriptor` con `group` = sezione), tabelle del dettaglio (`PlayerListInfo`), `online_policy` (`warn` = avviso «server forse in esecuzione») |
+| `players_status() -> PlayersStatus` | best effort: `server_running` `true` solo con prova, altrimenti `None` (default del mixin: sconosciuto) |
+| `list_players(PlayerPageParams)` | pagina di `PlayerSummary` (usa `paginate_list` + `make_page`) |
+| `get_player(id)` | `PlayerDetail` (`details` per i campi dichiarati, `lists` per le tabelle); 404 `worldplayers.not_found` |
+| `player_inventory(id)` | `PlayerInventory` (oggetti con slot e annidamento, `problem` stabile per file troncati/corrotti) |
+
+Regole: l'`id` e' **opaco** e va validato dall'adapter (path traversal: whitelist del nome, risoluzione dei symlink confinata alla
+cartella, mai `open(id)` diretto); i file corrotti producono `problem` e dati vuoti, mai un 500; **mai** password, hash o loro
+prefissi/lunghezze nei DTO, nei log o nei messaggi d'errore (solo `has_password`); le etichette si dichiarano con `label_key`
+(il frontend le traduce con le sue chiavi, ripiegando sul nome). Il frontend (`/player-files`) e' interamente guidato da `PlayersInfo`.
+Modello completo: `adapters/dikumod/src/pachimudeditor_adapter_dikumod/players.py`.
+
 # Capability (`AdapterCapabilities`)
 
 | Flag | Significato | Effetto |
@@ -245,6 +268,8 @@ Un nuovo adapter non riscrive la logica di integrita': la riusa passando un picc
 | `supports_world_overview` | panoramica/grafo zone/ricerca (`/api/world`) | senza: 409 `world.capability_missing` |
 | `supports_instances` | istanze vive (`/api/instances`) | idem |
 | `supports_players` | account/personaggi/inventario (`/api/players`) | idem |
+| `supports_player_records` | giocatori su file in sola lettura (`/api/world/players`: info, stato, elenco, dettaglio; SDK 1.3) | idem |
+| `supports_player_inventory` | inventario/equipaggiamento dei giocatori su file (`/api/world/players/{id}/inventory`; SDK 1.3) | idem |
 | `supports_transfer` | `export_zone_bundle` / `import_zone_dir` (`/api/transfer`) | idem |
 | `supports_content_races` | razze/classi YAML (`/api/content`) | idem |
 | `supports_reset_scripts` | script di reset modificabile (default vero) | informativa per il frontend |

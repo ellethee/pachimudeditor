@@ -29,6 +29,19 @@ from pachimudeditor.common.adapters.convert.converter import (
 from pachimudeditor.common.adapters.convert.flavor import ComposedConverter, Flavor
 from pachimudeditor.common.adapters.describe import describe_resource, diagnostic, finish_resource, xf
 from pachimudeditor.common.adapters.paging import make_page, paginate_list
+from pachimudeditor.common.adapters.players import (
+    PlayerColumn,
+    PlayerDetail,
+    PlayerInventory,
+    PlayerItem,
+    PlayerListColumn,
+    PlayerListInfo,
+    PlayerPageParams,
+    PlayersAdapter,
+    PlayersInfo,
+    PlayerSummary,
+    PlayersStatus,
+)
 from pachimudeditor.common.adapters.plugins import ENTRY_POINT_GROUP, SDK_VERSION, AdapterPlugin, AdapterUnavailable
 from pachimudeditor.common.adapters.registry import (
     AdapterDep,
@@ -59,6 +72,17 @@ __all__ = [
     "Flavor",
     "PairConverter",
     "PatchModel",
+    "PlayerColumn",
+    "PlayerDetail",
+    "PlayerInventory",
+    "PlayerItem",
+    "PlayerListColumn",
+    "PlayerListInfo",
+    "PlayerPageParams",
+    "PlayerSummary",
+    "PlayersAdapter",
+    "PlayersInfo",
+    "PlayersStatus",
     "ResourceInfo",
     "ResourceType",
     "WorldAdapter",

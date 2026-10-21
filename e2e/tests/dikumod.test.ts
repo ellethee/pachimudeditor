@@ -88,9 +88,11 @@ describe('dikumod', { skip: HAS_DIKUMOD ? false : 'E2E_DIKUMOD non impostata' },
     await pickWorld(s, 'Diku Modificato (sola lettura)')
     await s.page.getByTestId('world-readonly').waitFor()
     await s.page.locator('.pachi-hub-dash__grid').getByText('Zone', { exact: true }).first().waitFor()
-    for (const title of ['Panoramica', 'Giocatori', 'Istanze', 'Trasferimento zone', 'Razze', 'Classi']) {
+    for (const title of ['Panoramica', 'Istanze', 'Trasferimento zone', 'Razze', 'Classi']) {
       assert.equal(await s.page.locator('.pachi-hub-dash__grid').getByText(title, { exact: true }).count(), 0, title)
     }
+    // i giocatori su file (sola lettura) sono l'unica voce «Giocatori» di questo mondo: la pagina di pachimud (/players) non c'e'
+    assert.equal(await s.page.locator('.pachi-hub-dash__grid').getByText('Giocatori', { exact: true }).count(), 1)
     await goto(s.page, '/instances')
     await s.page.locator('.pachi-hub-dash__grid').waitFor()
     assert.equal(new URL(s.page.url()).pathname, '/')

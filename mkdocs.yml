@@ -72,6 +72,7 @@ nav:
       - Contratto API: backend/contract.md
       - World: backend/contract-world.md
       - Players: backend/contract-players.md
+      - Giocatori su file: backend/contract-players-files.md
       - Instances: backend/contract-instances.md
       - Transfer: backend/contract-transfer.md
       - Content: backend/contract-content.md
