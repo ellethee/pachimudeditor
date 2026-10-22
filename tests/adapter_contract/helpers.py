@@ -79,3 +79,98 @@ async def assert_object_queries_match_oracle(adapter: WorldAdapter) -> None:
     for apply in sorted({a for o in everything for a in o.affects}):
         want = [o.id for o in everything if apply in o.affects]
         assert [o.id for o in (await adapter.list_objects(ObjectPageParams(affect=apply))).items] == want, apply
+
+
+def _expected(everything: list, field: str, desc: bool) -> list[int]:
+    """Ids ordinati per `field` (nulli in fondo in entrambe le direzioni, a parita' il vnum: `everything` e' gia' per vnum)."""
+    have = sorted((o for o in everything if getattr(o, field) is not None), key=lambda o: getattr(o, field), reverse=desc)
+    return [o.id for o in have] + [o.id for o in everything if getattr(o, field) is None]
+
+
+async def _assert_orderings(list_fn, params_cls, everything: list, fields: tuple[str, ...]) -> None:  # type: ignore[no-untyped-def]
+    """Ogni ordinamento (camelCase e snake_case, asc e desc) coincide con quello di riferimento."""
+    from pachifast.utils.helpers import to_camel
+
+    for field in fields:
+        for desc in (False, True):
+            want = _expected(everything, field, desc)
+            for name in {to_camel(field), field}:
+                key = ("-" if desc else "") + name
+                assert [o.id for o in (await list_fn(params_cls(orderBy=key))).items] == want, key
+
+
+async def assert_mob_queries_match_oracle(adapter: WorldAdapter) -> None:
+    """Confronta `list_mobs` con un'implementazione di riferimento sui dati reali dell'adapter: filtri, ordinamenti
+    (nulli in fondo) e le loro combinazioni danno gli stessi risultati di un filtro/ordinamento in Python sulla lista completa."""
+    from pachimudeditor.common.adapters import mob_query
+    from pachimudeditor.common.adapters.models import MobPageParams
+
+    everything = (await adapter.list_mobs(MobPageParams())).items
+    assert everything, "serve un mondo con mob"
+    ids = lambda page: [m.id for m in page.items]  # noqa: E731
+    for field in mob_query.RANGE_FIELDS:
+        samples = sorted({getattr(m, field) for m in everything})
+        low, high = samples[len(samples) // 3], samples[2 * len(samples) // 3]
+        want = [m.id for m in everything if low <= getattr(m, field) <= high]
+        assert ids(await adapter.list_mobs(MobPageParams(**{f"min_{field}": low, f"max_{field}": high}))) == want, field
+        assert ids(await adapter.list_mobs(MobPageParams(**{f"min_{field}": high}))) == [
+            m.id for m in everything if getattr(m, field) >= high
+        ]
+        assert ids(await adapter.list_mobs(MobPageParams(**{f"max_{field}": low}))) == [
+            m.id for m in everything if getattr(m, field) <= low
+        ]
+    await _assert_orderings(
+        adapter.list_mobs,
+        MobPageParams,
+        everything,
+        ("id", "vnum", "zone_id", "short_description", "sex", "race_id", "class_id", *mob_query.RANGE_FIELDS),
+    )
+    sexes = sorted({int(m.sex) for m in everything})
+    assert ids(await adapter.list_mobs(MobPageParams(sex=sexes[:1]))) == [m.id for m in everything if int(m.sex) in sexes[:1]]
+    assert ids(await adapter.list_mobs(MobPageParams(sex=sexes))) == [m.id for m in everything]
+    for flag in sorted({f for m in everything for f in m.flags}):
+        want = [m.id for m in everything if flag in m.flags]
+        assert ids(await adapter.list_mobs(MobPageParams(flag=[flag]))) == want, flag
+        assert ids(await adapter.list_mobs(MobPageParams(flag=[flag.upper()]))) == want, flag
+    for attr in ("race_id", "class_id"):
+        values = sorted({getattr(m, attr) for m in everything if getattr(m, attr)})
+        for value in values:
+            assert ids(await adapter.list_mobs(MobPageParams(**{attr: [value]}))) == [m.id for m in everything if getattr(m, attr) == value]
+        if values:  # senza valori il filtro e' vuoto, quindi assente
+            assert ids(await adapter.list_mobs(MobPageParams(**{attr: values}))) == [m.id for m in everything if getattr(m, attr) in values]
+    zone_ids = sorted({m.zone_id for m in everything})
+    first = (await adapter.list_mobs(MobPageParams(zone_id=zone_ids[0], min_level=0, orderBy="-level"))).items
+    assert [m.id for m in first] == [i for i in _expected([m for m in everything if m.zone_id == zone_ids[0]], "level", True)]
+
+
+async def assert_room_queries_match_oracle(adapter: WorldAdapter) -> None:
+    """Come `assert_mob_queries_match_oracle`, per `list_rooms`."""
+    from pachimudeditor.common.adapters import room_query
+    from pachimudeditor.common.adapters.models import RoomPageParams
+
+    everything = (await adapter.list_rooms(RoomPageParams())).items
+    assert everything, "serve un mondo con stanze"
+    ids = lambda page: [r.id for r in page.items]  # noqa: E731
+    for field in room_query.RANGE_FIELDS:
+        samples = sorted({getattr(r, field) for r in everything})
+        low, high = samples[len(samples) // 3], samples[2 * len(samples) // 3]
+        want = [r.id for r in everything if low <= getattr(r, field) <= high]
+        assert ids(await adapter.list_rooms(RoomPageParams(**{f"min_{field}": low, f"max_{field}": high}))) == want, field
+    await _assert_orderings(
+        adapter.list_rooms,
+        RoomPageParams,
+        everything,
+        ("id", "vnum", "name", "sector_type", "zone_id", "heal_rate", "mana_rate", "clan_id", "owner"),
+    )
+    sectors = sorted({int(r.sector_type) for r in everything})
+    assert ids(await adapter.list_rooms(RoomPageParams(sector_type=sectors[:1]))) == [
+        r.id for r in everything if int(r.sector_type) in sectors[:1]
+    ]
+    for flag in sorted({f for r in everything for f in r.flags}):
+        want = [r.id for r in everything if flag in r.flags]
+        assert ids(await adapter.list_rooms(RoomPageParams(flag=[flag]))) == want, flag
+    for clan in sorted({r.clan_id for r in everything if r.clan_id}):
+        assert ids(await adapter.list_rooms(RoomPageParams(clan_id=[clan]))) == [r.id for r in everything if r.clan_id == clan]
+    for owner in sorted({r.owner for r in everything if r.owner}):
+        want = [r.id for r in everything if r.owner and owner[:3].lower() in r.owner.lower()]
+        assert ids(await adapter.list_rooms(RoomPageParams(owner=owner[:3].upper()))) == want

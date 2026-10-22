@@ -20,7 +20,7 @@ from pachimudeditor.common.adapters.models import (
     ObjectPatch,
     ResetUsage,
 )
-from pachimudeditor.sdk import make_page, object_query, paginate_list
+from pachimudeditor.sdk import make_page, mob_query, object_query, paginate_list
 from pachimudeditor.sdk import conflict
 
 _STRUCTURAL = frozenset({"vnum", "zone_id", "extra"})
@@ -50,6 +50,8 @@ class PrototypesMixin(RoomsMixin, MappingSupport):
         if params.zone_id is not None:
             pairs = [p for p in pairs if p[0].zone_id == params.zone_id]
         mapper = self._mapper(kind)
+        if dto is MobOut and mob_query.is_extended(params):
+            return mob_query.page_mobs([self._proto_out(kind, u, r) for u, r in pairs], params)
         if dto is ObjectOut and object_query.is_extended(params):
             return object_query.page_objects([self._proto_out(kind, u, r) for u, r in pairs], params)
         items, total = paginate_list(

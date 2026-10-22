@@ -15,4 +15,6 @@ MESSAGES: dict[str, str] = {
     "rooms.exit_locked_needs_key": "A locked exit requires a keyVnum.",
     "rooms.exit_key_unknown": "The key object with vnum {vnum} does not exist.",
     "rooms.exit_self_loop": "An exit cannot lead to the same room.",
+    "rooms.invalid_sector_type": "Invalid sector type: {value}.",
+    "rooms.invalid_range": "Invalid range for {field}: minimum ({min}) is greater than maximum ({max}).",
 }

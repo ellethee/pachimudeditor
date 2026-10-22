@@ -23,7 +23,7 @@ from pachimudeditor.common.adapters.models import (
     ObjectPatch,
     ResetUsage,
 )
-from pachimudeditor.sdk import conflict, object_query
+from pachimudeditor.sdk import conflict, mob_query, object_query
 
 
 def _section_items(entry: AreaEntry, kind: str) -> list[Any]:
@@ -93,6 +93,8 @@ class PrototypesMixin(BasedMudSupport):
         pairs = self.store.all_items("mob")
         if params.zone_id is not None:
             pairs = [p for p in pairs if p[0].zone_id == params.zone_id]
+        if mob_query.is_extended(params):
+            return mob_query.page_mobs([self._mob_out(e, m) for e, m in pairs], params)
         keys = {"id": lambda m: m.vnum, "vnum": lambda m: m.vnum, "level": lambda m: m.level}
         items, total = paginate_list(
             pairs, params, lambda p: (p[1].short_descr, p[1].name, p[1].vnum), lambda p, f: keys[f](p[1]),

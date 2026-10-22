@@ -67,7 +67,9 @@ Base: `/api`. Docs interattive: `/docs`, schema completo `/api/v1/openapi.json`.
   `reset_max_zero`, `reset_max_high` (>100), `reset_room_cap_above_max` (arg4 > arg2), `reset_no_such_exit`, `reset_exit_without_door` (D su uscita assente / senza porta).
 
 ## Stanze — `/rooms`
-- `GET /rooms` paginata (`search`: name/vnum; `zoneId` filtro esatto; `orderBy`: id, vnum, name, sectorType) -> `RoomOut[]`
+- `GET /rooms` paginata (`search`: name/vnum; `zoneId` filtro esatto; `orderBy`: id, vnum, name, sectorType, zoneId, healRate, manaRate, clanId, owner — `-campo` per il discendente, i nulli (`clanId`, `owner`) sempre in fondo, a parita' per vnum) -> `RoomOut[]`.
+  Filtri sulle statistiche, tutti opzionali e combinati in AND (senza di essi la lista e' invariata): `sectorType` (uno o piu' terreni, OR), `flag` (uno o piu' nomi, devono esserci tutti; senza maiuscole), `clanId` (uno o piu' clan, OR, uguaglianza esatta), `owner` (sottostringa senza maiuscole), `minHealRate|maxHealRate`, `minManaRate|maxManaRate` (intervalli inclusivi). I parametri a piu' valori si passano ripetuti o separati da virgole. Non c'e' un filtro sul numero di uscite (non e' in `RoomOut`).
+  Errori 422: `rooms.invalid_range` (`field`, `min`, `max`), `rooms.invalid_sector_type` (`value`), `api.invalid_order_by`. In Diku Modificato recupero PF/mana, clan e proprietario sono valori neutri (100, 100, null).
 - `POST /rooms` (`RoomIn`) -> 201 `RoomDetail`
 - `GET /rooms/graph?zoneId=` (obbligatorio) -> `{nodes: [{id,vnum,name,sectorType,flags,x,y,danglingExits}], edges: [{id,fromRoomId,toRoomId,direction,doorFlag,twoWay,reverseExitId}]}`
 - `GET|PUT|DELETE /rooms/{id}` -> `RoomDetail` (= `RoomOut` + `exits: ExitOut[]`, `extraDescriptions`); PUT con `vnum` cambiato: 409 `rooms.vnum_in_use` se usata da un reset; DELETE 204, 409 `rooms.in_reset_usage` se referenziata da un reset, 409 `rooms.has_instances` se ha istanze vive. **Le uscite di altre stanze che puntano alla stanza NON bloccano la delete**: restano con `targetRoomId` nullo
@@ -77,7 +79,9 @@ Base: `/api`. Docs interattive: `/docs`, schema completo `/api/v1/openapi.json`.
 - `POST /rooms/{id}/extra-descriptions` (`{keywords,text}`) -> 201; `PUT|DELETE /rooms/{id}/extra-descriptions/{extraId}`
 
 ## Mob — `/mobs`
-- `GET /mobs` paginata (`search`: shortDescription/keywords/vnum; `zoneId`; `orderBy`: id, vnum, level) -> `MobOut[]`
+- `GET /mobs` paginata (`search`: shortDescription/keywords/vnum; `zoneId`; `orderBy`: id, vnum, zoneId, shortDescription, sex, raceId, classId, level, thac0, armorClass, hpDiceCount, hpDieSize, hpBonus, damageDiceCount, damageDieSize, damageBonus, gold, experience, alignment — `-campo` per il discendente, i nulli (`raceId`, `classId`) sempre in fondo, a parita' per vnum) -> `MobOut[]`.
+  Filtri sulle statistiche, tutti opzionali e combinati in AND (senza di essi la lista e' invariata): `sex` (uno o piu' valori, OR), `flag` (uno o piu' nomi, devono esserci tutti; senza maiuscole), `raceId` e `classId` (uno o piu' id, OR, uguaglianza esatta; un id nullo non li soddisfa), intervalli inclusivi `minLevel|maxLevel`, `minThac0|maxThac0`, `minArmorClass|maxArmorClass`, `minHpDiceCount|maxHpDiceCount`, `minHpDieSize|maxHpDieSize`, `minHpBonus|maxHpBonus`, `minDamageDiceCount|...`, `minDamageDieSize|...`, `minDamageBonus|...`, `minGold|maxGold`, `minExperience|maxExperience`, `minAlignment|maxAlignment`. I parametri a piu' valori si passano ripetuti o separati da virgole.
+  Errori 422: `mobs.invalid_range` (`field`, `min`, `max`), `mobs.invalid_sex` (`value`), `api.invalid_order_by`. I campi che un mondo non ha (es. `experience`, `classId` in ROM) valgono il neutro in tutti i mob: il filtro non da' errori, la colonna non e' utile.
 - `POST /mobs` -> 201; `GET|PUT|DELETE /mobs/{id}` (PUT con `vnum` cambiato: 409 `mobs.vnum_in_use` se in un reset; DELETE 204, 409 `mobs.in_reset_usage` / `mobs.has_instances`); `GET /mobs/{id}/usage` -> `ResetUsage[]`
 
 ## Oggetti — `/objects`

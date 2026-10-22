@@ -5,7 +5,7 @@ from typing import Any
 from pachifast.i18n import api_error
 from pachifast.schemas.responses import PaginatedResponse
 from sqlalchemy import delete as sa_delete
-from sqlalchemy import select, update as sa_update
+from sqlalchemy import func, select, update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pachimudeditor_adapter_pachimud.base import PachimudSupport
@@ -28,7 +28,8 @@ from pachimudeditor.common.adapters.models import (
     RoomPatch,
 )
 from pachimudeditor_adapter_pachimud.editor import crud
-from pachimudeditor.sdk import conflict
+from pachimudeditor.sdk import conflict, room_query
+from pachimudeditor_adapter_pachimud.editor.pagination import order_clause, paginate_filtered, range_clauses
 from pachimudeditor_adapter_pachimud.editor.instances import ensure_room_has_no_occupants
 from pachimudeditor_adapter_pachimud.editor.reset_usage import ensure_not_used, ensure_not_used_by_resets, find_reset_usage
 from pachimudeditor.common.enums import Direction, DoorFlag, SectorType
@@ -103,9 +104,27 @@ class RoomsMixin(PachimudSupport):
         return model
 
     async def list_rooms(self, params: RoomPageParams) -> PaginatedResponse[RoomOut]:
-        """Stanze paginate, filtrabili per zona (`zoneId`), cercabili per nome/vnum; ordine di default per vnum."""
+        """Stanze paginate, filtrabili per zona (`zoneId`) e per statistiche, cercabili per nome/vnum, ordinabili
+        (nulli in fondo); ordine di default per vnum. Gli stessi risultati degli adapter su file (`room_query`)."""
+        room_query.check(params)
+        order = room_query.parse_order(params)
         async with self.session() as session:
-            return await self.page(session, models_of(session).Room, params, RoomOut)
+            model = models_of(session).Room
+            clauses = range_clauses(model, params, room_query.RANGE_FIELDS)
+            if params.zone_id is not None:
+                clauses.append(model.zone_id == params.zone_id)
+            if params.sector_type:
+                clauses.append(model.sector_type.in_(params.sector_type))
+            if params.clan_id:
+                clauses.append(model.clan_id.in_(params.clan_id))
+            if params.owner:
+                clauses.append(func.lower(model.owner).contains(params.owner.lower(), autoescape=True))
+            if params.flag:
+                # i flag stanno in una colonna JSON: si risolvono in Python (stessa funzione degli adapter su file)
+                rows = (await session.execute(select(model.id, model.flags).where(*clauses))).all()
+                clauses.append(model.id.in_([r.id for r in rows if room_query.match_flags(r.flags, params)]))
+            ordering = [order_clause(model, field, desc) for field, desc in order]
+            return await paginate_filtered(session, model, params, RoomOut, clauses, ordering)
 
     async def get_room(self, room_id: int) -> RoomDetail:
         """Una stanza, con uscite ed extra description."""

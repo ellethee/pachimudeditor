@@ -28,10 +28,18 @@ from pachimudeditor.common.adapters.models import (
     ZonePageParams,
     ZonePatch,
 )
-from pachimudeditor.common.enums import ObjectType, ZoneCommandType
+from pachimudeditor.common.enums import ObjectType, SectorType, Sex, ZoneCommandType
 from pachimudeditor.common.enums import Direction, DoorFlag
 
-from tests.adapter_contract.helpers import expect_error, new_mob, new_object, new_room, new_zone
+from tests.adapter_contract.helpers import (
+    assert_mob_queries_match_oracle,
+    assert_room_queries_match_oracle,
+    expect_error,
+    new_mob,
+    new_object,
+    new_room,
+    new_zone,
+)
 
 
 def _load_mob(mob_vnum: int, room_vnum: int) -> ResetCommandIn:
@@ -466,3 +474,170 @@ async def test_object_list_invalid_params(adapter: WorldAdapter) -> None:
         await adapter.list_objects(ObjectPageParams(orderBy="descrizione"))
     with pytest.raises(InvalidOrderByError):
         await adapter.list_objects(ObjectPageParams(orderBy="cost,-nope"))
+
+
+# --------------------------------------------------------------------------- mob: filtri e ordinamenti sulle statistiche
+
+
+async def _stat_mobs(adapter: WorldAdapter) -> tuple[int, dict[str, int]]:
+    """Zona con 4 mob dai valori distinti (a: livello 5 maschio, b: 20 femmina, c: 1 neutro, d: 5 maschio) -> (zona, nome -> id).
+    Solo campi che tutti gli adapter sanno rappresentare."""
+    zone = await new_zone(adapter, "Zona statistiche mob")
+    specs = {
+        "a": dict(level=5, sex=Sex.MALE, gold=100, armor_class=10, alignment=-500, flags=["sentinel", "aggressive"], hp_dice_count=2, hp_die_size=6, hp_bonus=3),
+        "b": dict(level=20, sex=Sex.FEMALE, gold=0, armor_class=-20, alignment=500, flags=["sentinel"], hp_dice_count=5, hp_die_size=10, damage_bonus=4),
+        "c": dict(level=1, sex=Sex.NEUTRAL, gold=500, armor_class=0, alignment=0, flags=[]),
+        "d": dict(level=5, sex=Sex.MALE, gold=50, armor_class=10, alignment=1000, flags=["aggressive"], damage_dice_count=3),
+    }  # fmt: skip
+    ids: dict[str, int] = {}
+    for name, spec in specs.items():
+        vnum = await adapter.next_content_vnum(zone.id, "mob")
+        mob = await adapter.create_mob(MobIn(vnum=vnum, zone_id=zone.id, keywords=name, short_description=f"mob {name}", **spec))
+        ids[name] = mob.id
+    return zone.id, ids
+
+
+async def test_mob_list_filters_and_ordering(adapter: WorldAdapter) -> None:
+    """Ogni filtro e ordinamento sulle statistiche dei mob, nulli in fondo, combinazioni, paginazione, retrocompatibilita'."""
+    zone_id, ids = await _stat_mobs(adapter)
+    name = {v: k for k, v in ids.items()}
+
+    async def run(**kw: object) -> str:
+        page = await adapter.list_mobs(MobPageParams(zone_id=zone_id, **kw))  # type: ignore[arg-type]
+        assert page.total == len(page.items) or kw.get("pageSize")
+        return "".join(name[m.id] for m in page.items)
+
+    dtos = {name[m.id]: m for m in (await adapter.list_mobs(MobPageParams(zone_id=zone_id))).items}
+    assert await run() == "abcd"  # nessun nuovo parametro: ordine per vnum come sempre
+    assert await run(orderBy="-level") == "badc" and await run(orderBy="level,vnum") == "cadb"
+    assert await run(min_level=5, max_level=5) == "ad" and await run(min_level=6) == "b" and await run(max_level=1) == "c"
+    assert await run(sex=[int(Sex.MALE)]) == "ad" and await run(sex=[int(Sex.FEMALE), int(Sex.NEUTRAL)]) == "bc"
+    assert (
+        await run(flag=["sentinel"]) == "ab"
+        and await run(flag=["AGGRESSIVE"]) == "ad"
+        and await run(flag=["sentinel", "aggressive"]) == "a"
+    )
+    assert await run(flag=["inesistente"]) == ""
+    assert await run(min_gold=50, max_gold=100) == "ad" and await run(orderBy="-gold") == "cadb"
+    assert await run(min_alignment=0) == "bcd" and await run(max_alignment=-1) == "a" and await run(orderBy="-alignment") == "dbca"
+    assert await run(orderBy="armorClass,-vnum") == "bcda"  # -20, 0, poi 10 (d prima di a per -vnum)
+    assert await run(sex=[int(Sex.MALE)], min_level=5, flag=["aggressive"], max_gold=60) == "d"  # combinazione = AND
+    assert await run(search="mob b", min_level=10) == "b"
+    assert await run(orderBy="shortDescription") == "abcd" and await run(orderBy="-shortDescription") == "dcba"
+    assert await run(orderBy="sex,-vnum") == "cdab" and await run(orderBy="zoneId") == "abcd"
+    for field in (
+        "hp_dice_count",
+        "hp_die_size",
+        "hp_bonus",
+        "damage_dice_count",
+        "damage_die_size",
+        "damage_bonus",
+        "thac0",
+        "experience",
+    ):
+        want_low = "".join(sorted(dtos, key=lambda k: getattr(dtos[k], field)))
+        assert await run(orderBy=field) == want_low, field
+        assert await run(**{f"min_{field}": 1}) == "".join(k for k in dtos if getattr(dtos[k], field) >= 1), field
+    # razza/classe: dipendono dalla mappatura dell'adapter -> atteso calcolato sui DTO (un id nullo non soddisfa il filtro)
+    for attr in ("race_id", "class_id"):
+        values = sorted({v for m in dtos.values() if (v := getattr(m, attr))})
+        assert await run(**{attr: values + ["inesistente"]}) == "".join(k for k, m in dtos.items() if getattr(m, attr) in values)
+        assert await run(**{attr: ["inesistente"]}) == ""
+        have = [k for k, m in dtos.items() if getattr(m, attr) is not None]
+        null = "".join(k for k, m in dtos.items() if getattr(m, attr) is None)
+        for desc in (False, True):
+            want = "".join(sorted(have, key=lambda k: getattr(dtos[k], attr), reverse=desc)) + null
+            assert await run(orderBy=("-" if desc else "") + attr) == want
+    page = await adapter.list_mobs(MobPageParams(zone_id=zone_id, min_level=5, orderBy="-level", page=1, pageSize=2))
+    assert page.total == 3 and [name[m.id] for m in page.items] == ["b", "a"]
+    page = await adapter.list_mobs(MobPageParams(zone_id=zone_id, min_level=5, orderBy="-level", page=2, pageSize=2))
+    assert [name[m.id] for m in page.items] == ["d"]
+    # tutte le zone: i nuovi mob sono nel mondo
+    assert {ids["b"]} <= {m.id for m in (await adapter.list_mobs(MobPageParams(min_level=20))).items}
+    await assert_mob_queries_match_oracle(adapter)
+
+
+async def test_mob_list_invalid_params(adapter: WorldAdapter) -> None:
+    """Parametri non validi: 422 con codice stabile, mai errori interni."""
+    with expect_error(422, "mobs.invalid_range"):
+        await adapter.list_mobs(MobPageParams(min_level=10, max_level=5))
+    with expect_error(422, "mobs.invalid_range"):
+        await adapter.list_mobs(MobPageParams(min_hp_bonus=3, max_hp_bonus=1))
+    with expect_error(422, "mobs.invalid_sex"):
+        await adapter.list_mobs(MobPageParams(sex=[99]))
+    with pytest.raises(InvalidOrderByError):
+        await adapter.list_mobs(MobPageParams(orderBy="descrizione"))
+    with pytest.raises(InvalidOrderByError):
+        await adapter.list_mobs(MobPageParams(orderBy="level,-nope"))
+
+
+# --------------------------------------------------------------------------- stanze: filtri e ordinamenti sulle statistiche
+
+
+async def _stat_rooms(adapter: WorldAdapter) -> tuple[int, dict[str, int]]:
+    """Zona con 4 stanze (a: foresta con flag dark, b: citta' con dark+nomob, c: dentro senza flag, d: foresta) -> (zona, nome -> id)."""
+    zone = await new_zone(adapter, "Zona statistiche stanze")
+    specs = {
+        "a": dict(name="Bosco", sector_type=SectorType.FOREST, flags=["dark"]),
+        "b": dict(name="Piazza", sector_type=SectorType.CITY, flags=["dark", "no_mob"]),
+        "c": dict(name="Cantina", sector_type=SectorType.INSIDE, flags=[]),
+        "d": dict(name="Radura", sector_type=SectorType.FOREST, flags=[]),
+    }  # fmt: skip
+    ids: dict[str, int] = {}
+    for key, spec in specs.items():
+        vnum = await adapter.next_content_vnum(zone.id, "room")
+        ids[key] = (await adapter.create_room(RoomIn(vnum=vnum, zone_id=zone.id, **spec))).id
+    return zone.id, ids
+
+
+async def test_room_list_filters_and_ordering(adapter: WorldAdapter) -> None:
+    """Ogni filtro e ordinamento sulle statistiche delle stanze, combinazioni, paginazione, retrocompatibilita'."""
+    zone_id, ids = await _stat_rooms(adapter)
+    name = {v: k for k, v in ids.items()}
+
+    async def run(**kw: object) -> str:
+        page = await adapter.list_rooms(RoomPageParams(zone_id=zone_id, **kw))  # type: ignore[arg-type]
+        assert page.total == len(page.items) or kw.get("pageSize")
+        return "".join(name[r.id] for r in page.items)
+
+    dtos = {name[r.id]: r for r in (await adapter.list_rooms(RoomPageParams(zone_id=zone_id))).items}
+    assert await run() == "abcd"
+    assert (
+        await run(sector_type=[int(SectorType.FOREST)]) == "ad"
+        and await run(sector_type=[int(SectorType.CITY), int(SectorType.INSIDE)]) == "bc"
+    )
+    assert await run(orderBy="name") == "acbd" and await run(orderBy="-name") == "dbca"
+    assert await run(orderBy="sectorType,vnum") == "cbad" and await run(orderBy="-sectorType") == "adbc"
+    assert await run(flag=["dark"]) == "ab" and await run(flag=["DARK", "no_mob"]) == "b" and await run(flag=["inesistente"]) == ""
+    assert await run(sector_type=[int(SectorType.FOREST)], flag=["dark"]) == "a"  # combinazione = AND
+    assert await run(search="Cantina", sector_type=[int(SectorType.INSIDE)]) == "c"
+    assert await run(orderBy="zoneId") == "abcd" and await run(orderBy="-vnum") == "dcba"
+    # tasso di cura/mana, clan e proprietario: dipendono dalla mappatura dell'adapter -> atteso calcolato sui DTO
+    for field in ("heal_rate", "mana_rate"):
+        values = sorted({getattr(r, field) for r in dtos.values()})
+        assert await run(**{f"min_{field}": values[-1]}) == "".join(k for k in dtos if getattr(dtos[k], field) >= values[-1])
+        assert await run(**{f"min_{field}": values[-1] + 1}) == ""
+        assert await run(orderBy=f"-{field}") == "".join(sorted("abcd", key=lambda k: -getattr(dtos[k], field)))
+    for attr in ("clan_id", "owner"):
+        have = [k for k, r in dtos.items() if getattr(r, attr) is not None]
+        null = "".join(k for k, r in dtos.items() if getattr(r, attr) is None)
+        for desc in (False, True):
+            want = "".join(sorted(have, key=lambda k: getattr(dtos[k], attr), reverse=desc)) + null
+            assert await run(orderBy=("-" if desc else "") + attr) == want
+    assert await run(clan_id=["inesistente"]) == "" and await run(owner="inesistente") == ""
+    page = await adapter.list_rooms(RoomPageParams(zone_id=zone_id, flag=["dark"], orderBy="-name", page=1, pageSize=1))
+    assert page.total == 2 and [name[r.id] for r in page.items] == [max("ab", key=lambda k: dtos[k].name)]
+    assert {ids["b"]} <= {r.id for r in (await adapter.list_rooms(RoomPageParams(flag=["no_mob"]))).items}
+    await assert_room_queries_match_oracle(adapter)
+
+
+async def test_room_list_invalid_params(adapter: WorldAdapter) -> None:
+    """Parametri non validi: 422 con codice stabile, mai errori interni."""
+    with expect_error(422, "rooms.invalid_range"):
+        await adapter.list_rooms(RoomPageParams(min_heal_rate=10, max_heal_rate=5))
+    with expect_error(422, "rooms.invalid_sector_type"):
+        await adapter.list_rooms(RoomPageParams(sector_type=[99]))
+    with pytest.raises(InvalidOrderByError):
+        await adapter.list_rooms(RoomPageParams(orderBy="descrizione"))
+    with pytest.raises(InvalidOrderByError):
+        await adapter.list_rooms(RoomPageParams(orderBy="name,-nope"))

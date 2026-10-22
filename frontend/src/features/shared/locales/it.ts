@@ -23,6 +23,16 @@ export default {
       },
     },
   },
+  listFilters: {
+    title: 'Filtri',
+    titleActive: 'Filtri ({count} attivi)',
+    min: '{field} min',
+    max: '{field} max',
+    rangeInvalid: 'Il minimo supera il massimo',
+    reset: 'Azzera filtri',
+    remove: 'Rimuovi il filtro {filter}',
+    columns: { button: 'Colonne', title: 'Colonne visibili', reset: 'Ripristina colonne predefinite' },
+  },
   worlds: {
     none: {
       title: 'Nessun mondo configurato',

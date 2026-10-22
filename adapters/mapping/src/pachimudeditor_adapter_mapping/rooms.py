@@ -35,7 +35,7 @@ from pachimudeditor.common.adapters.models import (
     RoomPageParams,
     RoomPatch,
 )
-from pachimudeditor.sdk import make_page, paginate_list
+from pachimudeditor.sdk import make_page, paginate_list, room_query
 from pachimudeditor.sdk import conflict
 
 _ROOM_STRUCTURAL = frozenset({"vnum", "zone_id", "extra"})
@@ -187,6 +187,8 @@ class RoomsMixin(MappingSupport):
         pairs = self.store.all_items("room")
         if params.zone_id is not None:
             pairs = [p for p in pairs if p[0].zone_id == params.zone_id]
+        if room_query.is_extended(params):
+            return room_query.page_rooms([self._room_out(u, r) for u, r in pairs], params)
         items, total = paginate_list(
             pairs, params, lambda p: self._text(self.room_map, p[1], ("name", "vnum")),
             lambda p, f: self._key(self.room_map, p[1], f), RoomPageParams.order_fields or [],

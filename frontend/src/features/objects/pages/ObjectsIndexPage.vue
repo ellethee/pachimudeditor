@@ -115,7 +115,7 @@ import { OBJECTS_URL, getEnums, getObject, getObjectUsage, listZones, nextObject
 import type { IObjectEnums, IObjects, IObjectsInput, IZoneRef } from '../types/objects'
 import TableError from '../../shared/components/TableError.vue'
 import ObjectFilters from '../components/ObjectFilters.vue'
-import ZonePickDialog from '../components/ZonePickDialog.vue'
+import ZonePickDialog from '../../shared/components/ZonePickDialog.vue'
 import {
   COLUMN_NAMES,
   FILTER_QUERY_KEYS,

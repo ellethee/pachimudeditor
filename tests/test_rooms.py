@@ -158,3 +158,32 @@ async def test_graph(client: httpx.AsyncClient) -> None:
     empty = data(await client.get("/api/rooms/graph", params={"zoneId": await _zone_id(client, 20)}))
     assert empty == {"nodes": [], "edges": []}
     assert (await client.get("/api/rooms/graph")).status_code == 422
+
+
+async def test_list_filters_and_ordering_http(client: httpx.AsyncClient) -> None:
+    """Filtri/ordinamenti sulle statistiche via query string (alias camelCase, parametri ripetuti, elenchi con virgole)."""
+    await _new_room(client, 1070, sectorType=3, flags=["dark", "nomob"], healRate=150, manaRate=50, clanId="lupi", owner="Gandalf")
+    await _new_room(client, 1071, sectorType=1, flags=["dark"], healRate=100, manaRate=100)
+    await _new_room(client, 1072, sectorType=3, flags=[], healRate=200, manaRate=100, owner="Aragorn")
+
+    async def vnums(**params: object) -> list[int]:
+        page = data(await client.get("/api/rooms", params={"search": "Stanza 107", "orderBy": "vnum", **params}))
+        return [r["vnum"] for r in page["items"]]
+
+    assert await vnums() == [1070, 1071, 1072]
+    assert await vnums(sectorType=[1, 3]) == [1070, 1071, 1072] and await vnums(sectorType="3") == [1070, 1072]
+    assert await vnums(flag=["dark", "nomob"]) == [1070] and await vnums(flag="DARK") == [1070, 1071]
+    assert await vnums(minHealRate=150) == [1070, 1072] and await vnums(maxManaRate=50) == [1070]
+    assert await vnums(clanId="lupi,orsi") == [1070] and await vnums(owner="GAND") == [1070] and await vnums(owner="a") == [1070, 1072]
+    assert await vnums(orderBy="-healRate") == [1072, 1070, 1071] and await vnums(orderBy="manaRate,-vnum") == [1070, 1072, 1071]
+    assert await vnums(orderBy="owner") == [1072, 1070, 1071] and await vnums(orderBy="-owner") == [1070, 1072, 1071]  # nulli in fondo
+    assert await vnums(orderBy="-clanId") == [1070, 1071, 1072] and await vnums(orderBy="-sectorType,vnum") == [1070, 1072, 1071]
+
+
+async def test_list_invalid_filters_422(client: httpx.AsyncClient) -> None:
+    """Parametri di lista non validi: 422 (codici stabili dove previsto), mai 500."""
+    assert error_code(await client.get("/api/rooms", params={"minHealRate": 9, "maxHealRate": 1}), 422) == "rooms.invalid_range"
+    assert error_code(await client.get("/api/rooms", params={"sectorType": 99}), 422) == "rooms.invalid_sector_type"
+    assert error_code(await client.get("/api/rooms", params={"orderBy": "nope"}), 422) == "api.invalid_order_by"
+    for bad in ({"minManaRate": "x"}, {"sectorType": "abc"}, {"maxHealRate": 10**12}):
+        assert (await client.get("/api/rooms", params=bad)).status_code == 422, bad

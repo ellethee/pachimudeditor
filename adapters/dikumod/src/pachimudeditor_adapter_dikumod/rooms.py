@@ -36,7 +36,7 @@ from pachimudeditor.common.adapters.models import (
     RoomPageParams,
     RoomPatch,
 )
-from pachimudeditor.sdk import make_page, paginate_list
+from pachimudeditor.sdk import make_page, paginate_list, room_query
 from pachimudeditor.sdk import conflict
 
 
@@ -98,12 +98,16 @@ class RoomsMixin(DikumodSupport):
         refs = sorted(store.rooms.values(), key=lambda r: r.vnum)
         if params.zone_id is not None:
             refs = [r for r in refs if self.zone_id_of(r.vnum) == params.zone_id]
+        dup = store.duplicates["room"]
+        if room_query.is_extended(params):
+            return room_query.page_rooms(
+                [mapping.room_out(r.item, self.zone_id_of(r.vnum), override=r.override, duplicate=r.vnum in dup) for r in refs], params
+            )
         keys = {"id": lambda r: r.vnum, "vnum": lambda r: r.vnum, "name": lambda r: r.item.name,
                 "sector_type": lambda r: int(mapping.sector_out(r.item.sector))}  # fmt: skip
         items, total = paginate_list(
             refs, params, lambda r: (r.item.name, r.vnum), lambda r, f: keys[f](r), RoomPageParams.order_fields or []
         )
-        dup = store.duplicates["room"]
         out = [mapping.room_out(r.item, self.zone_id_of(r.vnum), override=r.override, duplicate=r.vnum in dup) for r in items]
         return make_page(RoomOut, out, total, params)
 

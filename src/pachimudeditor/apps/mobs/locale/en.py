@@ -6,4 +6,6 @@ MESSAGES: dict[str, str] = {
     "mobs.in_reset_usage": "Cannot delete: the mob is referenced by {count} reset commands ({zones}). Update or remove them first.",
     "mobs.vnum_in_use": "Cannot change the vnum: the mob is referenced by {count} reset commands ({zones}).",
     "mobs.has_instances": "Cannot delete: {count} live instances of the mob exist.",
+    "mobs.invalid_sex": "Invalid sex: {value}.",
+    "mobs.invalid_range": "Invalid range for {field}: minimum ({min}) is greater than maximum ({max}).",
 }

@@ -7,7 +7,12 @@ from pachimudeditor_adapter_dikumod.adapter import DikumodAdapter
 
 from pachimudeditor.common.adapters.models import MobPageParams, ObjectPageParams, RoomPageParams, ZonePageParams
 from pachimudeditor.common.adapters.registry import WorldConfig
-from tests.adapter_contract.helpers import assert_object_queries_match_oracle, expect_error
+from tests.adapter_contract.helpers import (
+    assert_mob_queries_match_oracle,
+    assert_object_queries_match_oracle,
+    assert_room_queries_match_oracle,
+    expect_error,
+)
 from tests.support.synthetic_worlds import write_dikumod_world
 
 
@@ -54,3 +59,9 @@ async def test_search_and_paging(ro: DikumodAdapter) -> None:
 async def test_object_queries_match_reference(ro: DikumodAdapter) -> None:
     """Filtri e ordinamenti sulle statistiche degli oggetti coincidono con un riferimento in Python (rent compreso)."""
     await assert_object_queries_match_oracle(ro)
+
+
+async def test_mob_and_room_queries_match_reference(ro: DikumodAdapter) -> None:
+    """Filtri e ordinamenti sulle statistiche di mob e stanze coincidono con un riferimento in Python."""
+    await assert_mob_queries_match_oracle(ro)
+    await assert_room_queries_match_oracle(ro)

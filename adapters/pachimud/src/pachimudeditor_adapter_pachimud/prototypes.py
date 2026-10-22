@@ -22,8 +22,8 @@ from pachimudeditor.common.adapters.models import (
     ResetUsage,
 )
 from pachimudeditor_adapter_pachimud.editor import crud
-from pachimudeditor_adapter_pachimud.editor.pagination import default_order
-from pachimudeditor.sdk import conflict, object_query
+from pachimudeditor_adapter_pachimud.editor.pagination import default_order, order_clause, paginate_filtered, range_clauses
+from pachimudeditor.sdk import conflict, mob_query, object_query
 from pachimudeditor_adapter_pachimud.editor.instances import ensure_mob_has_no_instances, ensure_object_has_no_instances
 from pachimudeditor_adapter_pachimud.editor.reset_usage import ensure_not_used, ensure_not_used_by_resets, find_reset_usage
 
@@ -70,9 +70,27 @@ class PrototypesMixin(PachimudSupport):
     # ---- mob
 
     async def list_mobs(self, params: MobPageParams) -> PaginatedResponse[MobOut]:
-        """Mob paginati, filtrabili per zona (`zoneId`), cercabili per nome/vnum; ordine di default per vnum."""
+        """Mob paginati, filtrabili per zona (`zoneId`) e per statistiche, cercabili per nome/vnum, ordinabili
+        (nulli in fondo); ordine di default per vnum. Gli stessi risultati degli adapter su file (`mob_query`)."""
+        mob_query.check(params)
+        order = mob_query.parse_order(params)
         async with self.session() as session:
-            return await self.page(session, models_of(session).MobPrototype, params, MobOut)
+            model = models_of(session).MobPrototype
+            clauses = range_clauses(model, params, mob_query.RANGE_FIELDS)
+            if params.zone_id is not None:
+                clauses.append(model.zone_id == params.zone_id)
+            if params.sex:
+                clauses.append(model.sex.in_(params.sex))
+            if params.race_id:
+                clauses.append(model.race_id.in_(params.race_id))
+            if params.class_id:
+                clauses.append(model.class_id.in_(params.class_id))
+            if params.flag:
+                # i flag stanno in una colonna JSON: si risolvono in Python (stessa funzione degli adapter su file)
+                rows = (await session.execute(select(model.id, model.flags).where(*clauses))).all()
+                clauses.append(model.id.in_([r.id for r in rows if mob_query.match_flags(r.flags, params)]))
+            ordering = [order_clause(model, field, desc) for field, desc in order]
+            return await paginate_filtered(session, model, params, MobOut, clauses, ordering)
 
     async def get_mob(self, mob_id: int) -> MobOut:
         """Un mob prototype."""

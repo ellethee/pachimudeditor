@@ -34,7 +34,7 @@ from pachimudeditor.common.adapters.models import (
     RoomPageParams,
     RoomPatch,
 )
-from pachimudeditor.sdk import conflict
+from pachimudeditor.sdk import conflict, room_query
 
 
 def _door_resets(entry: AreaEntry) -> list[Reset]:
@@ -97,6 +97,8 @@ class RoomsMixin(BasedMudSupport):
         pairs = self.store.all_items("room")
         if params.zone_id is not None:
             pairs = [p for p in pairs if p[0].zone_id == params.zone_id]
+        if room_query.is_extended(params):
+            return room_query.page_rooms([mapping.room_out(r, e.zone_id) for e, r in pairs], params)
         keys = {
             "id": lambda r: r.vnum, "vnum": lambda r: r.vnum, "name": lambda r: r.name,
             "sector_type": lambda r: int(mapping.sector_out(r.sector)),

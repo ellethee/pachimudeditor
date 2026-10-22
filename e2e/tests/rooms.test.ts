@@ -11,6 +11,7 @@ import {
   goto,
   loginOk,
   openSession,
+  pickOption,
   rawI18nKey,
   saveDialog,
   tableRow,
@@ -19,7 +20,7 @@ import {
 } from '../support/browser.ts'
 
 /** Vnum creati dai test (puliti all'avvio e alla fine). */
-const VNUMS = [1010, 1011, 1012]
+const VNUMS = [1010, 1011, 1012, 1070, 1071, 1072, 2070]
 
 /** Elimina via API le stanze di test rimaste (uscite/extra vanno con la stanza). */
 async function cleanup(api: Api): Promise<void> {
@@ -27,6 +28,21 @@ async function cleanup(api: Api): Promise<void> {
     const room = await api.byVnum('rooms', vnum)
     if (room) await api.call('DELETE', `/api/rooms/${room.id}`)
   }
+}
+
+/** Stanze per i test di filtri e ordinamenti: recupero PF distinto e riconoscibile (>= 7770). */
+const STAT_ROOMS = [
+  { vnum: 1070, zone: 10, name: 'Stat alfa', healRate: 7772, sectorType: 3 },
+  { vnum: 1071, zone: 10, name: 'Stat beta', healRate: 7771, sectorType: 1 },
+  { vnum: 1072, zone: 10, name: 'Stat gamma', healRate: 7773, sectorType: 3 },
+  { vnum: 2070, zone: 20, name: 'Stat delta', healRate: 7774, sectorType: 1 },
+]
+
+/** Nomi delle righe visibili con prefisso `Stat`, nell'ordine mostrato. */
+async function statRows(page: Session['page']): Promise<string[]> {
+  await page.waitForLoadState('networkidle')
+  const texts = await page.locator('table tbody tr').allInnerTexts()
+  return texts.map((text) => /Stat \w+/.exec(text)?.[0] ?? '').filter(Boolean)
 }
 
 describe('stanze', () => {
@@ -44,14 +60,116 @@ describe('stanze', () => {
     await cleanup(api)
   })
 
-  it('la lista mostra le stanze della prima zona', async () => {
+  it('la lista mostra le stanze', async () => {
     await goto(s.page, '/rooms')
     for (const name of ['Piazza', 'Vicolo', 'Cantina']) await tableRow(s.page, name).waitFor()
     assert.equal(await rawI18nKey(s.page), null)
   })
 
-  it('crea una stanza con flag, uscita ed extra description', async () => {
+  it('di default mostra le stanze di tutte le zone, con colonne delle statistiche', async () => {
+    for (const r of STAT_ROOMS) {
+      const zone = await api.byVnum('zones', r.zone)
+      const res = await api.call('POST', '/api/rooms', {
+        vnum: r.vnum,
+        zoneId: zone.id,
+        name: r.name,
+        healRate: r.healRate,
+        sectorType: r.sectorType,
+      })
+      assert.equal(res.status, 201)
+    }
+    await goto(s.page, '/rooms?minHealRate=7770')
+    await tableRow(s.page, 'Stat delta').waitFor()
+    await tableRow(s.page, 'Stat alfa').waitFor()
+    for (const header of ['Terreno', 'Zona', 'Recupero PF %']) assert.equal(await s.page.locator('th', { hasText: header }).count(), 1, header)
+    await tableRow(s.page, 'Stat delta').getByText('Zona Vuota').waitFor()
+    assert.equal(await rawI18nKey(s.page), null)
+  })
+
+  it('ordina per recupero PF lato server (asc poi desc)', async () => {
+    await goto(s.page, '/rooms?minHealRate=7770')
+    await tableRow(s.page, 'Stat alfa').waitFor()
+    const header = s.page.locator('th', { hasText: 'Recupero PF %' })
+    await Promise.all([s.page.waitForResponse((r) => /orderBy=healRate(&|$)/.test(r.url())), header.click()])
+    assert.deepEqual(await statRows(s.page), ['Stat beta', 'Stat alfa', 'Stat gamma', 'Stat delta'])
+    await Promise.all([s.page.waitForResponse((r) => /orderBy=-healRate/.test(r.url())), header.click()])
+    assert.deepEqual(await statRows(s.page), ['Stat delta', 'Stat gamma', 'Stat alfa', 'Stat beta'])
+  })
+
+  it('filtra per terreno e intervallo; i filtri sono nell URL, nei chip e si azzerano', async () => {
+    await goto(s.page, '/rooms?minHealRate=7770')
+    await tableRow(s.page, 'Stat alfa').waitFor()
+    await pickOption(s.page, 'Terreno', 'Foresta')
+    await s.page.keyboard.press('Escape')
+    await s.page.getByLabel('Recupero PF % max').fill('7772')
+    await tableRow(s.page, 'Stat gamma').waitFor({ state: 'detached' })
+    assert.deepEqual(await statRows(s.page), ['Stat alfa'])
+    const url = new URL(s.page.url())
+    assert.equal(url.searchParams.get('sectorType'), '3')
+    assert.equal(url.searchParams.get('minHealRate'), '7770')
+    assert.equal(url.searchParams.get('maxHealRate'), '7772')
+    await s.page.locator('[data-test="active-filters"] .q-chip', { hasText: 'Terreno: Foresta' }).waitFor()
+    // ricaricando l'URL lo stato si ripristina
+    await goto(s.page, `${url.pathname}${url.search}`)
+    await s.page.locator('[data-test="active-filters"] .q-chip', { hasText: 'Recupero PF %' }).waitFor()
+    assert.deepEqual(await statRows(s.page), ['Stat alfa'])
+    await s.page.getByRole('button', { name: 'Azzera filtri' }).click()
+    await s.page.waitForLoadState('networkidle')
+    assert.equal(new URL(s.page.url()).search, '')
+    assert.equal(await s.page.locator('[data-test="active-filters"]').count(), 0)
+  })
+
+  it('mostra e nasconde le colonne, la scelta resta salvata', async () => {
+    await goto(s.page, '/rooms?minHealRate=7770')
+    await tableRow(s.page, 'Stat alfa').waitFor()
+    assert.equal(await s.page.locator('th', { hasText: 'Proprietario' }).count(), 0)
+    await s.page.getByRole('button', { name: 'Colonne' }).click()
+    await s.page.locator('.q-menu .q-item', { hasText: 'Proprietario' }).click()
+    await s.page.locator('th', { hasText: 'Proprietario' }).waitFor()
+    await s.page.locator('.q-menu .q-item', { hasText: 'Recupero Mana %' }).click()
+    assert.equal(await s.page.locator('th', { hasText: 'Recupero Mana %' }).count(), 0)
+    await s.page.keyboard.press('Escape')
+    await goto(s.page, '/rooms?minHealRate=7770')
+    await s.page.locator('th', { hasText: 'Proprietario' }).waitFor()
+    assert.equal(await s.page.locator('th', { hasText: 'Recupero Mana %' }).count(), 0)
+    await s.page.getByRole('button', { name: 'Colonne' }).click()
+    await s.page.locator('.q-menu .q-item', { hasText: 'Ripristina' }).click()
+    await s.page.locator('th', { hasText: 'Recupero Mana %' }).waitFor()
+  })
+
+  it('con una zona scelta la lista e la creazione restano per zona; la mappa segue la zona', async () => {
+    const zone = await api.byVnum('zones', 20)
+    await goto(s.page, `/rooms?zoneId=${zone.id}`)
+    await tableRow(s.page, 'Stat delta').waitFor()
+    assert.equal(await tableRow(s.page, 'Stat alfa').count(), 0)
+    assert.match(await s.page.getByRole('link', { name: 'Mappa' }).getAttribute('href') ?? '', new RegExp(`zoneId=${zone.id}`))
     await s.page.getByRole('button', { name: 'Nuova stanza' }).click()
+    // zona gia' scelta: niente richiesta, si apre direttamente il form
+    await s.page.getByLabel('Nome *').waitFor()
+    await s.page.getByLabel('Chiudi').first().click()
+    await waitDialogsClosed(s.page)
+  })
+
+  it('a 375 px filtri e tabella restano nello schermo', async () => {
+    await s.page.setViewportSize({ width: 375, height: 800 })
+    await goto(s.page, '/rooms?minHealRate=7770')
+    await tableRow(s.page, 'Stat alfa').waitFor()
+    const overflow = await s.page.evaluate(() => ({
+      tables: [...document.querySelectorAll('.q-table__container')].map((e) => e.getBoundingClientRect().right),
+      scroll: document.documentElement.scrollWidth,
+      width: innerWidth,
+    }))
+    for (const right of overflow.tables) assert.ok(right <= overflow.width, `tabella oltre lo schermo (${right})`)
+    assert.ok(overflow.scroll <= overflow.width, 'la pagina scorre in orizzontale')
+    await s.page.setViewportSize({ width: 1400, height: 1000 })
+  })
+
+  it('crea una stanza con flag, uscita ed extra description', async () => {
+    await goto(s.page, '/rooms')
+    await s.page.getByRole('button', { name: 'Nuova stanza' }).click()
+    // con «Tutte le zone» la creazione chiede prima la zona
+    await pickOption(s.page, 'Zona di destinazione', 'Zona Alfa')
+    await s.page.getByRole('button', { name: 'Continua' }).click()
     await s.page.getByLabel('Vnum *', { exact: true }).fill('1010')
     await s.page.getByLabel('Nome *').fill('Sala Pw')
     await s.page.getByLabel('Descrizione').fill('Una sala di prova.')
@@ -85,6 +203,8 @@ describe('stanze', () => {
   it('vnum duplicato: errore tradotto', async () => {
     s.allow(/409/)
     await s.page.getByRole('button', { name: 'Nuova stanza' }).click()
+    await pickOption(s.page, 'Zona di destinazione', 'Zona Alfa')
+    await s.page.getByRole('button', { name: 'Continua' }).click()
     await s.page.getByLabel('Vnum *', { exact: true }).fill('1000')
     await s.page.getByLabel('Nome *').fill('Doppia')
     await saveDialog(s.page)

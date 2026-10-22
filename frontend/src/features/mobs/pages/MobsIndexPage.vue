@@ -4,7 +4,7 @@
       <h1 class="text-h5 q-my-none">{{ t('mobs.title') }}</h1>
       <q-select
         v-model="selectedZoneId"
-        :options="zones"
+        :options="zoneOptions"
         option-value="id"
         option-label="name"
         emit-value
@@ -17,6 +17,7 @@
       />
     </div>
 
+    <list-filters v-if="ready && !loadError" v-model="filters" :controls="controls" />
     <pachi-error-state
       v-if="loadError"
       :title="t('mobs.errorTitle')"
@@ -31,12 +32,12 @@
       :description="t('mobs.noZonesDescription')"
     />
     <pachi-table2
-      v-else-if="selectedZoneId !== undefined"
+      v-else-if="ready"
       ref="table"
       :url="MOBS_URL"
       :columns="columns"
       :extra-params="extraParams"
-      :initial-sort="[{ column: 'vnum', direction: 'asc' }]"
+      :initial-sort="[]"
       use-col-actions="emit-delete"
       :can-edit="allowRow"
       :can-delete="allowDelete"
@@ -50,6 +51,7 @@
         <table-error :error="error" :retry="retry" />
       </template>
       <template #toolbar-actions="{ api }">
+        <columns-menu :names="columnNames" :model-value="visibleColumns" :label-of="columnLabel" @toggle="toggleColumn" @reset="resetColumns" />
         <q-btn v-if="!readOnly" color="primary" :icon="mdiPlus" :label="t('mobs.new')" @click="openCreate(api)" />
         <q-btn flat round :icon="mdiRefresh" :aria-label="t('mobs.reload')" @click="api.reload()" />
       </template>
@@ -58,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, onMounted, ref } from 'vue'
+import { computed, markRaw, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
@@ -92,6 +94,20 @@ import {
 } from '../services/mobs-api'
 import type { IContentRef, IMobEnums, IMobs, IMobsInput, IZoneRef } from '../types/mobs'
 import TableError from '../../shared/components/TableError.vue'
+import ColumnsMenu from '../../shared/components/ColumnsMenu.vue'
+import ListFilters from '../../shared/components/ListFilters.vue'
+import ZonePickDialog from '../../shared/components/ZonePickDialog.vue'
+import {
+  emptyFilters,
+  filterQueryKeys,
+  filtersFromQuery,
+  filtersToParams,
+  loadColumns,
+  saveColumns,
+  summarize,
+} from '../../shared/helpers/list-filters'
+import type { IFilterControl, IListFilters } from '../../shared/helpers/list-filters'
+import { COLUMNS_KEY, COLUMN_NAMES, FILTER_SPECS, RANGE_KEYS, defaultColumns } from '../helpers/list-query'
 
 const { t, te } = useI18n()
 const $q = useQuasar()
@@ -108,17 +124,94 @@ const table = ref<PachiTable2Exposed<IMobs> | null>(null)
 const zones = ref<IZoneRef[]>([])
 const zonesLoading = ref(true)
 const loadError = ref(false)
-const selectedZoneId = ref<number>()
+/** Valore del selettore di zona per «tutte le zone» (gli id reali sono >= 0). */
+const ALL_ZONES = -1
+const selectedZoneId = ref<number>(ALL_ZONES)
+/** `true` a lookup caricati: la tabella può partire con zona e filtri letti dall'URL. */
+const ready = ref(false)
+const filters = ref<IListFilters>(emptyFilters(FILTER_SPECS))
 const enums = ref<IMobEnums>()
 /** Risposta grezza di `/api/meta/enums` (comprende anche le tabelle specifiche del mondo, es. `romMobFlags`). */
 const enumsRaw = computed(() => enums.value as unknown as Record<string, unknown> | undefined)
 const races = ref<IContentRef[]>([])
 const classes = ref<IContentRef[]>([])
 
-/** Filtro esatto per zona inviato alla tabella. */
-const extraParams = computed<Record<string, unknown>>(() =>
-  selectedZoneId.value !== undefined ? { zoneId: selectedZoneId.value } : {},
+/** Opzioni del selettore: «Tutte le zone» e poi le zone. */
+const zoneOptions = computed(() => [{ id: ALL_ZONES, name: t('mobs.allZones') }, ...zones.value])
+
+/** Filtro per zona (se scelta) e filtri sulle statistiche inviati alla tabella. */
+const extraParams = computed<Record<string, unknown>>(() => ({
+  ...(selectedZoneId.value !== ALL_ZONES ? { zoneId: selectedZoneId.value } : {}),
+  ...filtersToParams(FILTER_SPECS, filters.value),
+}))
+
+/** `true` se il mondo ha il campo del mob (un campo `unsupported` non ha colonna né filtro). */
+function hasField(name: string): boolean {
+  return !fieldOf('mob', name)?.unsupported
+}
+
+/** Controlli della barra dei filtri (testi, opzioni e campi non supportati nascosti). */
+const controls = computed<IFilterControl[]>(() =>
+  FILTER_SPECS.map((spec): IFilterControl => {
+    const base = { ...spec, label: t(`mobs.filters.${spec.key}`), hidden: !hasField(spec.key) }
+    if (spec.key === 'sex') return { ...base, options: (enums.value?.sex ?? []).map((o) => ({ value: o.value, label: o.label })) }
+    if (spec.key === 'flags') {
+      return { ...base, free: true, options: enumNames(enumsRaw.value, fieldOf('mob', 'flags')).map((n) => ({ value: n, label: n })) }
+    }
+    if (spec.key === 'raceId') return { ...base, options: races.value.map((r) => ({ value: r.id, label: r.name })) }
+    if (spec.key === 'classId') return { ...base, options: classes.value.map((r) => ({ value: r.id, label: r.name })) }
+    return { ...base, label: columnLabel(spec.key) }
+  }),
 )
+
+/** Colonne selezionabili in questo mondo (senza quelle dei campi che non ha). */
+const columnNames = computed<string[]>(() => COLUMN_NAMES.filter((name) => hasField(name)))
+/** Colonne visibili: scelta salvata dal viewer, altrimenti pochi default (telefono) o i principali. */
+const visibleColumns = ref<string[]>(loadColumns(COLUMNS_KEY, COLUMN_NAMES) ?? defaultColumns($q.screen.lt.sm))
+
+/**
+ * Mostra o nasconde una colonna e salva la scelta.
+ *
+ * @param name - nome della colonna
+ * @param on - `true` per mostrarla
+ */
+function toggleColumn(name: string, on: boolean): void {
+  visibleColumns.value = COLUMN_NAMES.filter((column) => (column === name ? on : visibleColumns.value.includes(column)))
+  saveColumns(COLUMNS_KEY, visibleColumns.value)
+}
+
+/** Ripristina le colonne di default. */
+function resetColumns(): void {
+  visibleColumns.value = defaultColumns($q.screen.lt.sm)
+  saveColumns(COLUMNS_KEY, visibleColumns.value)
+}
+
+/**
+ * Intestazione di una colonna.
+ *
+ * @param name - nome della colonna
+ */
+function columnLabel(name: string): string {
+  return t(`mobs.columns.${name}`)
+}
+
+/**
+ * Nome della zona.
+ *
+ * @param zoneId - id della zona
+ */
+function zoneName(zoneId: number): string {
+  return zones.value.find((zone) => zone.id === zoneId)?.name ?? String(zoneId)
+}
+
+/**
+ * Etichetta del sesso.
+ *
+ * @param sex - valore intero
+ */
+function sexLabel(sex: number): string {
+  return enums.value?.sex.find((option) => option.value === sex)?.label ?? String(sex)
+}
 
 /**
  * Nome di un riferimento (razza/classe) dato l'id.
@@ -130,28 +223,47 @@ function refName(refs: IContentRef[], id: string | null): string {
   return refs.find((ref) => ref.id === id)?.name ?? '—'
 }
 
-const columns = computed<QTableColumn<IMobs>[]>(() => [
-  { name: 'vnum', label: t('mobs.columns.vnum'), field: 'vnum', align: 'left', sortable: true },
-  {
-    name: 'shortDescription',
-    label: t('mobs.columns.shortDescription'),
-    field: 'shortDescription',
-    align: 'left',
-  },
-  { name: 'level', label: t('mobs.columns.level'), field: 'level', align: 'left', sortable: true },
-  {
-    name: 'raceId',
-    label: t('mobs.columns.race'),
-    field: (row: IMobs) => refName(races.value, row.raceId),
-    align: 'left',
-  },
-  {
-    name: 'classId',
-    label: t('mobs.columns.class'),
-    field: (row: IMobs) => refName(classes.value, row.classId),
-    align: 'left',
-  },
-])
+/** Tutte le colonne (il `name` è la chiave di `orderBy` del backend); mostrate solo quelle scelte e supportate. */
+const allColumns = computed<QTableColumn<IMobs>[]>(() => {
+  const num = (name: (typeof RANGE_KEYS)[number]): QTableColumn<IMobs> => ({
+    name,
+    label: columnLabel(name),
+    field: name,
+    align: 'right',
+    sortable: true,
+    format: (value: number | null) => (value === null || value === undefined ? '' : String(value)),
+  })
+  return [
+    { name: 'vnum', label: columnLabel('vnum'), field: 'vnum', align: 'left', sortable: true },
+    { name: 'shortDescription', label: columnLabel('shortDescription'), field: 'shortDescription', align: 'left', sortable: true },
+    { name: 'zoneId', label: columnLabel('zoneId'), field: (row) => zoneName(row.zoneId), align: 'left', sortable: true },
+    num('level'),
+    { name: 'sex', label: columnLabel('sex'), field: (row) => sexLabel(row.sex), align: 'left', sortable: true },
+    { name: 'raceId', label: columnLabel('raceId'), field: (row) => refName(races.value, row.raceId), align: 'left', sortable: true },
+    { name: 'classId', label: columnLabel('classId'), field: (row) => refName(classes.value, row.classId), align: 'left', sortable: true },
+    num('alignment'),
+    num('armorClass'),
+    num('thac0'),
+    num('hpDiceCount'),
+    num('hpDieSize'),
+    num('hpBonus'),
+    num('damageDiceCount'),
+    num('damageDieSize'),
+    num('damageBonus'),
+    num('gold'),
+    num('experience'),
+    {
+      name: 'flags',
+      label: columnLabel('flags'),
+      field: (row) => summarize(row.flags),
+      align: 'left',
+      style: 'max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap',
+    },
+  ]
+})
+const columns = computed(() =>
+  allColumns.value.filter((column) => visibleColumns.value.includes(column.name) && columnNames.value.includes(column.name)),
+)
 
 /** Carica zone, enum, razze e classi (una volta, alla creazione della pagina). */
 async function loadLookups(): Promise<void> {
@@ -168,16 +280,56 @@ async function loadLookups(): Promise<void> {
     enums.value = localizeEnums(enumList)
     races.value = raceList
     classes.value = classList
-    const wanted = Number(route.query.zoneId)
-    selectedZoneId.value =
-      zoneList.find((zone) => zone.id === wanted)?.id ?? selectedZoneId.value ?? zoneList[0]?.id
+    applyQuery()
   } catch {
     loadError.value = true
   } finally {
     zonesLoading.value = false
   }
+  ready.value = !loadError.value
   if (!loadError.value) await openFromQuery()
 }
+
+/** Zona e filtri dall'URL (zona sconosciuta o assente: tutte le zone). */
+function applyQuery(): void {
+  const wanted = route.query.zoneId === undefined ? NaN : Number(route.query.zoneId)
+  selectedZoneId.value = zones.value.find((zone) => zone.id === wanted)?.id ?? ALL_ZONES
+  filters.value = filtersFromQuery(FILTER_SPECS, route.query)
+}
+
+/** Query string corrispondente allo stato (zona e filtri) mantenendo gli altri parametri dell'URL. */
+function stateQuery(): Record<string, string> {
+  const owned = filterQueryKeys(FILTER_SPECS)
+  const base = Object.fromEntries(Object.entries(route.query).filter(([key]) => key !== 'zoneId' && !owned.includes(key))) as Record<
+    string,
+    string
+  >
+  const zone = selectedZoneId.value !== ALL_ZONES ? { zoneId: String(selectedZoneId.value) } : {}
+  const entries = Object.entries(filtersToParams(FILTER_SPECS, filters.value, true)).map(([key, value]) => [key, String(value)])
+  return { ...base, ...zone, ...Object.fromEntries(entries) }
+}
+
+/** Riscrive l'URL con lo stato corrente (sostituisce la voce di cronologia solo se qualcosa è cambiato). */
+function syncUrl(): void {
+  if (!ready.value) return
+  const next = stateQuery()
+  const same = JSON.stringify(Object.entries(next).sort()) === JSON.stringify(Object.entries(route.query).sort())
+  if (!same) void router.replace({ path: route.path, query: next })
+}
+
+watch([selectedZoneId, filters], syncUrl, { deep: true })
+// navigazione indietro/avanti o link condiviso: lo stato segue l'URL
+watch(
+  () => route.query,
+  () => {
+    if (!ready.value) return
+    const parsed = filtersFromQuery(FILTER_SPECS, route.query)
+    const zone = Number(route.query.zoneId)
+    const nextZone = zones.value.some((z) => z.id === zone) ? zone : ALL_ZONES
+    if (nextZone === selectedZoneId.value && JSON.stringify(parsed) === JSON.stringify(filters.value)) return
+    applyQuery()
+  },
+)
 
 /**
  * Deep-link `?mobId=`: seleziona la zona del mob e ne apre l'editor (poi toglie il parametro, così un
@@ -189,7 +341,8 @@ async function openFromQuery(): Promise<void> {
   try {
     const mob = await getMob(id)
     if (zones.value.some((zone) => zone.id === mob.zoneId)) selectedZoneId.value = mob.zoneId
-    await router.replace({ path: route.path, query: { zoneId: String(mob.zoneId) } })
+    const { mobId: _mobId, ...rest } = route.query
+    await router.replace({ path: route.path, query: { ...rest, zoneId: String(mob.zoneId) } })
     const api = await whenReady(() => table.value?.api)
     await openDialog(api, mob)
   } catch {
@@ -240,10 +393,11 @@ function emptyMob(zoneId: number): IMobsInput {
  *
  * @param api - API della tabella (per salvare e ricaricare)
  * @param record - mob da modificare; assente per la creazione
+ * @param createZoneId - zona del nuovo mob (solo creazione)
  */
-async function openDialog(api: PachiTable2Api<IMobs>, record?: IMobs): Promise<void> {
-  const zoneId = record?.zoneId ?? selectedZoneId.value
-  if (zoneId === undefined) return
+async function openDialog(api: PachiTable2Api<IMobs>, record?: IMobs, createZoneId?: number): Promise<void> {
+  const zoneId = record?.zoneId ?? createZoneId
+  if (zoneId === undefined || zoneId === ALL_ZONES) return
   const initial: Record<string, unknown> = record ? { ...record } : { ...emptyMob(zoneId) }
   // le liste opzionali nulle si mostrano come vuote (chip/select multiplo)
   initial.questIds = initial.questIds ?? []
@@ -373,9 +527,15 @@ function openEdit(row: IMobs, api?: PachiTable2Api<IMobs>): void {
   if (tableApi) openDialog(tableApi, row)
 }
 
-/** Apre il dialog di creazione. */
+/** Apre il dialog di creazione: con «Tutte le zone» chiede prima la zona di destinazione. */
 function openCreate(api: PachiTable2Api<IMobs>): void {
-  openDialog(api)
+  if (selectedZoneId.value !== ALL_ZONES) {
+    void openDialog(api, undefined, selectedZoneId.value)
+    return
+  }
+  $q.dialog({ component: ZonePickDialog, componentProps: { zones: zones.value, scope: 'mobs' } }).onOk((zoneId: number) => {
+    void openDialog(api, undefined, zoneId)
+  })
 }
 
 /**

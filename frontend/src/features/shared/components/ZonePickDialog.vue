@@ -3,8 +3,8 @@
     <q-card style="min-width: 320px; max-width: 95vw">
       <q-form @submit.prevent="confirm">
         <q-card-section>
-          <div class="text-h6">{{ t('objects.pickZone.title') }}</div>
-          <div class="text-body2 q-mt-xs">{{ t('objects.pickZone.message') }}</div>
+          <div class="text-h6">{{ t(`${scope}.pickZone.title`) }}</div>
+          <div class="text-body2 q-mt-xs">{{ t(`${scope}.pickZone.message`) }}</div>
         </q-card-section>
         <q-card-section class="q-pt-none">
           <q-select
@@ -17,13 +17,13 @@
             autofocus
             dense
             outlined
-            :label="t('objects.pickZone.label')"
-            :rules="[(v: number | null) => v !== null || t('objects.pickZone.required')]"
+            :label="t(`${scope}.pickZone.label`)"
+            :rules="[(v: number | null) => v !== null || t(`${scope}.pickZone.required`)]"
           />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat no-caps :label="t('objects.pickZone.cancel')" @click="onDialogCancel" />
-          <q-btn color="primary" no-caps type="submit" :label="t('objects.pickZone.ok')" />
+          <q-btn flat no-caps :label="t(`${scope}.pickZone.cancel`)" @click="onDialogCancel" />
+          <q-btn color="primary" no-caps type="submit" :label="t(`${scope}.pickZone.ok`)" />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -34,9 +34,10 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDialogPluginComponent } from 'quasar'
-import type { IZoneRef } from '../types/objects'
 
-const props = defineProps<{ zones: IZoneRef[] }>()
+/** Dialogo per scegliere la zona di destinazione di una creazione; i testi sono `<scope>.pickZone.*`. */
+const props = withDefaults(defineProps<{ zones: { id: number; name: string }[]; scope?: string }>(), { scope: 'objects' })
+const scope = props.scope
 defineEmits([...useDialogPluginComponent.emits])
 const { t } = useI18n()
 const { dialogRef, onDialogHide, onDialogOK, onDialogCancel } = useDialogPluginComponent()

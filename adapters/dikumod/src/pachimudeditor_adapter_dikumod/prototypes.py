@@ -29,7 +29,7 @@ from pachimudeditor.common.adapters.models import (
     ObjectPatch,
     ResetUsage,
 )
-from pachimudeditor.sdk import make_page, object_query, paginate_list
+from pachimudeditor.sdk import make_page, mob_query, object_query, paginate_list
 from pachimudeditor.sdk import conflict
 
 
@@ -147,6 +147,8 @@ class PrototypesMixin(DikumodSupport):
             m = mob_of(v)
             return (m.short, m.name, v) if m else (self._mob_out(v).short_description, self._mob_out(v).keywords, v)
 
+        if mob_query.is_extended(params):
+            return mob_query.page_mobs([self._mob_out(v) for v in vnums], params)
         keys = {"id": lambda v: v, "vnum": lambda v: v, "level": lambda v: mob_of(v).level if mob_of(v) else 0}
         items, total = paginate_list(vnums, params, text, lambda v, f: keys[f](v), MobPageParams.order_fields or [])
         return make_page(MobOut, [self._mob_out(v) for v in items], total, params)

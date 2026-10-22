@@ -25,6 +25,14 @@ MAX_INT = 2**31 - 1
 """Massimo di vnum e argomenti dei reset: ben oltre ogni vnum reale, ma sotto i limiti degli INTEGER dei DB."""
 
 
+def split_commas(value: Any) -> Any:
+    """Parametri di lista di una query: accetta sia il parametro ripetuto (`?a=1&a=2`) sia l'elenco separato da
+    virgole (`?a=1,2`, come lo serializza alova); gli elementi vuoti si scartano."""
+    if isinstance(value, list):
+        return [part.strip() for item in value for part in str(item).split(",") if part.strip()]
+    return value
+
+
 class NeutralOut(AliasedBaseModel):
     """Base delle entita' in uscita: `extra` contiene i campi specifici del MUD (vuoto per pachimud)."""
 
@@ -429,11 +437,31 @@ class RoomPatch(NeutralPatch):
 
 
 class RoomPageParams(PageParams):
-    """Parametri di lista delle stanze: `search` su nome/vnum, filtro esatto `zoneId`."""
+    """Parametri di lista delle stanze: `search` su nome/vnum, filtro esatto `zoneId` e, in piu', filtri e
+    ordinamenti sulle statistiche (tutti opzionali, additivi: senza di essi la lista e' quella di sempre).
+
+    Filtri: `sectorType` (uno o piu' terreni: OR), `flag` (uno o piu' nomi: AND, senza maiuscole), `clanId` (uno o
+    piu' clan: OR, uguaglianza esatta), `owner` (sottostringa senza maiuscole), intervalli inclusivi
+    `minHealRate|maxHealRate`, `minManaRate|maxManaRate`.
+    Ordinamento (`orderBy`, `-campo` per il discendente, nulli sempre in fondo): vedi `order_fields`."""
 
     search_fields = ["name", "vnum"]
-    order_fields = ["id", "vnum", "name", "sector_type"]
+    order_fields = ["id", "vnum", "name", "sector_type", "zone_id", "heal_rate", "mana_rate", "clan_id", "owner"]
     zone_id: int | None = Query(None)
+    sector_type: list[int] | None = Query(None)
+    flag: list[str] | None = Query(None)
+    clan_id: list[str] | None = Query(None)
+    owner: str | None = Query(None)
+    min_heal_rate: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_heal_rate: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_mana_rate: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_mana_rate: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+
+    @field_validator("sector_type", "flag", "clan_id", mode="before")
+    @classmethod
+    def _split_commas(cls, value: Any) -> Any:
+        """Accetta sia il parametro ripetuto (`?flag=a&flag=b`) sia l'elenco separato da virgole (`?flag=a,b`)."""
+        return split_commas(value)
 
 
 class RoomCloneIn(AliasedBaseModel):
@@ -547,11 +575,56 @@ class MobPatch(NeutralPatch):
 
 
 class MobPageParams(PageParams):
-    """Parametri di lista dei mob: `search` su descrizione/keywords/vnum, filtro esatto `zoneId`."""
+    """Parametri di lista dei mob: `search` su descrizione/keywords/vnum, filtro esatto `zoneId` e, in piu', filtri e
+    ordinamenti sulle statistiche (tutti opzionali, additivi: senza di essi la lista e' quella di sempre).
+
+    Filtri: `sex` (uno o piu' valori: OR), `flag` (uno o piu' nomi: AND, senza maiuscole), `raceId`/`classId` (uno o
+    piu' id: OR, uguaglianza esatta; un id nullo non li soddisfa), intervalli inclusivi `minLevel|maxLevel`,
+    `minThac0`, `minArmorClass`, `minHpDiceCount|HpDieSize|HpBonus`, `minDamageDiceCount|DamageDieSize|DamageBonus`,
+    `minGold`, `minExperience`, `minAlignment` (e i rispettivi `max...`).
+    Ordinamento (`orderBy`, `-campo` per il discendente, nulli sempre in fondo): vedi `order_fields`."""
 
     search_fields = ["short_description", "keywords", "vnum"]
-    order_fields = ["id", "vnum", "level"]
+    order_fields = [
+        "id", "vnum", "zone_id", "short_description", "sex", "race_id", "class_id",
+        "level", "thac0", "armor_class", "hp_dice_count", "hp_die_size", "hp_bonus",
+        "damage_dice_count", "damage_die_size", "damage_bonus", "gold", "experience", "alignment",
+    ]  # fmt: skip
     zone_id: int | None = Query(None)
+    sex: list[int] | None = Query(None)
+    flag: list[str] | None = Query(None)
+    race_id: list[str] | None = Query(None)
+    class_id: list[str] | None = Query(None)
+    min_level: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_level: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_thac0: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_thac0: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_armor_class: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_armor_class: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_hp_dice_count: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_hp_dice_count: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_hp_die_size: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_hp_die_size: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_hp_bonus: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_hp_bonus: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_damage_dice_count: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_damage_dice_count: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_damage_die_size: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_damage_die_size: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_damage_bonus: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_damage_bonus: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_gold: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_gold: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_experience: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_experience: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_alignment: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_alignment: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+
+    @field_validator("sex", "flag", "race_id", "class_id", mode="before")
+    @classmethod
+    def _split_commas(cls, value: Any) -> Any:
+        """Accetta sia il parametro ripetuto (`?flag=a&flag=b`) sia l'elenco separato da virgole (`?flag=a,b`)."""
+        return split_commas(value)
 
 
 class ObjectOut(NeutralOut):
@@ -662,9 +735,7 @@ class ObjectPageParams(PageParams):
     @classmethod
     def _split_commas(cls, value: Any) -> Any:
         """Accetta sia il parametro ripetuto (`?wearFlag=a&wearFlag=b`) sia l'elenco separato da virgole (`?wearFlag=a,b`)."""
-        if isinstance(value, list):
-            return [part.strip() for item in value for part in str(item).split(",") if part.strip()]
-        return value
+        return split_commas(value)
 
 
 class Option(AliasedBaseModel):

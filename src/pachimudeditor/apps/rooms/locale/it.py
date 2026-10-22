@@ -15,4 +15,6 @@ MESSAGES: dict[str, str] = {
     "rooms.exit_locked_needs_key": "Un'uscita serrata richiede un keyVnum.",
     "rooms.exit_key_unknown": "L'oggetto chiave con vnum {vnum} non esiste.",
     "rooms.exit_self_loop": "Un'uscita non può portare alla stessa stanza.",
+    "rooms.invalid_sector_type": "Tipo di terreno non valido: {value}.",
+    "rooms.invalid_range": "Intervallo non valido per {field}: il minimo ({min}) supera il massimo ({max}).",
 }

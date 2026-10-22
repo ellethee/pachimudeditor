@@ -143,7 +143,7 @@ Riepilogo di `pachimudeditor.sdk.__all__`, per famiglia:
 | Contratto | `WorldAdapter`, `AdapterCapabilities`, `AdapterInfo`, `ResourceInfo`, `ResourceType`, `FieldDescriptor`, `ExtraFieldDescriptor` |
 | Registro/dipendenze | `WorldConfig`, `register_kind`, `get_registry`, `AdapterDep`, `WriteAdapterDep`, `require_capability` |
 | Descrizione campi | `describe_resource`, `finish_resource`, `xf`, `diagnostic` |
-| Liste | `make_page`, `paginate_list` (nulli sempre in fondo), `object_query` (filtri e ordinamenti sulle statistiche degli oggetti: `is_extended`, `page_objects` per gli adapter su file; `check`, `parse_order`, `match_json` per chi filtra in SQL) |
+| Liste | `make_page`, `paginate_list` (nulli sempre in fondo), `object_query`, `mob_query`, `room_query` (filtri e ordinamenti sulle statistiche di oggetti, mob e stanze: `is_extended`, `page_objects|page_mobs|page_rooms` per gli adapter su file; `check`, `parse_order`, `match_json|match_flags` per chi filtra in SQL), `list_query` (pezzi comuni) |
 | Errori/DTO | `conflict`, `not_found`, `PatchModel` |
 | Regole | `rules` (reset, uscite, range, grafo, uso) |
 | Conversione | `Flavor`, `ComposedConverter`, `PairConverter`, `ConvertContext`, `Converted`, `loss`, `to_in`, `extra_dropped`, `convert_helpers`, `convert_tables` |
