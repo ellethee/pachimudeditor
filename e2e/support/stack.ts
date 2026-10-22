@@ -7,7 +7,7 @@
  * Il processo viene fermato SOLO tramite il suo PID esatto.
  */
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -90,6 +90,14 @@ function prepareExtras(workdir: string, pachimud: { databaseUrl: string; definit
     process.env.E2E_DIKUMOD_RW_LIB = dikumodRw // per i test che simulano il server acceso (processo con cwd = lib/); ereditata da `node --test`
     cpSync(DIKUMOD_SRC, dikumodRo, { recursive: true })
     cpSync(DIKUMOD_SRC, dikumodRw, { recursive: true })
+    // procedure speciali dei mob (maestri): `src/spec_assign.c` accanto a `lib/`, dove l'adapter lo cerca di default
+    const specAssign = join(DIKUMOD_SRC, '..', 'src', 'spec_assign.c')
+    if (existsSync(specAssign)) {
+      for (const lib of [dikumodRo, dikumodRw]) {
+        mkdirSync(join(lib, '..', 'src'), { recursive: true })
+        copyFileSync(specAssign, join(lib, '..', 'src', 'spec_assign.c'))
+      }
+    }
     // giocatori e rent: sempre quelli SINTETICI (mai dati o hash reali nelle copie di lavoro)
     execFileSync(join(BACKEND, '.venv', 'bin', 'python'), ['-m', 'tests.support.dikumod_players', dikumodRo, dikumodRw], { cwd: BACKEND })
     // canale live: due mondi sul finto server `livectl` (avviato da `startStack`); il token sta nell'ambiente (`E2E_LIVE_TOKEN`), non nella config

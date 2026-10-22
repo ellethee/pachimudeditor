@@ -28,6 +28,10 @@ _PARAMS: dict[str, dict[str, Any]] = {
             "enum": ["dikumod", "dikumod2"],
             "description": "Variante Diku (di norma rilevata da sola; solo `dikumod` e' supportata).",
         },
+        "spec_assign": {
+            "type": "string",
+            "description": "Percorso ASSOLUTO di `spec_assign.c` (sola lettura; default `<radice>/src/spec_assign.c`): procedura speciale dei mob e filtro «insegna / gain».",
+        },
         "rent_vnum": {
             "enum": ["signed", "unsigned"],
             "default": "signed",

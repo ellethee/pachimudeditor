@@ -17,6 +17,9 @@ FLAG_LISTS: dict[tuple[str, str], str] = {
 }
 """(risorsa, campo) -> lista in `enums()` da cui prendere le opzioni."""
 
+SPEC_PROC_FIELD = xf("specProc", "text", ro=True, nullable=True)
+"""Procedura speciale del mob (da `spec_assign.c`): dichiarata ed emessa solo se il file e' leggibile."""
+
 UNSUPPORTED: dict[str, frozenset[str]] = {
     "zone": frozenset({"builder", "minLevel", "maxLevel", "enabled"}),
     "room": frozenset({"healRate", "manaRate", "clanId", "owner"}),

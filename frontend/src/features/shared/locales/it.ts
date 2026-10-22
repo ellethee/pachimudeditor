@@ -31,6 +31,7 @@ export default {
     rangeInvalid: 'Il minimo supera il massimo',
     reset: 'Azzera filtri',
     remove: 'Rimuovi il filtro {filter}',
+    tri: { all: 'Tutti', yes: 'Sì', no: 'No' },
     columns: { button: 'Colonne', title: 'Colonne visibili', reset: 'Ripristina colonne predefinite' },
   },
   worlds: {

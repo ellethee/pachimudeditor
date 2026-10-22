@@ -557,6 +557,47 @@ async def test_mob_list_filters_and_ordering(adapter: WorldAdapter) -> None:
     await assert_mob_queries_match_oracle(adapter)
 
 
+async def test_mob_trainer_filter(adapter: WorldAdapter) -> None:
+    """Filtro `trainer` e `isTrainer`: pachimud `guildmaster`, ROM `train|practice|gain` (non `healer`), dikumod dalle procedure
+    speciali di `spec_assign.c` (senza il file il campo e' non supportato e il filtro e' ignorato)."""
+    kind = adapter.config.kind
+    zone = await new_zone(adapter, "Zona maestri")
+    flag = {"pachimud": "guildmaster", "basedmud": "gain", "mapping": "practice"}.get(kind)
+    ids: dict[str, int] = {}
+    vnums: dict[str, int] = {}
+    for name, flags in (("a", [flag] if flag else []), ("b", []), ("c", ["sentinel"])):
+        vnum = await adapter.next_content_vnum(zone.id, "mob")
+        mob = await adapter.create_mob(MobIn(vnum=vnum, zone_id=zone.id, keywords=name, short_description=f"mob {name}", flags=flags))
+        ids[name], vnums[name] = mob.id, vnum
+    names = {v: k for k, v in ids.items()}
+
+    async def run(**kw: object) -> str:
+        page = await adapter.list_mobs(MobPageParams(zone_id=zone.id, **kw))  # type: ignore[arg-type]
+        return "".join(names[m.id] for m in page.items)
+
+    async def field_unsupported() -> bool:
+        mob = next(r for r in adapter.describe().resources if r.type == "mob")
+        return next(f for f in mob.fields if f.name == "isTrainer").unsupported
+
+    if kind == "dikumod":
+        assert await field_unsupported() and (await adapter.get_mob(ids["a"])).is_trainer is None
+        assert await run(trainer=True) == "abc" and await run(trainer=False) == "abc"  # non supportato: ignorato
+        src = adapter.spec.path  # type: ignore[attr-defined]
+        src.parent.mkdir(parents=True, exist_ok=True)
+        src.write_text(
+            f"static struct special_proc_entry specials[] = {{ {{ {vnums['a']}, MageGuildMaster }}, {{ {vnums['c']}, Cityguard }}, {{ -1, NULL }} }};"
+        )
+        assert not await field_unsupported()
+        assert (await adapter.get_mob(ids["a"])).extra["specProc"] == "MageGuildMaster"
+    else:
+        assert not await field_unsupported()
+    assert [(await adapter.get_mob(ids[k])).is_trainer for k in "abc"] == [True, False, False]
+    assert await run(trainer=True) == "a" and await run(trainer=False) == "bc" and await run() == "abc"
+    assert await run(trainer=True, search="mob b") == "" and await run(trainer=False, flag=["sentinel"]) == "c"
+    assert {ids["a"]} <= {m.id for m in (await adapter.list_mobs(MobPageParams(trainer=True))).items}  # tutte le zone
+    await assert_mob_queries_match_oracle(adapter)
+
+
 async def test_mob_list_invalid_params(adapter: WorldAdapter) -> None:
     """Parametri non validi: 422 con codice stabile, mai errori interni."""
     with expect_error(422, "mobs.invalid_range"):

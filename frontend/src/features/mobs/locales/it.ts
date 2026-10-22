@@ -27,8 +27,10 @@ export default {
       sex: 'Sesso',
       flags: 'Flag',
       raceId: 'Razza',
+      trainer: 'Insegna / gain',
       classId: 'Classe',
     },
+    trainerChip: 'Insegna',
     columns: {
       vnum: 'Vnum',
       shortDescription: 'Descrizione',
@@ -48,6 +50,8 @@ export default {
       damageBonus: 'Danno bonus',
       gold: 'Oro',
       experience: 'Esperienza',
+      trainer: 'Insegna',
+      specProc: 'Procedura speciale',
       flags: 'Flag',
     },
     sections: {

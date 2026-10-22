@@ -33,7 +33,7 @@ from pachimudeditor_adapter_mapping.schema import (
     TaggedStep,
     WhenStep,
 )
-from pachimudeditor.sdk import ExtraFieldDescriptor
+from pachimudeditor.sdk import ExtraFieldDescriptor, mob_query
 from pachimudeditor.common.adapters.models import Option, ResetCommandDraft, ResetCommandOut
 
 MAX_BIT = 52
@@ -404,7 +404,7 @@ class EntityMapper:
 
     def unsupported_names(self) -> set[str]:
         """Campi del DTO (camelCase) che il MUD non ha: costanti o senza mappatura (valore neutro)."""
-        return {to_camel(n) for n, b in self.bindings.items() if b.const}
+        return {to_camel(n) for n, b in self.bindings.items() if b.const and not (n == "is_trainer" and self.trainer_derivable())}
 
     def derived_names(self) -> set[str]:
         """Campi del DTO (camelCase) calcolati e non riscrivibili (espressione senza `to`/hook/pairs)."""
@@ -456,8 +456,15 @@ class EntityMapper:
     def read(self, fields: dict[str, Any]) -> dict[str, Any]:
         """Valori del DTO (nomi Python) piu' `extra`."""
         out = {name: b.read(fields) for name, b in self.bindings.items()}
+        if "is_trainer" in out and self.bindings["is_trainer"].const:
+            out["is_trainer"] = mob_query.is_trainer_flags(out["flags"]) if self.trainer_derivable() else None
         out["extra"] = self.extra_of(fields)
         return out
+
+    def trainer_derivable(self) -> bool:
+        """`True` se `is_trainer` (mob) si ricava dai flag: il campo `flags` e' mappato e la sua tabella ha `train`/`practice`/`gain`/`guildmaster`."""
+        flags = self.bindings.get("flags")
+        return bool(flags and not flags.const and flags.table and any(n.lower() in mob_query.TRAINER_FLAGS for n in flags.table.by_name))
 
     def apply(self, fields: dict[str, Any], values: dict[str, Any], extra: dict[str, Any] | None = None) -> None:
         """Applica ai campi del record i soli valori diversi dall'attuale (`extra` compreso)."""

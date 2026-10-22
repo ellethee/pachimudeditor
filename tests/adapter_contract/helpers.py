@@ -132,6 +132,8 @@ async def assert_mob_queries_match_oracle(adapter: WorldAdapter) -> None:
         want = [m.id for m in everything if flag in m.flags]
         assert ids(await adapter.list_mobs(MobPageParams(flag=[flag]))) == want, flag
         assert ids(await adapter.list_mobs(MobPageParams(flag=[flag.upper()]))) == want, flag
+    for wanted in (True, False):  # nei mondi che non lo sanno `is_trainer` e' nullo e il filtro non esclude nulla
+        assert ids(await adapter.list_mobs(MobPageParams(trainer=wanted))) == [m.id for m in everything if m.is_trainer in (None, wanted)]
     for attr in ("race_id", "class_id"):
         values = sorted({getattr(m, attr) for m in everything if getattr(m, attr)})
         for value in values:

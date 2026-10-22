@@ -62,12 +62,14 @@ export interface IMobs {
   isBanker: boolean
   teachesClassIds: string[] | null
   teachesSkillIds: string[] | null
+  /** Insegna / fa fare il gain (sola lettura, derivato dal mondo); `null` = il mondo non lo sa. */
+  isTrainer?: boolean | null
   /** Campi specifici del mondo (vuoto in pachimud); in scrittura solo le chiavi cambiate. */
   extra?: Record<string, unknown>
 }
 
 /** Corpo di creazione/modifica (senza `id`). */
-export type IMobsInput = Omit<IMobs, 'id'>
+export type IMobsInput = Omit<IMobs, 'id' | 'isTrainer'>
 
 export interface IPaginatedMobs {
   items: IMobs[]

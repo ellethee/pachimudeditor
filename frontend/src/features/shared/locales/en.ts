@@ -31,6 +31,7 @@ export default {
     rangeInvalid: 'Minimum is greater than maximum',
     reset: 'Clear filters',
     remove: 'Remove the {filter} filter',
+    tri: { all: 'All', yes: 'Yes', no: 'No' },
     columns: { button: 'Columns', title: 'Visible columns', reset: 'Restore default columns' },
   },
   worlds: {

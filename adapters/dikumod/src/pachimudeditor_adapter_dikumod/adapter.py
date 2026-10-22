@@ -29,7 +29,7 @@ from pachimudeditor_adapter_dikumod.prototypes import PrototypesMixin
 from pachimudeditor_adapter_dikumod.rooms import RoomsMixin
 from pachimudeditor_adapter_dikumod.zones import ZonesMixin
 from pachimudeditor.sdk import AdapterCapabilities, AdapterInfo, ResourceInfo, WorldAdapter
-from pachimudeditor_adapter_dikumod.fields import EXTRA, FLAG_LISTS, UNSUPPORTED
+from pachimudeditor_adapter_dikumod.fields import EXTRA, FLAG_LISTS, SPEC_PROC_FIELD, UNSUPPORTED
 from pachimudeditor.sdk import describe_resource, finish_resource
 from pachimudeditor.common.adapters.models import (
     ExitIn,
@@ -49,15 +49,18 @@ from pachimudeditor.common.adapters.models import (
 )
 
 
-def _finish(info: ResourceInfo) -> ResourceInfo:
-    """Completa la risorsa con tabelle dei flag, campi non supportati, `bottomVnum` derivato e chiavi di `extra`."""
+def _finish(info: ResourceInfo, *, spec: bool) -> ResourceInfo:
+    """Completa la risorsa con tabelle dei flag, campi non supportati, `bottomVnum` derivato e chiavi di `extra`.
+
+    `spec`: `spec_assign.c` e' leggibile; senza, il mob non ha `extra.specProc` e `isTrainer` e' non supportato."""
     enums = {name: key for (res, name), key in FLAG_LISTS.items() if res == info.type}
     zone = info.type == "zone"
+    mob = info.type == "mob"
     return finish_resource(
         info,
-        EXTRA.get(info.type, []),
+        EXTRA.get(info.type, []) + ([SPEC_PROC_FIELD] if mob and spec else []),
         enums=enums,
-        unsupported=UNSUPPORTED.get(info.type, frozenset()),
+        unsupported=UNSUPPORTED.get(info.type, frozenset()) | (frozenset({"isTrainer"}) if mob and not spec else frozenset()),
         read_only=frozenset({"bottomVnum"}) if zone else frozenset(),
         create_at_end=zone,
     )
@@ -98,5 +101,5 @@ class DikumodAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, Players
             name=self.config.name or f"Diku Modificato ({self.variant})",
             capabilities=self.capabilities(),
             params={"variant": self.variant, "data_prefix": self.store.prefix, "rent_vnum_max": 65535 if self.rent_unsigned else 32767},
-            resources=[_finish(r) for r in resources],
+            resources=[_finish(r, spec=self.spec.supported) for r in resources],
         )

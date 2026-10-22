@@ -85,10 +85,14 @@ class PrototypesMixin(PachimudSupport):
                 clauses.append(model.race_id.in_(params.race_id))
             if params.class_id:
                 clauses.append(model.class_id.in_(params.class_id))
-            if params.flag:
-                # i flag stanno in una colonna JSON: si risolvono in Python (stessa funzione degli adapter su file)
+            if params.flag or params.trainer is not None:
+                # i flag stanno in una colonna JSON: si risolvono in Python (stesse funzioni degli adapter su file)
                 rows = (await session.execute(select(model.id, model.flags).where(*clauses))).all()
-                clauses.append(model.id.in_([r.id for r in rows if mob_query.match_flags(r.flags, params)]))
+                keep = [
+                    r.id for r in rows if mob_query.match_flags(r.flags, params)
+                    and mob_query.match_trainer(mob_query.is_trainer_flags(r.flags), params)
+                ]  # fmt: skip
+                clauses.append(model.id.in_(keep))
             ordering = [order_clause(model, field, desc) for field, desc in order]
             return await paginate_filtered(session, model, params, MobOut, clauses, ordering)
 

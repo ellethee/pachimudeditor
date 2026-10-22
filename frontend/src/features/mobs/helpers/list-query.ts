@@ -22,6 +22,7 @@ export const FILTER_SPECS: IFilterSpec[] = [
   { key: 'flags', param: 'flag', kind: 'list' },
   { key: 'raceId', param: 'raceId', kind: 'list' },
   { key: 'classId', param: 'classId', kind: 'list' },
+  { key: 'trainer', param: 'trainer', kind: 'tri' },
   ...RANGE_KEYS.map((key): IFilterSpec => ({ key, param: key, kind: 'range' })),
 ]
 
@@ -46,6 +47,8 @@ export const COLUMN_NAMES = [
   'gold',
   'experience',
   'flags',
+  'trainer',
+  'specProc',
 ] as const
 
 /** Colonne di default: poche su telefono, le principali altrimenti. */

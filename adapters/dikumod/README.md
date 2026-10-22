@@ -18,5 +18,8 @@ webeditor_worlds:
   - { id: dikumod, kind: dikumod, name: Diku Modificato, path: /percorso/leu/lib, params: { data_prefix: leudata } }
 ```
 
+Facoltativo: `params.spec_assign` (percorso assoluto di `spec_assign.c`; di default `<radice>/src/spec_assign.c`) abilita, in sola lettura,
+la procedura speciale dei mob (`extra.specProc`) e il filtro «insegna / gain» (`trainer`).
+
 Parametri, capability, limiti e formati sono nella documentazione di pachimudeditor, sezione *Adapter > dikumod*.
 L'adapter richiede una versione compatibile del core (`pachimudeditor>=0.1.0,<0.2`).

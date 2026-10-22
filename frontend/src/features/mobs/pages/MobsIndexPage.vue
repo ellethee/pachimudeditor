@@ -50,6 +50,13 @@
       <template #error="{ error, retry }">
         <table-error :error="error" :retry="retry" />
       </template>
+      <template #body-cell-trainer="{ slotProps }">
+        <q-td :props="slotProps">
+          <q-chip v-if="slotProps.row.isTrainer" dense color="primary" text-color="white" :icon="mdiSchool" data-test="trainer-chip">
+            {{ t('mobs.trainerChip') }}
+          </q-chip>
+        </q-td>
+      </template>
       <template #toolbar-actions="{ api }">
         <columns-menu :names="columnNames" :model-value="visibleColumns" :label-of="columnLabel" @toggle="toggleColumn" @reset="resetColumns" />
         <q-btn v-if="!readOnly" color="primary" :icon="mdiPlus" :label="t('mobs.new')" @click="openCreate(api)" />
@@ -65,7 +72,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import type { QTableColumn } from 'quasar'
-import { mdiInbox, mdiPencil, mdiPlus, mdiRefresh } from '@quasar/extras/mdi-v7'
+import { mdiInbox, mdiPencil, mdiPlus, mdiRefresh, mdiSchool } from '@quasar/extras/mdi-v7'
 import { PachiEmptyState, PachiErrorState } from '@ilpachi/pachifastquasar'
 import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import type { PachiTable2Api, PachiTable2Exposed } from '@ilpachi/pachi-kit/table'
@@ -150,6 +157,13 @@ function hasField(name: string): boolean {
   return !fieldOf('mob', name)?.unsupported
 }
 
+/** `true` se la colonna è disponibile: «Insegna» segue `isTrainer`, «Procedura speciale» esiste solo se il mondo dichiara `extra.specProc`. */
+function hasColumn(name: string): boolean {
+  if (name === 'trainer') return hasField('isTrainer')
+  if (name === 'specProc') return extraFieldsOf('mob').some((field) => field.name === 'specProc')
+  return hasField(name)
+}
+
 /** Controlli della barra dei filtri (testi, opzioni e campi non supportati nascosti). */
 const controls = computed<IFilterControl[]>(() =>
   FILTER_SPECS.map((spec): IFilterControl => {
@@ -160,12 +174,13 @@ const controls = computed<IFilterControl[]>(() =>
     }
     if (spec.key === 'raceId') return { ...base, options: races.value.map((r) => ({ value: r.id, label: r.name })) }
     if (spec.key === 'classId') return { ...base, options: classes.value.map((r) => ({ value: r.id, label: r.name })) }
+    if (spec.key === 'trainer') return { ...base, hidden: !hasField('isTrainer') }
     return { ...base, label: columnLabel(spec.key) }
   }),
 )
 
 /** Colonne selezionabili in questo mondo (senza quelle dei campi che non ha). */
-const columnNames = computed<string[]>(() => COLUMN_NAMES.filter((name) => hasField(name)))
+const columnNames = computed<string[]>(() => COLUMN_NAMES.filter((name) => hasColumn(name)))
 /** Colonne visibili: scelta salvata dal viewer, altrimenti pochi default (telefono) o i principali. */
 const visibleColumns = ref<string[]>(loadColumns(COLUMNS_KEY, COLUMN_NAMES) ?? defaultColumns($q.screen.lt.sm))
 
@@ -259,6 +274,9 @@ const allColumns = computed<QTableColumn<IMobs>[]>(() => {
       align: 'left',
       style: 'max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap',
     },
+    // non ordinabili: derivati (flag o procedura speciale), non colonne del database
+    { name: 'trainer', label: columnLabel('trainer'), field: (row) => (row.isTrainer ? t('mobs.trainerChip') : ''), align: 'left' },
+    { name: 'specProc', label: columnLabel('specProc'), field: (row) => String(row.extra?.specProc ?? ''), align: 'left' },
   ]
 })
 const columns = computed(() =>

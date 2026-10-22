@@ -153,6 +153,28 @@ describe('dikumod', { skip: HAS_DIKUMOD ? false : 'dati Diku Modificato non trov
     assert.equal((await rw.call('DELETE', `/api/mobs/${corrupted.id}`)).status, 409)
   })
 
+  it('maestri da spec_assign.c: filtro «Insegna / gain», colonna «Procedura speciale», API coerente', async () => {
+    const trainers = (await ro.get('/api/mobs?trainer=true&pageSize=100')).data as { total: number; items: { vnum: number; isTrainer: boolean; extra: Record<string, string> }[] }
+    assert.ok(trainers.total >= 27 && trainers.items.some((m) => m.vnum === 691)) // 26 *GuildMaster + monk_master (Cain) + altri maestri
+    assert.ok(trainers.items.every((m) => m.isTrainer && /guildmaster|monk_master/i.test(m.extra.specProc ?? '')))
+    const others = (await ro.get('/api/mobs?trainer=false&pageSize=100')).data as { items: { isTrainer: boolean }[] }
+    assert.ok(others.items.every((m) => m.isTrainer === false))
+    await goto(s.page, '/mobs?trainer=true')
+    await s.page.locator('[data-test="tri-trainer"]').waitFor()
+    await s.page.locator('[data-test="active-filters"] .q-chip', { hasText: 'Insegna / gain: Sì' }).waitFor()
+    const columns = s.page.locator('[data-test="columns-menu"]')
+    await columns.click()
+    await s.page.locator('.q-menu .q-item', { hasText: 'Procedura speciale' }).click()
+    await s.page.locator('.q-menu .q-item', { hasText: 'Insegna' }).click()
+    await s.page.keyboard.press('Escape')
+    await s.page.locator('td', { hasText: 'MageGuildMaster' }).first().waitFor()
+    await s.page.locator('[data-test="trainer-chip"]').first().waitFor()
+    assert.equal(await rawI18nKey(s.page), null)
+    await columns.click()
+    await s.page.locator('.q-menu .q-item', { hasText: 'Ripristina' }).click()
+    await s.page.keyboard.press('Escape')
+  })
+
   it('sola lettura: le scritture sono rifiutate', async () => {
     assert.equal((await ro.call('PUT', '/api/mobs/1', { level: 3 })).status, 409)
     assert.equal((await ro.call('PUT', '/api/rooms/1', { name: 'x' })).status, 409)

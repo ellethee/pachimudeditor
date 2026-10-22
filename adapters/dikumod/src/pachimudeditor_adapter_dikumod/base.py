@@ -14,6 +14,7 @@ from pachifast.i18n import api_error
 
 from pachimudeditor_adapter_dikumod import mapping
 from pachimudeditor_adapter_dikumod.live_config import LiveSettings, parse_live_settings
+from pachimudeditor_adapter_dikumod.specials import SpecAssign, SpecReport
 from pachimudeditor_adapter_dikumod.store import DikumodStore, Ref, ZoneRef, resolve
 from pachimudeditor.sdk import rules
 from pachimudeditor.common.adapters.models import EntityKind, ResetUsage
@@ -30,6 +31,8 @@ class DikumodSupport:
         self.config = config
         prefix = validate_prefix(config.params.get("data_prefix", DEFAULT_PREFIX))
         self.store = DikumodStore(resolve(config.path, prefix), prefix)
+        self.spec = SpecAssign.locate(self.store.lib, config.params.get("spec_assign"))
+        """Procedure speciali dei mob (`spec_assign.c`, sola lettura): senza il file il filtro `trainer` non e' supportato."""
         self.lock = asyncio.Lock()
         """Un solo scrittore per volta: una scrittura puo' toccare piu' file (uscite entranti, negozio, script)."""
         self.read_only = config.read_only if "read_only" in config.model_fields_set else True
@@ -44,6 +47,10 @@ class DikumodSupport:
         self.rent_unsigned: bool = rent_vnum == "unsigned"
         """`item_number` del rent e' un `ush_int` (gioco con la patch `leu-rent-vnum-unsigned.patch`): max 65535 invece di 32767."""
         self.variant: str = variant or ("dikumod2" if self.store.paths.gui.exists() or self.store.paths.overrides("room") else "dikumod")
+
+    def schema_report(self) -> SpecReport:
+        """Stato della lettura di `spec_assign.c` (per `worlds check`)."""
+        return self.spec.report()
 
     # ------------------------------------------------------------------ canale live (sovrascritti da `LiveMixin`)
 

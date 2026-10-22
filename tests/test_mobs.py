@@ -91,3 +91,20 @@ async def test_list_invalid_filters_422(client: httpx.AsyncClient) -> None:
     assert error_code(await client.get("/api/mobs", params={"orderBy": "nope"}), 422) == "api.invalid_order_by"
     for bad in ({"minLevel": "x"}, {"sex": "abc"}, {"maxGold": 10**12}):
         assert (await client.get("/api/mobs", params=bad)).status_code == 422, bad
+
+
+async def test_trainer_filter_http(client: httpx.AsyncClient) -> None:
+    """`trainer` (booleano, true/false) filtra i mob con il flag `guildmaster`; `isTrainer` e' nel DTO; valori non validi: 422."""
+    data(await client.post("/api/mobs", json=await _body(client, 1080, level=40, flags=["guildmaster"])), 201)
+    data(await client.post("/api/mobs", json=await _body(client, 1081, level=40, flags=["sentinel"])), 201)
+
+    async def vnums(**params: object) -> list[int]:
+        page = data(await client.get("/api/mobs", params={"minLevel": 40, "orderBy": "vnum", **params}))
+        return [m["vnum"] for m in page["items"]]
+
+    assert await vnums() == [1080, 1081]
+    assert await vnums(trainer="true") == [1080] and await vnums(trainer="false") == [1081]
+    assert await vnums(trainer=True) == [1080] and await vnums(trainer=True, flag="guildmaster") == [1080]
+    items = {m["vnum"]: m for m in data(await client.get("/api/mobs", params={"minLevel": 40}))["items"]}
+    assert items[1080]["isTrainer"] is True and items[1081]["isTrainer"] is False
+    assert (await client.get("/api/mobs", params={"trainer": "forse"})).status_code == 422

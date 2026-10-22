@@ -14,6 +14,8 @@ plugin = AdapterPlugin(
 # Diku Modificato (file dati Diku; in sola lettura se read_only non e' scritto):
 # - { id: dikumod, kind: dikumod, name: Diku Modificato, path: /percorso/leu/lib, params: { data_prefix: leudata } }
 # `params.data_prefix` (facoltativo, default dikumoddata): prefisso dei file dati (miomondo.wld, miomondo.mob, ...)
+# `params.spec_assign` (facoltativo): percorso assoluto di spec_assign.c (default <radice>/src/spec_assign.c), letto in sola lettura
+# per la procedura speciale dei mob e il filtro «insegna / gain»
 # Canale live verso il MUD acceso (modulo livectl; il token sta nel .env, qui solo il NOME della variabile):
 #   params: { live: { socket: /percorso/assoluto/livectl.sock, token_env: DIKUMOD_LIVE_TOKEN, timeout_ms: 3000 } }
 """,

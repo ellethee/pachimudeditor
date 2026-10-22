@@ -504,6 +504,18 @@ class MobOut(NeutralOut):
     is_banker: bool
     teaches_class_ids: list[str] | None
     teaches_skill_ids: list[str] | None
+    is_trainer: bool | None = None
+    """Il mob insegna / fa fare il gain (sola lettura, derivato). Se l'adapter non lo indica si ricava dai `flags`
+    (`mob_query.is_trainer_flags`); `None` esplicito = il mondo non lo sa (campo `unsupported`, filtro `trainer` ignorato)."""
+
+    @model_validator(mode="after")
+    def _derive_trainer(self) -> "MobOut":
+        """`is_trainer` dai flag quando l'adapter non l'ha impostato (pachimud: `guildmaster`; ROM: `train`/`practice`/`gain`)."""
+        if "is_trainer" not in self.model_fields_set:
+            from pachimudeditor.common.adapters.mob_query import is_trainer_flags
+
+            self.is_trainer = is_trainer_flags(self.flags)
+        return self
 
 
 class MobIn(NeutralIn):
@@ -582,6 +594,8 @@ class MobPageParams(PageParams):
     piu' id: OR, uguaglianza esatta; un id nullo non li soddisfa), intervalli inclusivi `minLevel|maxLevel`,
     `minThac0`, `minArmorClass`, `minHpDiceCount|HpDieSize|HpBonus`, `minDamageDiceCount|DamageDieSize|DamageBonus`,
     `minGold`, `minExperience`, `minAlignment` (e i rispettivi `max...`).
+    `trainer` (booleano): `true` = solo i mob che insegnano / fanno fare il gain, `false` = gli altri (semantica per
+    mondo in `docs/backend/contract.md`; un mondo che non lo sa ignora il filtro).
     Ordinamento (`orderBy`, `-campo` per il discendente, nulli sempre in fondo): vedi `order_fields`."""
 
     search_fields = ["short_description", "keywords", "vnum"]
@@ -595,6 +609,7 @@ class MobPageParams(PageParams):
     flag: list[str] | None = Query(None)
     race_id: list[str] | None = Query(None)
     class_id: list[str] | None = Query(None)
+    trainer: bool | None = Query(None)
     min_level: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
     max_level: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
     min_thac0: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)

@@ -72,7 +72,7 @@ webeditor_worlds:
   #     kind: dikumod,
   #     name: "Diku Modificato",
   #     path: /percorso/a/leu/lib,
-  #     params: { data_prefix: leudata },
+  #     params: { data_prefix: leudata }, # facoltativo: spec_assign: /percorso/a/leu/src/spec_assign.c (maestri)
   #   } # sola lettura
   # - {
   #     id: dikumod-rw,

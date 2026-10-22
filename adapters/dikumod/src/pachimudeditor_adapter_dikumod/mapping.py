@@ -18,6 +18,7 @@ from pachimudeditor.common.enums import ZoneCommandType, ZoneResetMode
 from pachimudeditor.common.enums import Direction, DoorFlag, SectorType
 
 from pachimudeditor.sdk import rules
+from pachimudeditor_adapter_dikumod.specials import TEACHING_PROCS
 from pachimudeditor.common.adapters.models import (
     ExitOut,
     ExtraDescriptionOut,
@@ -341,8 +342,13 @@ def shop_apply(shop: Shop, data: dict[str, Any]) -> None:
             setattr(shop, attr, _int(f"shop.{key}", data[key]))
 
 
-def mob_out(mob: Mob, zone_id: int, shop: Shop | None, script: dict[str, Any] | None, *, duplicate: bool = False) -> MobOut:
-    """DTO neutro di un mob. hp: `S` = dado del file; `A/N/B/L` = `level d8 + bonus`."""
+def mob_out(
+    mob: Mob, zone_id: int, shop: Shop | None, script: dict[str, Any] | None, *, duplicate: bool = False,
+    procs: dict[int, str] | None = None,
+) -> MobOut:  # fmt: skip
+    """DTO neutro di un mob. hp: `S` = dado del file; `A/N/B/L` = `level d8 + bonus`.
+
+    `procs` = procedure speciali di `spec_assign.c` (`None`: non si sanno, niente `extra.specProc` e `isTrainer` nullo)."""
     if mob.hp_dice is not None:
         hp = (mob.hp_dice.n, mob.hp_dice.m, mob.hp_dice.k)
     else:
@@ -356,6 +362,8 @@ def mob_out(mob: Mob, zone_id: int, shop: Shop | None, script: dict[str, Any] | 
     }  # fmt: skip
     if duplicate:
         extra["warning"] = "vnum doppio nel file"
+    if procs is not None:
+        extra["specProc"] = procs.get(mob.vnum)
     return MobOut(
         id=mob.vnum, vnum=mob.vnum, zone_id=zone_id, keywords=mob.name, short_description=mob.short,
         long_description=view(mob.long), detailed_description=view(mob.description), level=mob.level, thac0=mob.thac0,
@@ -363,11 +371,16 @@ def mob_out(mob: Mob, zone_id: int, shop: Shop | None, script: dict[str, Any] | 
         damage_die_size=mob.damage.m, damage_bonus=mob.damage.k, gold=mob.gold, experience=max(mob.exp, 0),
         sex=SEX_TO_DTO.get(mob.sex, Sex.NEUTRAL), flags=T.flag_names(T.ACT_FLAGS, mob.act), race_id=race_name(mob.race),
         class_id=None, alignment=mob.alignment, debuff_skill_id=None, shop_id=None, quest_ids=[], is_banker=False,
-        teaches_class_ids=None, teaches_skill_ids=None, extra=extra,
+        teaches_class_ids=None, teaches_skill_ids=None, extra=extra, is_trainer=trainer_of(procs, mob.vnum),
     )  # fmt: skip
 
 
-def corrupted_mob_out(vnum: int, src: str, error: str, line: int, zone_id: int) -> MobOut:
+def trainer_of(procs: dict[int, str] | None, vnum: int) -> bool | None:
+    """Il mob ha una procedura speciale che insegna (`None` se `spec_assign.c` non e' noto)."""
+    return None if procs is None else procs.get(vnum) in TEACHING_PROCS
+
+
+def corrupted_mob_out(vnum: int, src: str, error: str, line: int, zone_id: int, procs: dict[int, str] | None = None) -> MobOut:
     """Segnaposto per un record corrotto (visibile ma non modificabile): nomi dal testo grezzo, dati neutri."""
     parts = src.split("~")
     name = parts[0].split("\n", 1)[1].strip() if "\n" in parts[0] else ""
@@ -378,7 +391,8 @@ def corrupted_mob_out(vnum: int, src: str, error: str, line: int, zone_id: int) 
         hp_bonus=0, damage_dice_count=0, damage_die_size=0, damage_bonus=0, gold=0, experience=0, sex=Sex.NEUTRAL,
         flags=[], race_id=None, class_id=None, alignment=0, debuff_skill_id=None, shop_id=None, quest_ids=[],
         is_banker=False, teaches_class_ids=None, teaches_skill_ids=None,
-        extra={"corrupted": True, "warning": error, "line": line, "raw": src},
+        extra={"corrupted": True, "warning": error, "line": line, "raw": src, **({} if procs is None else {"specProc": procs.get(vnum)})},
+        is_trainer=trainer_of(procs, vnum),
     )  # fmt: skip
 
 
@@ -526,6 +540,7 @@ def mob_extra_handlers(mob: Mob, shop_cb: Any, script_cb: Any) -> dict[str, Any]
         "immune": _mask_setter(mob, "immune"), "mImmune": _mask_setter(mob, "m_immune"), "susc": _mask_setter(mob, "susc"),
         "sound": text("sound", "sound"), "distantSound": text("distant_sound", "distantSound"), "expRaw": exp_raw,
         "shop": shop_cb, "script": script_cb, "trailing": readonly("trailing", mob.trailing),
+        "specProc": lambda v: None,  # informativo: la procedura sta in spec_assign.c (sola lettura)
         "warning": lambda v: None, "corrupted": lambda v: None, "raw": lambda v: None, "line": lambda v: None,
     }  # fmt: skip
 

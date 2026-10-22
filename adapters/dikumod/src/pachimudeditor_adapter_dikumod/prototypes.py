@@ -55,10 +55,11 @@ class PrototypesMixin(DikumodSupport):
         ref = store.mobs.get(vnum)
         if ref is None:
             raw = store.raw_mobs[vnum]
-            return mapping.corrupted_mob_out(vnum, raw.src, raw.error, raw.line, self.zone_id_of(vnum))
+            return mapping.corrupted_mob_out(vnum, raw.src, raw.error, raw.line, self.zone_id_of(vnum), self.spec.procs())
         return mapping.mob_out(
-            ref.item, self.zone_id_of(vnum), store.shops.get(vnum), self._script_of(vnum), duplicate=vnum in store.duplicates["mob"]
-        )
+            ref.item, self.zone_id_of(vnum), store.shops.get(vnum), self._script_of(vnum), duplicate=vnum in store.duplicates["mob"],
+            procs=self.spec.procs(),
+        )  # fmt: skip
 
     def _healthy_mob(self, mob_id: int) -> Any:
         """`Ref` di un mob sano: 404 se non esiste, 409 `dikumod.record_corrupted` se e' corrotto."""

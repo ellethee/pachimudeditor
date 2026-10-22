@@ -6,8 +6,8 @@ export interface IRange {
   max?: number | undefined
 }
 
-/** Tipo di filtro: elenco di valori (multi-selezione), testo libero o intervallo numerico. */
-export type FilterKind = 'list' | 'text' | 'range'
+/** Tipo di filtro: elenco di valori (multi-selezione), testo libero, intervallo numerico o sì/no (tri-stato: tutti / sì / no). */
+export type FilterKind = 'list' | 'text' | 'range' | 'tri'
 
 /** Definizione di un filtro: chiave nello stato e nome del parametro di query (`min<Param>`/`max<Param>` per gli intervalli). */
 export interface IFilterSpec {
@@ -50,7 +50,7 @@ export function emptyFilters(specs: IFilterSpec[]): IListFilters {
   const filters: IListFilters = { lists: {}, texts: {}, ranges: {} }
   for (const spec of specs) {
     if (spec.kind === 'list') filters.lists[spec.key] = []
-    else if (spec.kind === 'text') filters.texts[spec.key] = ''
+    else if (spec.kind === 'text' || spec.kind === 'tri') filters.texts[spec.key] = ''
     else filters.ranges[spec.key] = {}
   }
   return filters
@@ -83,6 +83,9 @@ export function filtersToParams(specs: IFilterSpec[], filters: IListFilters, kee
     } else if (spec.kind === 'text') {
       const text = (filters.texts[spec.key] ?? '').trim()
       if (text) params[spec.param] = text
+    } else if (spec.kind === 'tri') {
+      const value = filters.texts[spec.key]
+      if (value === 'true' || value === 'false') params[spec.param] = value
     } else {
       const range = filters.ranges[spec.key] ?? {}
       if (!keepInvalid && rangeInvalid(range)) continue
@@ -126,6 +129,9 @@ export function filtersFromQuery(specs: IFilterSpec[], query: LocationQuery): IL
       filters.lists[spec.key] = spec.numeric ? values.map(Number).filter((value) => Number.isInteger(value)) : values
     } else if (spec.kind === 'text') {
       filters.texts[spec.key] = first(query[spec.param]).trim()
+    } else if (spec.kind === 'tri') {
+      const value = first(query[spec.param]).trim()
+      filters.texts[spec.key] = value === 'true' || value === 'false' ? value : ''
     } else {
       filters.ranges[spec.key] = { min: int(query[`min${cap(spec.param)}`]), max: int(query[`max${cap(spec.param)}`]) }
     }
@@ -151,7 +157,7 @@ export function filterQueryKeys(specs: IFilterSpec[]): string[] {
 export function activeCount(specs: IFilterSpec[], filters: IListFilters): number {
   return specs.filter((spec) => {
     if (spec.kind === 'list') return (filters.lists[spec.key] ?? []).length > 0
-    if (spec.kind === 'text') return (filters.texts[spec.key] ?? '').trim() !== ''
+    if (spec.kind === 'text' || spec.kind === 'tri') return (filters.texts[spec.key] ?? '').trim() !== ''
     const range = filters.ranges[spec.key]
     return range !== undefined && (range.min !== undefined || range.max !== undefined)
   }).length

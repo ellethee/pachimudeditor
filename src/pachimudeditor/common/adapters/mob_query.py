@@ -20,7 +20,9 @@ RANGE_FIELDS = (
 """Campi numerici con filtro `min_<campo>`/`max_<campo>`."""
 LEGACY_ORDER = frozenset({"id", "vnum", "level"})
 """Ordinamenti che gli adapter su file sapevano gia' fare senza costruire i DTO."""
-_FILTERS = ("sex", "flag", "race_id", "class_id") + tuple(f"{b}_{f}" for f in RANGE_FIELDS for b in ("min", "max"))
+TRAINER_FLAGS = frozenset({"guildmaster", "train", "practice", "gain"})
+"""Flag che rendono un mob un maestro: `guildmaster` (pachimud), `train`/`practice`/`gain` (ROM act; `healer` e `changer` no)."""
+_FILTERS = ("sex", "flag", "race_id", "class_id", "trainer") + tuple(f"{b}_{f}" for f in RANGE_FIELDS for b in ("min", "max"))
 
 
 def has_filters(params: MobPageParams) -> bool:
@@ -46,6 +48,16 @@ def match_flags(flags: list[str], params: MobPageParams) -> bool:
     return list_query.has_flags(flags, params.flag or [])
 
 
+def is_trainer_flags(flags: list[str]) -> bool:
+    """`True` se tra i flag c'e' uno di `TRAINER_FLAGS` (senza maiuscole)."""
+    return any(f.lower() in TRAINER_FLAGS for f in flags)
+
+
+def match_trainer(is_trainer: bool | None, params: MobPageParams) -> bool:
+    """Filtro `trainer`; un valore `None` (il mondo non lo sa) non esclude mai nulla."""
+    return params.trainer is None or is_trainer is None or is_trainer == params.trainer
+
+
 def _match(m: MobOut, params: MobPageParams) -> bool:
     """Tutti i filtri sulle statistiche per un `MobOut`."""
     if params.sex and int(m.sex) not in params.sex:
@@ -54,7 +66,7 @@ def _match(m: MobOut, params: MobPageParams) -> bool:
         return False
     if params.class_id and m.class_id not in params.class_id:
         return False
-    return list_query.in_ranges(m, params, RANGE_FIELDS) and match_flags(m.flags, params)
+    return match_trainer(m.is_trainer, params) and list_query.in_ranges(m, params, RANGE_FIELDS) and match_flags(m.flags, params)
 
 
 def is_extended(params: MobPageParams) -> bool:

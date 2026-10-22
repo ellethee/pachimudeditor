@@ -38,6 +38,18 @@
             />
           </div>
         </div>
+        <div v-else-if="control.kind === 'tri'" class="col-12 col-sm-6 col-md-4 row items-center no-wrap q-gutter-x-sm" :data-test="`tri-${control.key}`">
+          <span class="text-caption ellipsis">{{ control.label }}</span>
+          <q-btn-toggle
+            :model-value="modelValue.texts[control.key] ?? ''"
+            :options="triOptions"
+            dense
+            no-caps
+            unelevated
+            toggle-color="primary"
+            @update:model-value="(v: string) => setText(control.key, v)"
+          />
+        </div>
         <q-input
           v-else-if="control.kind === 'text'"
           :model-value="modelValue.texts[control.key]"
@@ -111,6 +123,13 @@ const $q = useQuasar()
 const open = ref(!$q.screen.lt.sm)
 /** Opzioni mostrate dai select con inserimento libero (filtrate dal testo digitato). */
 const typed = ref<Record<string, string>>({})
+
+/** Opzioni del filtro sì/no: tutti (nessun filtro), sì, no. */
+const triOptions = computed(() => [
+  { label: t('listFilters.tri.all'), value: '' },
+  { label: t('listFilters.tri.yes'), value: 'true' },
+  { label: t('listFilters.tri.no'), value: 'false' },
+])
 
 /** Proprietà dei selettori con inserimento libero (nuovi valori accettati con Invio). */
 const freeSelect = { 'use-input': true, 'new-value-mode': 'add-unique', 'input-debounce': 0 }
@@ -219,6 +238,11 @@ const chips = computed<IChip[]>(() => {
     } else if (control.kind === 'text') {
       const text = (f.texts[key] ?? '').trim()
       if (text) out.push({ id: key, label: `${label}: ${text}`, clear: () => setText(key, '') })
+    } else if (control.kind === 'tri') {
+      const value = f.texts[key]
+      if (value === 'true' || value === 'false') {
+        out.push({ id: key, label: `${label}: ${t(value === 'true' ? 'listFilters.tri.yes' : 'listFilters.tri.no')}`, clear: () => setText(key, '') })
+      }
     } else {
       const { min, max } = rangeOf(key)
       if (min === undefined && max === undefined) continue

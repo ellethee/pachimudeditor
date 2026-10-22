@@ -30,8 +30,10 @@ const en: PachiMessages<typeof it> = {
       sex: 'Sex',
       flags: 'Flags',
       raceId: 'Race',
+      trainer: 'Teaches / gain',
       classId: 'Class',
     },
+    trainerChip: 'Teaches',
     columns: {
       vnum: 'Vnum',
       shortDescription: 'Description',
@@ -51,6 +53,8 @@ const en: PachiMessages<typeof it> = {
       damageBonus: 'Damage bonus',
       gold: 'Gold',
       experience: 'Experience',
+      trainer: 'Teaches',
+      specProc: 'Special procedure',
       flags: 'Flags',
     },
     sections: {

@@ -20,7 +20,7 @@ import {
 } from '../support/browser.ts'
 
 /** Vnum creati dai test. */
-const VNUMS = [1050, 1051, 1062, 1063, 1064, 2062]
+const VNUMS = [1050, 1051, 1062, 1063, 1064, 2062, 1065, 1066]
 
 /** Elimina via API i mob di test rimasti. */
 async function cleanup(api: Api): Promise<void> {
@@ -127,6 +127,47 @@ describe('mob', () => {
     await s.page.waitForLoadState('networkidle')
     assert.equal(new URL(s.page.url()).search, '')
     assert.equal(await s.page.locator('[data-test="active-filters"]').count(), 0)
+  })
+
+  it('filtro Insegna / gain: tri-stato, chip, URL e colonna «Insegna»', async () => {
+    const zone = await api.byVnum('zones', 10)
+    for (const [vnum, desc, flags] of [
+      [1065, 'stat maestro', ['guildmaster']],
+      [1066, 'stat comune', ['sentinel']],
+    ] as const) {
+      const res = await api.call('POST', '/api/mobs', { vnum, zoneId: zone.id, keywords: 'stat', shortDescription: desc, level: 905, flags })
+      assert.equal(res.status, 201)
+    }
+    await goto(s.page, '/mobs?minLevel=905')
+    await tableRow(s.page, 'stat comune').waitFor()
+    await tableRow(s.page, 'stat maestro').waitFor()
+    const tri = s.page.locator('[data-test="tri-trainer"]')
+    await tri.getByRole('button', { name: 'Sì' }).click()
+    await tableRow(s.page, 'stat comune').waitFor({ state: 'detached' })
+    assert.deepEqual(await statRows(s.page), ['stat maestro'])
+    assert.equal(new URL(s.page.url()).searchParams.get('trainer'), 'true')
+    await s.page.locator('[data-test="active-filters"] .q-chip', { hasText: 'Insegna / gain: Sì' }).waitFor()
+    // l'URL ripristina il filtro; «No» mostra gli altri
+    await goto(s.page, `/mobs?minLevel=905&trainer=true`)
+    await tableRow(s.page, 'stat maestro').waitFor()
+    assert.deepEqual(await statRows(s.page), ['stat maestro'])
+    await s.page.locator('[data-test="tri-trainer"]').getByRole('button', { name: 'No' }).click()
+    await tableRow(s.page, 'stat maestro').waitFor({ state: 'detached' })
+    assert.deepEqual(await statRows(s.page), ['stat comune'])
+    await s.page.locator('[data-test="tri-trainer"]').getByRole('button', { name: 'Tutti' }).click()
+    await tableRow(s.page, 'stat maestro').waitFor()
+    assert.equal(new URL(s.page.url()).searchParams.has('trainer'), false)
+    // colonna «Insegna»: chip solo sul maestro; pachimud non ha «Procedura speciale»
+    await s.page.locator('[data-test="columns-menu"]').click()
+    assert.equal(await s.page.locator('.q-menu .q-item', { hasText: 'Procedura speciale' }).count(), 0)
+    await s.page.locator('.q-menu .q-item', { hasText: 'Insegna' }).click()
+    await s.page.keyboard.press('Escape')
+    await tableRow(s.page, 'stat maestro').locator('[data-test="trainer-chip"]').waitFor()
+    assert.equal(await tableRow(s.page, 'stat comune').locator('[data-test="trainer-chip"]').count(), 0)
+    assert.equal(await rawI18nKey(s.page), null)
+    await s.page.locator('[data-test="columns-menu"]').click()
+    await s.page.locator('.q-menu .q-item', { hasText: 'Ripristina' }).click()
+    await s.page.keyboard.press('Escape')
   })
 
   it('mostra e nasconde le colonne, la scelta resta salvata', async () => {

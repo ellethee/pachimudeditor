@@ -31,6 +31,27 @@ Con la patch `adapters/dikumod/mud-module/leu-rent-vnum-unsigned.patch` (`ush_in
 (in `leu` ce ne sono 19 oltre 32767). Con `signed` un oggetto oltre 32767 e' rifiutato (`worldplayers.invalid_value`, `vnum`, `range`) perche' il gioco lo perderebbe. Il modulo live segnala
 `vnum_not_saveable` oltre il limite compilato (`-DLIVECTL_RENT_VNUM_MAX=65535` con la patch).
 
+### Maestri (procedure speciali, sola lettura)
+
+I dati non hanno un flag «maestro»: il gioco assegna per vnum una **procedura speciale in C** nella tabella `specials[]` di
+`assign_mobiles()` in `src/spec_assign.c` (`{ 30, MageGuildMaster }, ...`). L'editor la legge in **sola lettura** (nulla si
+compila ne' si esegue): toglie commenti e blocchi `#if 0`, ignora le righe malformate e la tabella delle stanze, con un vnum
+doppio vale l'ultima assegnazione e un vnum negativo chiude la tabella, come nel C. Il file e' cercato in `params.spec_assign`
+(percorso **assoluto**) oppure in `<radice>/src/spec_assign.c`, dove la radice e' il genitore di `lib/`; massimo 1 MiB, riletto
+solo se cambiano data o dimensione.
+
+- Se il file c'e': `extra.specProc` (sola lettura, nome della procedura o `null`) e `isTrainer` nel mob; il filtro `GET /api/mobs?trainer=true|false` e la
+  colonna «Insegna» funzionano. Un `extra.specProc` rimandato in un PUT e' ignorato (la procedura sta nel C).
+- Se manca (o e' illeggibile/troppo grande/binario): nessun errore all'avvio, `isTrainer` e' un campo non supportato (`isTrainer: null`),
+  il filtro `trainer` e' ignorato e la UI non lo mostra; `pachimudeditor worlds check` lo segnala con un avviso `spec_assign_missing`.
+
+Contano come «insegna» le procedure che rispondono a `practice`/`practise` e/o `gain`: `MageGuildMaster`, `ClericGuildMaster`,
+`ThiefGuildMaster`, `WarriorGuildMaster` (`src/spec_procs.c`) e, in `src/spec_procs2.c` (comandi 164/170/243), `DruidGuildMaster`, `monk_master`,
+`barbarian_guildmaster`, `RangerGuildmaster`, `PsiGuildmaster`, `PaladinGuildmaster`, `mage_specialist_guildmaster`. `MonkChallenger` (sfidanti) no.
+`PlayersGuildMaster` (`gilde.c`, gilde dei giocatori) non conta. L'elenco sta in un posto solo, `TEACHING_PROCS` in
+`adapters/dikumod/src/pachimudeditor_adapter_dikumod/specials.py`: per riallinearlo cercare in `spec_procs*.c` le procedure che trattano
+`CMD_GAIN`/`CMD_PRACTICE`/`CMD_PRACTISE`. In `leu` le voci `*GuildMaster` sono 26.
+
 **`read_only` vale `true` se non e' scritto** (unico kind con questo default; `read_only: false` e' l'abilitazione esplicita).
 Motivo: i file monolitici sono fragili. `dikumoddata.mob`/`.obj` sono letti dal gioco **per offset di byte** raccolti all'avvio
 (`generate_indices`) e cercati con una ricerca **binaria**: modificarli a gioco acceso lo rompe, e un file non in ordine di
