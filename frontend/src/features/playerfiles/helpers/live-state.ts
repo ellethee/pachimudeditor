@@ -26,7 +26,7 @@ export async function refreshLiveStatus(): Promise<void> {
 /**
  * Stato del canale live per i componenti: la parte live è disponibile solo con la capability `supportsLive` del mondo e per un superuser.
  *
- * @returns stato, disponibilità, possibilità di scrivere e rilettura
+ * @returns stato, disponibilità, possibilità di scrivere, inventario live e rilettura
  */
 export function useLive() {
   const { capabilities } = useWorld()
@@ -38,5 +38,17 @@ export function useLive() {
   const canWrite = computed(
     () => connected.value && (status.value?.classes ?? []).includes('write') && capabilities.value?.readOnly !== true,
   )
-  return { status, enabled, connected, canWrite, refresh: refreshLiveStatus }
+  /** Inventario live disponibile: capability del mondo e feature `inventory` dichiarata dal MUD raggiungibile. */
+  const inventory = computed(
+    () => connected.value && capabilities.value?.supportsLiveInventory === true && (status.value?.features ?? []).includes('inventory'),
+  )
+  /** Si possono modificare/togliere oggetti: inventario live, comandi `obj.set` e `obj.remove` attivi, mondo non in sola lettura. */
+  const canWriteInventory = computed(
+    () =>
+      inventory.value &&
+      capabilities.value?.readOnly !== true &&
+      (status.value?.commands ?? []).includes('obj.set') &&
+      (status.value?.commands ?? []).includes('obj.remove'),
+  )
+  return { status, enabled, connected, canWrite, inventory, canWriteInventory, refresh: refreshLiveStatus }
 }

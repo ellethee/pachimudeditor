@@ -78,6 +78,7 @@ class DikumodAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, Players
             supports_player_write=True,
             supports_player_inventory_write=True,
             supports_live=self.live_settings is not None,
+            supports_live_inventory=self.live_settings is not None,
         )
 
     def describe(self) -> AdapterInfo:

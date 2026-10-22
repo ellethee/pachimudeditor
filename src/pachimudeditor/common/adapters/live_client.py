@@ -25,6 +25,12 @@ from pachimudeditor.common.adapters.live import (
     LiveEchoIn,
     LiveEchoOut,
     LiveError,
+    LiveInventory,
+    LiveItem,
+    LiveItemExpect,
+    LiveItemRemoveOut,
+    LiveItemSetIn,
+    LiveItemSetOut,
     LiveLoadIn,
     LiveLoadOut,
     LivePlayerSetIn,
@@ -343,6 +349,29 @@ class LiveClient:
         else:
             params["player"] = load.player
         return LiveLoadOut.model_validate(await self.call(f"load.{kind}", params, actor=actor, write=True) or {})
+
+    async def inventory(self, name: str) -> LiveInventory:
+        """`player.inventory` (feature `inventory`)."""
+        return LiveInventory.model_validate(await self.call("player.inventory", {"name": name}) or {})
+
+    async def item_get(self, name: str, ref: str) -> LiveItem:
+        """`obj.get`."""
+        return LiveItem.model_validate((await self.call("obj.get", {"name": name, "ref": ref}) or {}).get("item") or {})
+
+    async def item_set(self, name: str, ref: str, change: LiveItemSetIn, *, actor: str | None = None) -> LiveItemSetOut:
+        """`obj.set` (scrittura): solo i campi presenti nella patch."""
+        changes: dict[str, Any] = {k: getattr(change.set, k) for k in change.set.model_fields_set}
+        if "affects" in changes:
+            changes["affects"] = [None if a is None else a.model_dump() for a in changes["affects"]]
+        params = {"name": name, "ref": ref, "expect": change.expect.model_dump(), "save": change.save, "set": changes}
+        return LiveItemSetOut.model_validate(await self.call("obj.set", params, actor=actor, write=True) or {})
+
+    async def item_remove(
+        self, name: str, ref: str, expect: LiveItemExpect, *, save: bool = True, actor: str | None = None
+    ) -> LiveItemRemoveOut:
+        """`obj.remove` (scrittura)."""
+        params = {"name": name, "ref": ref, "expect": expect.model_dump(), "save": save}
+        return LiveItemRemoveOut.model_validate(await self.call("obj.remove", params, actor=actor, write=True) or {})
 
     async def echo(self, echo: LiveEchoIn, *, actor: str | None = None) -> LiveEchoOut:
         """`echo` (scrittura)."""

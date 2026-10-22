@@ -12,6 +12,8 @@ export interface IWorldCapabilities {
   supportsPlayerInventoryWrite: boolean
   /** Canale di controllo live verso il MUD acceso (rotte `/api/world/live`, solo superuser). */
   supportsLive: boolean
+  /** Inventario e oggetti istanza dei giocatori connessi (rotte `/api/world/live/players/{name}/inventory`; richiede `supportsLive`). */
+  supportsLiveInventory: boolean
   supportsTransfer: boolean
   supportsContentRaces: boolean
   supportsResetScripts: boolean

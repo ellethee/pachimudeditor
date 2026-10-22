@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException
-from pachifast.i18n import api_error
+from pachifast.i18n import api_error, translate
 from pachifast.schemas.responses import PaginatedResponse
 
 from pachimudeditor_adapter_dikumod.base import DikumodSupport
@@ -368,7 +368,9 @@ class PlayersMixin(PlayersAdapter, DikumodSupport):
             return api_error(404, "worldplayers.item_not_found")
         if error.reason in INVENTORY_REASONS:
             return api_error(409, "worldplayers.item_invalid", reason=error.reason, **error.params)
-        return api_error(422, "worldplayers.invalid_value", field=error.field, reason=error.reason, **error.params)
+        hint_code = "worldplayers.hint.vnum_range" if (error.field, error.reason) == ("vnum", "range") else ""
+        hint = translate(hint_code, error.params) if hint_code else ""  # testo aggiuntivo localizzato (vuoto per gli altri errori)
+        return api_error(422, "worldplayers.invalid_value", field=error.field, reason=error.reason, hint=hint, **error.params)
 
     async def update_player(self, player_id: str, patch: PlayerPatch) -> PlayerDetail:
         """Modifica i campi e le tabelle; l'oro cambiato si riporta anche in `gold_left` del rent (il gioco lo confronta col costo

@@ -176,3 +176,42 @@ async def test_timeouts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
     finally:
         server.close()
         await server.wait_closed()
+
+
+async def test_inventory_commands(target: Target, monkeypatch: pytest.MonkeyPatch) -> None:
+    """player inventory, obj get/set/remove: ref + fp dall'ultima lettura, `stale_ref` (exit 1), uso errato (exit 2). Non lascia tracce."""
+    code, doc, _ = await cli(target, ["player", "inventory", target.player, "--brief"], monkeypatch)
+    assert code == 0 and doc["result"]["count"] >= 4 and "values" not in doc["result"]["items"][0]
+    vest = next(i for i in doc["result"]["items"] if i["slot"] is not None)
+    code, doc, _ = await cli(target, ["obj", "get", target.player, vest["ref"]], monkeypatch)
+    assert code == 0 and doc["result"]["item"]["fp"] == vest["fp"] and "cost" in doc["result"]["item"]
+    item = doc["result"]["item"]
+    base = ["obj", "set", target.player, vest["ref"], "--fp", vest["fp"], "--vnum", str(vest["vnum"]), "--no-save"]
+    code, doc, _ = await cli(
+        target, [*base, "description=Descrizione da CLI", "values.0=3", "affects.1.location=13", "affects.1.modifier=2"], monkeypatch
+    )
+    assert code == 0 and doc["result"]["item"]["description"] == "Descrizione da CLI" and doc["result"]["item"]["values"][0] == 3
+    assert doc["result"]["item"]["affects"][1] == {"location": 13, "modifier": 2}
+    code, doc, _ = await cli(target, [*base, "weight=1"], monkeypatch)  # fp vecchia
+    assert code == 1 and doc["error"]["code"] == "stale_ref"
+    code, doc, _ = await cli(target, ["obj", "get", target.player, vest["ref"]], monkeypatch)
+    fresh_fp = doc["result"]["item"]["fp"]
+    restore = ["obj", "set", target.player, vest["ref"], "--fp", fresh_fp, "--vnum", str(vest["vnum"]), "--no-save"]
+    args = [*restore, f"description={item['description']}", f"values.0={item['values'][0]}", "affects.1.location=0", "affects.1.modifier=0"]
+    code, doc, _ = await cli(target, args, monkeypatch)
+    assert code == 0 and doc["result"]["item"]["fp"] == vest["fp"]
+    # crea una bottiglia e la rimuove
+    code, doc, _ = await cli(target, ["load", "obj", str(target.obj_vnum), "--player", target.player], monkeypatch)
+    code, doc, _ = await cli(target, ["player", "inventory", target.player, "--brief"], monkeypatch)
+    new = next(i for i in doc["result"]["items"] if i["ref"] == "inv:0")
+    code, doc, _ = await cli(
+        target, ["obj", "remove", target.player, "inv:0", "--fp", new["fp"], "--vnum", str(new["vnum"]), "--no-save"], monkeypatch
+    )
+    assert code == 0 and doc["result"]["removed"] is True and doc["result"]["destroyed"] == 1
+    code, doc, _ = await cli(target, ["obj", "remove", target.player, "inv:0", "--fp", "00000000", "--no-save"], monkeypatch)
+    assert code == 1 and doc["error"]["code"] == "stale_ref"
+    for args in (["obj", "set", target.player, "eq:5", "--fp", "00000000", "weight"], ["obj", "set", target.player, "eq:5", "--fp", "00000000", "colore=1"],
+                 ["obj", "set", target.player, "eq:5", "--fp", "00000000", "affects.0.location=3"],
+                 ["obj", "set", target.player, "eq:5", "weight=1"], ["obj", "remove", target.player, "eq:5"]):  # fmt: skip
+        code, doc, _ = await cli(target, args, monkeypatch)
+        assert code == 2, args

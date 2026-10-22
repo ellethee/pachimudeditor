@@ -23,4 +23,6 @@ MESSAGES: dict[str, str] = {
     "worldlive.class_not_owned": 'The player does not have the class "{class_name}": only classes already owned can be changed.',
     "worldlive.zone_forbidden": "This zone cannot be reset through the channel.",
     "worldlive.object_denied": "Object {vnum} cannot be created through the channel (the game's deny list).",
+    "worldlive.stale_ref": "The object changed in the meantime (moved, used or edited by someone else): the list was reloaded, check and retry.",
+    "worldlive.value_too_long": "«{field}» is too long: at most {max} characters (the player file cannot hold more).",
 }

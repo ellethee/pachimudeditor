@@ -19,6 +19,12 @@ from pachimudeditor.sdk import (
     LiveEchoIn,
     LiveEchoOut,
     LiveError,
+    LiveInventory,
+    LiveItem,
+    LiveItemExpect,
+    LiveItemRemoveOut,
+    LiveItemSetIn,
+    LiveItemSetOut,
     LiveLoadIn,
     LiveLoadOut,
     LivePlayerSetIn,
@@ -138,3 +144,23 @@ class LiveMixin(LiveAdapter, DikumodSupport):
         """Manda un messaggio."""
         self.ensure_writable()
         return await self._client().echo(echo, actor=actor)
+
+    async def live_player_inventory(self, name: str) -> LiveInventory:
+        """Inventario ed equipaggiamento di un giocatore connesso."""
+        return await self._client().inventory(name)
+
+    async def live_item_get(self, name: str, ref: str) -> LiveItem:
+        """Un oggetto istanza."""
+        return await self._client().item_get(name, ref)
+
+    async def live_item_set(self, name: str, ref: str, change: LiveItemSetIn, *, actor: str | None = None) -> LiveItemSetOut:
+        """Modifica un oggetto istanza (ultima difesa: mondo non `read_only`)."""
+        self.ensure_writable()
+        return await self._client().item_set(name, ref, change, actor=actor)
+
+    async def live_item_remove(
+        self, name: str, ref: str, expect: LiveItemExpect, *, save: bool = True, actor: str | None = None
+    ) -> LiveItemRemoveOut:
+        """Toglie e distrugge un oggetto istanza."""
+        self.ensure_writable()
+        return await self._client().item_remove(name, ref, expect, save=save, actor=actor)

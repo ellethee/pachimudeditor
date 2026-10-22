@@ -14,7 +14,7 @@ mondo con `X-World`.
 | mondo senza capability `supportsLive` | 409 `world.capability_missing` (`params.capability = supports_live`) |
 | scrittura su mondo `read_only` | 409 `world.read_only` (le letture restano permesse) |
 
-La capability `supportsLive` e' dichiarata da dikumod solo se `params.live` e' configurato e non `enabled: false`.
+La capability `supportsLive` (e `supportsLiveInventory`) e' dichiarata da dikumod solo se `params.live` e' configurato e non `enabled: false`.
 
 ## Rotte
 
@@ -29,6 +29,10 @@ La capability `supportsLive` e' dichiarata da dikumod solo se `params.live` e' c
 | `POST /world/live/zones/reset` | body `{zone}` oppure `{room}` (uno solo), `onlyIfEmpty?` -> `{zone,name,executed}` |
 | `POST /world/live/load/mob`, `/load/obj` | body `{vnum, room}` oppure `{vnum, player}`, `count?` 1..10, `notify?` -> `{loaded[]}` |
 | `POST /world/live/echo` | body `{text}` + **una** tra `all: true`, `player`, `room` -> `{recipients}` |
+| `GET /world/live/players/{name}/inventory` | inventario live: `{name,carryWeight,carryItems,count,truncated,items[]}`, elenco piatto in preordine (vedi [inventario](#inventario-e-oggetti-istanza)) |
+| `GET /world/live/players/{name}/inventory/item?ref=` | un oggetto (`LiveItem`) con anche `wearFlags`, `cost`, `costPerDay`, `bitvector`; 404 `worldlive.not_found` se il `ref` non risolve |
+| `PATCH /world/live/players/{name}/inventory/item?ref=` | body `{expect:{vnum,fp}, set:{...}, save?=true}` -> `{name,fp,saved,warnings[],item}` |
+| `DELETE /world/live/players/{name}/inventory/item?ref=&fp=&vnum=&save=` | toglie e **distrugge** l'oggetto -> `{name,removed,destroyed,saved,warnings[]}` |
 
 `fields` ha i nomi del protocollo: `gold`, `bankGold`, `exp`, `hit`, `mana`, `move`, `str`, `strAdd`, `int`, `wis`, `dex`, `con`, `chr`, `alignment`, `spellsToLearn`
 e gli oggetti annidati `levels: {classe: livello}` e `conditions: {drunk|full|thirst: valore}`. Quelli accettati davvero dal MUD sono in `status.editableFields`
@@ -37,6 +41,25 @@ e gli oggetti annidati `levels: {classe: livello}` e `conditions: {drunk|full|th
 **Immortali.** Promuovere una classe a un livello >= 51 (e maggiore dell'attuale) senza `confirmImmortal: true` e' rifiutato con 409
 `worldlive.immortal_confirmation_required` e **nulla** viene modificato (neppure gli altri campi della richiesta); con la conferma la risposta ha
 `warnings: ["immortal_level"]`. L'interfaccia mostra l'avvertenza («stai creando un immortale: avra' i poteri di un dio nel gioco») e invia il flag solo dopo la conferma.
+
+## Inventario e oggetti istanza
+
+Capability `supportsLiveInventory` (dichiarata con `supportsLive`; richiede `supports_live`, altrimenti 409 `world.capability_missing` con `params.capability = supports_live_inventory`). Il MUD
+deve inoltre dichiarare la feature `inventory` in `hello`: si legge da `GET /status` (`features` contiene `inventory`); senza, le rotte rispondono 409 `worldlive.command_disabled`.
+Stesse regole delle altre rotte: solo superuser, `X-World`, le scritture (`PATCH`, `DELETE`) anche su mondo non `read_only` (409 `world.read_only`), nessun ritentativo.
+
+- **`ref`** e' una stringa **opaca** (`eq:5`, `inv:2`, `inv:2/0`): contiene `:` e `/`, quindi va **sempre in query** (`?ref=inv%3A2%2F0`), mai nel percorso. Cambia quando l'inventario cambia: va preso
+  dall'ultima lettura **della stessa riga**. Un `ref` non valido (grammatica) e' 422 `worldlive.bad_params`; uno che non risolve e' 404 `worldlive.not_found` in lettura.
+- **`expect`** `{vnum, fp}` (valori dell'ultima lettura; `vnum` puo' essere `null`) e' **obbligatorio** nelle scritture: nel corpo del `PATCH` (assente = 422), in query del `DELETE`
+  (`fp` obbligatorio = 422; `vnum` assente vale `null`). Se `ref`/`expect` non coincidono col gioco: **409 `worldlive.stale_ref`** e nulla cambia. Su `stale_ref` il client rilegge l'elenco e lo chiede
+  di nuovo all'utente: mai un nuovo invio automatico con un `ref` ricalcolato.
+- **`set`** e' una patch parziale (almeno un campo): `name`, `shortDescription`, `description` (testi: 1..127/127/255 caratteri latin-1, niente `$`, `~` ne' controlli), `values` (1-4 elementi, `null` =
+  invariato), `weight` (0..32767), `extraFlags` (0..2147483647), `timer` (0..1000000 o -7000000 = nessun timer), `affects` (1-5 elementi, `null` = invariato, `{location 0..64, modifier -32768..32767}`).
+  Un campo non valido annulla l'intera richiesta: 422 `worldlive.value_out_of_range` (`field`, `min`, `max`), `worldlive.value_too_long` (testo oltre il limite: `field`, `max`), `worldlive.unencodable_text`,
+  `worldlive.bad_params` (`field`: ad esempio `$` o `~` nel testo).
+- `POST /load/obj` a un giocatore: la risposta ha `warnings: ["vnum_not_saveable"]` se il vnum e' > 32767 (il rent lo salva a 16 bit e al salvataggio l'oggetto si corrompe): l'interfaccia lo mostra sempre.
+- Un oggetto **a terra** (creato in una stanza) non ha un `ref`: il protocollo indirizza solo equipaggiamento e inventario di un giocatore. Per modificare un oggetto appena creato lo si crea nell'inventario di un giocatore.
+- Giocatore non connesso: 404 `worldlive.not_found`; connesso ma non in gioco (link morto, menu): 409 `worldlive.player_not_playing`.
 
 **Scritture mai ritentate.** `PATCH`, `reset`, `load`, `echo` non si ripetono in automatico: dopo un timeout o una caduta della connessione la risposta e'
 504 `worldlive.outcome_unknown` (l'operazione potrebbe essere stata eseguita: rileggere con `GET /players/{name}` o `/who` prima di ripetere).
@@ -52,8 +75,10 @@ e gli oggetti annidati `levels: {classe: livello}` e `conditions: {drunk|full|th
 | 409 | `worldlive.zone_forbidden` | zona 0 |
 | 409 | `worldlive.object_denied` | vnum nella deny-list del MUD (`vnum`) |
 | 409 | `worldlive.forbidden_by_policy` | altra regola del MUD (`reason`) |
+| 409 | `worldlive.stale_ref` | l'oggetto non e' piu' quello letto (`ref`/`expect` non coincidono) |
 | 409 | `worldlive.command_disabled` | comando non dichiarato da `hello` (classe `write` spenta nel MUD) |
 | 422 | `worldlive.value_out_of_range` | valore fuori intervallo (`field`, `min`, `max`) |
+| 422 | `worldlive.value_too_long` | testo di un oggetto oltre il limite del rent (`field`, `max`) |
 | 422 | `worldlive.bad_params` / `worldlive.unencodable_text` | richiesta rifiutata dal MUD / testo non rappresentabile (latin-1) |
 | 429 | `worldlive.rate_limited` | troppe richieste (`retry_after_ms`) |
 | 503 | `worldlive.unreachable` | MUD spento, socket assente o rifiutato |

@@ -93,6 +93,8 @@ async def test_capability_only_where_configured(client: httpx.AsyncClient) -> No
     """`supportsLive` solo per i mondi dikumod con `params.live`."""
     caps = {w["id"]: w["capabilities"]["supportsLive"] for w in data(await client.get("/api/worlds"))}
     assert caps == {"pachimud": False, "dikumod": True, "dikumod-ro": True, "dikumod-nolive": False}
+    inv = {w["id"]: w["capabilities"]["supportsLiveInventory"] for w in data(await client.get("/api/worlds"))}
+    assert inv == caps
 
 
 @pytest.mark.parametrize(
@@ -102,6 +104,9 @@ async def test_capability_only_where_configured(client: httpx.AsyncClient) -> No
         ("PATCH", "/players/tester", {"fields": {"gold": 1}}), ("POST", "/zones/reset", {"zone": 1}),
         ("POST", "/load/mob", {"vnum": 3000, "room": 3001}), ("POST", "/load/obj", {"vnum": 3001, "room": 3001}),
         ("POST", "/echo", {"text": "x", "all": True}),
+        ("GET", "/players/tester/inventory", None), ("GET", "/players/tester/inventory/item?ref=eq:5", None),
+        ("PATCH", "/players/tester/inventory/item?ref=eq:5", {"expect": {"vnum": 9, "fp": "00000000"}, "set": {"weight": 1}}),
+        ("DELETE", "/players/tester/inventory/item?ref=eq:5&fp=00000000&vnum=9", None),
     ],
 )  # fmt: skip
 async def test_every_route_requires_superuser(
@@ -126,10 +131,13 @@ async def test_capability_missing_and_read_only(client: httpx.AsyncClient, fake:
         ("PATCH", "/players/tester", {"fields": {"gold": 1}}), ("POST", "/zones/reset", {"zone": 1}),
         ("POST", "/load/mob", {"vnum": 3000, "room": 3001}), ("POST", "/load/obj", {"vnum": 3001, "room": 3001}),
         ("POST", "/echo", {"text": "x", "all": True}),
+        ("PATCH", "/players/tester/inventory/item?ref=eq:5", {"expect": {"vnum": 9, "fp": "00000000"}, "set": {"weight": 1}}),
+        ("DELETE", "/players/tester/inventory/item?ref=eq:5&fp=00000000&vnum=9", None),
     ]  # fmt: skip
+    assert data(await client.get(f"{LIVE}/players/tester/inventory", headers=ro))["count"] == 4
     for method, path, body in writes:
         assert error_code(await client.request(method, LIVE + path, json=body, headers=ro), 409) == "world.read_only"
-    assert [c for c, _ in fake.calls if c in ("player.set", "zone.reset", "load.mob", "load.obj", "echo")] == []
+    assert [c for c, _ in fake.calls if c in ("player.set", "zone.reset", "load.mob", "load.obj", "echo", "obj.set", "obj.remove")] == []
 
 
 # ------------------------------------------------------------------------------------------------------------- letture
@@ -235,6 +243,158 @@ async def test_writes_disabled_in_the_mud(client: httpx.AsyncClient, fake: FakeL
         == "worldlive.command_disabled"
     )
     assert fake.echoes == []
+
+
+# ------------------------------------------------------------------------------------------------ inventario live
+
+INV = f"{LIVE}/players/tester/inventory"
+
+
+async def inventory(client: httpx.AsyncClient) -> dict[str, dict[str, Any]]:
+    """L'inventario di Tester come dizionario `ref -> oggetto`."""
+    return {i["ref"]: i for i in data(await client.get(INV, headers=H))["items"]}
+
+
+def expect_of(item: dict[str, Any]) -> dict[str, Any]:
+    """`expect` dall'ultima lettura."""
+    return {"vnum": item["vnum"], "fp": item["fp"]}
+
+
+async def test_inventory_list_and_item(client: httpx.AsyncClient, fake: FakeLiveServer) -> None:
+    """Elenco piatto con annidamento e slot; un oggetto con `ref` (query param: contiene `:` e `/`) con i campi di sola lettura."""
+    out = data(await client.get(INV, headers=H))
+    assert [(i["ref"], i["depth"], i["slot"]) for i in out["items"]] == [
+        ("eq:5", 0, 5),
+        ("inv:0", 0, None),
+        ("inv:1", 0, None),
+        ("inv:1/0", 1, None),
+    ]
+    assert out["carryItems"] == 2 and out["truncated"] is False and out["items"][2]["contents"] == 1
+    nested = data(await client.get(f"{INV}/item", params={"ref": "inv:1/0"}, headers=H))
+    assert nested["vnum"] == 3001 and nested["wearFlags"] == 1 and nested["cost"] == 10 and len(nested["affects"]) == 5
+    assert error_code(await client.get(f"{INV}/item", params={"ref": "inv:9"}, headers=H), 404) == "worldlive.not_found"
+    assert error_code(await client.get(f"{INV}/item", params={"ref": "../x"}, headers=H), 422) == "worldlive.bad_params"
+    assert error_code(await client.get(f"{INV}/item", headers=H), 422) is None  # ref obbligatorio
+    assert error_code(await client.get(f"{LIVE}/players/ghost/inventory", headers=H), 409) == "worldlive.player_not_playing"
+    assert error_code(await client.get(f"{LIVE}/players/nessuno/inventory", headers=H), 404) == "worldlive.not_found"
+
+
+async def test_inventory_set_every_field_and_expect_required(client: httpx.AsyncClient, fake: FakeLiveServer) -> None:
+    """Ogni campo di `set`; senza `expect` 422 e il MUD non vede nulla; la nuova `fp` e' nella risposta."""
+    item = (await inventory(client))["eq:5"]
+    url = f"{INV}/item"
+    assert error_code(await client.patch(url, params={"ref": "eq:5"}, json={"set": {"weight": 1}}, headers=H), 422) is None
+    assert error_code(await client.patch(url, params={"ref": "eq:5"}, json={"expect": expect_of(item), "set": {}}, headers=H), 422) is None
+    assert "obj.set" not in [c for c, _ in fake.calls]
+    changes = {
+        "name": "giubbotto nero", "shortDescription": "Un giubbotto nero", "description": "Un giubbotto nero giace qui.",
+        "values": [5, None, 3, 7], "weight": 9, "extraFlags": 5, "timer": 100,
+        "affects": [{"location": 13, "modifier": 4}, None, {"location": 2, "modifier": -1}],
+    }  # fmt: skip
+    out = data(await client.patch(url, params={"ref": "eq:5"}, json={"expect": expect_of(item), "set": changes}, headers=H))
+    got = fake.players["tester"]["equipment"][5]
+    assert (got["name"], got["short_description"], got["description"]) == (
+        "giubbotto nero",
+        "Un giubbotto nero",
+        "Un giubbotto nero giace qui.",
+    )
+    assert got["values"] == [5, 2, 3, 7] and got["weight"] == 9 and got["extra_flags"] == 5 and got["timer"] == 100
+    assert got["affects"][0] == {"location": 13, "modifier": 4} and got["affects"][1] == {"location": 0, "modifier": 0}
+    assert got["affects"][2] == {"location": 2, "modifier": -1}
+    assert out["saved"] is True and out["item"]["name"] == "giubbotto nero" and out["fp"] != item["fp"] and out["item"]["fp"] == out["fp"]
+    assert any(f"actor={stack.TEST_USER} cmd=obj.set" in line for line in fake.audit)
+    # senza salvataggio
+    saves = len(fake.saves)
+    again = data(
+        await client.patch(
+            url, params={"ref": "eq:5"}, json={"expect": {"vnum": 9, "fp": out["fp"]}, "set": {"timer": -7000000}, "save": False}, headers=H
+        )
+    )
+    assert again["saved"] is False and len(fake.saves) == saves
+
+
+async def test_inventory_stale_ref_and_validation_errors(client: httpx.AsyncClient, fake: FakeLiveServer) -> None:
+    """`stale_ref` 409 senza modificare nulla; errori di validazione del MUD mappati (intervallo, testo troppo lungo, `$`, non latin-1)."""
+    item = (await inventory(client))["inv:0"]
+    url = f"{INV}/item"
+    fake.players["tester"]["carrying"][0]["name"] = "cambiata da altri"  # modifica concorrente
+    r = await client.patch(url, params={"ref": "inv:0"}, json={"expect": expect_of(item), "set": {"weight": 3}}, headers=H)
+    assert error_code(r, 409) == "worldlive.stale_ref" and "cambiato" in r.json()["detail"][0]["msg"]
+    assert fake.players["tester"]["carrying"][0]["weight"] == 1
+    r = await client.delete(url, params={"ref": "inv:0", "fp": item["fp"], "vnum": item["vnum"]}, headers=H)
+    assert error_code(r, 409) == "worldlive.stale_ref" and fake.removed == []
+    fresh = (await inventory(client))["inv:0"]
+    ok = expect_of(fresh)
+    r = await client.patch(url, params={"ref": "inv:0"}, json={"expect": ok, "set": {"weight": 99999}}, headers=H)
+    assert error_code(r, 422) == "worldlive.value_out_of_range" and r.json()["detail"][0]["params"]["field"] == "weight"
+    r = await client.patch(url, params={"ref": "inv:0"}, json={"expect": ok, "set": {"description": "x" * 255}}, headers=H)
+    assert r.status_code == 200
+    ok = {"vnum": ok["vnum"], "fp": data(r)["fp"]}
+    for field, text, code in (("name", "costo $5", "worldlive.bad_params"), ("shortDescription", "☃", "worldlive.unencodable_text")):
+        r = await client.patch(url, params={"ref": "inv:0"}, json={"expect": ok, "set": {field: text}}, headers=H)
+        assert error_code(r, 422) == code
+    r = await client.patch(
+        url, params={"ref": "inv:0"}, json={"expect": ok, "set": {"affects": [{"location": 99, "modifier": 0}]}}, headers=H
+    )
+    assert error_code(r, 422) is None  # intervallo gia' controllato dal DTO
+    assert (
+        error_code(
+            await client.patch(url, params={"ref": "inv:0"}, json={"expect": {"vnum": 3001, "fp": "zz"}, "set": {"weight": 1}}, headers=H),
+            422,
+        )
+        is None
+    )
+
+
+async def test_inventory_remove_nested_and_container(client: httpx.AsyncClient, fake: FakeLiveServer) -> None:
+    """Rimozione: `fp` obbligatorio (422); oggetto annidato; un contenitore porta con se' il contenuto (`destroyed`); poi il vecchio ref e' stale."""
+    inv = await inventory(client)
+    url = f"{INV}/item"
+    assert error_code(await client.delete(url, params={"ref": "inv:1/0"}, headers=H), 422) is None
+    nested = inv["inv:1/0"]
+    out = data(await client.delete(url, params={"ref": "inv:1/0", "fp": nested["fp"], "vnum": nested["vnum"]}, headers=H))
+    assert out["removed"] is True and out["destroyed"] == 1 and out["saved"] is True and fake.removed == ["inv:1/0"]
+    bag = (await inventory(client))["inv:1"]
+    assert bag["contents"] == 0
+    r = await client.delete(url, params={"ref": "inv:1/0", "fp": nested["fp"], "vnum": nested["vnum"]}, headers=H)
+    assert error_code(r, 409) == "worldlive.stale_ref"
+    out = data(await client.delete(url, params={"ref": "inv:1", "fp": bag["fp"], "vnum": bag["vnum"], "save": "false"}, headers=H))
+    assert out["saved"] is False and [i for i in (await inventory(client))] == ["eq:5", "inv:0"]
+
+
+async def test_load_obj_warning_and_inventory_without_feature(
+    client: httpx.AsyncClient, fake: FakeLiveServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`load.obj` a un giocatore con vnum > 32767 riporta `vnum_not_saveable`; l'oggetto creato e' il primo dell'inventario live.
+    Senza la feature `inventory` nel MUD le rotte rispondono 409 `worldlive.command_disabled`."""
+    ok = data(await client.post(f"{LIVE}/load/obj", json={"vnum": 3001, "player": "Tester"}, headers=H))
+    assert ok["warnings"] == []
+    high = data(await client.post(f"{LIVE}/load/obj", json={"vnum": 35000, "player": "Tester"}, headers=H))
+    assert high["warnings"] == ["vnum_not_saveable"] and (await inventory(client))["inv:0"]["vnum"] == 35000
+    assert "inventory" in data(await client.get(f"{LIVE}/status", headers=H))["features"]
+    original = fake._hello  # noqa: SLF001
+
+    def without_inventory(params: dict[str, Any], st: dict[str, Any]) -> dict[str, Any]:
+        """`hello` di un MUD senza la feature."""
+        result = original(params, st)
+        names = ("player.inventory", "obj.get", "obj.set", "obj.remove")
+        return {**result, "features": [], "commands": {k: v for k, v in result["commands"].items() if k not in names}}
+
+    monkeypatch.setattr(fake, "_hello", without_inventory)
+    await registry_module._registry.aclose_all()  # noqa: SLF001  (nuova connessione = nuovo hello)
+    assert "inventory" not in data(await client.get(f"{LIVE}/status", headers=H))["features"]
+    assert error_code(await client.get(INV, headers=H), 409) == "worldlive.command_disabled"
+
+
+async def test_inventory_channel_off(client: httpx.AsyncClient, fake: FakeLiveServer) -> None:
+    """MUD spento: 503 `worldlive.unreachable` (mai ritentata la scrittura); mondo senza canale: 409 `world.capability_missing`."""
+    r = await client.get(f"{LIVE}/players/tester/inventory", headers={"X-World": "dikumod-nolive"})
+    assert error_code(r, 409) == "world.capability_missing"
+    await registry_module._registry.aclose_all()  # noqa: SLF001
+    await fake.stop()
+    assert error_code(await client.get(INV, headers=H), 503) == "worldlive.unreachable"
+    body = {"expect": {"vnum": 9, "fp": "00000000"}, "set": {"weight": 1}}
+    assert error_code(await client.patch(f"{INV}/item", params={"ref": "eq:5"}, json=body, headers=H), 503) == "worldlive.unreachable"
 
 
 # ---------------------------------------------------------------------------------------------------- canale non pronto

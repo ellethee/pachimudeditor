@@ -8,7 +8,7 @@ Gli errori del canale diventano `worldlive.*` (vedi `common.adapters.live.http_e
 
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Query
 from pachifast.auth.dependencies import get_current_active_user
 from pachifast.i18n import api_error
 from pachifast.router_factory import get_router
@@ -18,6 +18,12 @@ from pachimudeditor.common.adapters.live import (
     LiveAdapter,
     LiveEchoIn,
     LiveEchoOut,
+    LiveInventory,
+    LiveItem,
+    LiveItemExpect,
+    LiveItemRemoveOut,
+    LiveItemSetIn,
+    LiveItemSetOut,
     LiveLoadIn,
     LiveLoadOut,
     LivePlayerSetIn,
@@ -109,6 +115,50 @@ async def set_player(name: PlayerName, change: LivePlayerSetIn, adapter: WriteLi
     """Modifica un giocatore connesso (`save` vero di default); promuovere a >= 51 richiede `confirmImmortal` (409 senza)."""
     with live_errors():
         return await adapter.live_player_set(name, change, actor=actor)
+
+
+# inventario live: il `ref` e' un percorso opaco (contiene `:` e `/`), quindi query param; capability `supports_live_inventory`
+inventory_dep = Depends(require_capability("supports_live_inventory"))
+RefQuery = Annotated[str, Query(min_length=1, max_length=128, description="`ref` di un oggetto, preso dall'ultima lettura dell'inventario")]
+
+
+@router.get("/players/{name}/inventory", response_model=LiveInventory, dependencies=[inventory_dep])
+async def get_inventory(name: PlayerName, adapter: LiveDep) -> LiveInventory:
+    """Inventario ed equipaggiamento LIVE di un giocatore connesso (elenco piatto con `depth`, `ref`, `fp`). 409 `worldlive.command_disabled`
+    se il MUD non ha la feature `inventory`."""
+    with live_errors():
+        return await adapter.live_player_inventory(name)
+
+
+@router.get("/players/{name}/inventory/item", response_model=LiveItem, dependencies=[inventory_dep])
+async def get_inventory_item(name: PlayerName, ref: RefQuery, adapter: LiveDep) -> LiveItem:
+    """Un oggetto del giocatore, con i campi di sola lettura (404 `worldlive.not_found` se il `ref` non risolve)."""
+    with live_errors():
+        return await adapter.live_item_get(name, ref)
+
+
+@router.patch("/players/{name}/inventory/item", response_model=LiveItemSetOut, dependencies=[inventory_dep])
+async def set_inventory_item(
+    name: PlayerName, ref: RefQuery, change: LiveItemSetIn, adapter: WriteLiveDep, actor: ActorDep
+) -> LiveItemSetOut:
+    """Modifica un oggetto. `expect {vnum, fp}` e' obbligatorio (422 senza); se non coincide 409 `worldlive.stale_ref` e nulla cambia."""
+    with live_errors():
+        return await adapter.live_item_set(name, ref, change, actor=actor)
+
+
+@router.delete("/players/{name}/inventory/item", response_model=LiveItemRemoveOut, dependencies=[inventory_dep])
+async def remove_inventory_item(
+    name: PlayerName,
+    ref: RefQuery,
+    fp: Annotated[str, Query(pattern=r"^[0-9a-f]{8}$", description="`expect.fp` dell'ultima lettura (obbligatorio)")],
+    adapter: WriteLiveDep,
+    actor: ActorDep,
+    vnum: Annotated[int | None, Query(description="`expect.vnum` (assente = `null`, oggetto senza prototipo)")] = None,
+    save: bool = True,
+) -> LiveItemRemoveOut:
+    """Toglie e DISTRUGGE l'oggetto (e il contenuto se e' un contenitore). Senza `fp` 422; se non coincide 409 `worldlive.stale_ref`."""
+    with live_errors():
+        return await adapter.live_item_remove(name, ref, LiveItemExpect(vnum=vnum, fp=fp), save=save, actor=actor)
 
 
 @router.post("/zones/reset", response_model=LiveZoneResetOut)

@@ -162,6 +162,10 @@ Il socket e' **assoluto** (max 107 byte), `token_env` e' il **nome** della varia
 Effetti sui giocatori su file: `online` diventa vero/falso (anche per un link caduto, `extra.liveState`), `GET /api/world/players/status` dice `serverRunning: true` con `detection: live`, e scrivere su file un giocatore connesso richiede `confirmServerRunning`.
 Le scritture live richiedono anche `read_only: false` (che per dikumod va scritto esplicitamente).
 
+**Inventario live.** Con `params.live` il mondo dichiara anche `supportsLiveInventory`; la feature `inventory` del modulo C (`player.inventory`, `obj.get`, `obj.set`, `obj.remove`, vedi [inventario e oggetti istanza](dikumod-live.md#inventario-e-oggetti-istanza))
+si legge da `GET /api/world/live/status` (`features`). Per un giocatore connesso il dialogo mostra l'inventario dal gioco (aggiungi, rimuovi, modifica l'oggetto istanza) invece del rent su file. Se il canale non risponde si torna al file.
+L'inventario **su file** salva il vnum in uno `short`: un vnum > 32767 e' rifiutato con 422 `worldplayers.invalid_value` (`field=vnum`, `reason=range`, `max=32767`) e un messaggio che spiega il limite; in leu 19 oggetti ne sono oltre.
+
 ### Scrittura (SDK 1.4)
 
 Il writer (`dikumod_lib/players_write.py`, solo byte in memoria) parte dai **byte attuali** del file e sovrascrive solo i campi richiesti con gli stessi

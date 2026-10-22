@@ -503,7 +503,7 @@ e' `stale_ref`. L'operazione non si annulla.
 
 ### Contratto per l'editor (inventario)
 
-Per le rotte e l'adapter dell'editor (da realizzare): il pannello dell'inventario di un giocatore connesso legge `player.inventory` e mostra l'albero (profondita' e `slot`);
+Lato editor (realizzato: rotte in [contratto live](contract-live.md#inventario-e-oggetti-istanza), `LiveAdapter.live_player_inventory|live_item_get|live_item_set|live_item_remove`, dialogo del giocatore e pannello «Server live»): il pannello dell'inventario di un giocatore connesso legge `player.inventory` e mostra l'albero (profondita' e `slot`);
 a ogni scrittura (`obj.set`, `obj.remove`) invia `ref` e `expect` presi dall'ultima lettura **della stessa riga**; su `stale_ref` ricarica l'elenco e avvisa l'utente senza ripetere; mostra sempre `warnings` (`vnum_not_saveable`
 di `load.obj`, `save_failed`); chiede conferma esplicita per `obj.remove` (azione distruttiva, il contenitore porta con se' il contenuto); non consente di scrivere un testo con `$`, `~` o oltre i limiti (li ricava da questa
 pagina e da `hello.limits`, non li inventa); abilita i comandi in base a `hello.commands` e `hello.features`, quindi con le scritture spente mostra l'inventario in sola lettura. Solo superuser, come le altre rotte `live`.
@@ -608,6 +608,10 @@ pachimudeditor live [--world ID | --socket PATH] [--token-env VAR] [--timeout SE
 | `live load mob VNUM (--room VNUM \| --player NOME) [--count N] [--notify]` | `load.mob` |
 | `live load obj VNUM (--room VNUM \| --player NOME) [--count N] [--notify]` | `load.obj` |
 | `live echo TESTO (--all \| --player NOME \| --room VNUM)` | `echo` |
+| `live player inventory NOME [--brief] [--limit N]` | `player.inventory` (feature `inventory`) |
+| `live obj get NOME REF [--fp FP [--vnum V]]` | `obj.get` (con `--fp` verifica anche `expect`) |
+| `live obj set NOME REF --fp FP [--vnum V] CAMPO=VALORE... [--no-save]` | `obj.set` (`name=...`, `short_description=...`, `description=...`, `weight=3`, `extra_flags=5`, `timer=600`, `values.0=7`, `affects.1.location=13 affects.1.modifier=2`) |
+| `live obj remove NOME REF --fp FP [--vnum V] [--no-save]` | `obj.remove` (distrugge l'oggetto e il contenuto) |
 
 **Output**: sempre **un solo documento JSON** su stdout (compatto, una riga; indentato con `--pretty`), anche per gli errori, cosi' uno script lo
 elabora con `jq` senza dover separare stderr: `{"ok": true, "result": {...}}` oppure `{"ok": false, "error": {"code": "...", "message": "...", "params": {...}}}`
@@ -633,6 +637,7 @@ Scelte dell'implementazione dove la specifica lasciava margine (sempre la via pi
 - Un comando non dichiarato da `hello` (classe `write` disattivata) non viene inviato: `command_disabled`, exit 1.
 - `live status` fa `hello` + `ping` (senza `info`, che resta in `live info`). `idempotency_key` non viene mai inviata (il client condiviso non la implementa e le scritture non si ritentano).
 - `CAMPO=VALORE`: i valori che sembrano interi sono numeri, il resto stringhe (la validazione e' del MUD); `a.b=v` diventa `{"a": {"b": v}}`. Salva di default (`--no-save` per non salvare).
+- `obj set|remove`: `ref` e `--fp` (e `--vnum`, assente = `null`) vengono dall'ultima lettura (`player inventory`); `--fp` e' obbligatoria (senza, exit 2). `values.N` e `affects.N.location|modifier` costruiscono gli array con `null` nelle posizioni non indicate (ogni affect vuole `location` e `modifier`); i testi sono sempre stringhe; `stale_ref` e' exit 1.
 - `who` invia solo i filtri dati (`prefix`, `limit`, `linkdead:false` con `--no-linkdead`); `zone reset`, `load`, `echo` richiedono **esattamente una** destinazione, altrimenti exit 2.
 - Gli errori di sintassi rilevati da typer/click (argomento mancante o sconosciuto) escono con 2 ma con il testo standard su stderr, non in JSON.
 

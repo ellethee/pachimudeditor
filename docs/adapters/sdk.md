@@ -148,7 +148,7 @@ Riepilogo di `pachimudeditor.sdk.__all__`, per famiglia:
 | Regole | `rules` (reset, uscite, range, grafo, uso) |
 | Conversione | `Flavor`, `ComposedConverter`, `PairConverter`, `ConvertContext`, `Converted`, `loss`, `to_in`, `extra_dropped`, `convert_helpers`, `convert_tables` |
 | Giocatori su file (SDK 1.3, scrittura 1.4) | `PlayersAdapter` (mixin), `PlayersInfo`, `PlayerColumn`, `PlayerListInfo`, `PlayerListColumn`, `PlayerSummary`, `PlayerDetail`, `PlayerInventory`, `PlayerItem`, `PlayerPageParams`, `PlayersStatus`; 1.4: `PlayerWriteOptions`, `PlayerPatch`, `PlayerItemAdd`, `PlayerItemUpdate` |
-| Canale live (SDK 1.5) | `LiveAdapter` (mixin), `LiveClient`, `LiveSession`, `LiveError`, `LiveStatus`, `LiveWho`, `LiveWhoPlayer`, `LiveServerInfo`, `LiveZone`, `LiveZones`, `LivePlayerState`, `LivePlayerSetIn`, `LivePlayerSetOut`, `LiveZoneResetIn`, `LiveZoneResetOut`, `LiveLoadIn`, `LiveLoadOut`, `LiveEchoIn`, `LiveEchoOut` |
+| Canale live (SDK 1.5) | `LiveAdapter` (mixin), `LiveClient`, `LiveSession`, `LiveError`, `LiveStatus`, `LiveWho`, `LiveWhoPlayer`, `LiveServerInfo`, `LiveZone`, `LiveZones`, `LivePlayerState`, `LivePlayerSetIn`, `LivePlayerSetOut`, `LiveZoneResetIn`, `LiveZoneResetOut`, `LiveLoadIn`, `LiveLoadOut` (con `warnings`), `LiveEchoIn`, `LiveEchoOut`, `LiveInventory`, `LiveItem`, `LiveItemAffect`, `LiveItemChanges`, `LiveItemExpect`, `LiveItemSetIn`, `LiveItemSetOut`, `LiveItemRemoveOut` |
 | File (SDK 1.2) | `atomic_write_bytes(path, data)`: scrittura atomica (temporaneo nella stessa cartella, `fsync`, `os.replace`); segue i symlink, preserva permessi e proprietario, pulisce il temporaneo in caso di errore |
 
 Per scrivere un file dell'adapter usa `atomic_write_bytes` invece di `open(..., "w")`: un crash a meta' non lascia file troncati.
@@ -246,6 +246,11 @@ Mixin **opzionale** `LiveAdapter` (`pachimudeditor.sdk`), capability `supports_l
 Contratto HTTP: [canale live, rotte](../backend/contract-live.md). I metodi (`live_status`, `live_who`, `live_server_info`, `live_zones`, `live_player_get`, `live_player_set`, `live_zone_reset`, `live_load`, `live_echo`)
 alzano `LiveError` e il router li traduce in `worldlive.*`; il core controlla superuser, capability e `read_only`. Per non riscrivere il protocollo l'SDK offre **`LiveClient(socket, token_callable, timeout=)`**: connessione unica con lock, `hello`,
 riconnessione pigra, limiti di `hello`, scritture mai ritentate, token mai in log o errori; i metodi tipizzati (`who`, `info`, `zones`, `player_get`, `player_set`, `zone_reset`, `load`, `echo`, `status`) restituiscono gia' i DTO.
+**Inventario live** (additivo, ancora SDK 1.5; capability `supports_live_inventory`, richiede `supports_live`): `live_player_inventory(name)`, `live_item_get(name, ref)`,
+`live_item_set(name, ref, change, actor=)` e `live_item_remove(name, ref, expect, save=, actor=)` (default 409 `world.capability_missing`). `ref` e' una stringa opaca; `LiveItemSetIn.expect` (`LiveItemExpect`: `vnum`, `fp`)
+e' obbligatorio e un'impronta che non coincide e' `LiveError("stale_ref")` -> 409 `worldlive.stale_ref`. La capability e' statica (canale configurato); che il MUD abbia davvero la feature `inventory` lo dice `LiveStatus.features`
+(rilevata da `hello` al primo contatto: senza, il client non invia i comandi e la rotta risponde 409 `worldlive.command_disabled`). `LiveClient` ha `inventory`, `item_get`, `item_set`, `item_remove`; le scritture non si ritentano.
+
 Un adapter tipico crea il client dalla propria configurazione (dikumod: `params.live`, `adapters/dikumod/.../live.py`) e lo chiude in `close()`.
 
 Per i giocatori su file, `PlayersAdapter` ottiene `player_connected(id) -> bool | None` (1.5, default `None`): se ritorna `True` la scrittura su file richiede `confirmServerRunning` anche se `players_status` non rileva nulla.
@@ -298,6 +303,7 @@ Modello completo: `adapters/dikumod/src/pachimudeditor_adapter_dikumod/players.p
 | `supports_player_write` | modifica dei campi dei giocatori su file (`PATCH /api/world/players/{id}`; SDK 1.4) | idem; con `read_only` 409 `world.read_only` |
 | `supports_player_inventory_write` | aggiungi/sposta/togli oggetti (`.../inventory/items`; SDK 1.4) | idem |
 | `supports_live` | canale di controllo live verso il MUD acceso (`/api/world/live/...`, solo superuser; SDK 1.5) | idem; scritture con `read_only` 409 `world.read_only` |
+| `supports_live_inventory` | inventario e oggetti istanza dei giocatori connessi (`/api/world/live/players/{name}/inventory...`; richiede `supports_live` e la feature `inventory` del MUD) | idem; `PATCH`/`DELETE` con `read_only` 409 `world.read_only`, senza `expect` 422 |
 | `supports_transfer` | `export_zone_bundle` / `import_zone_dir` (`/api/transfer`) | idem |
 | `supports_content_races` | razze/classi YAML (`/api/content`) | idem |
 | `supports_reset_scripts` | script di reset modificabile (default vero) | informativa per il frontend |

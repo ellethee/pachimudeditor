@@ -23,4 +23,6 @@ MESSAGES: dict[str, str] = {
     "worldlive.class_not_owned": "Il giocatore non ha la classe «{class_name}»: si possono cambiare solo le classi già possedute.",
     "worldlive.zone_forbidden": "Questa zona non può essere resettata dal canale.",
     "worldlive.object_denied": "L'oggetto {vnum} non può essere creato dal canale (elenco di esclusione del gioco).",
+    "worldlive.stale_ref": "L'oggetto è cambiato nel frattempo (spostato, usato o modificato da altri): l'elenco è stato riletto, controlla e riprova.",
+    "worldlive.value_too_long": "«{field}» è troppo lungo: al massimo {max} caratteri (il file del giocatore non può contenerne di più).",
 }

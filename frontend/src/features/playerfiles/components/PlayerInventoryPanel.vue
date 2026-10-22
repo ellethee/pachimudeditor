@@ -33,6 +33,7 @@
             dense
             outlined
             option-label="label"
+            option-disable="disable"
             data-testid="inventory-pick"
             @filter="onFilter"
           >
@@ -147,6 +148,7 @@ import { mdiDelete, mdiPlus } from '@quasar/extras/mdi-v7'
 import { describeError } from '../../players/helpers/describe-error'
 import { listObjects } from '../../objects/services/objects-api'
 import { errorCode } from '../helpers/error-code'
+import { MAX_RENT_VNUM } from '../helpers/live-item'
 import { addPlayerItem, getPlayerInventory, removePlayerItem, updatePlayerItem } from '../services/player-files-api'
 import type { IPlayerInventory, IPlayerItem } from '../types/player-files'
 
@@ -171,8 +173,8 @@ const loading = ref(false)
 const error = ref('')
 const conflict = ref(false)
 const adding = ref(false)
-const picked = ref<{ value: number; label: string } | null>(null)
-const found = ref<{ value: number; label: string }[]>([])
+const picked = ref<{ value: number; label: string; disable: boolean } | null>(null)
+const found = ref<{ value: number; label: string; disable: boolean }[]>([])
 const newSlot = ref<string | null>(null)
 const newContainer = ref<number | null>(null)
 
@@ -265,7 +267,12 @@ function options() {
  */
 function onFilter(text: string, update: (fn: () => void) => void): void {
   void listObjects({ search: text, pageSize: 20 })
-    .then((page) => page.items.map((o) => ({ value: o.vnum, label: `#${o.vnum} ${o.shortDescription}` })))
+    .then((page) =>
+      page.items.map((o) => {
+        const unsafe = o.vnum > MAX_RENT_VNUM // il rent salva il vnum in uno `short`: l'oggetto non e' scrivibile nel file
+        return { value: o.vnum, label: `#${o.vnum} ${o.shortDescription}${unsafe ? ` — ${t('playerFiles.inventory.notSaveable')}` : ''}`, disable: unsafe }
+      }),
+    )
     .catch(() => [])
     .then((items) => update(() => (found.value = items)))
 }

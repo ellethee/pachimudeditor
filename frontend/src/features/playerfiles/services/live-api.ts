@@ -2,7 +2,14 @@ import { getUseAlovaInstance } from '@ilpachi/use-alova'
 import type {
   ILiveEcho,
   ILiveInfo,
+  ILiveInventory,
+  ILiveItem,
+  ILiveItemExpect,
+  ILiveItemRemoveResult,
+  ILiveItemSet,
+  ILiveItemSetResult,
   ILiveLoad,
+  ILiveLoadResult,
   ILivePlayerSet,
   ILivePlayerSetResult,
   ILivePlayerState,
@@ -76,7 +83,7 @@ export async function resetLiveZone(zone: number, onlyIfEmpty: boolean): Promise
  * @param kind - `mob` o `obj`
  * @param load - vnum, destinazione e quantità
  */
-export async function loadLive(kind: 'mob' | 'obj', load: ILiveLoad): Promise<{ loaded: Record<string, unknown>[] }> {
+export async function loadLive(kind: 'mob' | 'obj', load: ILiveLoad): Promise<ILiveLoadResult> {
   return http().Post(`/load/${kind}`, load, OPTS)
 }
 
@@ -87,4 +94,47 @@ export async function loadLive(kind: 'mob' | 'obj', load: ILiveLoad): Promise<{ 
  */
 export async function echoLive(echo: ILiveEcho): Promise<{ recipients: number }> {
   return http().Post('/echo', echo, OPTS)
+}
+
+/**
+ * Inventario ed equipaggiamento LIVE di un giocatore connesso (409 `worldlive.command_disabled` se il MUD non ha la feature).
+ *
+ * @param name - nome del personaggio
+ */
+export async function getLiveInventory(name: string): Promise<ILiveInventory> {
+  return http().Get<ILiveInventory>(`/players/${encodeURIComponent(name)}/inventory`, OPTS)
+}
+
+/**
+ * Un oggetto del giocatore con i campi di sola lettura (il `ref` va in query: contiene `:` e `/`).
+ *
+ * @param name - nome del personaggio
+ * @param ref - riferimento dell'oggetto, dall'ultima lettura dell'elenco
+ */
+export async function getLiveItem(name: string, ref: string): Promise<ILiveItem> {
+  return http().Get<ILiveItem>(`/players/${encodeURIComponent(name)}/inventory/item`, { ...OPTS, params: { ref } })
+}
+
+/**
+ * Modifica un oggetto (409 `worldlive.stale_ref` se non coincide con `expect`).
+ *
+ * @param name - nome del personaggio
+ * @param ref - riferimento dell'oggetto
+ * @param change - `expect` dell'ultima lettura, campi cambiati e salvataggio
+ */
+export async function setLiveItem(name: string, ref: string, change: ILiveItemSet): Promise<ILiveItemSetResult> {
+  return http().Patch<ILiveItemSetResult>(`/players/${encodeURIComponent(name)}/inventory/item`, change, { ...OPTS, params: { ref } })
+}
+
+/**
+ * Toglie e distrugge un oggetto (con il suo contenuto).
+ *
+ * @param name - nome del personaggio
+ * @param ref - riferimento dell'oggetto
+ * @param expect - vnum e impronta dell'ultima lettura
+ */
+export async function removeLiveItem(name: string, ref: string, expect: ILiveItemExpect): Promise<ILiveItemRemoveResult> {
+  const params: Record<string, string | number> = { ref, fp: expect.fp }
+  if (expect.vnum !== null) params.vnum = expect.vnum
+  return http().Delete<ILiveItemRemoveResult>(`/players/${encodeURIComponent(name)}/inventory/item`, undefined, { ...OPTS, params })
 }

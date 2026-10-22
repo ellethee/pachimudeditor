@@ -25,9 +25,11 @@ app = typer.Typer(help="Client da riga di comando del canale live verso un MUD a
 player_app = typer.Typer(help="Giocatori connessi.", no_args_is_help=True)
 zone_app = typer.Typer(help="Zone del gioco.", no_args_is_help=True)
 load_app = typer.Typer(help="Crea mob od oggetti nel gioco.", no_args_is_help=True)
+obj_app = typer.Typer(help="Oggetti istanza nell'inventario di un giocatore connesso (feature `inventory`).", no_args_is_help=True)
 app.add_typer(player_app, name="player")
 app.add_typer(zone_app, name="zone")
 app.add_typer(load_app, name="load")
+app.add_typer(obj_app, name="obj")
 
 DEFAULT_TOKEN_ENV = "PACHIMUDEDITOR_LIVE_TOKEN"
 DEFAULT_TIMEOUT_S = 5.0
@@ -286,6 +288,110 @@ def player_set(
     """`player.set`: modifica un giocatore connesso (scrittura)."""
     change = _parse_fields(ctx, fields)
     _run(ctx, "player.set", {"name": name, "set": change, "save": not no_save, "confirm_immortal": confirm_immortal}, write=True)
+
+
+@player_app.command("inventory")
+def player_inventory(
+    ctx: typer.Context,
+    name: Annotated[str, typer.Argument(help="Nome del giocatore.")],
+    brief: Annotated[bool, typer.Option("--brief", help="Solo ref, fp, vnum, slot, nome e tipo.")] = False,
+    limit: Annotated[int | None, typer.Option(min=1, max=200, help="Massimo di oggetti (1..200, default 100).")] = None,
+) -> None:
+    """`player.inventory`: equipaggiamento e inventario (elenco piatto con `ref` e `fp`)."""
+    params: dict[str, Any] = {"name": name, "brief": brief}
+    if limit is not None:
+        params["limit"] = limit
+    _run(ctx, "player.inventory", params)
+
+
+RefArg = Annotated[str, typer.Argument(help="Riferimento dell'oggetto letto da `player inventory` (eq:5, inv:2, inv:2/0).")]
+FpOpt = Annotated[str, typer.Option("--fp", help="Impronta `fp` dell'oggetto, dall'ultima lettura (obbligatoria).")]
+VnumOpt = Annotated[int | None, typer.Option("--vnum", help="`vnum` dell'ultima lettura (omesso = oggetto senza prototipo).")]
+NoSaveOpt = Annotated[bool, typer.Option("--no-save", help="Non salvare il giocatore (default: salva).")]
+
+
+@obj_app.command("get")
+def obj_get(
+    ctx: typer.Context,
+    name: Annotated[str, typer.Argument(help="Nome del giocatore.")],
+    ref: RefArg,
+    fp: Annotated[
+        str | None, typer.Option("--fp", help="Se dato (con --vnum) verifica che l'oggetto non sia cambiato (`stale_ref`).")
+    ] = None,
+    vnum: VnumOpt = None,
+) -> None:
+    """`obj.get`: un oggetto con tutti i campi."""
+    params: dict[str, Any] = {"name": name, "ref": ref}
+    if fp is not None:
+        params["expect"] = {"vnum": vnum, "fp": fp}
+    _run(ctx, "obj.get", params)
+
+
+def _item_changes(ctx: typer.Context, pairs: list[str]) -> dict[str, Any]:
+    """`name=...`, `weight=3`, `values.1=8`, `affects.0.location=13 affects.0.modifier=2` diventano la patch di `obj.set` (array con `null` nei buchi)."""
+    texts = ("name", "short_description", "description")
+    out: dict[str, Any] = {}
+    for pair in pairs:
+        key, sep, raw = pair.partition("=")
+        head, _, tail = key.partition(".")
+        if not sep or not key:
+            _usage(ctx, f"campo non valido {pair!r}: serve CAMPO=VALORE")
+        if head in texts and not tail:
+            out[head] = raw
+        elif head in ("weight", "extra_flags", "timer") and not tail and _INT_RE.fullmatch(raw):
+            out[head] = int(raw)
+        elif head == "values" and tail.isdigit() and _INT_RE.fullmatch(raw) and int(tail) < 4:
+            arr = out.setdefault("values", [None] * 4)
+            arr[int(tail)] = int(raw)
+        elif head == "affects" and _INT_RE.fullmatch(raw) and re.fullmatch(r"[0-4]\.(location|modifier)", tail):
+            idx, _, part = tail.partition(".")
+            arr = out.setdefault("affects", [None] * 5)
+            arr[int(idx)] = {**(arr[int(idx)] or {}), part: int(raw)}
+        else:
+            _usage(
+                ctx,
+                f"campo non valido {pair!r} (name, short_description, description, weight, extra_flags, timer, values.0-3, affects.0-4.location|modifier)",
+            )
+    for arr in (out.get("values"), out.get("affects")):
+        while arr and arr[-1] is None:
+            arr.pop()
+    for affect in out.get("affects", []):
+        if affect is not None and set(affect) != {"location", "modifier"}:
+            _usage(ctx, "ogni affect vuole location e modifier")
+    return out
+
+
+@obj_app.command("set")
+def obj_set(
+    ctx: typer.Context,
+    name: Annotated[str, typer.Argument(help="Nome del giocatore.")],
+    ref: RefArg,
+    fields: Annotated[
+        list[str],
+        typer.Argument(
+            help="CAMPO=VALORE: name, short_description, description, weight, extra_flags, timer, values.N, affects.N.location|modifier."
+        ),
+    ],
+    fp: FpOpt,
+    vnum: VnumOpt = None,
+    no_save: NoSaveOpt = False,
+) -> None:
+    """`obj.set`: modifica un oggetto istanza (scrittura; `stale_ref` se l'oggetto non e' piu' quello letto)."""
+    params = {"name": name, "ref": ref, "expect": {"vnum": vnum, "fp": fp}, "set": _item_changes(ctx, fields), "save": not no_save}
+    _run(ctx, "obj.set", params, write=True)
+
+
+@obj_app.command("remove")
+def obj_remove(
+    ctx: typer.Context,
+    name: Annotated[str, typer.Argument(help="Nome del giocatore.")],
+    ref: RefArg,
+    fp: FpOpt,
+    vnum: VnumOpt = None,
+    no_save: NoSaveOpt = False,
+) -> None:
+    """`obj.remove`: toglie e DISTRUGGE l'oggetto (con il contenuto, se contenitore). Non si annulla."""
+    _run(ctx, "obj.remove", {"name": name, "ref": ref, "expect": {"vnum": vnum, "fp": fp}, "save": not no_save}, write=True)
 
 
 @zone_app.command("list")

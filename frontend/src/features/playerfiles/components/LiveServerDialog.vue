@@ -2,7 +2,13 @@
   <pachi-dialog ref="dialogRef" :title="t('playerFiles.live.server.title')" min-width="760px" max-width="95vw" @hide="onDialogHide()">
     <div data-testid="live-server-dialog">
       <q-banner v-if="error" rounded class="bg-negative text-white q-mb-sm" role="alert" data-testid="live-server-error">{{ error }}</q-banner>
-      <q-banner v-if="message" rounded class="bg-positive text-white q-mb-sm" role="status" data-testid="live-server-message">{{ message }}</q-banner>
+      <q-banner v-if="message" rounded class="bg-positive text-white q-mb-sm" role="status" data-testid="live-server-message">
+        {{ message }}
+        <template v-if="createdFor" #action>
+          <q-btn flat :label="t('playerFiles.liveInv.editCreated')" data-testid="live-load-edit" @click="editCreated()" />
+        </template>
+      </q-banner>
+      <q-banner v-if="warning" rounded class="bg-warning text-black q-mb-sm" role="alert" data-testid="live-server-warning">{{ warning }}</q-banner>
 
       <q-tabs v-model="tab" dense align="left" class="text-primary" active-color="primary" indicator-color="primary" @update:model-value="onTab">
         <q-tab name="who" :label="t('playerFiles.live.server.tabs.who')" data-testid="live-tab-who" />
@@ -158,6 +164,9 @@
             :label="t('playerFiles.live.server.player')"
             data-testid="live-load-player"
           />
+          <q-banner v-if="loadKind === 'obj' && loadWhere === 'room' && inventoryLive" dense rounded class="bg-grey-3 text-black q-mt-sm" role="note" data-testid="live-load-room-note">
+            {{ t('playerFiles.liveInv.roomObjectNote') }}
+          </q-banner>
           <div class="q-mt-sm">
             <q-btn color="primary" :label="t('playerFiles.live.server.create')" :disable="busy || !loadPick" data-testid="live-load-go" @click="doLoad()" />
           </div>
@@ -234,7 +243,8 @@ import { formatDuration } from '../helpers/format'
 import { listMobs } from '../../mobs/services/mobs-api'
 import { listObjects } from '../../objects/services/objects-api'
 import { searchRooms } from '../../rooms/services/rooms-api'
-import { echoLive, getLiveInfo, getLiveWho, getLiveZones, loadLive, resetLiveZone } from '../services/live-api'
+import { echoLive, getLiveInfo, getLiveInventory, getLiveWho, getLiveZones, loadLive, resetLiveZone } from '../services/live-api'
+import LiveItemEditDialog from './LiveItemEditDialog.vue'
 import type { ILiveInfo, ILiveWho, ILiveZone } from '../types/live'
 
 defineEmits([...useDialogPluginComponent.emits])
@@ -242,7 +252,7 @@ defineEmits([...useDialogPluginComponent.emits])
 const { t, te } = useI18n()
 const $q = useQuasar()
 const { dialogRef, onDialogHide, onDialogCancel } = useDialogPluginComponent()
-const { canWrite } = useLive()
+const { canWrite, inventory: inventoryLive, canWriteInventory } = useLive()
 
 /** Elemento scelto in un selettore filtrabile: `value` e' il vnum da inviare. */
 interface PickOption {
@@ -253,7 +263,10 @@ interface PickOption {
 const tab = ref('who')
 const error = ref('')
 const message = ref('')
+const warning = ref('')
 const busy = ref(false)
+/** Oggetto appena creato per un giocatore: permette «Modifica» (solo con l'inventario live scrivibile). */
+const createdFor = ref<{ player: string; vnum: number } | null>(null)
 const who = ref<ILiveWho>()
 const info = ref<ILiveInfo>()
 const zones = ref<ILiveZone[]>([])
@@ -288,7 +301,8 @@ function stateLabel(state: string): string {
  */
 async function run(action: () => Promise<string>): Promise<void> {
   busy.value = true
-  error.value = message.value = ''
+  error.value = message.value = warning.value = ''
+  createdFor.value = null
   try {
     message.value = await action()
   } catch (e) {
@@ -366,8 +380,32 @@ function doLoad(): void {
   const target = loadWhere.value === 'room' ? { room: loadRoomPick.value?.value } : { player: loadPlayer.value ?? undefined }
   void run(async () => {
     const out = await loadLive(loadKind.value, { vnum: picked.value, count: loadCount.value, notify: false, ...target })
+    const player = loadWhere.value === 'player' ? loadPlayer.value : null
+    if (loadKind.value === 'obj' && player && canWriteInventory.value) createdFor.value = { player, vnum: picked.value }
+    if (out.warnings.includes('vnum_not_saveable')) warning.value = t('playerFiles.liveInv.vnumNotSaveable', { vnum: picked.value })
     return t('playerFiles.live.server.created', { n: out.loaded.length })
   })
+}
+
+/**
+ * Apre la modifica dell'oggetto appena creato per un giocatore: lo cerca nel suo inventario live (il primo oggetto portato con quel vnum,
+ * perché il gioco mette i nuovi in testa). Gli oggetti creati in una stanza non sono indirizzabili dal canale.
+ */
+async function editCreated(): Promise<void> {
+  const target = createdFor.value
+  if (!target) return
+  error.value = ''
+  try {
+    const inv = await getLiveInventory(target.player)
+    const item = inv.items.find((i) => i.depth === 0 && i.slot === null && i.vnum === target.vnum)
+    if (!item) {
+      error.value = t('playerFiles.liveInv.createdNotFound')
+      return
+    }
+    $q.dialog({ component: LiveItemEditDialog, componentProps: { playerName: target.player, itemRef: item.ref } })
+  } catch (e) {
+    error.value = await describeError(e)
+  }
 }
 
 /** Manda il messaggio alla destinazione scelta. */

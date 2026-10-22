@@ -12,7 +12,17 @@ from collections.abc import AsyncIterator
 import pytest
 
 from pachimudeditor.common.adapters.registry import WorldConfig
-from pachimudeditor.sdk import LiveEchoIn, LiveError, LiveLoadIn, LivePlayerSetIn, LiveZoneResetIn, PlayerPageParams
+from pachimudeditor.sdk import (
+    LiveEchoIn,
+    LiveError,
+    LiveItemChanges,
+    LiveItemExpect,
+    LiveItemSetIn,
+    LiveLoadIn,
+    LivePlayerSetIn,
+    LiveZoneResetIn,
+    PlayerPageParams,
+)
 from pachimudeditor_adapter_dikumod.adapter import DikumodAdapter
 from tests.live import real_mud
 from tests.support import real_data
@@ -89,3 +99,29 @@ async def test_zone_load_and_echo(adapter: DikumodAdapter) -> None:
     with pytest.raises(LiveError) as denied:
         await adapter.live_load("obj", LiveLoadIn(vnum=1600, player="Tester"))
     assert denied.value.params["reason"] == "deny_list"
+
+
+async def test_live_inventory_add_edit_remove(adapter: DikumodAdapter) -> None:
+    """Un oggetto di un giocatore connesso: lo si crea (`load.obj`), lo si trova nell'elenco, lo si modifica con `expect`, `stale_ref` con
+    un'impronta vecchia, lo si rimuove."""
+    status = await adapter.live_status()
+    assert "inventory" in status.features
+    vnum = next(iter(adapter.sync().objs))
+    made = await adapter.live_load("obj", LiveLoadIn(vnum=vnum, player="Tester"), actor="pytest")
+    assert made.warnings == (["vnum_not_saveable"] if vnum > 32767 else [])
+    inv = await adapter.live_player_inventory("Tester")
+    first = inv.items[0] if inv.items[0].slot is None else next(i for i in inv.items if i.slot is None)
+    assert first.vnum == vnum and first.ref.startswith("inv:")
+    change = LiveItemSetIn(
+        expect=LiveItemExpect(vnum=first.vnum, fp=first.fp),
+        set=LiveItemChanges(name="oggetto di prova", description="Un oggetto di prova.", weight=3, extra_flags=0, values=[1, None]),
+    )
+    out = await adapter.live_item_set("Tester", first.ref, change, actor="pytest")
+    assert out.item is not None and out.item.name == "oggetto di prova" and out.item.weight == 3 and out.item.values[0] == 1
+    assert out.fp != first.fp and (await adapter.live_item_get("Tester", first.ref)).fp == out.fp
+    with pytest.raises(LiveError) as stale:
+        await adapter.live_item_set("Tester", first.ref, change)
+    assert stale.value.code == "stale_ref"
+    removed = await adapter.live_item_remove("Tester", first.ref, LiveItemExpect(vnum=first.vnum, fp=out.fp), actor="pytest")
+    assert removed.removed and removed.destroyed >= 1
+    assert not any(i.name == "oggetto di prova" for i in (await adapter.live_player_inventory("Tester")).items)

@@ -39,6 +39,7 @@ _PLAIN: dict[str, tuple[int, str]] = {
     "player_not_playing": (409, "worldlive.player_not_playing"),
     "player_busy": (409, "worldlive.player_busy"),
     "bad_params": (422, "worldlive.bad_params"),
+    "stale_ref": (409, "worldlive.stale_ref"),
     "bad_request": (422, "worldlive.bad_params"),
     "unencodable_text": (422, "worldlive.unencodable_text"),
     "value_out_of_range": (422, "worldlive.value_out_of_range"),
@@ -77,6 +78,8 @@ def http_error(error: LiveError) -> HTTPException:
             status, code, reason=p.get("reason", ""), level=p.get("level", ""), class_name=p.get("class", ""), vnum=p.get("vnum", "")
         )
     status, code = _PLAIN.get(error.code, (502, "worldlive.protocol_error"))
+    if error.code == "bad_params" and p.get("field") and p.get("max") not in (None, ""):
+        code = "worldlive.value_too_long"  # testo oltre il limite del rent: `max` e' in byte
     return api_error(
         status, code, field=p.get("field", ""), min=p.get("min", ""), max=p.get("max", ""), what=p.get("what", ""),
         retry_after_ms=p.get("retry_after_ms", ""), proto=error.code,
@@ -257,6 +260,8 @@ class LiveLoadOut(AliasedBaseModel):
     """Esito di `load.*`: una voce per istanza creata (`vnum`, `name`, `room` o `where`)."""
 
     loaded: list[dict[str, Any]] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    """Avvisi del MUD per `load.obj`: `vnum_not_saveable` (vnum > 32767 a un giocatore: il rent lo corromperebbe al salvataggio)."""
 
 
 class LiveEchoIn(AliasedBaseModel):
@@ -282,6 +287,106 @@ class LiveEchoOut(AliasedBaseModel):
     """Esito di `echo`."""
 
     recipients: int = 0
+
+
+class LiveItemAffect(AliasedBaseModel):
+    """Un affect di un oggetto istanza (`location` 0 = nessuno)."""
+
+    location: int = Field(default=0, ge=0, le=64)
+    modifier: int = Field(default=0, ge=-32768, le=32767)
+
+
+class LiveItem(AliasedBaseModel):
+    """Un oggetto istanza di un giocatore connesso (`player.inventory`, `obj.get`). `ref` e `fp` sono opachi: vanno rimandati cosi' come sono."""
+
+    ref: str
+    """Percorso (`eq:5`, `inv:2/0`): cambia quando l'inventario cambia, vale solo con l'`fp` dell'ultima lettura."""
+    fp: str
+    vnum: int | None = None
+    slot: int | None = None
+    """Posizione di equipaggiamento (solo primo livello indossato)."""
+    depth: int = 0
+    name: str = ""
+    short_description: str = ""
+    type: int | None = None
+    contents: int = 0
+    description: str | None = None
+    values: list[int] = Field(default_factory=list)
+    weight: int | None = None
+    extra_flags: int | None = None
+    timer: int | None = None
+    affects: list[LiveItemAffect] = Field(default_factory=list)
+    wear_flags: int | None = None
+    """Solo `obj.get` (sola lettura)."""
+    cost: int | None = None
+    cost_per_day: int | None = None
+    bitvector: int | None = None
+
+
+class LiveInventory(AliasedBaseModel):
+    """Inventario ed equipaggiamento di un giocatore connesso: elenco piatto in preordine (`depth` per l'annidamento)."""
+
+    name: str
+    carry_weight: int = 0
+    carry_items: int = 0
+    count: int = 0
+    truncated: bool = False
+    items: list[LiveItem] = Field(default_factory=list)
+
+
+class LiveItemExpect(AliasedBaseModel):
+    """Impronta dell'oggetto letta dal client: obbligatoria in ogni scrittura (altrimenti 409 `worldlive.stale_ref`)."""
+
+    vnum: int | None = None
+    fp: str = Field(pattern=r"^[0-9a-f]{8}$")
+
+
+class LiveItemChanges(AliasedBaseModel):
+    """Patch parziale di `obj.set`: solo i campi presenti (1-8). `values`/`affects` hanno `null` per «invariato» (la posizione e' l'indice)."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=127)
+    short_description: str | None = Field(default=None, min_length=1, max_length=127)
+    description: str | None = Field(default=None, min_length=1, max_length=255)
+    values: list[int | None] | None = Field(default=None, min_length=1, max_length=4)
+    weight: int | None = None
+    extra_flags: int | None = None
+    timer: int | None = None
+    affects: list[LiveItemAffect | None] | None = Field(default=None, min_length=1, max_length=5)
+
+    @model_validator(mode="after")
+    def _not_empty(self) -> "LiveItemChanges":
+        """Almeno un campo."""
+        if not self.model_fields_set:
+            raise ValueError("serve almeno un campo")
+        return self
+
+
+class LiveItemSetIn(AliasedBaseModel):
+    """Corpo di `PATCH .../inventory/item`."""
+
+    expect: LiveItemExpect
+    set: LiveItemChanges
+    save: bool = True
+
+
+class LiveItemSetOut(AliasedBaseModel):
+    """Esito di `obj.set`: `item` dopo la modifica, `fp` nuova (il `ref` resta valido)."""
+
+    name: str
+    fp: str = ""
+    saved: bool = False
+    warnings: list[str] = Field(default_factory=list)
+    item: LiveItem | None = None
+
+
+class LiveItemRemoveOut(AliasedBaseModel):
+    """Esito di `obj.remove`: `destroyed` conta gli oggetti di primo livello distrutti (contenitore compreso)."""
+
+    name: str
+    removed: bool = True
+    destroyed: int = 0
+    saved: bool = False
+    warnings: list[str] = Field(default_factory=list)
 
 
 # ------------------------------------------------------------------------------------------------------------ mixin
@@ -331,6 +436,24 @@ class LiveAdapter:
         """Manda un messaggio a tutti, a un giocatore o a una stanza."""
         raise api_error(409, "world.capability_missing", capability="supports_live")
 
+    async def live_player_inventory(self, name: str) -> LiveInventory:
+        """Inventario ed equipaggiamento di un giocatore connesso (feature `inventory`; `command_disabled` se il MUD non la dichiara)."""
+        raise api_error(409, "world.capability_missing", capability="supports_live_inventory")
+
+    async def live_item_get(self, name: str, ref: str) -> LiveItem:
+        """Un oggetto istanza (`ref` di `live_player_inventory`; con i campi di sola lettura)."""
+        raise api_error(409, "world.capability_missing", capability="supports_live_inventory")
+
+    async def live_item_set(self, name: str, ref: str, change: LiveItemSetIn, *, actor: str | None = None) -> LiveItemSetOut:
+        """Modifica un oggetto istanza (`expect` obbligatorio: `stale_ref` se non coincide; mai ritentata)."""
+        raise api_error(409, "world.capability_missing", capability="supports_live_inventory")
+
+    async def live_item_remove(
+        self, name: str, ref: str, expect: LiveItemExpect, *, save: bool = True, actor: str | None = None
+    ) -> LiveItemRemoveOut:
+        """Toglie e distrugge un oggetto istanza (e il suo contenuto)."""
+        raise api_error(409, "world.capability_missing", capability="supports_live_inventory")
+
 
 __all__ = [
     "IMMORTAL_LEVEL",
@@ -340,6 +463,14 @@ __all__ = [
     "LiveEchoIn",
     "LiveEchoOut",
     "LiveError",
+    "LiveInventory",
+    "LiveItem",
+    "LiveItemAffect",
+    "LiveItemChanges",
+    "LiveItemExpect",
+    "LiveItemRemoveOut",
+    "LiveItemSetIn",
+    "LiveItemSetOut",
     "LiveLoadIn",
     "LiveLoadOut",
     "LivePlayerSetIn",

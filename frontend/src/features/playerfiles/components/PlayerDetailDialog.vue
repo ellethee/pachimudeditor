@@ -36,7 +36,7 @@
       <q-tabs v-model="tab" dense align="left" class="text-primary" active-color="primary" indicator-color="primary">
         <q-tab name="details" :label="t('playerFiles.detail.tabs.details')" />
         <q-tab v-if="lists.length" name="lists" :label="t('playerFiles.detail.tabs.lists')" />
-        <q-tab v-if="inventoryEnabled" name="inventory" :label="t('playerFiles.detail.tabs.inventory')" data-testid="tab-inventory" />
+        <q-tab v-if="inventoryEnabled || liveInventory" name="inventory" :label="t('playerFiles.detail.tabs.inventory')" data-testid="tab-inventory" />
       </q-tabs>
       <q-separator />
       <q-tab-panels v-model="tab" animated>
@@ -94,8 +94,16 @@
           </div>
         </q-tab-panel>
 
-        <q-tab-panel v-if="inventoryEnabled" name="inventory" class="q-px-none">
+        <q-tab-panel v-if="inventoryEnabled || liveInventory" name="inventory" class="q-px-none">
+          <live-inventory-panel
+            v-if="liveInventory"
+            :player-name="playerName"
+            :can-edit="live.canWriteInventory.value"
+            :can-write="live.canWriteInventory.value"
+            @unavailable="liveInventoryFailed = true"
+          />
           <player-inventory-panel
+            v-else
             :player-id="playerId"
             :can-write="canWriteInventory"
             :wear-slots="info?.wearSlots ?? []"
@@ -159,6 +167,7 @@ import type { IPlayerDetail, IPlayerListInfo, IPlayersInfo, IPlayersStatus } fro
 import type { IExtraFieldDescriptor } from '../../shared/types/worlds'
 import PlayerFieldEditor from './PlayerFieldEditor.vue'
 import PlayerInventoryPanel from './PlayerInventoryPanel.vue'
+import LiveInventoryPanel from './LiveInventoryPanel.vue'
 import LivePlayerDialog from './LivePlayerDialog.vue'
 import { useLive } from '../helpers/live-state'
 
@@ -189,6 +198,8 @@ const confirmServer = ref(false)
 const draft = ref<Record<string, unknown>>({})
 const draftLists = ref<Record<string, unknown>>({})
 
+/** Il canale non ha risposto al caricamento dell'inventario live: si ripiega sul file. */
+const liveInventoryFailed = ref(false)
 const inventoryEnabled = computed(() => capabilities.value?.supportsPlayerInventory === true)
 const lists = computed<IPlayerListInfo[]>(() => info.value?.detailLists ?? [])
 const readOnlyWorld = computed(() => capabilities.value?.readOnly === true)
@@ -201,6 +212,11 @@ const serverBlocked = computed(() => status.value?.serverRunning === true && !co
 
 /** Il giocatore e' in gioco e il canale permette di scrivere: la modifica passa dal canale (subito nel gioco) invece che dal file. */
 const liveEditable = computed(() => live.canWrite.value && detail.value?.online === true && detail.value.extra.liveState === 'playing')
+
+/** Inventario LIVE: giocatore in gioco, canale con la feature `inventory` e utente superuser (altrimenti il file, come prima). */
+const liveInventory = computed(
+  () => live.inventory.value && !liveInventoryFailed.value && detail.value?.online === true && detail.value.extra.liveState === 'playing',
+)
 
 /** Campi del dettaglio raggruppati per sezione, nell'ordine dichiarato dall'adapter. */
 const sections = computed(() => {

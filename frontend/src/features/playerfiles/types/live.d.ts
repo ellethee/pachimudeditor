@@ -108,3 +108,92 @@ export interface ILiveEcho {
   player?: string | undefined
   room?: number | undefined
 }
+
+/** Esito di `POST /load/mob|obj`: `warnings` può contenere `vnum_not_saveable` (oggetto > 32767 a un giocatore). */
+export interface ILiveLoadResult {
+  loaded: Record<string, unknown>[]
+  warnings: string[]
+}
+
+/** Affect di un oggetto istanza (`location` 0 = nessuno). */
+export interface ILiveItemAffect {
+  location: number
+  modifier: number
+}
+
+/** Oggetto istanza di un giocatore connesso (`ref` e `fp` sono opachi: si rimandano così come sono). */
+export interface ILiveItem {
+  ref: string
+  fp: string
+  vnum: number | null
+  slot: number | null
+  depth: number
+  name: string
+  shortDescription: string
+  type: number | null
+  contents: number
+  description: string | null
+  values: number[]
+  weight: number | null
+  extraFlags: number | null
+  timer: number | null
+  affects: ILiveItemAffect[]
+  /** Solo `GET .../inventory/item` (sola lettura). */
+  wearFlags?: number | null
+  cost?: number | null
+  costPerDay?: number | null
+  bitvector?: number | null
+}
+
+/** `GET /players/{name}/inventory`: elenco piatto in preordine (`depth` per l'annidamento). */
+export interface ILiveInventory {
+  name: string
+  carryWeight: number
+  carryItems: number
+  count: number
+  truncated: boolean
+  items: ILiveItem[]
+}
+
+/** Controllo di modifica concorrente: valori dell'ultima lettura. */
+export interface ILiveItemExpect {
+  vnum: number | null
+  fp: string
+}
+
+/** Patch parziale di un oggetto (`values`/`affects`: `null` = posizione invariata). */
+export interface ILiveItemChanges {
+  name?: string
+  shortDescription?: string
+  description?: string
+  values?: (number | null)[]
+  weight?: number
+  extraFlags?: number
+  timer?: number
+  affects?: (ILiveItemAffect | null)[]
+}
+
+/** Corpo di `PATCH .../inventory/item`. */
+export interface ILiveItemSet {
+  expect: ILiveItemExpect
+  set: ILiveItemChanges
+  save: boolean
+}
+
+/** Esito di `PATCH .../inventory/item`. */
+export interface ILiveItemSetResult {
+  name: string
+  fp: string
+  saved: boolean
+  warnings: string[]
+  item: ILiveItem | null
+}
+
+/** Esito di `DELETE .../inventory/item`. */
+export interface ILiveItemRemoveResult {
+  name: string
+  removed: boolean
+  destroyed: number
+  saved: boolean
+  warnings: string[]
+}

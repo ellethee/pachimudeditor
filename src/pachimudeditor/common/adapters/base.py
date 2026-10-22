@@ -94,6 +94,9 @@ class AdapterCapabilities(AliasedBaseModel):
     """`POST/PATCH/DELETE /api/world/players/{id}/inventory/items`: oggetti dell'inventario (richiede `supports_player_inventory`, SDK 1.4)."""
     supports_live: bool = False
     """`/api/world/live/...`: canale di controllo di un MUD acceso (mixin `LiveAdapter`, SDK 1.5); rotte solo per superuser."""
+    supports_live_inventory: bool = False
+    """`/api/world/live/players/{name}/inventory...`: inventario e oggetti istanza dei giocatori connessi (richiede `supports_live`; la
+    feature `inventory` del MUD si legge da `GET /api/world/live/status`, `features`)."""
     supports_transfer: bool = False
     """`export_zone_bundle`/`import_zone_dir` (cartella YAML di zona)."""
     supports_content_races: bool = False

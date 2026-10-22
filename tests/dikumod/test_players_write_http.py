@@ -273,6 +273,20 @@ async def test_unwritable_files_are_409(client: httpx.AsyncClient, lib: Path) ->
     assert files(lib) == before and (outside.read_bytes(), evil_rent.read_bytes()) == ext
 
 
+async def test_inventory_vnum_over_short_is_explained(client: httpx.AsyncClient) -> None:
+    """Un vnum oltre 32767 (il rent lo salva in uno `short`) e' rifiutato con un messaggio che spiega il limite, in it e in en."""
+    for lang, text in (("it", "intervallo che il file del giocatore"), ("en", "range the player file can hold")):
+        r = await client.post(f"{BASE}/tizio/inventory/items", json={"vnum": 40019}, headers={**H, "Accept-Language": lang})
+        detail = r.json()["detail"][0]
+        assert error_code(r, 422) == "worldplayers.invalid_value" and (detail["params"]["field"], detail["params"]["reason"]) == (
+            "vnum",
+            "range",
+        )
+        assert detail["params"]["max"] == 32767 and text in detail["msg"] and "32767" in detail["msg"]
+    other = await client.post(f"{BASE}/tizio/inventory/items", json={"vnum": 1, "wearSlot": "naso"}, headers=H)
+    assert error_code(other, 422) == "worldplayers.invalid_value" and "intervallo" not in other.json()["detail"][0]["msg"]
+
+
 async def test_inventory_add_equip_container_and_backup(client: httpx.AsyncClient, lib: Path) -> None:
     """Aggiunta portata/equipaggiata/in contenitore, slot occupato, oggetto ignoto, contenitore non valido; `.bak` del rent e costo."""
     plain, container = prototypes()

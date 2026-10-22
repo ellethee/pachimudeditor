@@ -185,6 +185,223 @@ describe('canale live (dikumod)', { skip: HAS_DIKUMOD ? false : 'dati Diku Modif
     await waitDialogsClosed(s.page)
   })
 
+  /** Inventario live di Tizio via API (elenco piatto). */
+  async function inventoryOf(api: Api): Promise<any[]> {
+    return (await api.get('/api/world/live/players/Tizio/inventory')).data.items
+  }
+
+  /** Percorso API di un oggetto di Tizio (il `ref` contiene `:` e `/`: sta in query). */
+  const itemUrl = (ref: string, extra = ''): string => `/api/world/live/players/Tizio/inventory/item?ref=${encodeURIComponent(ref)}${extra}`
+
+  it('API inventario live: elenco, oggetto, expect obbligatorio, stale_ref, avviso vnum, rimozione, sola lettura', async () => {
+    const api = (await Api.connect()).inWorld('dikumod-live')
+    const worlds = (await (await Api.connect()).get('/api/worlds')).data as { id: string; capabilities: Record<string, boolean> }[]
+    assert.deepEqual(worlds.filter((w) => w.capabilities.supportsLiveInventory).map((w) => w.id), ['dikumod-live', 'dikumod-live-ro'])
+    assert.ok((await api.get('/api/world/live/status')).data.features.includes('inventory'))
+    const items = await inventoryOf(api)
+    assert.deepEqual(items.map((i) => [i.ref, i.depth]), [['eq:5', 0], ['inv:0', 0], ['inv:1', 0], ['inv:1/0', 1]])
+    const nested = (await api.get(itemUrl('inv:1/0'))).data
+    assert.equal(nested.vnum, 3001)
+    assert.ok(nested.wearFlags !== undefined && nested.cost !== undefined)
+    assert.equal((await api.get(itemUrl('inv:9'))).body.detail[0].code, 'worldlive.not_found')
+    // expect obbligatorio (422), impronta vecchia (409 stale_ref) e nulla cambia
+    const bottle = items[1]
+    const noExpect = await api.call('PATCH', itemUrl('inv:0'), { set: { weight: 3 } })
+    assert.equal(noExpect.status, 422)
+    const noFp = await api.call('DELETE', itemUrl('inv:0'))
+    assert.equal(noFp.status, 422)
+    const stale = await api.call('PATCH', itemUrl('inv:0'), { expect: { vnum: bottle.vnum, fp: '00000000' }, set: { weight: 3 } })
+    assert.equal(stale.status, 409)
+    assert.equal(stale.body.detail[0].code, 'worldlive.stale_ref')
+    assert.equal((await inventoryOf(api))[1].weight, bottle.weight)
+    // oggetto > 32767: creato con avviso, poi rimosso
+    const made = await api.post('/api/world/live/load/obj', { vnum: 35000, player: 'Tizio' })
+    assert.deepEqual(made.data.warnings, ['vnum_not_saveable'])
+    const high = (await inventoryOf(api)).find((i) => i.vnum === 35000)
+    const removed = await api.call('DELETE', itemUrl(high.ref, `&fp=${high.fp}&vnum=${high.vnum}`))
+    assert.equal(removed.data.removed, true)
+    assert.equal((await inventoryOf(api)).some((i) => i.vnum === 35000), false)
+    // sola lettura: letture si', scritture 409 world.read_only
+    const ro = api.inWorld('dikumod-live-ro')
+    assert.equal((await ro.get('/api/world/live/players/Tizio/inventory')).status, 200)
+    const write = await ro.call('PATCH', itemUrl('inv:0'), { expect: { vnum: bottle.vnum, fp: bottle.fp }, set: { weight: 3 } })
+    assert.equal(write.body.detail[0].code, 'world.read_only')
+    assert.equal((await ro.call('DELETE', itemUrl('inv:0', `&fp=${bottle.fp}&vnum=${bottle.vnum}`))).body.detail[0].code, 'world.read_only')
+    // non connesso: errore chiaro
+    assert.equal((await api.get('/api/world/live/players/Caio/inventory')).body.detail[0].code, 'worldlive.player_not_playing')
+  })
+
+  it('dialogo di un giocatore connesso: inventario LIVE, aggiunta, modifica di ogni gruppo di campi', async () => {
+    await s.page.getByTestId('player-open-tizio').click()
+    const d = dialog(s.page)
+    await d.getByTestId('tab-inventory').click()
+    const panel = d.getByTestId('panel-live-inventory')
+    assert.match(await panel.getByTestId('live-inventory-badge').innerText(), /LIVE/)
+    const table = panel.getByTestId('live-inventory-table')
+    for (const ref of ['eq:5', 'inv:0', 'inv:1', 'inv:1/0']) await table.getByTestId(`live-inventory-name-${ref}`).waitFor()
+    assert.match(await table.locator('tbody tr').nth(0).innerText(), /giubbotto/i)
+    assert.equal(await d.getByTestId('panel-inventory').count(), 0) // non l'inventario su file
+    // aggiunta: oggetto esistente scelto da lista filtrabile, creato per il giocatore
+    await panel.getByTestId('live-inventory-pick').fill('3001')
+    await s.page.locator('.q-menu .q-item', { hasText: /#3001\b/ }).first().click()
+    await panel.getByTestId('live-inventory-add').click()
+    await s.page.waitForFunction(() => document.querySelectorAll('[data-testid="live-inventory-table"] tbody tr').length === 5)
+    const api = (await Api.connect()).inWorld('dikumod-live')
+    assert.equal((await inventoryOf(api)).length, 5)
+    // gruppo 1: parole chiave, descrizione breve e lunga
+    const edit = async (ref: string): Promise<ReturnType<Session['page']['getByTestId']>> => {
+      await table.getByTestId(`live-inventory-edit-${ref}`).click()
+      const item = s.page.getByTestId('live-item-dialog')
+      await item.getByTestId('live-item-meta').waitFor()
+      return item
+    }
+    const apply = async (): Promise<void> => {
+      await s.page.getByTestId('live-item-apply').click()
+      await s.page.getByTestId('live-item-dialog').waitFor({ state: 'detached' })
+    }
+    let item = await edit('eq:5')
+    await item.getByTestId('live-item-name').fill('giubbotto nero cuoio')
+    await item.getByTestId('live-item-short').fill('Un giubbotto nero')
+    await item.getByTestId('live-item-description').fill('Un giubbotto nero giace qui.')
+    await item.getByTestId('live-item-name').fill('giubbotto $nero') // `$` non ammesso: il pulsante resta spento
+    assert.equal(await s.page.getByTestId('live-item-apply').isDisabled(), true)
+    await item.getByTestId('live-item-name').fill('giubbotto nero cuoio')
+    await apply()
+    let vest = (await api.get(itemUrl('eq:5'))).data
+    assert.deepEqual([vest.name, vest.shortDescription, vest.description], ['giubbotto nero cuoio', 'Un giubbotto nero', 'Un giubbotto nero giace qui.'])
+    await table.getByTestId('live-inventory-name-eq:5').filter({ hasText: 'Un giubbotto nero' }).waitFor()
+    // gruppo 2: i 4 valori (etichettati dal tipo), peso e timer
+    item = await edit('eq:5')
+    await item.getByTestId('live-item-value-0').fill('7')
+    await item.getByTestId('live-item-value-3').fill('4')
+    await item.getByTestId('live-item-weight').fill('9')
+    await item.getByTestId('live-item-timer').fill('600')
+    assert.match(await item.innerText(), /Bonus CA/) // giubbotto = armatura: valore 0 etichettato
+    await apply()
+    vest = (await api.get(itemUrl('eq:5'))).data
+    assert.deepEqual([vest.values, vest.weight, vest.timer], [[7, 2, 0, 4], 9, 600])
+    // gruppo 3: extra flag (selezione multipla dall'enum) e affect (dove + modifica)
+    item = await edit('eq:5')
+    await item.getByTestId('live-item-flags').click()
+    await s.page.locator('.q-menu .q-item', { hasText: /^\s*glow\s*$/ }).first().click()
+    await s.page.keyboard.press('Escape')
+    await item.getByTestId('live-item-affect-0-location').click()
+    await s.page.locator('.q-menu .q-item', { hasText: /^\s*hit\s*$/ }).first().click()
+    await item.getByTestId('live-item-affect-0-modifier').fill('5')
+    await apply()
+    vest = (await api.get(itemUrl('eq:5'))).data
+    assert.equal(vest.extraFlags & 1, 1)
+    assert.deepEqual(vest.affects[0], { location: 13, modifier: 5 })
+    assert.equal(await rawI18nKey(s.page), null)
+  })
+
+  it('modifica concorrente: stale_ref con messaggio chiaro, elenco ricaricato, input conservato', async () => {
+    const table = s.page.getByTestId('panel-live-inventory').getByTestId('live-inventory-table') // niente `dialog()`: l'ultimo dialogo sara' quello di modifica
+    await table.getByTestId('live-inventory-edit-eq:5').click()
+    const item = s.page.getByTestId('live-item-dialog')
+    await item.getByTestId('live-item-meta').waitFor()
+    // qualcun altro cambia la descrizione breve dopo che il dialogo ha letto l'oggetto
+    const api = (await Api.connect()).inWorld('dikumod-live')
+    const current = (await api.get(itemUrl('eq:5'))).data
+    const other = await api.call('PATCH', itemUrl('eq:5'), { expect: { vnum: current.vnum, fp: current.fp }, set: { shortDescription: 'Un giubbotto altrui' } })
+    assert.equal(other.status, 200)
+    await item.getByTestId('live-item-weight').fill('11')
+    await s.page.getByTestId('live-item-apply').click()
+    await item.getByTestId('live-item-stale').waitFor()
+    assert.match(await item.getByTestId('live-item-stale').innerText(), /cambiato nel frattempo/)
+    assert.equal(await item.getByTestId('live-item-weight').inputValue(), '11') // l'input non si perde
+    assert.equal((await api.get(itemUrl('eq:5'))).data.weight, 9) // e il gioco non e' stato toccato
+    await table.getByTestId('live-inventory-name-eq:5').filter({ hasText: 'Un giubbotto altrui' }).waitFor() // elenco ricaricato
+    assert.equal(await s.page.getByTestId('live-item-apply').isDisabled(), true) // mai un nuovo invio automatico
+    await item.getByTestId('live-item-rebase').click()
+    await item.getByTestId('live-item-stale').waitFor({ state: 'detached' })
+    assert.equal(await item.getByTestId('live-item-weight').inputValue(), '11')
+    await s.page.getByTestId('live-item-apply').click()
+    await item.waitFor({ state: 'detached' })
+    const after = (await api.get(itemUrl('eq:5'))).data
+    assert.deepEqual([after.weight, after.shortDescription], [11, 'Un giubbotto altrui'])
+  })
+
+  it('rimozione con conferma: un contenitore porta con se\' il contenuto; annulla non toglie nulla', async () => {
+    const table = s.page.getByTestId('panel-live-inventory').getByTestId('live-inventory-table')
+    const api = (await Api.connect()).inWorld('dikumod-live')
+    const before = (await inventoryOf(api)).length
+    const bag = table.locator('tbody tr', { hasText: 'piccola borsa' })
+    await bag.locator('[data-testid^="live-inventory-remove-"]').click()
+    const confirmBox = s.page.locator('.q-dialog').last()
+    assert.match(await confirmBox.innerText(), /distrutto.*1 oggetti|1 oggetti.*non si annulla/s)
+    await confirmBox.getByRole('button', { name: 'Annulla' }).click()
+    assert.equal((await inventoryOf(api)).length, before)
+    await bag.locator('[data-testid^="live-inventory-remove-"]').click()
+    await s.page.getByTestId('live-inventory-remove-confirm').click()
+    await s.page.waitForFunction((n) => document.querySelectorAll('[data-testid="live-inventory-table"] tbody tr').length === n, before - 2)
+    assert.equal((await inventoryOf(api)).some((i) => i.vnum === 14), false)
+    assert.equal(await rawI18nKey(s.page), null)
+    await closeAll(s)
+  })
+
+  it('«Server live», crea: oggetto per un giocatore con «Modifica»; in una stanza la nota; avviso vnum non salvabile', async () => {
+    await s.page.getByTestId('live-open').click()
+    const d = s.page.getByTestId('live-server-dialog')
+    await d.getByTestId('live-tab-load').click()
+    await d.getByTestId('live-load-kind-obj').click()
+    await d.getByTestId('live-load-where-room').click()
+    assert.match(await d.getByTestId('live-load-room-note').innerText(), /inventario di un giocatore/) // limite: gli oggetti a terra non si modificano
+    await d.getByTestId('live-load-where-player').click()
+    await d.getByTestId('live-load-vnum').fill('3001')
+    await s.page.locator('.q-menu .q-item', { hasText: /#3001\b/ }).first().click()
+    await d.getByTestId('live-load-player').click()
+    await s.page.locator('.q-menu .q-item', { hasText: 'Tizio' }).first().click()
+    await d.getByTestId('live-load-go').click()
+    await d.getByTestId('live-server-message').filter({ hasText: /1 creati/ }).waitFor()
+    await d.getByTestId('live-load-edit').click()
+    const item = s.page.getByTestId('live-item-dialog')
+    await item.getByTestId('live-item-meta').waitFor()
+    await item.getByTestId('live-item-short').fill('Una bottiglia speciale')
+    await s.page.getByTestId('live-item-apply').click()
+    await item.waitFor({ state: 'detached' })
+    const api = (await Api.connect()).inWorld('dikumod-live')
+    const items = await inventoryOf(api)
+    assert.equal(items.find((i) => i.slot === null).shortDescription, 'Una bottiglia speciale') // il nuovo e' in testa all'inventario portato
+    assert.equal(items.filter((i) => i.shortDescription === 'Una bottiglia speciale').length, 1)
+    // avviso del MUD (oggetto oltre 32767): la risposta e' simulata perche' il finto MUD conosce solo alcuni vnum
+    await s.page.route('**/api/world/live/load/obj', (route) =>
+      route.fulfill({ json: { success: true, message: 'ok', data: { loaded: [{ vnum: 40019, name: 'x', where: 'player' }], warnings: ['vnum_not_saveable'] } } }),
+    )
+    await d.getByTestId('live-load-vnum').fill('40019')
+    await s.page.locator('.q-menu .q-item', { hasText: /#40019\b/ }).first().click()
+    await d.getByTestId('live-load-go').click()
+    assert.match(await d.getByTestId('live-server-warning').innerText(), /32767/)
+    await s.page.unroute('**/api/world/live/load/obj')
+    assert.equal(await rawI18nKey(s.page), null)
+    await s.page.keyboard.press('Escape')
+    await waitDialogsClosed(s.page)
+  })
+
+  it('inventario su file: un oggetto oltre 32767 non e\' selezionabile e l\'errore spiega il limite', async () => {
+    await s.page.getByTestId('player-open-mevio').click()
+    const d = dialog(s.page)
+    await d.getByTestId('tab-inventory').click()
+    await d.getByTestId('panel-inventory').waitFor()
+    assert.equal(await d.getByTestId('panel-live-inventory').count(), 0) // non connesso: il file
+    await d.getByTestId('confirm-server').click() // server acceso (provato dal canale): senza conferma le scritture su file sono spente
+    await d.getByTestId('inventory-add').click()
+    await d.getByTestId('inventory-pick').fill('40019')
+    const option = s.page.locator('.q-menu .q-item', { hasText: /#40019\b/ }).first()
+    await option.waitFor()
+    assert.match(await option.innerText(), /non salvabile nel rent/)
+    assert.equal(await option.getAttribute('aria-disabled'), 'true')
+    await s.page.keyboard.press('Escape')
+    const rw = (await Api.connect()).inWorld('dikumod-rw')
+    const refused = await rw.post('/api/world/players/caio/inventory/items', { vnum: 40019 })
+    assert.equal(refused.status, 422)
+    assert.equal(refused.body.detail[0].code, 'worldplayers.invalid_value')
+    assert.match(refused.body.detail[0].msg, /32767/)
+    assert.equal(await rawI18nKey(s.page), null)
+    await s.page.keyboard.press('Escape')
+    await closeAll(s)
+  })
+
   it('giocatore NON connesso: resta la modifica su file e, col server acceso, serve la conferma', async () => {
     await s.page.getByTestId('player-open-mevio').click()
     const d = dialog(s.page)
@@ -205,6 +422,9 @@ describe('canale live (dikumod)', { skip: HAS_DIKUMOD ? false : 'dati Diku Modif
     await d.getByTestId('player-readonly-note').waitFor()
     assert.equal(await d.getByTestId('live-edit-start').count(), 0)
     assert.equal(await d.getByTestId('edit-start').count(), 0)
+    await d.getByTestId('tab-inventory').click()
+    await d.getByTestId('live-inventory-name-eq:5').waitFor() // l'inventario live si legge
+    assert.equal(await d.locator('[data-testid^="live-inventory-edit-"], [data-testid^="live-inventory-remove-"], [data-testid="live-inventory-add"]').count(), 0)
     await s.page.keyboard.press('Escape')
     await waitDialogsClosed(s.page)
     await s.page.getByTestId('live-open').click()
@@ -232,6 +452,9 @@ describe('canale live (dikumod)', { skip: HAS_DIKUMOD ? false : 'dati Diku Modif
     const d = dialog(s.page)
     await d.getByTestId('edit-start').waitFor() // file: nessuna modifica live
     assert.equal(await d.getByTestId('live-edit-start').count(), 0)
+    await d.getByTestId('tab-inventory').click()
+    await d.getByTestId('panel-inventory').waitFor() // ripiego sul file
+    assert.equal(await d.getByTestId('panel-live-inventory').count(), 0)
     await s.page.keyboard.press('Escape')
     await waitDialogsClosed(s.page)
     await startFake()
