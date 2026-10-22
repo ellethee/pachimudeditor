@@ -16,7 +16,7 @@ from pachimudeditor.common.enums import Sex
 from pachimudeditor.common.enums import ObjectType
 from pachimudeditor.common.enums import ZoneCommandType, ZoneResetMode
 from pachimudeditor.common.enums import Direction, DoorFlag, SectorType
-from pydantic import BeforeValidator, Field, model_validator
+from pydantic import BeforeValidator, Field, field_validator, model_validator
 
 from pachimudeditor.common.editor.schemas import PatchModel
 
@@ -624,11 +624,47 @@ class ObjectPatch(NeutralPatch):
 
 
 class ObjectPageParams(PageParams):
-    """Parametri di lista degli oggetti: `search` su descrizione/keywords/vnum, filtro esatto `zoneId`."""
+    """Parametri di lista degli oggetti: `search` su descrizione/keywords/vnum, filtro esatto `zoneId` e, in piu',
+    filtri e ordinamenti sulle statistiche (tutti opzionali, additivi: senza di essi la lista e' quella di sempre).
+
+    Filtri: `objectType` (uno o piu' tipi: OR), `wearFlag`/`extraFlag` (uno o piu' nomi: AND), intervalli inclusivi
+    `minWeight|maxWeight`, `minCost|maxCost`, `minRent|maxRent`, `minValue0..3|maxValue0..3` (un `valueN` nullo non
+    soddisfa un intervallo), `affect` (apply presente tra gli affect) con `minAffect` (valore >= soglia).
+    Ordinamento (`orderBy`, `-campo` per il discendente, nulli sempre in fondo): vedi `order_fields`."""
 
     search_fields = ["short_description", "keywords", "vnum"]
-    order_fields = ["id", "vnum", "object_type"]
+    order_fields = [
+        "id", "vnum", "object_type", "zone_id", "short_description", "weight", "cost", "rent",
+        "value_0", "value_1", "value_2", "value_3",
+    ]  # fmt: skip
     zone_id: int | None = Query(None)
+    object_type: list[int] | None = Query(None)
+    wear_flag: list[str] | None = Query(None)
+    extra_flag: list[str] | None = Query(None)
+    affect: str | None = Query(None)
+    min_affect: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_weight: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_weight: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_cost: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_cost: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_rent: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_rent: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_value_0: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_value_0: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_value_1: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_value_1: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_value_2: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_value_2: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    min_value_3: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+    max_value_3: int | None = Query(None, ge=-MAX_INT, le=MAX_INT)
+
+    @field_validator("object_type", "wear_flag", "extra_flag", mode="before")
+    @classmethod
+    def _split_commas(cls, value: Any) -> Any:
+        """Accetta sia il parametro ripetuto (`?wearFlag=a&wearFlag=b`) sia l'elenco separato da virgole (`?wearFlag=a,b`)."""
+        if isinstance(value, list):
+            return [part.strip() for item in value for part in str(item).split(",") if part.strip()]
+        return value
 
 
 class Option(AliasedBaseModel):

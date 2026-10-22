@@ -23,7 +23,7 @@ from pachimudeditor.common.adapters.models import (
     ObjectPatch,
     ResetUsage,
 )
-from pachimudeditor.sdk import conflict
+from pachimudeditor.sdk import conflict, object_query
 
 
 def _section_items(entry: AreaEntry, kind: str) -> list[Any]:
@@ -180,6 +180,8 @@ class PrototypesMixin(BasedMudSupport):
         pairs = self.store.all_items("object")
         if params.zone_id is not None:
             pairs = [p for p in pairs if p[0].zone_id == params.zone_id]
+        if object_query.is_extended(params):
+            return object_query.page_objects([mapping.object_out(o, e.zone_id) for e, o in pairs], params)
         keys = {
             "id": lambda o: o.vnum, "vnum": lambda o: o.vnum,
             "object_type": lambda o: int(mapping.ITEM_TO_DTO.get(o.item_type, mapping.ObjectType.OTHER)),

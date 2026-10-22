@@ -30,7 +30,7 @@ from pachimudeditor.common.adapters.models import (
 )
 from pachimudeditor.common.adapters.registry import WorldConfig
 from pachimudeditor.common.enums import Direction, DoorFlag
-from tests.adapter_contract.helpers import expect_error
+from tests.adapter_contract.helpers import assert_object_queries_match_oracle, expect_error
 from tests.support.synthetic_worlds import write_rom_area
 
 ZONE, MOB, ROOM, ROOM_S, OBJ, KEY = 5000, 5000, 5000, 5002, 5001, 5004
@@ -350,3 +350,8 @@ async def test_unencodable_text_is_422_and_leaves_disk_untouched(make: Callable[
         await adapter.update_room(ROOM, RoomPatch(name="Prato \U0001f600"))
     assert (area / "prato.are").read_bytes() == raw
     assert (await adapter.get_room(ROOM)).name != "Prato \U0001f600"
+
+
+async def test_object_queries_match_reference(adapter: BasedMudAdapter) -> None:
+    """Filtri e ordinamenti sulle statistiche degli oggetti coincidono con un riferimento in Python."""
+    await assert_object_queries_match_oracle(adapter)

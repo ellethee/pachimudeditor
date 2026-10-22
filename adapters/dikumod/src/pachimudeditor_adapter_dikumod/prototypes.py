@@ -29,7 +29,7 @@ from pachimudeditor.common.adapters.models import (
     ObjectPatch,
     ResetUsage,
 )
-from pachimudeditor.sdk import make_page, paginate_list
+from pachimudeditor.sdk import make_page, object_query, paginate_list
 from pachimudeditor.sdk import conflict
 
 
@@ -250,6 +250,11 @@ class PrototypesMixin(DikumodSupport):
         refs = sorted(store.objs.values(), key=lambda r: r.vnum)
         if params.zone_id is not None:
             refs = [r for r in refs if self.zone_id_of(r.vnum) == params.zone_id]
+        dup = store.duplicates["object"]
+        if object_query.is_extended(params):
+            return object_query.page_objects(
+                [mapping.object_out(r.item, self.zone_id_of(r.vnum), override=r.override, duplicate=r.vnum in dup) for r in refs], params
+            )
         keys = {
             "id": lambda r: r.vnum,
             "vnum": lambda r: r.vnum,
@@ -258,7 +263,6 @@ class PrototypesMixin(DikumodSupport):
         items, total = paginate_list(
             refs, params, lambda r: (r.item.short, r.item.name, r.vnum), lambda r, f: keys[f](r), ObjectPageParams.order_fields or []
         )
-        dup = store.duplicates["object"]
         out = [mapping.object_out(r.item, self.zone_id_of(r.vnum), override=r.override, duplicate=r.vnum in dup) for r in items]
         return make_page(ObjectOut, out, total, params)
 

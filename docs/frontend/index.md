@@ -9,6 +9,7 @@ buildata e viene servita dal backend alla radice del dominio (`/assets/...`: un 
 | Area | Cosa si fa | Disponibile |
 | --- | --- | --- |
 | Zone, stanze, mob, oggetti | elenco, ricerca, creazione, modifica, clonazione, script di reset, uscite | sempre (mondo scrivibile per le modifiche) |
+| Oggetti (lista) | «Tutte le zone» di default (la creazione chiede la zona), colonne scelte dal viewer (zona, peso, costo, affitto, valori 0-3, indossabile in, effetti; salvate nel browser, poche su telefono) tutte ordinabili lato server, barra filtri (tipo, indossa in, flag extra, intervalli numerici, apply degli effetti) con chip, «Azzera filtri» e stato nell'URL (`?zoneId=&objectType=1,2&minCost=100&wearFlag=take`) | sempre |
 | Mondo | panoramica, grafo tra zone, ricerca trasversale | capability `supportsWorldOverview` |
 | Istanze | mob e oggetti vivi nel gioco | capability `supportsInstances` |
 | Giocatori | account, personaggi, inventario | capability `supportsPlayers` |

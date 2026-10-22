@@ -60,3 +60,40 @@ async def test_container_counts_as_usage(client: httpx.AsyncClient) -> None:
     data(await client.put(f"/api/zones/{zone['id']}/reset-commands", json=cmds))
     free = await by_vnum(client, "objects", 1001)
     assert error_code(await client.delete(f"/api/objects/{free['id']}"), 409) == "objects.in_reset_usage"
+
+
+async def test_list_filters_and_ordering_http(client: httpx.AsyncClient) -> None:
+    """Filtri/ordinamenti sulle statistiche via query string (alias camelCase, parametri ripetuti), rent compreso."""
+    specs = {
+        1070: {"objectType": 1, "weight": 5, "cost": 100, "rent": 10, "value0": 2, "extraFlags": ["glow"], "wearFlags": ["take"], "affects": {"hitroll": 3}},
+        1071: {"objectType": 2, "weight": 20, "cost": 50, "rent": 5, "value0": -4, "extraFlags": ["glow", "hum"], "wearFlags": ["take", "body"]},
+        1072: {"objectType": 9, "weight": 1, "cost": 500, "rent": 0},
+    }  # fmt: skip
+    for vnum, spec in specs.items():
+        data(await client.post("/api/objects", json=await _body(client, vnum, **spec)), 201)
+
+    async def vnums(**params: object) -> list[int]:
+        page = data(await client.get("/api/objects", params={"search": "elmo", "orderBy": "vnum", **params}))
+        return [o["vnum"] for o in page["items"] if o["vnum"] >= 1070]
+
+    assert await vnums() == [1070, 1071, 1072]
+    assert await vnums(objectType=[1, 9]) == [1070, 1072]
+    assert await vnums(minRent=1, maxRent=9) == [1071]
+    assert await vnums(minCost=60) == [1070, 1072] and await vnums(maxWeight=5) == [1070, 1072]
+    assert await vnums(minValue0=-10, maxValue0=0) == [1071]  # value0 nullo (1072) escluso dagli intervalli
+    assert await vnums(objectType="1,9") == [1070, 1072] and await vnums(wearFlag="take,body") == [1071]  # elenco con virgole (alova)
+    assert await vnums(extraFlag=["glow", "hum"]) == [1071] and await vnums(wearFlag="body") == [1071]
+    assert await vnums(affect="hitroll", minAffect=3) == [1070] and await vnums(affect="hitroll", minAffect=4) == []
+    assert await vnums(orderBy="-cost") == [1072, 1070, 1071] and await vnums(orderBy="rent") == [1072, 1071, 1070]
+    assert await vnums(orderBy="-value0") == [1070, 1071, 1072] and await vnums(orderBy="value0") == [1071, 1070, 1072]
+    assert await vnums(orderBy="shortDescription,-weight") == [1071, 1070, 1072]
+
+
+async def test_list_invalid_filters_422(client: httpx.AsyncClient) -> None:
+    """Parametri di lista non validi: 422 (codici stabili dove previsto), mai 500."""
+    assert error_code(await client.get("/api/objects", params={"minCost": 9, "maxCost": 1}), 422) == "objects.invalid_range"
+    assert error_code(await client.get("/api/objects", params={"objectType": 999}), 422) == "objects.invalid_object_type"
+    assert error_code(await client.get("/api/objects", params={"minAffect": 1}), 422) == "objects.affect_required"
+    assert error_code(await client.get("/api/objects", params={"orderBy": "nope"}), 422) == "api.invalid_order_by"
+    for bad in ({"minCost": "x"}, {"objectType": "abc"}, {"maxValue2": 10**12}):
+        assert (await client.get("/api/objects", params=bad)).status_code == 422, bad

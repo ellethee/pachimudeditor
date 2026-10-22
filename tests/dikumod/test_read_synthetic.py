@@ -7,7 +7,7 @@ from pachimudeditor_adapter_dikumod.adapter import DikumodAdapter
 
 from pachimudeditor.common.adapters.models import MobPageParams, ObjectPageParams, RoomPageParams, ZonePageParams
 from pachimudeditor.common.adapters.registry import WorldConfig
-from tests.adapter_contract.helpers import expect_error
+from tests.adapter_contract.helpers import assert_object_queries_match_oracle, expect_error
 from tests.support.synthetic_worlds import write_dikumod_world
 
 
@@ -49,3 +49,8 @@ async def test_search_and_paging(ro: DikumodAdapter) -> None:
     assert [m.vnum for m in found.items] == [2]
     page = await ro.list_rooms(RoomPageParams(page=2, pageSize=2))
     assert page.total == 5 and page.page == 2 and len(page.items) == 2
+
+
+async def test_object_queries_match_reference(ro: DikumodAdapter) -> None:
+    """Filtri e ordinamenti sulle statistiche degli oggetti coincidono con un riferimento in Python (rent compreso)."""
+    await assert_object_queries_match_oracle(ro)

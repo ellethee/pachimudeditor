@@ -7,4 +7,7 @@ MESSAGES: dict[str, str] = {
     "objects.vnum_in_use": "Cannot change the vnum: the object is used {count} times (resets or exit keys) in: {zones}.",
     "objects.in_exit_key_usage": "Cannot delete: the object is the key of {count} exits ({zones}).",
     "objects.has_instances": "Cannot delete: {count} live instances of the object exist.",
+    "objects.invalid_object_type": "Invalid object type: {value}.",
+    "objects.invalid_range": "Invalid range for {field}: minimum ({min}) is greater than maximum ({max}).",
+    "objects.affect_required": "minAffect also requires the affect parameter.",
 }

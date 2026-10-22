@@ -81,7 +81,9 @@ Base: `/api`. Docs interattive: `/docs`, schema completo `/api/v1/openapi.json`.
 - `POST /mobs` -> 201; `GET|PUT|DELETE /mobs/{id}` (PUT con `vnum` cambiato: 409 `mobs.vnum_in_use` se in un reset; DELETE 204, 409 `mobs.in_reset_usage` / `mobs.has_instances`); `GET /mobs/{id}/usage` -> `ResetUsage[]`
 
 ## Oggetti — `/objects`
-- `GET /objects` paginata (`search`: shortDescription/keywords/vnum; `zoneId`; `orderBy`: id, vnum, objectType) -> `ObjectOut[]`
+- `GET /objects` paginata (`search`: shortDescription/keywords/vnum; `zoneId`; `orderBy`: id, vnum, objectType, zoneId, shortDescription, weight, cost, rent, value0..value3 — `-campo` per il discendente, i nulli (`valueN`) sempre in fondo, a parita' per vnum) -> `ObjectOut[]`.
+  Filtri sulle statistiche, tutti opzionali e combinati in AND (senza di essi la lista e' invariata): `objectType` (uno o piu' valori, OR), `wearFlag` e `extraFlag` (uno o piu' nomi, devono esserci tutti; senza maiuscole), `minWeight|maxWeight`, `minCost|maxCost`, `minRent|maxRent`, `minValue0..3|maxValue0..3` (intervalli inclusivi; un `valueN` nullo non li soddisfa), `affect` (nome dell'apply presente tra gli `affects`) con `minAffect` (valore >= soglia). I parametri a piu' valori si passano ripetuti (`?wearFlag=a&wearFlag=b`) o separati da virgole (`?wearFlag=a,b`).
+  Errori 422: `objects.invalid_range` (`field`, `min`, `max`: minimo > massimo), `objects.invalid_object_type` (`value`), `objects.affect_required` (`minAffect` senza `affect`), `api.invalid_order_by`; interi non numerici o fuori da +-2^31-1: errore di validazione standard. Il significato di `value0..3` dipende dal tipo e dall'adapter: la lista li restituisce grezzi.
 - `POST /objects` -> 201; `GET|PUT|DELETE /objects/{id}` (PUT con `vnum` cambiato: 409 `objects.vnum_in_use` se in un reset o chiave di un'uscita; DELETE 204, 409 `objects.in_reset_usage` / `objects.in_exit_key_usage` / `objects.has_instances`); `GET /objects/{id}/usage` -> `ResetUsage[]` (include le uscite che lo usano come chiave)
 
 ## Validazione dei PUT parziali

@@ -1,5 +1,8 @@
 """Suite di contratto di `WorldAdapter`: gira su ogni adapter di `ADAPTER_FACTORIES` usando solo l'interfaccia."""
 
+import pytest
+from pachifast.errors import InvalidOrderByError
+
 from pachimudeditor.common.adapters.base import WorldAdapter
 from pachimudeditor.common.adapters.models import (
     ExitIn,
@@ -25,7 +28,7 @@ from pachimudeditor.common.adapters.models import (
     ZonePageParams,
     ZonePatch,
 )
-from pachimudeditor.common.enums import ZoneCommandType
+from pachimudeditor.common.enums import ObjectType, ZoneCommandType
 from pachimudeditor.common.enums import Direction, DoorFlag
 
 from tests.adapter_contract.helpers import expect_error, new_mob, new_object, new_room, new_zone
@@ -367,3 +370,99 @@ async def test_reset_validation(adapter: WorldAdapter) -> None:
 def script_with(*commands: ResetCommandIn) -> ResetScriptIn:
     """Uno script con i comandi dati."""
     return ResetScriptIn(commands=list(commands))
+
+
+# --------------------------------------------------------------------------- oggetti: filtri e ordinamenti sulle statistiche
+
+
+async def _stat_objects(adapter: WorldAdapter, apply: tuple[str, str]) -> tuple[int, dict[str, int]]:
+    """Zona con 4 oggetti dai valori distinti (a: arma, b: armatura, c: cibo senza value, d: arma senza cost) -> (zona, nome -> id)."""
+    zone = await new_zone(adapter, "Zona statistiche")
+    specs = {
+        "a": dict(object_type=ObjectType.WEAPON, weight=5, cost=100, value_0=2, value_1=6, extra_flags=["glow"], wear_flags=["take", "wield"], affects={apply[0]: 3}),
+        "b": dict(object_type=ObjectType.ARMOR, weight=20, cost=50, value_0=-4, value_1=0, extra_flags=["glow", "magic"], wear_flags=["take", "body"], affects={apply[0]: 1, apply[1]: 2}),
+        "c": dict(object_type=ObjectType.FOOD, weight=1, cost=500),
+        "d": dict(object_type=ObjectType.WEAPON, weight=5, cost=0, value_0=2, value_1=8, wear_flags=["take"]),
+    }  # fmt: skip
+    ids: dict[str, int] = {}
+    for name, spec in specs.items():
+        vnum = await adapter.next_content_vnum(zone.id, "object")
+        obj = await adapter.create_object(ObjectIn(vnum=vnum, zone_id=zone.id, keywords=name, short_description=f"oggetto {name}", **spec))
+        ids[name] = obj.id
+    return zone.id, ids
+
+
+async def test_object_list_filters_and_ordering(adapter: WorldAdapter) -> None:
+    """Ogni filtro e ordinamento sulle statistiche, nulli in fondo, combinazioni, errori 422, retrocompatibilita'."""
+    apply = ("str", "dex") if "dikumod" in type(adapter).__module__ else ("strength", "dexterity")
+    zone_id, ids = await _stat_objects(adapter, apply)
+    name = {v: k for k, v in ids.items()}
+
+    async def run(**kw: object) -> str:
+        page = await adapter.list_objects(ObjectPageParams(zone_id=zone_id, **kw))  # type: ignore[arg-type]
+        assert page.total == len(page.items) or kw.get("pageSize")
+        return "".join(name[o.id] for o in page.items)
+
+    assert await run() == "abcd"  # nessun nuovo parametro: ordine per vnum come sempre
+    assert await run(object_type=[int(ObjectType.WEAPON)]) == "ad"
+    assert await run(object_type=[int(ObjectType.ARMOR), int(ObjectType.FOOD)]) == "bc"
+    assert await run(min_cost=50, max_cost=100) == "ab"
+    assert await run(min_weight=5) == "abd" and await run(max_weight=4) == "c"
+    # i valueN dipendono dalla mappatura dell'adapter (es. ROM porta a 0 i valori del cibo): atteso calcolato sui DTO
+    dtos = {name[o.id]: o for o in (await adapter.list_objects(ObjectPageParams(zone_id=zone_id))).items}
+    for n in range(4):
+        field = f"value_{n}"
+        for low, high in ((0, None), (None, -1), (7, 9), (0, 0), (2, 2)):
+            want = "".join(
+                k
+                for k, o in dtos.items()
+                if getattr(o, field) is not None
+                and (low is None or getattr(o, field) >= low)
+                and (high is None or getattr(o, field) <= high)
+            )
+            assert await run(**{f"min_{field}": low, f"max_{field}": high}) == want, (field, low, high)
+    assert await run(extra_flag=["glow"]) == "ab" and await run(extra_flag=["glow", "magic"]) == "b"
+    assert await run(wear_flag=["take"]) == "abd" and await run(wear_flag=["take", "body"]) == "b"
+    assert await run(affect=apply[0]) == "ab" and await run(affect=apply[0], min_affect=2) == "a"
+    assert await run(affect="inesistente") == ""
+    assert await run(object_type=[int(ObjectType.WEAPON)], min_cost=1, extra_flag=["glow"]) == "a"  # combinazione = AND
+    assert await run(search="oggetto c", min_cost=1) == "c"
+    assert await run(orderBy="cost") == "dbac" and await run(orderBy="-cost") == "cabd"
+    assert await run(orderBy="weight,-cost") == "cadb"
+    assert await run(orderBy="-weight,vnum") == "bad"[:0] + "bad" + "c"
+    assert await run(orderBy="shortDescription") == "abcd" and await run(orderBy="-shortDescription") == "dcba"
+    assert await run(orderBy="objectType,vnum") == "adbc" and await run(orderBy="zoneId") == "abcd"
+    # nulli in fondo in entrambe le direzioni; a parita' decide il vnum (atteso calcolato sui DTO)
+    for n in range(4):
+        field = f"value_{n}"
+        have = [k for k, o in dtos.items() if getattr(o, field) is not None]
+        null = "".join(k for k, o in dtos.items() if getattr(o, field) is None)
+        for desc in (False, True):
+            want = "".join(sorted(have, key=lambda k: getattr(dtos[k], field), reverse=desc)) + null
+            assert await run(orderBy=("-" if desc else "") + f"value{n}") == want, (field, desc)
+            assert await run(orderBy=("-" if desc else "") + field) == want
+    for field in ("value2", "value3", "rent", "weight", "cost", "zoneId", "shortDescription", "vnum", "id", "objectType"):
+        assert len(await run(orderBy=field)) == 4 and len(await run(orderBy=f"-{field}")) == 4
+    # paginazione: totale dopo i filtri, finestra dopo l'ordinamento
+    page = await adapter.list_objects(ObjectPageParams(zone_id=zone_id, min_weight=5, orderBy="-cost", page=1, pageSize=2))
+    assert page.total == 3 and [name[o.id] for o in page.items] == ["a", "b"]
+    page = await adapter.list_objects(ObjectPageParams(zone_id=zone_id, min_weight=5, orderBy="-cost", page=2, pageSize=2))
+    assert [name[o.id] for o in page.items] == ["d"]
+    # tutte le zone: i nuovi oggetti sono nel mondo
+    assert {ids["a"], ids["b"]} <= {o.id for o in (await adapter.list_objects(ObjectPageParams(extra_flag=["glow"]))).items}
+
+
+async def test_object_list_invalid_params(adapter: WorldAdapter) -> None:
+    """Parametri non validi: 422 con codice stabile, mai errori interni."""
+    with expect_error(422, "objects.invalid_range"):
+        await adapter.list_objects(ObjectPageParams(min_cost=10, max_cost=5))
+    with expect_error(422, "objects.invalid_range"):
+        await adapter.list_objects(ObjectPageParams(min_value_2=3, max_value_2=1))
+    with expect_error(422, "objects.invalid_object_type"):
+        await adapter.list_objects(ObjectPageParams(object_type=[999]))
+    with expect_error(422, "objects.affect_required"):
+        await adapter.list_objects(ObjectPageParams(min_affect=1))
+    with pytest.raises(InvalidOrderByError):
+        await adapter.list_objects(ObjectPageParams(orderBy="descrizione"))
+    with pytest.raises(InvalidOrderByError):
+        await adapter.list_objects(ObjectPageParams(orderBy="cost,-nope"))
