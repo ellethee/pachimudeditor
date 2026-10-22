@@ -1,7 +1,23 @@
+import { computed } from 'vue'
+import { useWorld } from '../../shared/helpers/world-state'
 import type { ILiveItem, ILiveItemAffect, ILiveItemChanges } from '../types/live'
 
-/** Vnum massimo che il file del giocatore (rent) può contenere: il gioco lo salva in uno `short`. */
+/** Vnum massimo del rent di un gioco non modificato: lo salva in uno `short`. */
 export const MAX_RENT_VNUM = 32767
+
+/**
+ * Vnum massimo che il file del giocatore (rent) del mondo attivo può contenere: 32767 (`short`) o, con la patch del gioco
+ * (`params.rent_vnum: unsigned`), 65535.
+ *
+ * @returns valore reattivo
+ */
+export function useMaxRentVnum() {
+  const { activeWorld } = useWorld()
+  return computed(() => {
+    const max = activeWorld.value?.params?.rent_vnum_max
+    return typeof max === 'number' && max > 0 ? max : MAX_RENT_VNUM
+  })
+}
 /** Valore di `timer` che significa «nessun timer». */
 export const NO_TIMER = -7000000
 /** Limiti dei testi di un oggetto istanza, in byte latin-1 (record di rent del gioco). */

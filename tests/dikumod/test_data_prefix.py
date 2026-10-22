@@ -55,4 +55,6 @@ def test_describe_exposes_params(tmp_path: Path) -> None:
     """`describe().params` riporta prefisso e variante (informativi)."""
     lib = write_world(tmp_path / "lib", "miomondo")
     info = _adapter(lib, data_prefix="miomondo", variant="dikumod").describe()
-    assert info.params == {"variant": "dikumod", "data_prefix": "miomondo"}
+    assert info.params == {"variant": "dikumod", "data_prefix": "miomondo", "rent_vnum_max": 32767}
+    unsigned = _adapter(lib, data_prefix="miomondo", variant="dikumod", rent_vnum="unsigned").describe()
+    assert unsigned.params["rent_vnum_max"] == 65535

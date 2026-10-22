@@ -36,6 +36,10 @@ void livectl_shutdown(void) {}
 
 #include "livectl_json.h"
 
+#ifndef LIVECTL_RENT_VNUM_MAX
+#define LIVECTL_RENT_VNUM_MAX 32767 /* con la patch del rent unsigned compilare con -DLIVECTL_RENT_VNUM_MAX=65535 */
+#endif
+
 #define LC_VERSION       "livectl 0.1"
 #define LC_PROTOCOL      1
 #define LC_MAX_CONNS     8
@@ -1035,7 +1039,7 @@ static int cmd_load_obj(struct req *r, struct jw *w)
     jw_char(w, '}');
   }
   jw_raw(w, "],\"warnings\":[");
-  if (target && vnum > 32767) /* il rent salva item_number come sh_int: oltre 32767 il vnum si corrompe al salvataggio */
+  if (target && vnum > LIVECTL_RENT_VNUM_MAX) /* il rent salva item_number come sh_int (max 32767, ush_int con la patch leu-rent-vnum-unsigned: 65535) */
     jw_raw(w, "\"vnum_not_saveable\"");
   jw_raw(w, "]}");
   if (notify)

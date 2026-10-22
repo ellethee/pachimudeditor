@@ -28,6 +28,11 @@ _PARAMS: dict[str, dict[str, Any]] = {
             "enum": ["dikumod", "dikumod2"],
             "description": "Variante Diku (di norma rilevata da sola; solo `dikumod` e' supportata).",
         },
+        "rent_vnum": {
+            "enum": ["signed", "unsigned"],
+            "default": "signed",
+            "description": "Tipo di `item_number` nel rent dei giocatori: `signed` (`sh_int`, vnum max 32767) o `unsigned` (`ush_int`, max 65535: gioco con la patch `leu-rent-vnum-unsigned.patch`).",
+        },
         "live": {
             "type": "object",
             "description": "Canale live verso il MUD acceso (modulo livectl).",

@@ -35,6 +35,7 @@ from pachimudeditor_adapter_dikumod.dikumod_lib.players import (
     CharRecord,
     PlayerFileError,
     RentFile,
+    ITEM_NUMBER_FMT,
     RentItem,
     parse_char_record,
     parse_rent,
@@ -314,7 +315,7 @@ class PlayersMixin(PlayersAdapter, DikumodSupport):
             return PlayerInventory(problem=error.code)
         if data is None:
             return PlayerInventory(revision=rent_revision(None), extra={"rentFile": False})
-        rent = parse_rent(data)
+        rent = parse_rent(data, unsigned=self.rent_unsigned)
         store = self.sync()
         problem = rent.problem
         if problem is None and rent.number and rent.owner.lower() != (rec.name or player_id).lower():
@@ -412,7 +413,7 @@ class PlayersMixin(PlayersAdapter, DikumodSupport):
             data = read_rent_bytes(self.rent_dir, player_id)
             if revision is not None and revision != rent_revision(data):
                 raise api_error(409, "worldplayers.conflict")
-            editor = RentEditor(data, rec.name, gold=rec.points["gold"], now=int(time.time()))
+            editor = RentEditor(data, rec.name, gold=rec.points["gold"], now=int(time.time()), unsigned=self.rent_unsigned)
         except PlayerFileError as error:
             raise api_error(409, "worldplayers.file_unwritable", problem=error.code) from error
         except PlayerValueError as error:
@@ -450,13 +451,13 @@ class PlayersMixin(PlayersAdapter, DikumodSupport):
             if item.container_id is not None:
                 if not 0 <= item.container_id < len(editor.records):
                     raise PlayerValueError("item", "not_found")
-                (parent_vnum,) = struct.unpack_from("<h", editor.records[item.container_id], 0)
+                (parent_vnum,) = struct.unpack_from(ITEM_NUMBER_FMT[self.rent_unsigned], editor.records[item.container_id], 0)
                 parent = store.objs.get(parent_vnum)
                 if parent is None or parent.item.type != T.ITEM_TYPES.index("container"):
                     raise PlayerValueError("item", "container_invalid")  # il gioco ignora i prototipi ignoti: i figli resterebbero orfani
             element = pack_item(
                 item.vnum, values=proto.values, extra_flags=proto.extra_flags, weight=proto.weight, name=proto.name, short=proto.short,
-                description=proto.description, affects=[(a.location, a.modifier) for a in proto.affects],
+                description=proto.description, affects=[(a.location, a.modifier) for a in proto.affects], unsigned=self.rent_unsigned,
             )  # fmt: skip
             editor.add(element, self._wearpos(item.wear_slot), item.container_id)
         except PlayerValueError as error:
@@ -492,7 +493,11 @@ class PlayersMixin(PlayersAdapter, DikumodSupport):
             removed = editor.delete(item_id)
         except PlayerValueError as error:
             raise self._value_error(error) from error
-        editor.total_cost = max(0, editor.total_cost - sum(self._rent_of(store, struct.unpack_from("<h", r, 0)[0]) for r in removed))
+        editor.total_cost = max(
+            0,
+            editor.total_cost
+            - sum(self._rent_of(store, struct.unpack_from(ITEM_NUMBER_FMT[self.rent_unsigned], r, 0)[0]) for r in removed),
+        )
         self._save(target, editor.to_bytes(), data)
 
     @staticmethod

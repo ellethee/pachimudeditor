@@ -20,6 +20,9 @@ CHAR_FILE_SIZE = 3036
 RENT_HEADER_SIZE = 40
 """`owner[20]` + `gold_left` + `total_cost` + `last_update` + `minimum_stay` + `number`."""
 RENT_ELEM_SIZE = 592
+ITEM_NUMBER_FMT = {False: "<h", True: "<H"}
+"""Formato di `item_number` nel rent: `sh_int` (max 32767) o, con la patch del gioco, `ush_int` (max 65535)."""
+MAX_RENT_VNUM = {False: 32767, True: 65535}
 """`sizeof(struct obj_file_elem)`."""
 MAX_OBJ_SAVE = 200
 """`MAX_OBJ_SAVE` di `structs.h`: oltre, il gioco andrebbe in overflow."""
@@ -263,8 +266,10 @@ class RentFile:
     `trailing_data` (byte in piu'); `None` = file coerente (o vuoto: rent azzerato)."""
 
 
-def parse_rent(data: bytes) -> RentFile:
-    """Interpreta un file rent senza mai fidarsi di `number`: nessuna eccezione per file vuoti, troncati o corrotti."""
+def parse_rent(data: bytes, *, unsigned: bool = False) -> RentFile:
+    """Interpreta un file rent senza mai fidarsi di `number`: nessuna eccezione per file vuoti, troncati o corrotti.
+
+    `unsigned`: `item_number` e' un `ush_int` (gioco con la patch `leu-rent-vnum-unsigned.patch`), altrimenti un `sh_int`."""
     if not data:
         return RentFile()
     if len(data) < RENT_HEADER_SIZE:
@@ -275,14 +280,14 @@ def parse_rent(data: bytes) -> RentFile:
         return RentFile(owner, gold_left, total_cost, last_update, minimum_stay, number, (), "too_many_items")
     available = (len(data) - RENT_HEADER_SIZE) // RENT_ELEM_SIZE
     count = min(number, available)
-    items = tuple(_rent_item(data, RENT_HEADER_SIZE + k * RENT_ELEM_SIZE, k) for k in range(count))
+    items = tuple(_rent_item(data, RENT_HEADER_SIZE + k * RENT_ELEM_SIZE, k, unsigned) for k in range(count))
     problem = "truncated" if available < number else "trailing_data" if len(data) != RENT_HEADER_SIZE + number * RENT_ELEM_SIZE else None
     return RentFile(owner, gold_left, total_cost, last_update, minimum_stay, number, items, problem)
 
 
-def _rent_item(data: bytes, base: int, index: int) -> RentItem:
+def _rent_item(data: bytes, base: int, index: int, unsigned: bool = False) -> RentItem:
     """Un `obj_file_elem` da 592 byte che inizia a `base`."""
-    (item_number,) = struct.unpack_from("<h", data, base)
+    (item_number,) = struct.unpack_from(ITEM_NUMBER_FMT[unsigned], data, base)
     values = struct.unpack_from("<4i", data, base + 4)
     extra_flags, weight, timer, bitvector = struct.unpack_from("<4i", data, base + 20)
     wearpos, depth = data[base + 548], data[base + 549]
@@ -392,10 +397,10 @@ def read_rent_bytes(rent_dir: Path, name: str) -> bytes | None:
     return data
 
 
-def read_rent_file(rent_dir: Path, name: str) -> RentFile | None:
+def read_rent_file(rent_dir: Path, name: str, *, unsigned: bool = False) -> RentFile | None:
     """Il rent di `name` (`rent/<name>`), `None` se il file non esiste (stesse eccezioni di `read_rent_bytes`)."""
     data = read_rent_bytes(rent_dir, name)
-    return None if data is None else parse_rent(data)
+    return None if data is None else parse_rent(data, unsigned=unsigned)
 
 
 def write_target(directory: Path, filename: str) -> Path:

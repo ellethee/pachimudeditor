@@ -198,3 +198,18 @@ def test_sdk_player_dtos_have_no_password_fields() -> None:
         for field in getattr(sdk, name).model_fields:
             assert not any(w in field.lower() for w in ("pwd", "hash", "secret", "token")), (name, field)
             assert "password" not in field.lower() or field == "has_password", (name, field)
+
+
+def test_rent_vnum_unsigned() -> None:
+    """Con il rent `ush_int` (patch del gioco) un vnum 40019 si scrive e si rilegge; con `sh_int` e' rifiutato e il byte e' negativo."""
+    from pachimudeditor_adapter_dikumod.dikumod_lib.players_write import PlayerValueError, pack_item
+
+    kwargs = {"values": (0, 0, 0, 0), "extra_flags": 0, "weight": 1, "name": "x", "short": "x", "description": "x", "affects": []}
+    with pytest.raises(PlayerValueError):
+        pack_item(40019, **kwargs)
+    element = pack_item(40019, unsigned=True, **kwargs)
+    rent = make_rent("Tizio", [element])
+    assert parse_rent(rent, unsigned=True).items[0].item_number == 40019
+    assert parse_rent(rent).items[0].item_number == 40019 - 65536  # come lo leggerebbe il gioco non modificato (e lo scarterebbe)
+    with pytest.raises(PlayerValueError):
+        pack_item(65536, unsigned=True, **kwargs)

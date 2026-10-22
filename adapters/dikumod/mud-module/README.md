@@ -21,7 +21,7 @@ M=/percorso/pachimudeditor/adapters/dikumod/mud-module
 mkdir /tmp/mud && cp -r /dati/luca/muds/leu/. /tmp/mud/ && cd /tmp/mud   # poi togli bin/, *.o, .depend se presenti
 git apply $M/leu-livectl.patch          # solo se src/livectl.c non esiste ancora: Makefile (2 righe) e src/comm.c (12 righe)
 cp $M/livectl*.[ch] src/
-make LIVECTL_FLAGS=-DLIVECTL            # genera .depend e bin/leu (Makefile nella radice, g++ -std=gnu++98)
+make LIVECTL_FLAGS=-DLIVECTL            # (con la patch del rent unsigned: LIVECTL_FLAGS='-DLIVECTL -DLIVECTL_RENT_VNUM_MAX=65535') genera .depend e bin/leu (Makefile nella radice, g++ -std=gnu++98)
 bin/leu -d lib 4000                     # avvio dalla radice, con le variabili LIVECTL_* sotto
 ```
 

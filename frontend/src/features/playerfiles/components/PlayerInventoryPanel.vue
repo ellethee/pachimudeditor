@@ -148,7 +148,7 @@ import { mdiDelete, mdiPlus } from '@quasar/extras/mdi-v7'
 import { describeError } from '../../players/helpers/describe-error'
 import { listObjects } from '../../objects/services/objects-api'
 import { errorCode } from '../helpers/error-code'
-import { MAX_RENT_VNUM } from '../helpers/live-item'
+import { useMaxRentVnum } from '../helpers/live-item'
 import { addPlayerItem, getPlayerInventory, removePlayerItem, updatePlayerItem } from '../services/player-files-api'
 import type { IPlayerInventory, IPlayerItem } from '../types/player-files'
 
@@ -167,6 +167,7 @@ const props = defineProps<{
 
 const { t, te } = useI18n()
 const $q = useQuasar()
+const maxRentVnum = useMaxRentVnum()
 
 const inventory = ref<IPlayerInventory>()
 const loading = ref(false)
@@ -269,7 +270,7 @@ function onFilter(text: string, update: (fn: () => void) => void): void {
   void listObjects({ search: text, pageSize: 20 })
     .then((page) =>
       page.items.map((o) => {
-        const unsafe = o.vnum > MAX_RENT_VNUM // il rent salva il vnum in uno `short`: l'oggetto non e' scrivibile nel file
+        const unsafe = o.vnum > maxRentVnum.value // il rent salva il vnum in uno `short`: l'oggetto non e' scrivibile nel file
         return { value: o.vnum, label: `#${o.vnum} ${o.shortDescription}${unsafe ? ` — ${t('playerFiles.inventory.notSaveable')}` : ''}`, disable: unsafe }
       }),
     )

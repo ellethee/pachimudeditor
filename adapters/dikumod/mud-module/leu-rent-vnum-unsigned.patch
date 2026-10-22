@@ -1,0 +1,30 @@
+diff --git a/src/reception.c b/src/reception.c
+index d9da270..9dca7f5 100755
+--- a/src/reception.c
++++ b/src/reception.c
+@@ -569,6 +569,12 @@ void put_obj_in_store( struct obj_data *obj, struct obj_file_u *st )
+   
+   oe->item_number = obj->item_number >= 0 ? 
+                     obj_index[obj->item_number].iVNum : 0;
++  if( obj->item_number >= 0 && obj_index[obj->item_number].iVNum > 65535 )
++  {
++    mudlog( LOG_CHECK, "Object %d cannot be rented: vnum over 65535. Ignored.",
++            obj_index[obj->item_number].iVNum );
++    oe->item_number = 0;
++  }
+   oe->value[0] = obj->obj_flags.value[0];
+   oe->value[1] = obj->obj_flags.value[1];
+   oe->value[2] = obj->obj_flags.value[2];
+diff --git a/src/structs.h b/src/structs.h
+index afc02dd..9bc2ecf 100755
+--- a/src/structs.h
++++ b/src/structs.h
+@@ -1408,7 +1408,7 @@ struct obj_cost
+ 
+ struct obj_file_elem 
+ {
+-  sh_int item_number;
++  ush_int item_number; /* vnum 0..65535 (era sh_int: oltre 32767 il vnum si troncava e l'oggetto andava perso) */
+ 
+   int value[4];
+   int extra_flags;

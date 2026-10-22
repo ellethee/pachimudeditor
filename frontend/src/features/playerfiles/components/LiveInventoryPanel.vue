@@ -95,7 +95,7 @@ import { describeError } from '../../players/helpers/describe-error'
 import { listObjects } from '../../objects/services/objects-api'
 import { errorCode } from '../helpers/error-code'
 import { loadLiveEnums } from '../helpers/live-enums'
-import { MAX_RENT_VNUM, type IEnumOpt } from '../helpers/live-item'
+import { useMaxRentVnum, type IEnumOpt } from '../helpers/live-item'
 import { getLiveInventory, loadLive, removeLiveItem } from '../services/live-api'
 import type { ILiveInventory, ILiveItem } from '../types/live'
 import LiveItemEditDialog from './LiveItemEditDialog.vue'
@@ -116,6 +116,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const $q = useQuasar()
+const maxRentVnum = useMaxRentVnum()
 
 const inventory = ref<ILiveInventory>()
 const loading = ref(false)
@@ -173,7 +174,7 @@ function onFilter(text: string, update: (fn: () => void) => void): void {
   void listObjects({ search: text, pageSize: 20 })
     .then((page) =>
       page.items.map((o) => {
-        const unsafe = o.vnum > MAX_RENT_VNUM
+        const unsafe = o.vnum > maxRentVnum.value
         return { value: o.vnum, label: `#${o.vnum} ${o.shortDescription}${unsafe ? ` — ${t('playerFiles.liveInv.notSaveable')}` : ''}` }
       }),
     )

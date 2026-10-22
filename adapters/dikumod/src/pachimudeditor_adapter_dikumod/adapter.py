@@ -97,6 +97,6 @@ class DikumodAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, Players
             kind=self.config.kind,
             name=self.config.name or f"Diku Modificato ({self.variant})",
             capabilities=self.capabilities(),
-            params={"variant": self.variant, "data_prefix": self.store.prefix},
+            params={"variant": self.variant, "data_prefix": self.store.prefix, "rent_vnum_max": 65535 if self.rent_unsigned else 32767},
             resources=[_finish(r) for r in resources],
         )

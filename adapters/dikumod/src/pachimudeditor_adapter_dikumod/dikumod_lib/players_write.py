@@ -44,12 +44,12 @@ from .players import (
     PlayerFileError,
     _text,
     parse_rent,
+    ITEM_NUMBER_FMT,
+    MAX_RENT_VNUM,
 )
 
 MAX_LEVEL = 255
 """`level[]` e' un byte; il gioco usa 1..59 (`IMPLEMENTOR`), ma l'editor non impone il bilanciamento, solo il tipo."""
-MAX_ITEM_VNUM = 32767
-"""`item_number` e' un `sh_int`."""
 
 _FMT_RANGE = {
     "b": (-(2**7), 2**7 - 1), "B": (0, 2**8 - 1), "h": (-(2**15), 2**15 - 1), "H": (0, 2**16 - 1),
@@ -317,17 +317,18 @@ def pack_item(
     short: str,
     description: str,
     affects: Sequence[tuple[int, int]],
+    unsigned: bool = False,
 ) -> bytes:
     """Un `obj_file_elem` (592 byte) per un oggetto **nuovo** dal prototipo, come lo salverebbe il gioco subito dopo `read_object`:
     `timer` 0 e `bitvector` 0 (il prototipo non li ha), `wearpos`/`depth` 0 (li imposta `RentEditor.add`), effetti non usati a 0.
     Le stringhe lunghe sono troncate a `size - 1` (il gioco farebbe `strcpy` oltre il campo)."""
-    if not 0 <= vnum <= MAX_ITEM_VNUM:
-        raise PlayerValueError("vnum", "range", min=0, max=MAX_ITEM_VNUM)
+    if not 0 <= vnum <= MAX_RENT_VNUM[unsigned]:
+        raise PlayerValueError("vnum", "range", min=0, max=MAX_RENT_VNUM[unsigned])
     if len(values) != 4 or len(affects) > 5:
         raise PlayerValueError("item", "type", expected="4 values, up to 5 affects")
     buf = bytearray(RENT_ELEM_SIZE)
     try:
-        struct.pack_into("<h", buf, 0, vnum)
+        struct.pack_into(ITEM_NUMBER_FMT[unsigned], buf, 0, vnum)
         struct.pack_into("<4i", buf, 4, *values)
         struct.pack_into("<4i", buf, 20, extra_flags, weight, 0, 0)
         for offset, size, text in ((36, 128, name), (164, 128, short), (292, 256, description)):
@@ -358,7 +359,7 @@ class RentEditor:
     e del proprietario giusto; la testata (`gold_left`, `last_update`, `minimum_stay`) resta com'e' salvo `total_cost`.
     """
 
-    def __init__(self, data: bytes | None, owner: str, *, gold: int, now: int) -> None:
+    def __init__(self, data: bytes | None, owner: str, *, gold: int, now: int, unsigned: bool = False) -> None:
         """Raises: PlayerFileError con `truncated_header`, `too_many_items`, `truncated`, `trailing_data` o `owner_mismatch`."""
         if len(owner.encode("latin-1")) > 19 or not NAME_RE.fullmatch(owner.lower()):
             raise PlayerValueError("owner", "type", expected="player name")
@@ -368,7 +369,7 @@ class RentEditor:
             self.records: list[bytes] = []
             self.created = True
             return
-        parsed = parse_rent(data)
+        parsed = parse_rent(data, unsigned=unsigned)
         if parsed.problem:
             raise PlayerFileError(parsed.problem)
         if parsed.owner.lower() != owner.lower():

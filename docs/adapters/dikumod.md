@@ -26,6 +26,11 @@ Se i file non si trovano l'errore e' `nessun file <prefisso>.wld in <cartella>: 
 `path` = la cartella `lib/` (con `<prefisso>.wld`) o la sua radice. `params.variant` (`dikumod`|`dikumod2`) e' facoltativo e
 informativo e **non piu' considerato**: nei dati di `leu` vale `dikumod` (se manca diventa `dikumod2` quando esistono `<prefisso>.gui` o override `rooms/`).
 
+`params.rent_vnum` (`signed`|`unsigned`, default `signed`): il rent dei giocatori salva il vnum degli oggetti in `item_number`, uno `sh_int` (max 32767) nel gioco non modificato.
+Con la patch `adapters/dikumod/mud-module/leu-rent-vnum-unsigned.patch` (`ush_int`, max 65535) impostare `unsigned`: l'editor legge e scrive il rent come il gioco e accetta oggetti fino a 65535
+(in `leu` ce ne sono 19 oltre 32767). Con `signed` un oggetto oltre 32767 e' rifiutato (`worldplayers.invalid_value`, `vnum`, `range`) perche' il gioco lo perderebbe. Il modulo live segnala
+`vnum_not_saveable` oltre il limite compilato (`-DLIVECTL_RENT_VNUM_MAX=65535` con la patch).
+
 **`read_only` vale `true` se non e' scritto** (unico kind con questo default; `read_only: false` e' l'abilitazione esplicita).
 Motivo: i file monolitici sono fragili. `dikumoddata.mob`/`.obj` sono letti dal gioco **per offset di byte** raccolti all'avvio
 (`generate_indices`) e cercati con una ricerca **binaria**: modificarli a gioco acceso lo rompe, e un file non in ordine di
