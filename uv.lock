@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 
 [manifest]
@@ -1191,7 +1191,7 @@ wheels = [
 
 [[package]]
 name = "pachifast"
-version = "0.18.0"
+version = "0.19.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -1213,9 +1213,9 @@ dependencies = [
     { name = "typer" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2f/a4/dac7ccf43404efebcd5269d4c270f454cd041b5814b29546647e98b919f4/pachifast-0.18.0.tar.gz", hash = "sha256:c0987522f49e2995621684063f7f31d8103f80ead26b67d8072a7af9297711f5", size = 186083, upload-time = "2026-10-20T14:33:03.876Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/1a/3d987c8045520d1d2b3042aab2f375a70bbd83cbc266d5478df314097440/pachifast-0.19.0.tar.gz", hash = "sha256:da1a3f1d0acc835f9b784eefcbc7d7538858ec70fbbc40b2d38941284ab4a0cb", size = 186391, upload-time = "2026-10-20T15:27:21.728Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/17/fe6d72491ab9010c136e4746c53722f19162f21f47773eece3e85e61ac60/pachifast-0.18.0-py3-none-any.whl", hash = "sha256:6fde07f1ab88bd09cbd485be96bde35c1c51943c6e7c63131ee83f8eaaa7be31", size = 226968, upload-time = "2026-10-20T14:33:02.407Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/cc/cb053343bc7502d1378aa25b751ce887f753d1f807418eba6c84a9a63588/pachifast-0.19.0-py3-none-any.whl", hash = "sha256:b2643dbb894b417768a44829f4126ee2dff8caa87ca82c7e611298ae25d5583e", size = 227133, upload-time = "2026-10-20T15:27:20.502Z" },
 ]
 
 [[package]]
