@@ -4,6 +4,8 @@ import { getPachiI18n, pachiT } from '@ilpachi/pachi-i18n'
 export interface IEnumLabelOption {
   value: number | string
   label: string
+  /** Etichetta originale del backend (prima della traduzione): è il nome che i campi `extra` di tipo `enum` salvano. */
+  rawLabel?: string
 }
 
 /**
@@ -21,13 +23,13 @@ export function enumLabel(name: string, option: IEnumLabelOption): string {
 }
 
 /**
- * Localizza le etichette di un elenco di opzioni (mantiene `value`).
+ * Localizza le etichette di un elenco di opzioni (mantiene `value` e conserva l'etichetta originale in `rawLabel`).
  *
  * @param name - nome dell'enum
  * @param options - opzioni del backend
  */
 export function localizeOptions<T extends IEnumLabelOption>(name: string, options: T[]): T[] {
-  return options.map((option) => ({ ...option, label: enumLabel(name, option) }))
+  return options.map((option) => ({ ...option, label: enumLabel(name, option), rawLabel: option.rawLabel ?? option.label }))
 }
 
 /**

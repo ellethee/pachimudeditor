@@ -96,6 +96,20 @@
                   :disable="field.readOnly"
                   :label="extraLabel(field)"
                 />
+                <q-select
+                  v-else-if="field.type === 'enum' && enumOptions(field).length"
+                  :model-value="(row.extra?.[field.name] as string | null | undefined) ?? null"
+                  :options="enumOptions(field)"
+                  emit-value
+                  map-options
+                  clearable
+                  dense
+                  outlined
+                  stack-label
+                  :disable="field.readOnly"
+                  :label="extraLabel(field)"
+                  @update:model-value="setExtra(row, field, $event)"
+                />
                 <q-input
                   v-else
                   :model-value="row.extra?.[field.name] as string | number | null"
@@ -125,6 +139,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSection } from '@ilpachi/pachi-kit/edit-dialog'
+import { enumLabel, type IEnumLabelOption } from '../../shared/helpers/enum-labels'
 import type { IExtraFieldDescriptor } from '../../shared/types/worlds'
 import type { IEnumOption, IExitRow, IRoomOption } from '../types/rooms'
 
@@ -137,9 +152,11 @@ const props = withDefaults(defineProps<{
   directionOptions: IEnumOption[]
   doorOptions: IEnumOption[]
   roomOptions: IRoomOption[]
-  /** Campi `extra` delle uscite dichiarati dal mondo (numeri, testi e booleani; gli altri tipi non sono modificabili qui). */
+  /** Campi `extra` delle uscite dichiarati dal mondo (numeri, testi, booleani ed `enum` con elenco a scelta; gli altri tipi non sono modificabili qui). */
   extraFields?: IExtraFieldDescriptor[]
-}>(), { extraFields: () => [] })
+  /** Enum del backend (`GET /api/meta/enums`, già localizzati): da qui le opzioni dei campi `extra` di tipo `enum`. */
+  enums?: Record<string, unknown>
+}>(), { extraFields: () => [], enums: () => ({}) })
 
 const { t, te } = useI18n()
 const { state, reset, commit, getResults, hasChanges } = useSection<IExitsState>(
@@ -161,6 +178,17 @@ function directionLabel(direction: number): string {
  */
 function extraLabel(field: IExtraFieldDescriptor): string {
   return te(field.labelKey) ? t(field.labelKey) : field.name
+}
+
+/**
+ * Opzioni di un campo `extra` di tipo `enum`: l'etichetta è tradotta, il valore salvato è il nome del backend.
+ *
+ * @param field - descrittore del campo
+ */
+function enumOptions(field: IExtraFieldDescriptor): { label: string; value: string }[] {
+  const list = field.enum ? props.enums[field.enum] : undefined
+  if (!Array.isArray(list)) return []
+  return (list as IEnumLabelOption[]).map((option) => ({ label: enumLabel(field.enum!, option), value: option.rawLabel ?? option.label }))
 }
 
 /**

@@ -15,6 +15,8 @@ type ExtraDesc = Pick<IExtraFieldDescriptor, 'type'> & Partial<Pick<IExtraFieldD
 interface IOption {
   value: number | string
   label: string
+  /** Etichetta del backend prima della traduzione (`localizeOptions`). */
+  rawLabel?: string
 }
 
 /** Enum del backend (`GET /api/meta/enums`): chiave -> opzioni. */
@@ -103,7 +105,7 @@ function fieldFor(key: string, desc: ExtraDesc, label: string, enums: EnumMap | 
       return {
         ...base,
         type: 'select',
-        options: byLabel ? options.map((option) => ({ label: enumLabel(desc.enum!, option), value: option.label })) : options.map((option) => ({ ...option, label: enumLabel(desc.enum!, option) })),
+        options: byLabel ? options.map((option) => ({ label: enumLabel(desc.enum!, option), value: option.rawLabel ?? option.label })) : options.map((option) => ({ ...option, label: enumLabel(desc.enum!, option) })),
         clearable: byLabel,
       }
     }
