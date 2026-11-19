@@ -14,6 +14,9 @@ export const SECTOR_COLOR: Record<number, string> = {
   7: '#1565c0', // WATER_NOSWIM
   8: '#b39ddb', // FLYING
   9: '#00838f', // UNDERWATER
+  10: '#e0b252', // DESERT
+  11: '#558b2f', // TREE
+  12: '#546e7a', // DARKCITY
 }
 
 const FALLBACK_COLOR = '#9e9e9e'
