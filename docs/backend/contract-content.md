@@ -1,4 +1,4 @@
-# Contratto backend: content (razze e classi YAML)
+# Contratto backend: content (razze, classi, skill, tabelle, social, cataloghi)
 
 Prefisso `/api/content`. CRUD sui file `definitions/races/*.yaml` e `definitions/classes/*.yaml`
 (cartella da `PachimudConfig.definition_path`). Validazione con gli schemi `LoaderRace`/`LoaderClass` del gioco
@@ -21,3 +21,28 @@ In `PUT` vengono applicati solo i campi **inviati**; `null` rimuove la chiave da
 - `GET /content/status` -> `{races, classes, lastModified}` (epoch secondi, per il banner "riavvio necessario").
 
 Errori: 404 `content.not_found`; 409 `content.id_taken`; 422 `content.invalid_id`, `content.id_mismatch`, `content.invalid` (param `detail`); 422 Pydantic senza code per tipi errati.
+
+## Contenuti a strati: skill, social, tabelle, cataloghi, testi
+
+Il gioco applica piu' **strati** di contenuti (`docs/contenuti.md` del gioco): il pacchetto (`params.base_definitions_path`, sola lettura per
+l'editor), poi `definitions_path`. A parita' di id (o di nome file) vince lo strato dell'utente. Le rotte qui sotto **scrivono solo nello strato
+dell'utente**: salvare un elemento che esiste solo nella base ne crea la copia (il layer diventa `user`, la base non si tocca); eliminare dallo
+strato dell'utente ripristina quello di base (404 se l'elemento non e' dell'utente). Scrittura atomica, commenti salvi, UTF-8, massimo 512 KB per file.
+Il controllo semantico completo e' del gioco (`content.validate`, vedi [canale live](contract-live.md)); l'editor controlla che il YAML si legga.
+Con `read_only` ogni scrittura risponde 409 `world.read_only`.
+
+- `GET /content/skills` -> `SkillItem[]` `{skillId, layer: user|base, kind, name, mana, levels{classe:livello}, error?}`; un file illeggibile ha solo `skillId`, `layer` ed `error`.
+  Le traduzioni `skills/<id>.<lingua>.yaml` non sono skill.
+- `GET /content/skills/{id}` -> come sopra con i campi semplici (`kind`, `name`, `description`, `disabled`, `mana`, `beats`, `fail`, `minPosition`, `violent`, `maxLearn`, `saving`, `element`, `targets[]`)
+  e `advanced`: il YAML di **tutti gli altri campi** (`levels`, `effects`, `handler`, `objectHandler`, `affects`, `messages`, `extends`, ...).
+- `POST /content/skills` (201) body `{skillId, ...campi semplici, advanced?}`; `PUT /content/skills/{id}` solo i campi inviati (`null` toglie la chiave; `advanced` sostituisce
+  gli altri campi: le chiavi non piu' presenti sono tolte). 409 `content.id_taken`; 422 `content.invalid_id`, `content.invalid` (YAML con riga e colonna, o `advanced` che ripete un campo semplice).
+- `DELETE /content/skills/{id}` -> 204.
+- `GET /content/socials` -> `SocialItem[]` `{name, layer, aliases[], position, victimMinPosition, hide, messages{lingua:{chiave:testo}}}` (`tables/socials.yaml` e `socials.<lingua>.yaml`, strati e lingue fusi;
+  chiavi dei testi `no_arg`, `others_no_arg`, `found`, `others_found`, `victim_found`, `not_found`, `auto`, `others_auto`).
+  `POST /content/socials/{name}` (201) e `PUT /content/socials/{name}` scrivono **tutta** la voce (testi di tutte le lingue, testi vuoti omessi) in `tables/socials.yaml` dello strato dell'utente;
+  `DELETE` la toglie. 409 `content.id_taken`.
+- `GET /content/files/{area}` con `area` = `tables` (`tables/*.yaml`, **senza** i social), `locales` (`locales/<lingua>/**/*.yaml`) o `texts` (`texts/*.txt`) -> `[{path, layer, size}]`, strati fusi.
+- `GET|PUT|DELETE /content/files/{area}/{path}`: `{path, layer, text}`; `PUT` body `{text}` crea o sostituisce nello strato dell'utente (un `.yaml` deve leggersi ed essere una mappa o una lista).
+  Percorso: lettere, cifre, `_ - . /`, estensione dell'area, niente `..`: altrimenti 422 `content.invalid_path`; 422 `content.too_large` (`max` in KB); 422 `content.invalid` se il testo non e' UTF-8 valido.
+

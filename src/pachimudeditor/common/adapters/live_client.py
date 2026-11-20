@@ -25,6 +25,7 @@ from pachimudeditor.common.adapters.live import (
     LiveEchoIn,
     LiveEchoOut,
     LiveError,
+    LiveInstances,
     LiveInventory,
     LiveItem,
     LiveItemExpect,
@@ -40,6 +41,11 @@ from pachimudeditor.common.adapters.live import (
     LiveStatus,
     LiveWho,
     LiveZone,
+    LiveContentReloadIn,
+    LiveContentReloadOut,
+    LiveContentValidateOut,
+    LiveZoneReloadIn,
+    LiveZoneReloadOut,
     LiveZoneResetIn,
     LiveZoneResetOut,
     LiveZones,
@@ -340,6 +346,32 @@ class LiveClient:
         params: dict[str, Any] = {"only_if_empty": reset.only_if_empty}
         params["zone" if reset.zone is not None else "room"] = reset.zone if reset.zone is not None else reset.room
         return LiveZoneResetOut.model_validate(await self.call("zone.reset", params, actor=actor, write=True) or {})
+
+    async def zone_reload(self, reload: LiveZoneReloadIn, *, actor: str | None = None) -> LiveZoneReloadOut:
+        """`zone.reload` (scrittura, estensione pachimud)."""
+        return LiveZoneReloadOut.model_validate(await self.call("zone.reload", {"vnum": reload.vnum}, actor=actor, write=True) or {})
+
+    async def instances(
+        self,
+        *,
+        room_vnum: int | None = None,
+        mob_vnum: int | None = None,
+        obj_vnum: int | None = None,
+        zone_vnum: int | None = None,
+        limit: int = 100,
+    ) -> LiveInstances:
+        """`instances.list` (lettura, estensione pachimud): uno solo tra stanza, mob, oggetto e zona."""
+        keys = (("roomVnum", room_vnum), ("mobVnum", mob_vnum), ("objVnum", obj_vnum), ("zoneVnum", zone_vnum))
+        given = {k: v for k, v in keys if v is not None}
+        return LiveInstances.model_validate(await self.call("instances.list", {**given, "limit": limit}) or {})
+
+    async def content_validate(self, *, strict: bool = False) -> LiveContentValidateOut:
+        """`content.validate` (lettura, estensione pachimud)."""
+        return LiveContentValidateOut.model_validate(await self.call("content.validate", {"strict": strict}) or {})
+
+    async def content_reload(self, reload: LiveContentReloadIn, *, actor: str | None = None) -> LiveContentReloadOut:
+        """`content.reload` (scrittura, estensione pachimud): `reload_failed` porta in `params.errors` i problemi (file e riga)."""
+        return LiveContentReloadOut.model_validate(await self.call("content.reload", {"kind": reload.kind}, actor=actor, write=True) or {})
 
     async def load(self, kind: Literal["mob", "obj"], load: LiveLoadIn, *, actor: str | None = None) -> LiveLoadOut:
         """`load.mob` / `load.obj` (scrittura)."""

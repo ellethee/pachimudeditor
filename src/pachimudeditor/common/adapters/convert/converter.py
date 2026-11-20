@@ -50,6 +50,9 @@ class ConvertContext:
     target_races: set[str] | None = None
     """Id di razza del mondo di arrivo (`None` o vuoto = sconosciuti: il valore passa invariato)."""
     target_classes: set[str] | None = None
+    unsupported_reset_types: frozenset[int] = frozenset()
+    """Tipi di comando di reset che il mondo di arrivo non puo' rappresentare (`WorldAdapter.unsupported_reset_types`): il ripiego
+    generico li scarta con una perdita invece di far fallire la scrittura."""
 
 
 def loss(entity: LossEntity, field_name: str, code: str, severity: Severity = "info", **params: Any) -> LossItem:
@@ -102,7 +105,10 @@ class PairConverter:
         return Converted(ObjectIn(**to_in(ObjectIn, obj, zone_id=0)), extra_dropped("object", obj.extra, "dropped"))
 
     def reset(self, command: ResetCommandOut, ctx: ConvertContext) -> Converted[ResetCommandIn]:
-        """Il comando di reset di arrivo (`ifValue`/commento/`extra` scartati)."""
+        """Il comando di reset di arrivo (`ifValue`/commento/`extra` scartati; tipi non supportati dal mondo di arrivo: scartato)."""
+        if int(command.command_type) in ctx.unsupported_reset_types:
+            letter = getattr(command.command_type, "name", str(command.command_type))
+            return Converted(None, [loss("reset", "command", "reset_unsupported_command", "dropped", letter=letter)])
         losses: list[LossItem] = []
         if command.comment:
             losses.append(loss("reset", "comment", "field_dropped", "info", name="comment"))

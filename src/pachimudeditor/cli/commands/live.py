@@ -412,6 +412,47 @@ def zone_reset(
     _run(ctx, "zone.reset", {**where, "only_if_empty": only_if_empty}, write=True)
 
 
+@zone_app.command("reload")
+def zone_reload(ctx: typer.Context, vnum: Annotated[int, typer.Argument(help="Vnum della zona.")]) -> None:
+    """`zone.reload` (scrittura, estensione pachimud): il gioco rilegge i file della zona e rifa' il reset."""
+    _run(ctx, "zone.reload", {"vnum": vnum}, write=True)
+
+
+content_app = typer.Typer(help="Contenuti (estensione pachimud): controllo e ricarica a caldo.", no_args_is_help=True)
+app.add_typer(content_app, name="content")
+
+
+@content_app.command("validate")
+def content_validate(
+    ctx: typer.Context, strict: Annotated[bool, typer.Option("--strict", help="Anche gli avvisi fanno fallire.")] = False
+) -> None:
+    """`content.validate` (lettura): problemi dei file con file e riga."""
+    _run(ctx, "content.validate", {"strict": strict})
+
+
+@content_app.command("reload")
+def content_reload(
+    ctx: typer.Context,
+    kind: Annotated[str, typer.Argument(help="races, classes, skills, tables, socials, locales o all.")] = "all",
+) -> None:
+    """`content.reload` (scrittura): il gioco rilegge i file dei contenuti (tutto o niente)."""
+    _run(ctx, "content.reload", {"kind": kind}, write=True)
+
+
+@app.command("instances")
+def instances(
+    ctx: typer.Context,
+    room: Annotated[int | None, typer.Option(help="Vnum della stanza.")] = None,
+    mob: Annotated[int | None, typer.Option(help="Vnum del prototipo di mob.")] = None,
+    obj: Annotated[int | None, typer.Option(help="Vnum del prototipo di oggetto (a terra).")] = None,
+    zone: Annotated[int | None, typer.Option(help="Vnum della zona (mob della zona e oggetti a terra nelle sue stanze).")] = None,
+    limit: Annotated[int, typer.Option(min=1, max=200)] = 100,
+) -> None:
+    """`instances.list` (estensione pachimud): istanze in memoria, uno solo tra --room, --mob, --obj, --zone."""
+    where = _one_of(ctx, "instances", roomVnum=room, mobVnum=mob, objVnum=obj, zoneVnum=zone)
+    _run(ctx, "instances.list", {**where, "limit": limit})
+
+
 def _load(ctx: typer.Context, cmd: str, vnum: int, room: int | None, player: str | None, count: int, notify: bool) -> NoReturn:
     """Parametri comuni di `load.mob` e `load.obj`."""
     where = _one_of(ctx, cmd, room=room, player=player)

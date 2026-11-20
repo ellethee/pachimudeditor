@@ -38,6 +38,7 @@ from pachimudeditor.common.adapters.models import (
     ExtraDescriptionOut,
     ExtraDescriptionPatch,
     ImportPreview,
+    IncomingExit,
     MobIn,
     MobOut,
     MobPageParams,
@@ -100,7 +101,7 @@ class AdapterCapabilities(AliasedBaseModel):
     supports_transfer: bool = False
     """`export_zone_bundle`/`import_zone_dir` (cartella YAML di zona)."""
     supports_content_races: bool = False
-    """`/api/content`: razze e classi come YAML."""
+    """`/api/content`: razze, classi, skill, tabelle, social e cataloghi dei messaggi come YAML (strati di contenuti)."""
     supports_reset_scripts: bool = True
     """Zone con script di reset modificabile."""
     supports_extra_descriptions: bool = True
@@ -272,6 +273,35 @@ class WorldAdapter(ABC):
     async def room_usage(self, room_id: int) -> list[ResetUsage]:
         """I reset che referenziano la stanza per vnum."""
 
+    async def incoming_exits(self, room_id: int) -> list[IncomingExit]:
+        """Le uscite di altre stanze (di qualsiasi zona) che portano a `room_id`.
+
+        Default generico: scorre tutte le stanze (O(stanze)); un adapter con un indice puo' ridefinirlo.
+        """
+        await self.get_room(room_id)  # 404 se non esiste
+        found: list[IncomingExit] = []
+        page = 1
+        while True:
+            chunk = await self.list_rooms(RoomPageParams(page=page, page_size=200))
+            for room in chunk.items:
+                if room.id == room_id:
+                    continue
+                for exit_ in (await self.get_room(room.id)).exits:
+                    if exit_.target_room_id == room_id:
+                        found.append(
+                            IncomingExit(
+                                exit_id=exit_.id,
+                                room_id=room.id,
+                                room_vnum=room.vnum,
+                                room_name=room.name,
+                                zone_id=room.zone_id,
+                                direction=exit_.direction,
+                            )
+                        )
+            if page >= chunk.pages:
+                return found
+            page += 1
+
     @abstractmethod
     async def create_exit(self, room_id: int, data: ExitIn) -> ExitOut:
         """Crea un'uscita (una per direzione; coerenza con `rules.check_exit`)."""
@@ -374,6 +404,11 @@ class WorldAdapter(ABC):
         Con `dry_run` non scrive nulla; l'import vero richiede `confirm` (422 `transfer.confirm_required`).
         """
         raise api_error(409, "world.capability_missing", capability="supports_transfer")
+
+    def unsupported_reset_types(self) -> frozenset[int]:
+        """Tipi di comando di reset (`ZoneCommandType`) che il mondo non sa rappresentare: la conversione li scarta riportandoli
+        (default: nessuno). Additivo (SDK 1.5)."""
+        return frozenset()
 
     async def aclose(self) -> None:
         """Rilascia risorse (connessioni, file aperti). Default: niente."""

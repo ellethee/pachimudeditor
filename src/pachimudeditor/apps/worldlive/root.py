@@ -18,6 +18,7 @@ from pachimudeditor.common.adapters.live import (
     LiveAdapter,
     LiveEchoIn,
     LiveEchoOut,
+    LiveInstances,
     LiveInventory,
     LiveItem,
     LiveItemExpect,
@@ -32,6 +33,11 @@ from pachimudeditor.common.adapters.live import (
     LiveServerInfo,
     LiveStatus,
     LiveWho,
+    LiveContentReloadIn,
+    LiveContentReloadOut,
+    LiveContentValidateOut,
+    LiveZoneReloadIn,
+    LiveZoneReloadOut,
     LiveZoneResetIn,
     LiveZoneResetOut,
     LiveZones,
@@ -166,6 +172,47 @@ async def reset_zone(reset: LiveZoneResetIn, adapter: WriteLiveDep, actor: Actor
     """Forza il reset di una zona (`zone` = indice di `GET /zones`, oppure `room`). Mai ritentato: dopo un timeout l'esito e' sconosciuto."""
     with live_errors():
         return await adapter.live_zone_reset(reset, actor=actor)
+
+
+@router.post("/zones/reload", response_model=LiveZoneReloadOut)
+async def reload_zone(reload: LiveZoneReloadIn, adapter: WriteLiveDep, actor: ActorDep) -> LiveZoneReloadOut:
+    """Il gioco rilegge dai file la zona `vnum` e rifa' il reset (estensione pachimud: 409 `worldlive.command_disabled` se il MUD non
+    ha `zone.reload`). Mai ritentato: dopo un timeout l'esito e' sconosciuto."""
+    with live_errors():
+        return await adapter.live_zone_reload(reload, actor=actor)
+
+
+@router.get("/content/validate", response_model=LiveContentValidateOut)
+async def validate_content(adapter: LiveDep, strict: bool = False) -> LiveContentValidateOut:
+    """Il gioco controlla i file dei contenuti come li carica (estensione pachimud, comando `content.validate`: altrove 409
+    `worldlive.command_disabled`). `issues[]`: `severity`, `code`, `message`, `file`, `line`; con `strict` anche gli avvisi fanno `ok=false`."""
+    with live_errors():
+        return await adapter.live_content_validate(strict=strict)
+
+
+@router.post("/content/reload", response_model=LiveContentReloadOut)
+async def reload_content(reload: LiveContentReloadIn, adapter: WriteLiveDep, actor: ActorDep) -> LiveContentReloadOut:
+    """Il gioco rilegge dai file razze, classi, skill, tabelle, social o cataloghi (`kind`: `races|classes|skills|tables|socials|locales|all`;
+    estensione pachimud, comando `content.reload`). Tutto o niente: se un file non e' valido 409 `worldlive.content_reload_failed` con
+    i problemi (`issues`) e il gioco resta com'era. Non tocca giocatori connessi, zone ne' hook Python. Mai ritentato."""
+    with live_errors():
+        return await adapter.live_content_reload(reload, actor=actor)
+
+
+@router.get("/instances", response_model=LiveInstances)
+async def instances(
+    adapter: LiveDep,
+    room_vnum: Annotated[int | None, Query(alias="roomVnum", ge=0)] = None,
+    mob_vnum: Annotated[int | None, Query(alias="mobVnum", ge=0)] = None,
+    obj_vnum: Annotated[int | None, Query(alias="objVnum", ge=0)] = None,
+    zone_vnum: Annotated[int | None, Query(alias="zoneVnum", ge=0)] = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
+) -> LiveInstances:
+    """Istanze in memoria nel gioco (estensione pachimud): **una sola** tra `roomVnum`, `mobVnum`, `objVnum`, `zoneVnum` (422 altrimenti)."""
+    if sum(v is not None for v in (room_vnum, mob_vnum, obj_vnum, zone_vnum)) != 1:
+        raise api_error(422, "worldlive.bad_params", field="roomVnum|mobVnum|objVnum|zoneVnum")
+    with live_errors():
+        return await adapter.live_instances(room_vnum=room_vnum, mob_vnum=mob_vnum, obj_vnum=obj_vnum, zone_vnum=zone_vnum, limit=limit)
 
 
 @router.post("/load/mob", response_model=LiveLoadOut)

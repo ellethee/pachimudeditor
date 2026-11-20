@@ -2,6 +2,10 @@
 
 App `instances`. Valgono le convenzioni di [contratto API](contract.md) (auth Bearer, envelope `{success,message,data}`,
 camelCase, liste `{items,total,page,pageSize,pages}` paginate solo con `page`+`pageSize`, errori `detail[{loc,msg,type,code,params}]`).
+> **Rimossa** dall'adapter pachimud (commit `e958b4e` del gioco): le istanze vivono solo in RAM del gioco e non hanno piu' tabelle, quindi
+> `supports_instances` e' falso per ogni mondo pachimud e `/api/instances` non e' piu' registrata. Questa pagina resta come riferimento
+> storico del contratto; vedi [adapter pachimud](../adapters/pachimud.md) e, per gli oggetti dal vivo, il [canale live](contract-live.md).
+
 Il game server tiene le istanze in memoria: modificarle a server fermo. Le istanze sono `MobInstance` / `ObjectInstance`.
 
 ## Mob vivi — `/instances/mobs`

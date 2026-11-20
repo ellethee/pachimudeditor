@@ -11,20 +11,20 @@ Gli ID nelle URL sono gli id di riga (non i vnum). L'hash della password non e' 
 - `PUT /players/accounts/{id}` `{email}` (`null` o stringa vuota = rimuovi; 409 `players.email_taken`)
 - `POST /players/accounts/{id}/ban` | `/unban` (idempotenti) -> `AccountOut`
 - `POST /players/accounts/{id}/password` `{password}` (hash Argon2id) -> `AccountOut`
-- `DELETE /players/accounts/{id}?cascade=false` 204. Con personaggi e senza `cascade=true`: 409 `players.account_has_characters` (`count`). Con `cascade=true` elimina account, personaggi e relativi oggetti
+- `DELETE /players/accounts/{id}?cascade=false` 204. Con personaggi e senza `cascade=true`: 409 `players.account_has_characters` (`count`). Con `cascade=true` elimina account e personaggi (l'inventario e' una colonna JSON del personaggio)
 - `AccountOut` = `{id, username, email, createdAt, lastLoginAt, isBanned, characterCount}`
 
 ## Personaggi — `/players/characters`
 - `GET /players/lookups` -> `{sex, position: [{value,label}], races, classes: [{id,name}]}` (razze/classi riletti dagli YAML)
 - `GET /players/characters` paginata. `search`: name/title/classId/raceId; filtri esatti `accountId`, `classId`, `raceId`, `currentRoomId`; `orderBy`: id, name, level, accountId, createdAt, lastPlayedAt, gold (default `name`) -> `CharacterSummary[]` (`id, accountId, accountUsername, name, level, classId, raceId, sex, gold, hitPointsCurrent/Max, currentRoomId, currentRoomVnum, currentRoomName, createdAt, lastPlayedAt`)
 - `GET /players/characters/{id}` -> `CharacterDetail` (= summary + experience, mana, sei caratteristiche, strengthPercentile, practices, alignment, position, hunger/thirst/drunk, poisonTicks, wimpyLevel, isPlayerKiller, title, questPoints, bankGold, knownSkillIds, preferences, activeQuestIds, completedQuestIds, skillPercentages, questProgress, `itemCount`). 404 `players.character_not_found`
-- `PUT /players/characters/{id}` patch parziale (`null` solo su `currentRoomId`). Validazioni: `accountId` -> 422 `players.invalid_account`; `currentRoomId` (id stanza) -> 422 `players.invalid_room`; `classId`/`raceId` contro le definizioni YAML -> 422 `players.invalid_class` / `players.invalid_race`; `name` univoco -> 409 `players.name_taken`. `skillPercentages`/`questProgress` non modificabili da qui
+- `PUT /players/characters/{id}` patch parziale (`null` solo su `currentRoomId`). Validazioni: `accountId` -> 422 `players.invalid_account`; `currentRoomId` (id stanza == vnum, controllato sui file del mondo) -> 422 `players.invalid_room`; `classId`/`raceId` contro le definizioni YAML -> 422 `players.invalid_class` / `players.invalid_race`; `name` univoco -> 409 `players.name_taken`. `skillPercentages`/`questProgress` non modificabili da qui
 - `POST /players/characters/{id}/teleport` `{roomId}` -> `CharacterDetail` (422 `players.invalid_room`)
-- `DELETE /players/characters/{id}?cascade=false` 204. Con oggetti posseduti e senza cascade: 409 `players.character_has_items` (`count`); `cascade=true` elimina anche l'inventario
+- `DELETE /players/characters/{id}` 204 (porta via anche l'inventario; `cascade` e' accettato per compatibilita' e non ha effetto: `players.character_has_items` non esiste piu' per pachimud)
 - Non esiste la creazione di personaggi (si fa dal gioco).
 
 ## Inventario — `/players/characters/{id}/inventory`
-Basato su `ObjectInstance.character_id` (oggetti portati/equipaggiati) piu' gli oggetti annidati in contenitori ricorsivamente (`container_instance_id`).
+Per pachimud e' la colonna JSON `player_character.inventory` (lista di `{vnum, overrides, equipped_slot, state, contents}`: formato deciso dal gioco, che oggi non lo scrive ne' lo legge). `id` di una voce = posizione nella visita in profondita' (cambia dopo aggiunte/rimozioni: rileggere la lista); `prototypeId == vnum`; `containerInstanceId` = `id` del contenitore; `liquidAmount`/`charges` da `state`.
 - `GET` -> `ItemOut[]` `{id, prototypeId, vnum, keywords, shortDescription, objectType, equippedSlot, containerInstanceId, wearFlags, liquidAmount, charges}`
 - `POST` `{prototypeId | vnum, equippedSlot?}` -> 201 `ItemOut` (422 `players.prototype_required` / `players.invalid_prototype`)
 - `PUT /{itemId}` `{equippedSlot: string|null}` -> `ItemOut` (404 `players.item_not_found`; 422 `players.item_in_container` se l'oggetto e' dentro un contenitore)

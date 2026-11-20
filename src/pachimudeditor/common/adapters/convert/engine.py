@@ -60,7 +60,9 @@ async def _context(target: WorldAdapter) -> ConvertContext:
     """Razze e classi del mondo di arrivo (per i riferimenti dei mob)."""
     races = {r.id for r in await target.races()}
     classes = {c.id for c in await target.classes()}
-    return ConvertContext(target_races=races or None, target_classes=classes or None)
+    return ConvertContext(
+        target_races=races or None, target_classes=classes or None, unsupported_reset_types=target.unsupported_reset_types()
+    )
 
 
 def _totals(zones: list[ZoneAction], built: builder.BuildResult, sources: list[SourceZone]) -> dict[str, EntityCounts]:

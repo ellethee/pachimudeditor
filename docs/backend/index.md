@@ -1,8 +1,8 @@
 # Webeditor pachimud — backend (pachifast)
 
 Backend [pachifast](https://pypi.org/project/pachifast/) del webeditor (pacchetto `pachimudeditor`, sorgenti in
-`src/pachimudeditor/`): per il mondo pachimud legge/scrive il database del game server indicato dai parametri del mondo (`database_url`,
-`definitions_path`, `config_path` opzionale: vedi [adapter](../adapters/index.md), sezione "Adapter pachimud") riflettendone le tabelle con
+`src/pachimudeditor/`): per il mondo pachimud legge/scrive i file YAML dei contenuti sotto `definitions_path` e il database dei giocatori (`database_url`,
+`config_path` opzionale: vedi [adapter](../adapters/index.md), sezione "Adapter pachimud") riflettendone le tabelle con
 SQLAlchemy: il pacchetto `pachimud` non e' importato. Il database di autenticazione (`db.sqlite3`, utenti) e' separato e
 SUO dell'editor: le tabelle di gioco sono gestite da alembic nel repo principale (qui non ci sono migration per esse; l'editor
 ne controlla solo la revisione).
@@ -36,8 +36,8 @@ uv run pachimudeditor users create <nome> --superuser     # chiede la password
 - Script di reset (`PUT /zones/{id}/reset-commands`): validazione per tipo di comando (`src/pachimudeditor/apps/zones/reset_script.py`),
   vnum referenziati devono esistere; `POST .../reset-commands/validate` riporta errori e warning senza salvare.
 - Il cambio di `vnum` di stanza/mob/oggetto e' rifiutato (409 `*.vnum_in_use`) se referenziato da reset o, per gli
-  oggetti, da `Exit.key_vnum` (`pachimudeditor_adapter_pachimud/editor/reset_usage.py`); la delete e' rifiutata anche con istanze vive
-  (`pachimudeditor_adapter_pachimud/editor/instances.py`) o se l'oggetto e' chiave di un'uscita. Le uscite entranti non bloccano la delete di una stanza.
+  oggetti, da `Exit.key_vnum` (per pachimud `PachimudSupport.find_usage` in `pachimudeditor_adapter_pachimud/base.py`); la delete e' rifiutata
+  anche se l'oggetto e' chiave di un'uscita (e, per una stanza, se un personaggio ci si trova). Le uscite entranti non bloccano la delete di una stanza.
 - I body di PUT estendono `common/editor/schemas.py::PatchModel` (no `null` su colonne NOT NULL; `nullable_fields` per le eccezioni).
 - Clone zona: il range vnum non si copia (0-0 o `bottomVnum`/`topVnum` espliciti, 409 se si sovrappone).
 - Elenco codici e payload: [contratto API](contract.md).

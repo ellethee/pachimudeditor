@@ -13,12 +13,39 @@ SCHEMA_ID = "https://pachimudeditor.local/schemas/pachimudeditor.schema.json"
 
 _STR = {"type": "string"}
 
+_LIVE: dict[str, Any] = {
+    "type": "object",
+    "description": "Canale live verso il MUD acceso (modulo livectl).",
+    "additionalProperties": False,
+    "properties": {
+        "transport": {"const": "unix", "description": "Unico trasporto supportato."},
+        "socket": {"type": "string", "description": "Percorso ASSOLUTO del socket Unix."},
+        "token_env": {"type": "string", "description": "NOME della variabile d'ambiente col token (mai il token nel yaml)."},
+        "timeout_ms": {"type": "integer", "minimum": 200, "maximum": 60000, "default": 3000, "description": "Timeout in ms."},
+        "enabled": {"type": "boolean", "default": True, "description": "`false` spegne il canale senza toglierlo."},
+    },
+    "required": ["socket", "token_env"],
+}
+"""`params.live` di un mondo con canale live (stessa forma per pachimud e dikumod)."""
+
 # shortcut: params dei kind ufficiali scritti a mano (l'AdapterPlugin non li dichiara), da riallineare se un adapter cambia.
 _PARAMS: dict[str, dict[str, Any]] = {
     "pachimud": {
-        "database_url": {"type": "string", "description": "URL SQLAlchemy del DB del gioco (se assente: da `config_path`)."},
-        "definitions_path": {"type": "string", "description": "Cartella delle definizioni (YAML) del gioco."},
+        "definitions_path": {
+            "type": "string",
+            "description": "Cartella `definitions/` del gioco: contenuti YAML (zones, classes, races). Obbligatoria, o da `config_path`.",
+        },
+        "base_definitions_path": {
+            "type": "string",
+            "description": "Classi e razze di default del gioco (sola lettura); con `config_path` e un checkout del gioco si ricava da solo.",
+        },
+        "definition_path": {"type": "string", "description": "Sinonimo di `definitions_path` (nome usato nel `pachimud.yaml`)."},
+        "database_url": {
+            "type": "string",
+            "description": "URL SQLAlchemy del DB dei giocatori (account e personaggi); facoltativo (se assente: da `config_path`, altrimenti niente giocatori).",
+        },
         "config_path": {"type": "string", "description": "Path del `pachimud.yaml` del game server, da cui leggere i valori mancanti."},
+        "live": _LIVE,
     },
     "basedmud": {},
     "mapping": {},
@@ -37,19 +64,7 @@ _PARAMS: dict[str, dict[str, Any]] = {
             "default": "signed",
             "description": "Tipo di `item_number` nel rent dei giocatori: `signed` (`sh_int`, vnum max 32767) o `unsigned` (`ush_int`, max 65535: gioco con la patch `leu-rent-vnum-unsigned.patch`).",
         },
-        "live": {
-            "type": "object",
-            "description": "Canale live verso il MUD acceso (modulo livectl).",
-            "additionalProperties": False,
-            "properties": {
-                "transport": {"const": "unix", "description": "Unico trasporto supportato."},
-                "socket": {"type": "string", "description": "Percorso ASSOLUTO del socket Unix."},
-                "token_env": {"type": "string", "description": "NOME della variabile d'ambiente col token (mai il token nel yaml)."},
-                "timeout_ms": {"type": "integer", "minimum": 200, "maximum": 60000, "default": 3000, "description": "Timeout in ms."},
-                "enabled": {"type": "boolean", "default": True, "description": "`false` spegne il canale senza toglierlo."},
-            },
-            "required": ["socket", "token_env"],
-        },
+        "live": _LIVE,
     },
 }
 

@@ -48,6 +48,7 @@ _PLAIN: dict[str, tuple[int, str]] = {
     "rate_limited": (429, "worldlive.rate_limited"),
     "busy": (503, "worldlive.busy"),
     "too_many_connections": (503, "worldlive.busy"),
+    "reload_failed": (409, "worldlive.reload_failed"),
     "unavailable": (503, "worldlive.unavailable"),
     "unreachable": (503, "worldlive.unreachable"),
     "auth_failed": (503, "worldlive.auth_failed"),
@@ -77,13 +78,22 @@ def http_error(error: LiveError) -> HTTPException:
         return api_error(
             status, code, reason=p.get("reason", ""), level=p.get("level", ""), class_name=p.get("class", ""), vnum=p.get("vnum", "")
         )
+    if error.code == "reload_failed" and "errors" in p:  # `content.reload`: i problemi (file e riga) viaggiano nei parametri dell'errore
+        return api_error(409, "worldlive.content_reload_failed", kind=p.get("kind", ""), issues=_issues(p["errors"]), proto=error.code)
     status, code = _PLAIN.get(error.code, (502, "worldlive.protocol_error"))
     if error.code == "bad_params" and p.get("field") and p.get("max") not in (None, ""):
         code = "worldlive.value_too_long"  # testo oltre il limite del rent: `max` e' in byte
     return api_error(
-        status, code, field=p.get("field", ""), min=p.get("min", ""), max=p.get("max", ""), what=p.get("what", ""),
+        status, code, field=p.get("field", ""), min=p.get("min", ""), max=p.get("max", ""), what=p.get("what", ""), zone=p.get("zone", ""),
         retry_after_ms=p.get("retry_after_ms", ""), proto=error.code,
     )  # fmt: skip
+
+
+def _issues(raw: Any) -> list[dict[str, Any]]:
+    """I problemi di `content.reload` come elenco di `dict` (voci non valide scartate)."""
+    return (
+        [LiveContentIssue.model_validate(i).model_dump(by_alias=True) for i in raw if isinstance(i, dict)] if isinstance(raw, list) else []
+    )
 
 
 @contextmanager
@@ -127,7 +137,8 @@ class LiveWhoPlayer(AliasedBaseModel):
     """`playing`, `linkdead`, `polymorph`."""
     level: int | None = None
     levels: dict[str, int] = Field(default_factory=dict)
-    race: int | None = None
+    race: int | str | None = None
+    """Numero (dikumod) o id stringa (pachimud: `human`)."""
     sex: int | None = None
     room: int | None = None
     zone: int | None = None
@@ -166,6 +177,8 @@ class LiveZone(AliasedBaseModel):
     index: int
     num: int | None = None
     name: str = ""
+    bottom: int | None = None
+    """Primo vnum della zona (pachimud; dikumod ha solo `top`)."""
     top: int | None = None
     lifespan: int | None = None
     age: int | None = None
@@ -235,6 +248,79 @@ class LiveZoneResetOut(AliasedBaseModel):
     zone: int
     name: str = ""
     executed: bool = True
+
+
+class LiveZoneReloadIn(AliasedBaseModel):
+    """Ricarica una zona dai file (`zone.reload`, estensione pachimud): `vnum` e' quello della zona (`zone.list`: `index == num == vnum`)."""
+
+    vnum: int = Field(ge=0)
+
+
+class LiveZoneReloadOut(AliasedBaseModel):
+    """Esito di `zone.reload`: conteggi dei contenuti riletti."""
+
+    zone: int
+    name: str = ""
+    reloaded: bool = True
+    rooms: int = 0
+    mobs: int = 0
+    objects: int = 0
+
+
+class LiveContentIssue(AliasedBaseModel):
+    """Un problema dei contenuti (`content.validate`, `content.reload`): gravita', codice stabile, messaggio, file e riga (assenti se non c'e' un file)."""
+
+    severity: Literal["error", "warning"] = "error"
+    code: str = ""
+    message: str = ""
+    file: str | None = None
+    line: int | None = None
+
+
+class LiveContentValidateOut(AliasedBaseModel):
+    """Esito di `content.validate` (estensione pachimud, sola lettura): come `pachimud validate --json`."""
+
+    ok: bool = True
+    errors: int = 0
+    warnings: int = 0
+    issues: list[LiveContentIssue] = Field(default_factory=list)
+
+
+ContentKind = Literal["races", "classes", "skills", "tables", "socials", "locales", "all"]
+"""Cosa rilegge `content.reload`."""
+
+
+class LiveContentReloadIn(AliasedBaseModel):
+    """Ricarica a caldo dei contenuti (`content.reload`, estensione pachimud)."""
+
+    kind: ContentKind = "all"
+
+
+class LiveContentReloadOut(AliasedBaseModel):
+    """Esito di `content.reload`: id ricaricati per categoria. Se i file non sono validi il gioco non cambia e l'errore e' 409
+    `worldlive.content_reload_failed` con i problemi in `issues`."""
+
+    ok: bool = True
+    kind: str = "all"
+    reloaded: dict[str, list[str]] = Field(default_factory=dict)
+    errors: list[LiveContentIssue] = Field(default_factory=list)
+
+
+class LiveInstance(AliasedBaseModel):
+    """Un'istanza in memoria (`instances.list`): mob o oggetto a terra."""
+
+    instance_id: int | str
+    kind: Literal["mob", "obj"]
+    vnum: int
+    room_vnum: int | None = None
+
+
+class LiveInstances(AliasedBaseModel):
+    """Istanze in memoria per stanza o prototipo (estensione pachimud, sola lettura)."""
+
+    instances: list[LiveInstance] = Field(default_factory=list)
+    count: int = 0
+    truncated: bool = False
 
 
 class LiveLoadIn(AliasedBaseModel):
@@ -428,6 +514,30 @@ class LiveAdapter:
         """Forza il reset di una zona."""
         raise api_error(409, "world.capability_missing", capability="supports_live")
 
+    async def live_zone_reload(self, reload: LiveZoneReloadIn, *, actor: str | None = None) -> LiveZoneReloadOut:
+        """Rilegge dai file una zona e rifa' il reset (comando `zone.reload`, solo se il MUD lo dichiara)."""
+        raise api_error(409, "world.capability_missing", capability="supports_live")
+
+    async def live_instances(
+        self,
+        *,
+        room_vnum: int | None = None,
+        mob_vnum: int | None = None,
+        obj_vnum: int | None = None,
+        zone_vnum: int | None = None,
+        limit: int = 100,
+    ) -> LiveInstances:
+        """Istanze in memoria per stanza, prototipo o zona (comando `instances.list`, solo se il MUD lo dichiara)."""
+        raise api_error(409, "world.capability_missing", capability="supports_live")
+
+    async def live_content_validate(self, *, strict: bool = False) -> LiveContentValidateOut:
+        """Controlla i file dei contenuti come li carica il gioco (comando `content.validate`, solo se il MUD lo dichiara)."""
+        raise api_error(409, "world.capability_missing", capability="supports_live")
+
+    async def live_content_reload(self, reload: LiveContentReloadIn, *, actor: str | None = None) -> LiveContentReloadOut:
+        """Il gioco rilegge dai file razze, classi, skill, tabelle, social o cataloghi (comando `content.reload`, solo se il MUD lo dichiara)."""
+        raise api_error(409, "world.capability_missing", capability="supports_live")
+
     async def live_load(self, kind: Literal["mob", "obj"], load: LiveLoadIn, *, actor: str | None = None) -> LiveLoadOut:
         """Crea mob o oggetti in una stanza o a un giocatore."""
         raise api_error(409, "world.capability_missing", capability="supports_live")
@@ -463,6 +573,8 @@ __all__ = [
     "LiveEchoIn",
     "LiveEchoOut",
     "LiveError",
+    "LiveInstance",
+    "LiveInstances",
     "LiveInventory",
     "LiveItem",
     "LiveItemAffect",
@@ -482,6 +594,12 @@ __all__ = [
     "LiveWho",
     "LiveWhoPlayer",
     "LiveZone",
+    "LiveContentIssue",
+    "LiveContentReloadIn",
+    "LiveContentReloadOut",
+    "LiveContentValidateOut",
+    "LiveZoneReloadIn",
+    "LiveZoneReloadOut",
     "LiveZoneResetIn",
     "LiveZoneResetOut",
     "LiveZones",

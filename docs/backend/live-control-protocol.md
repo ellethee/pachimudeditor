@@ -508,6 +508,28 @@ a ogni scrittura (`obj.set`, `obj.remove`) invia `ref` e `expect` presi dall'ult
 di `load.obj`, `save_failed`); chiede conferma esplicita per `obj.remove` (azione distruttiva, il contenitore porta con se' il contenuto); non consente di scrivere un testo con `$`, `~` o oltre i limiti (li ricava da questa
 pagina e da `hello.limits`, non li inventa); abilita i comandi in base a `hello.commands` e `hello.features`, quindi con le scritture spente mostra l'inventario in sola lettura. Solo superuser, come le altre rotte `live`.
 
+### Estensioni e profili per gioco
+
+I comandi base sopra sono comuni; ogni gioco dichiara in `hello.commands` quelli che ha (l'editor costruisce la UI da li': comando assente = funzione non mostrata).
+Il profilo di **pachimud** (`mud.kind: "pachimud"`, `features: ["content.validate", "content.reload"]`, dettagli in [pachimud, canale live](../adapters/pachimud-live.md)) differisce da Diku Modificato cosi':
+
+- ha solo `ping`, `info`, `who`, `player.get`, `zone.list`, `instances.list`, `content.validate` (classe `read`) e `zone.reset`, `zone.reload`, `content.reload` (classe `write`, solo con `allow_write`; `content.validate` e' `read`); non ha `player.set`, `load.mob`, `load.obj`, `echo` ne' l'inventario;
+- `who`: `race` e' una stringa (`human`), `levels` ha la sola classe (`{"warrior": 5}`), `sex` e `position` sono numerici, `idle` e `invisible` sempre 0, `immortal` sempre falso;
+- `player.get` (sola lettura) ha `level`, `gold`, `bankGold`, `exp`, `hit`, `maxHit`, `mana`, `maxMana`, `alignment`, `roomVnum`, `position`, `str`, `dex`, `con`, `int`, `wis`, `chr`, `hunger`, `thirst` (niente `move`);
+- `zone.list`: `{index, num, name, bottom, top, lifespan, age, reset_mode, started}` con `index == num ==` vnum della zona (`age` sempre 0);
+- `zone.reset {zone | room, only_if_empty?}`: `zone` e' il vnum della zona.
+
+**`zone.reload`** (scrittura, estensione pachimud): `{"vnum": <zona>}`. Il gioco rilegge dai YAML stanze, prototipi e reset della zona e ricrea mob e oggetti; i giocatori restano nella stanza se esiste ancora.
+Risposta `{zone, name, reloaded, rooms, mobs, objects}`; errori `not_found` e `reload_failed` (`params.zone`: file non validi; la zona **non** resta svuotata, il gioco ripristina stanze, prototipi e reset e lascia intatti mob e oggetti vivi).
+
+**`content.validate`** (lettura, estensione pachimud): `{"strict"?: bool}` -> `{ok, errors, warnings, issues[{severity, level, code, message, file, line}]}` (`level` e' una copia di `severity`; `file` e `line` possono essere `null`).
+**`content.reload`** (scrittura, estensione pachimud): `{"kind": "races"|"classes"|"skills"|"tables"|"socials"|"locales"|"all"}` -> `{ok, kind, reloaded{categoria:[id]}, errors[]}`; tutto o niente: se un file non si legge `reload_failed` con `params{kind, errors[{severity, code, message, file, line}]}`
+e il gioco resta com'era; `kind` sconosciuto `bad_params`. Entrambi sono in `hello.commands` e `hello.features`. L'editor li espone come `GET /api/world/live/content/validate` e `POST /api/world/live/content/reload` (409 `worldlive.content_reload_failed` con i problemi in `params.issues`).
+
+**`instances.list`** (lettura, estensione pachimud): **una sola** tra `roomVnum`, `mobVnum`, `objVnum`, `zoneVnum`, `limit` 1..200 (default 100). Risposta `{instances[{instanceId, kind: "mob"|"obj", vnum, roomVnum}], count, truncated}`;
+per `objVnum` e `roomVnum` solo gli oggetti a terra nelle stanze (non quelli portati o indossati); `zoneVnum` = mob della zona e oggetti a terra nelle sue stanze (`not_found` se la zona non esiste).
+`info` di pachimud: `players {playing, linkdead, connecting}` (gli ultimi due sempre 0), `world {zones, mob_protos, obj_protos}`, `mud`, `started_at`, `now`, `uptime_s`, `pulse`, `ticks`; niente `lag_us`. `who`: `level` sempre presente (livello della classe unica), `zone` = vnum della zona (`null` se la stanza non e' caricata).
+
 ### Comandi riservati e non definiti
 
 `server.shutdown`, `server.reboot` (o `copyover`), `player.kick`, `exec`, `force`, qualunque comando che passi una stringa

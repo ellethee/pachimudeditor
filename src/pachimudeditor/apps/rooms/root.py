@@ -16,6 +16,7 @@ from pachimudeditor.common.adapters.models import (
     ExtraDescriptionIn,
     ExtraDescriptionOut,
     ExtraDescriptionPatch,
+    IncomingExit,
     ResetUsage,
     RoomCloneIn,
     RoomDetail,
@@ -65,6 +66,12 @@ async def update_room(room_id: int, data: RoomPatch, adapter: WriteAdapterDep) -
 async def room_usage(room_id: int, adapter: AdapterDep) -> list[ResetUsage]:
     """I comandi di reset (di qualsiasi zona) che referenziano questa stanza per vnum."""
     return await adapter.room_usage(room_id)
+
+
+@router.get("/{room_id}/incoming-exits", response_model=list[IncomingExit])
+async def incoming_exits(room_id: int, adapter: AdapterDep) -> list[IncomingExit]:
+    """Le uscite di altre stanze (anche di altre zone) che portano a questa."""
+    return await adapter.incoming_exits(room_id)
 
 
 @router.post("/{room_id}/clone", response_model=RoomDetail, status_code=201)

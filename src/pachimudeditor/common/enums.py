@@ -21,14 +21,15 @@ class Position(IntEnum):
     """Position or posture of a mob."""
 
     DEAD = 0
-    MORTAL = 1
-    INCAP = 2
+    MORTALLY_WOUNDED = 1
+    INCAPACITATED = 2
     STUNNED = 3
     SLEEPING = 4
     RESTING = 5
     SITTING = 6
     FIGHTING = 7
     STANDING = 8
+    MOUNTED = 9
 
 
 class ObjectType(IntEnum):
@@ -50,6 +51,18 @@ class ObjectType(IntEnum):
     WAND = 13
     STAFF = 14
     FOUNTAIN = 15
+    # Tipi oggetto del gioco pachimud (LeU) senza equivalente negli altri mondi (aggiunti in coda: valori stabili).
+    FIREWEAPON = 16
+    MISSILE = 17
+    WORN = 18
+    TRAP = 19
+    NOTE = 20
+    PEN = 21
+    BOAT = 22
+    AUDIO = 23
+    BOARD = 24
+    TREE = 25
+    ROCK = 26
 
 
 class ZoneCommandType(IntEnum):
@@ -89,6 +102,9 @@ class SectorType(IntEnum):
     WATER_NOSWIM = 7
     FLYING = 8
     UNDERWATER = 9
+    DESERT = 10
+    TREE = 11
+    DARKCITY = 12
 
 
 class Direction(IntEnum):

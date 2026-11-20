@@ -10,6 +10,8 @@ MESSAGES: dict[str, str] = {
     "worldlive.command_disabled": "Il gioco non ha attivo questo comando (le scritture sono disattivate nella configurazione del MUD?).",
     "worldlive.rate_limited": "Troppe richieste al gioco: riprova fra poco.",
     "worldlive.busy": "Il gioco è occupato: riprova fra poco.",
+    "worldlive.reload_failed": "Il gioco non ha potuto ricaricare la zona {zone} (file non validi?): la zona è rimasta com'era, con mob e oggetti vivi intatti. Correggi i file e riprova.",
+    "worldlive.content_reload_failed": "Il gioco non ha ricaricato i contenuti ({kind}): ci sono file non validi, il gioco è rimasto com'era. Correggi i problemi indicati e riprova.",
     "worldlive.unavailable": "Il gioco si sta spegnendo.",
     "worldlive.unreachable": "Il canale live non è raggiungibile: il MUD è spento o senza modulo di controllo.",
     "worldlive.auth_failed": "Il MUD ha rifiutato il token del canale live: controllare la variabile d'ambiente del token.",

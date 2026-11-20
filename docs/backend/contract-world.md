@@ -4,7 +4,7 @@ Base: `/api/world`. Stesse convenzioni di [contratto API](contract.md) (auth Bea
 camelCase, errori `{detail: [{loc, msg, type, code?, params?}]}`).
 
 ## `GET /world/overview`
-`data = { counts, zones, warnings, warningTotals }`
+`data = { counts, zones, warnings, warningTotals, fileProblems? }`
 - `counts`: `zones, zonesEnabled, zonesDisabled, rooms, mobs, objects, mobInstances, objectInstances, accounts, characters`.
 - `zones[]` (ordine per vnum): `id, vnum, name, enabled, bottomVnum, topVnum, rooms, mobs, objects, rangeUsagePct, resetCommands`.
   `rangeUsagePct` = vnum distinti (stanze+mob+oggetti della zona) dentro `[bottomVnum, topVnum]` / ampiezza del range, 1 decimale;
@@ -16,6 +16,12 @@ camelCase, errori `{detail: [{loc, msg, type, code?, params?}]}`).
   - `zone_empty_reset_script` (zona senza comandi di reset ma con almeno un mob o oggetto)
   - `vnum_out_of_range` (stanza/mob/oggetto con vnum fuori dal range della sua zona; `params.bottom|top`; zone 0-0 escluse)
   - `mob_never_loaded` (nessun `LOAD_MOB` lo carica), `object_never_loaded` (nessun LOAD/GIVE/EQUIP/PUT lo usa, ne' come contenitore)
+  - solo pachimud (contenuti su file YAML, il gioco non segnala nulla di cio' che segue): `exit_without_target` vale anche per una
+    destinazione che non esiste; `duplicate_vnum` (stesso vnum in piu' voci: l'editor tiene la prima, il gioco l'ultima);
+    `reset_unknown_room|mob|object` (entita' = la zona; `params.vnum`, `params.index` = posizione nello script); `exit_key_missing`
+    (`params.direction`, `params.vnum`) e `container_key_missing` (`params.vnum`) per chiavi che non esistono come oggetto
+- `fileProblems[]` (solo pachimud): `path` (relativo a `definitions/`), `line` (1-based, se nota), `message`, `severity` (`error|warning`) per i
+  file YAML illeggibili o le voci non valide, saltati dall'editor (il resto del mondo si legge comunque). `counts.mobInstances|objectInstances` sono 0.
 
 ## `GET /world/zone-graph`
 `data = { nodes: [{id, vnum, name, enabled, rooms, isolated}], edges: [{fromZoneId, toZoneId, count}] }`.

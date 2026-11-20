@@ -295,6 +295,17 @@ class ExitOut(AliasedBaseModel):
     """Dati propri del MUD (Diku Modificato: `exitInfo` grezzo, `openCmd`); pachimud: vuoto."""
 
 
+class IncomingExit(AliasedBaseModel):
+    """Un'uscita di un'altra stanza (anche di un'altra zona) che porta alla stanza cercata."""
+
+    exit_id: int
+    room_id: int
+    room_vnum: int
+    room_name: str
+    zone_id: int
+    direction: Direction
+
+
 class ExitIn(AliasedBaseModel):
     """Crea un'uscita da una stanza (una per direzione)."""
 
