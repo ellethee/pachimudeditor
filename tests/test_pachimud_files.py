@@ -1,5 +1,7 @@
 """Adapter pachimud su file YAML: descrittori, file per area, oggetti per tipo, zone nuove, file rotti, vnum duplicate."""
 
+from pathlib import Path
+
 import httpx
 import pytest
 
@@ -325,3 +327,15 @@ def test_invalid_errors_are_localized_codes() -> None:
     assert code_of({"profit_buy": "x"}) == ("pachimud.invalid_type", {"field": "profit_buy"})
     assert code_of({"trades": ["NOPE"]})[0] in INVALID
     assert "Value error" not in code_of({"trades": ["NOPE"]})[1]["detail"]
+
+
+async def test_extra_definition_paths_are_reported_not_read(tmp_path: Path) -> None:
+    """Le cartelle `extra_definition_paths` del gioco non sono lette dall'editor: `worlds check` lo dice con un avviso."""
+    from pachimudeditor.common.adapters.registry import WorldConfig
+    from pachimudeditor_adapter_pachimud.adapter import PachimudAdapter
+
+    game = tmp_path / "pachimud.yaml"
+    game.write_text(f"definition_path: {zones_dir().parent}\nextra_definition_paths: [/srv/extra]\n")
+    adapter = PachimudAdapter(WorldConfig(id="p", kind="pachimud", name="p", params={"config_path": str(game)}))
+    report = adapter.schema_report()
+    assert report is not None and "extra_definition_paths_ignored" in [i.code for i in report.problems]

@@ -216,7 +216,7 @@ Oltre a razze e classi l'editor modifica, da `/api/content` (`docs/backend/contr
 (`locales/<lingua>/**/*.yaml`) e i testi lunghi (`texts/*.txt`). Il gioco applica piu' strati (pacchetto, poi `definition_path`): l'editor legge
 `base_definitions_path` + `definitions_path` e **scrive solo nello strato dell'utente** (un contenuto di serie diventa «tuo» al primo salvataggio;
 eliminarlo dallo strato dell'utente ripristina quello di serie). Con `config_path` la base si ricava da `<cartella del pachimud.yaml>/src/pachimud/definitions`;
-se il gioco gira altrove (o usa `extra_definition_paths`) indicare `base_definitions_path` a mano: le cartelle extra non sono lette.
+se il gioco gira altrove (o usa `extra_definition_paths`) indicare `base_definitions_path` a mano: le cartelle extra non sono lette (`worlds check` e il log lo segnalano con l'avviso `extra_definition_paths_ignored`).
 Nel frontend: pagine **Skill**, **Social** (maschere inline con i testi per lingua), **Tabelle** e **Cataloghi e testi** (testo YAML/TXT inline). Le skill hanno
 un form per i campi semplici e un campo YAML per `levels`, `effects`, `handler`, `messages`, ... Il form non conosce tutti gli id: il controllo dei riferimenti e' del gioco.
 Dopo ogni salvataggio, con il canale live connesso, l'editor chiede al gioco `content.validate` e mostra i problemi (gravita', codice, messaggio, file e riga);

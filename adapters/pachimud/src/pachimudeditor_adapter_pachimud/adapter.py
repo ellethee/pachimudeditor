@@ -102,6 +102,15 @@ class PachimudAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, LiveMi
             return None
         store = self.sync()
         problems = [SchemaIssue("error" if i.severity == "error" else "warning", i.code, i.text()) for i in store.issues]
+        if self.params.ignored_extra_paths:  # il gioco li applica, l'editor no: senza l'avviso mancherebbero contenuti senza spiegazione
+            problems.append(
+                SchemaIssue(
+                    "warning",
+                    "extra_definition_paths_ignored",
+                    f"il gioco usa {len(self.params.ignored_extra_paths)} cartelle in extra_definition_paths che l'editor non legge: "
+                    "i loro contenuti non compaiono (indicare le cartelle del gioco in params.definitions_path non le unisce)",
+                )
+            )
         return WorldReport(
             zones=len(store.zones),
             rooms=len(store.vnums("room")),

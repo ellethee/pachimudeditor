@@ -62,6 +62,8 @@ class PachimudParams:
     """URL SQLAlchemy async dei giocatori, con il path SQLite gia' assoluto; `None` = giocatori non disponibili."""
     config_path: Path | None = None
     """Il `pachimud.yaml` da cui sono stati letti i valori mancanti, se c'e'."""
+    ignored_extra_paths: tuple[str, ...] = ()
+    """`extra_definition_paths` del `pachimud.yaml` del gioco: l'editor non li legge (solo avviso in `worlds check` e nel log)."""
     base_definitions_path: Path | None = None
     """Contenuti di default del gioco (classi e razze nel pacchetto, `src/pachimud/definitions`): primo strato, sola lettura."""
 
@@ -193,6 +195,7 @@ def resolve_params(config: WorldConfig, root: Path | None = None) -> PachimudPar
         database_url=database_url,
         config_path=game_path,
         base_definitions_path=base_path.resolve() if base_path else None,
+        ignored_extra_paths=tuple(str(p) for p in game.get("extra_definition_paths") or () if p),
     )
 
 
