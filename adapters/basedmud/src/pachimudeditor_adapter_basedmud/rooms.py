@@ -122,7 +122,12 @@ class RoomsMixin(BasedMudSupport):
         ]
         return [
             IncomingExit(
-                exit_id=mapping.exit_id(vnum, door), room_id=vnum, room_vnum=vnum, room_name=name, zone_id=zone_id, direction=Direction(door)
+                exit_id=mapping.exit_id(vnum, door),
+                room_id=vnum,
+                room_vnum=vnum,
+                room_name=name,
+                zone_id=zone_id,
+                direction=Direction(door),
             )
             for vnum, zone_id, name, door in sorted(found, key=lambda f: (f[0], f[3]))
         ]

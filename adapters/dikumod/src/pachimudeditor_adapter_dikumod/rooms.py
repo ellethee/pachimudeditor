@@ -125,7 +125,11 @@ class RoomsMixin(DikumodSupport):
         ]
         return [
             IncomingExit(
-                exit_id=mapping.exit_id(vnum, x.door), room_id=vnum, room_vnum=vnum, room_name=name, zone_id=self.zone_id_of(vnum),
+                exit_id=mapping.exit_id(vnum, x.door),
+                room_id=vnum,
+                room_vnum=vnum,
+                room_name=name,
+                zone_id=self.zone_id_of(vnum),
                 direction=Direction(x.door),
             )
             for name, vnum, x in sorted(found, key=lambda f: (f[1], f[2].door))
