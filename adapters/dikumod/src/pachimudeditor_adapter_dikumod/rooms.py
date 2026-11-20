@@ -27,6 +27,7 @@ from pachimudeditor.common.adapters.models import (
     ExtraDescriptionIn,
     ExtraDescriptionOut,
     ExtraDescriptionPatch,
+    IncomingExit,
     ResetUsage,
     RoomCloneIn,
     RoomDetail,
@@ -110,6 +111,25 @@ class RoomsMixin(DikumodSupport):
         )
         out = [mapping.room_out(r.item, self.zone_id_of(r.vnum), override=r.override, duplicate=r.vnum in dup) for r in items]
         return make_page(RoomOut, out, total, params)
+
+    async def incoming_exits(self, room_id: int) -> list[IncomingExit]:
+        """Le uscite di altre stanze (di qualsiasi zona) che portano a `room_id`: una scansione dei file gia' in memoria (il default
+        generico ricostruisce il dettaglio di ogni stanza: ~10 s sui dati reali)."""
+        self.find_or_404("room", room_id, "rooms.not_found")
+        found = [
+            (ref.item.name, vnum, x)
+            for vnum, ref in self.store.rooms.items()
+            if vnum != room_id
+            for x in ref.item.exits
+            if x.to_room == room_id
+        ]
+        return [
+            IncomingExit(
+                exit_id=mapping.exit_id(vnum, x.door), room_id=vnum, room_vnum=vnum, room_name=name, zone_id=self.zone_id_of(vnum),
+                direction=Direction(x.door),
+            )
+            for name, vnum, x in sorted(found, key=lambda f: (f[1], f[2].door))
+        ]
 
     async def get_room(self, room_id: int) -> RoomDetail:
         """Una stanza con uscite ed extra description."""

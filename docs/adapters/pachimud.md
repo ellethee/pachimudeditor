@@ -170,6 +170,7 @@ e `EXPECTED` le colonne attese. Una colonna non essenziale assente (`language`, 
 - Un campo nuovo dei YAML del gioco non compare nei DTO finche' non lo si aggiunge a `loaders.py`, a `mapping.py` (e a `fields.py`): un campo
   sconosciuto in un file resta intatto ma non e' visibile; negli oggetti, `extra="forbid"` rende non valida la voce (segnalata).
 - L'indice delle voci si ricostruisce a ogni scrittura (nessun problema per mondi di qualche migliaio di voci).
+- Ogni scrittura riscrive per intero il file YAML (con i commenti conservati): circa 250 ms per un `rooms.yaml` di 46 stanze (misurato). Una conversione da un altro mondo fa una scrittura per voce, quindi ~600 voci richiedono ~17 s: la pagina Converti mostra l'avanzamento e il test e2e attende fino a 90 s. Scrivere i file una volta sola a fine conversione richiederebbe un'API di scrittura a lotti nel motore di conversione, non ancora fatta.
 
 # Mondi opzionali e pacchetto `pachimud`
 

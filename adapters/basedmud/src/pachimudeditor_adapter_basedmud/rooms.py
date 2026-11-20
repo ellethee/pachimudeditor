@@ -25,6 +25,7 @@ from pachimudeditor.common.adapters.models import (
     ExtraDescriptionIn,
     ExtraDescriptionOut,
     ExtraDescriptionPatch,
+    IncomingExit,
     ResetUsage,
     RoomCloneIn,
     RoomDetail,
@@ -107,6 +108,24 @@ class RoomsMixin(BasedMudSupport):
             pairs, params, lambda p: (p[1].name, p[1].vnum), lambda p, f: keys[f](p[1]), RoomPageParams.order_fields or []
         )
         return make_page(RoomOut, [mapping.room_out(r, e.zone_id) for e, r in items], total, params)
+
+    async def incoming_exits(self, room_id: int) -> list[IncomingExit]:
+        """Le uscite di altre stanze (di qualsiasi area) che portano a `room_id`: una scansione dei file gia' in memoria (il default
+        generico ricostruisce il dettaglio di ogni stanza)."""
+        self.find_or_404("room", room_id, "rooms.not_found")
+        found = [
+            (room.vnum, entry.zone_id, room.name, x.door)
+            for entry, room in self.store.all_items("room")
+            if room.vnum != room_id
+            for x in room.exits
+            if x.to_vnum == room_id and 0 <= x.door <= 5
+        ]
+        return [
+            IncomingExit(
+                exit_id=mapping.exit_id(vnum, door), room_id=vnum, room_vnum=vnum, room_name=name, zone_id=zone_id, direction=Direction(door)
+            )
+            for vnum, zone_id, name, door in sorted(found, key=lambda f: (f[0], f[3]))
+        ]
 
     async def get_room(self, room_id: int) -> RoomDetail:
         """Una stanza con uscite ed extra description."""
