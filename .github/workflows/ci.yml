@@ -39,7 +39,7 @@ jobs:
       - name: Test (fallisce se troppi test sono saltati)
         shell: bash
         env:
-          MAX_SKIPPED: "86"
+          MAX_SKIPPED: "87"
         run: |
           uv run --frozen pytest -q -rs | tee pytest.log
           skipped=$(grep -Eo '[0-9]+ skipped' pytest.log | tail -1 | grep -Eo '[0-9]+' || true)

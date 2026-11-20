@@ -273,6 +273,7 @@ async def test_unwritable_files_are_409(client: httpx.AsyncClient, lib: Path) ->
     assert files(lib) == before and (outside.read_bytes(), evil_rent.read_bytes()) == ext
 
 
+@pytest.mark.real_dikumod  # usa un oggetto (40019) che esiste solo nei dati reali: nei mondi sintetici il giocatore non lo trova (404)
 async def test_inventory_vnum_over_short_is_explained(client: httpx.AsyncClient) -> None:
     """Un vnum oltre 32767 (il rent lo salva in uno `short`) e' rifiutato con un messaggio che spiega il limite, in it e in en."""
     for lang, text in (("it", "intervallo che il file del giocatore"), ("en", "range the player file can hold")):
