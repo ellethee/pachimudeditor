@@ -56,6 +56,14 @@ Con `content.validate` (lettura) e `content.reload` (scrittura, serve `allow_wri
 - **API**: `GET /api/world/live/content/validate[?strict=true]` e `POST /api/world/live/content/reload` `{"kind": "skills"}` (`races`, `classes`, `skills`, `tables`, `socials`, `locales`, `all`).
 - **CLI**: `pachimudeditor live --world pachimud content validate [--strict]` e `content reload [kind]`.
 
+## Bacheche (moderazione)
+
+Il gioco tiene i messaggi delle bacheche in memoria (`BoardStore`, caricata una volta sola; il numero con cui si leggono e' la posizione) oltre che nel DB `board_message`: una `DELETE` fatta sul DB da fuori lascerebbe i messaggi visibili ai giocatori. Per questo l'editor non scrive mai su `board_message`: con `board.delete` (`board_id`, `id` = id riga del DB) e `board.clear` (`board_id`), classe `write` quindi solo con `allow_write`, e' il gioco ad aggiornare DB e memoria insieme.
+
+- **API**: `DELETE /api/world/live/boards/{boardId}/messages/{messageId}` e `DELETE /api/world/live/boards/{boardId}`.
+- **CLI**: `pachimudeditor live --world pachimud board delete <board_id> <id>` e `board clear <board_id>`.
+- **Frontend**: nella pagina Bacheche i pulsanti «Cancella il messaggio» e «Svuota la bacheca» (con conferma) compaiono solo con canale connesso, scrittura consentita e comandi dichiarati nell'`hello`; altrimenti la pagina e' in sola lettura e una nota dice perche'. La colonna «Id riga» mostra l'id da usare.
+
 La ricarica e' **tutto o niente**: se un file non si legge (YAML, campi non validi) il gioco risponde `reload_failed`, l'editor 409 `worldlive.content_reload_failed` con i problemi in `detail[0].params.issues`,
 e il gioco resta com'era. Gli errori semantici (id inesistenti, segnaposto diversi nei cataloghi, effetti sconosciuti) **non** bloccano la ricarica: li riporta `content.validate`. Limiti del gioco: non ricarica i giocatori
 connessi (tengono razza e classe vecchie fino al rientro), le zone (usare `zone.reload`) e gli hook Python.

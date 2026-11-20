@@ -15,8 +15,25 @@ export default {
     back: 'All boards',
     messages: 'Messages of «{id}»',
     noMessages: 'No messages.',
-    message: { number: 'No.', author: 'Author', date: 'Date', title: 'Title' },
-    readOnlyNote: 'Read only: deleting messages needs the game live channel.',
+    message: { number: 'No.', author: 'Author', date: 'Date', title: 'Title', id: 'Row id' },
+    moderation: {
+      live: 'Deleting goes through the running game (DB and memory together): players see the change at once.',
+      noLive: 'Read only: deleting messages needs the game live channel (not configured for this world).',
+      disconnected: 'Read only: the game does not answer on the live channel, so nothing can be deleted.',
+      notAllowed: 'Read only: the live channel does not allow writes or the game has no board commands.',
+    },
+    delete: {
+      button: 'Delete the message',
+      title: 'Delete the message?',
+      message: 'Message no. {number} by {author} («{title}») disappears from the board in the running game.',
+      done: 'Message deleted.',
+    },
+    clear: {
+      button: 'Clear the board',
+      title: 'Clear the board?',
+      message: 'All {count} messages of «{id}» disappear from the running game. This cannot be undone.',
+      done: '{count} messages deleted.',
+    },
     mail: {
       privacy: 'For privacy only the number of letters waiting for each player is shown, never the text.',
       total: 'Letters waiting: {count}',

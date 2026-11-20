@@ -89,6 +89,25 @@ export async function reloadLiveZone(vnum: number): Promise<ILiveZoneReload> {
 }
 
 /**
+ * Toglie un messaggio di bacheca dal gioco acceso, DB e memoria insieme (estensione pachimud, comando `board.delete`).
+ *
+ * @param boardId - id della bacheca
+ * @param messageId - id riga del messaggio (`IBoardMessage.id`), non la posizione
+ */
+export async function deleteLiveBoardMessage(boardId: string, messageId: number): Promise<{ boardId: string; id: number; remaining: number }> {
+  return http().Delete(`/boards/${encodeURIComponent(boardId)}/messages/${messageId}`, undefined, OPTS)
+}
+
+/**
+ * Svuota una bacheca nel gioco acceso, DB e memoria insieme (estensione pachimud, comando `board.clear`).
+ *
+ * @param boardId - id della bacheca
+ */
+export async function clearLiveBoard(boardId: string): Promise<{ boardId: string; removed: number }> {
+  return http().Delete(`/boards/${encodeURIComponent(boardId)}`, undefined, OPTS)
+}
+
+/**
  * Istanze in memoria di una zona (mob della zona e oggetti a terra nelle sue stanze; estensione pachimud, comando `instances.list`).
  *
  * @param zoneVnum - vnum della zona

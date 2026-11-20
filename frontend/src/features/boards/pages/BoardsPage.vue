@@ -49,8 +49,20 @@
           <q-btn flat no-caps :icon="mdiArrowLeft" :label="t('boards.back')" data-testid="board-back" @click="selected = null" />
           <div class="text-subtitle1" data-testid="board-title">{{ t('boards.messages', { id: selected.boardId }) }}</div>
           <q-input v-model="search" dense outlined clearable debounce="200" class="col-12 col-sm-4" :label="t('boards.search')" data-testid="board-search" />
+          <q-space />
+          <q-btn
+            v-if="canClear"
+            outline
+            no-caps
+            color="negative"
+            :icon="mdiDeleteSweep"
+            :label="t('boards.clear.button')"
+            :disable="!selected.count"
+            data-testid="board-clear"
+            @click="confirmClear"
+          />
         </div>
-        <div class="text-caption text-grey">{{ t('boards.readOnlyNote') }}</div>
+        <div class="text-caption text-grey" data-testid="board-moderation-note">{{ moderationNote }}</div>
         <q-table
           flat
           bordered
@@ -69,6 +81,22 @@
               <q-td key="author" :props="p">{{ p.row.author }}</q-td>
               <q-td key="date" :props="p">{{ formatDate(p.row.createdAt) }}</q-td>
               <q-td key="title" :props="p">{{ p.row.title }}</q-td>
+              <q-td key="id" :props="p">{{ p.row.id }}</q-td>
+              <q-td key="actions" :props="p" auto-width>
+                <q-btn
+                  v-if="canDelete"
+                  flat
+                  round
+                  dense
+                  color="negative"
+                  :icon="mdiDelete"
+                  :aria-label="t('boards.delete.button')"
+                  data-testid="board-delete"
+                  @click.stop="confirmDelete(p.row)"
+                >
+                  <q-tooltip>{{ t('boards.delete.button') }}</q-tooltip>
+                </q-btn>
+              </q-td>
             </q-tr>
             <q-tr v-show="p.expand" :props="p">
               <q-td colspan="100%" class="text-body2" style="white-space: pre-wrap" data-testid="board-message-text">{{ p.row.text }}</q-td>
@@ -111,12 +139,17 @@
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { mdiArrowLeft, mdiRefresh } from '@quasar/extras/mdi-v7'
+import { useQuasar } from 'quasar'
+import { mdiArrowLeft, mdiDelete, mdiDeleteSweep, mdiRefresh } from '@quasar/extras/mdi-v7'
 import { describeError } from '../../content/helpers/describe-error'
+import { useLive } from '../../playerfiles/helpers/live-state'
+import { clearLiveBoard, deleteLiveBoardMessage } from '../../playerfiles/services/live-api'
 import { getMail, listBoardMessages, listBoards } from '../services/boards-api'
 import type { IBoardItem, IBoardMessage, IBoardsOut, IMailOut } from '../types/boards'
 
-const { t, d } = useI18n()
+const { t } = useI18n()
+const $q = useQuasar()
+const live = useLive()
 
 const tab = ref<'boards' | 'mail'>('boards')
 const error = ref('')
@@ -137,8 +170,23 @@ function cols(group: string, names: string[]) {
 }
 
 const boardColumns = computed(() => cols('columns', ['boardId', 'objects', 'count', 'limit']))
-const messageColumns = computed(() => cols('message', ['number', 'author', 'date', 'title']))
+const messageColumns = computed(() => [
+  ...cols('message', ['number', 'author', 'date', 'title', 'id']),
+  { name: 'actions', label: '', field: 'actions', align: 'left' as const },
+])
 const mailColumns = computed(() => cols('mail', ['recipient', 'count']))
+
+/** I comandi `board.delete` / `board.clear` sono dichiarati dal gioco e si può scrivere dal canale live. */
+const canDelete = computed(() => live.canWrite.value && (live.status.value?.commands ?? []).includes('board.delete'))
+const canClear = computed(() => live.canWrite.value && (live.status.value?.commands ?? []).includes('board.clear'))
+
+/** Perché non si può moderare (o che si può), sotto la barra della bacheca. */
+const moderationNote = computed(() => {
+  if (canDelete.value) return t('boards.moderation.live')
+  if (!live.enabled.value) return t('boards.moderation.noLive')
+  if (!live.connected.value) return t('boards.moderation.disconnected')
+  return t('boards.moderation.notAllowed')
+})
 
 /** Bacheche filtrate per id, oggetto o zona. */
 const boardRows = computed(() => {
@@ -157,7 +205,7 @@ const mailRows = computed(() => {
 
 /** Data e ora locali di un messaggio. */
 function formatDate(iso: string): string {
-  return d(new Date(iso), 'short')
+  return new Date(iso).toLocaleString()
 }
 
 /** Carica l'elenco delle bacheche. */
@@ -193,6 +241,43 @@ function openBoard(board: IBoardItem): void {
   selected.value = board
 }
 
+/** Rilegge elenco e conteggi dopo una moderazione e riapre la bacheca (se ha ancora messaggi o un oggetto), che ricarica i messaggi. */
+async function reloadSelected(): Promise<void> {
+  const id = selected.value?.boardId
+  await load()
+  selected.value = boards.value?.boards.find((b) => b.boardId === id) ?? null
+}
+
+/** Conferma e cancella un messaggio dal gioco acceso (mai direttamente dal DB). */
+function confirmDelete(msg: IBoardMessage): void {
+  if (!selected.value) return
+  const boardId = selected.value.boardId
+  $q.dialog({ title: t('boards.delete.title'), message: t('boards.delete.message', { number: msg.number, title: msg.title, author: msg.author }), cancel: true, persistent: true }).onOk(async () => {
+    try {
+      await deleteLiveBoardMessage(boardId, msg.id)
+      $q.notify({ type: 'positive', message: t('boards.delete.done') })
+      await reloadSelected()
+    } catch (e) {
+      $q.notify({ type: 'negative', message: await describeError(e) })
+    }
+  })
+}
+
+/** Conferma e svuota la bacheca aperta nel gioco acceso. */
+function confirmClear(): void {
+  if (!selected.value) return
+  const board = selected.value
+  $q.dialog({ title: t('boards.clear.title'), message: t('boards.clear.message', { id: board.boardId, count: board.count }), cancel: true, persistent: true }).onOk(async () => {
+    try {
+      const out = await clearLiveBoard(board.boardId)
+      $q.notify({ type: 'positive', message: t('boards.clear.done', { count: out.removed }) })
+      await reloadSelected()
+    } catch (e) {
+      $q.notify({ type: 'negative', message: await describeError(e) })
+    }
+  })
+}
+
 /** Carica i conteggi della posta. */
 async function loadMail(): Promise<void> {
   loadingMail.value = true
@@ -210,5 +295,8 @@ watch([selected, search], () => void loadMessages())
 watch(tab, (value) => {
   if (value === 'mail' && !mail.value) void loadMail()
 })
-onMounted(() => void load())
+onMounted(async () => {
+  void load()
+  await live.refresh()
+})
 </script>

@@ -66,12 +66,12 @@ async def test_capabilities(client: httpx.AsyncClient) -> None:
 
 
 async def test_status_discovery(client: httpx.AsyncClient) -> None:
-    """Il `hello` dichiara comandi ed estensioni: niente `player.set`/`load.*`/`echo`, features solo dei contenuti, campi di sola lettura."""
+    """Il `hello` dichiara comandi ed estensioni: niente `player.set`/`load.*`/`echo`, features solo di contenuti e bacheche, campi di sola lettura."""
     status = data(await client.get(f"{LIVE}/status", headers=H))
     assert (
         status["state"] == "connected"
         and status["mud"]["kind"] == "pachimud"
-        and status["features"] == ["content.validate", "content.reload"]
+        and status["features"] == ["content.validate", "content.reload", "board.delete", "board.clear"]
     )
     assert {"zone.reload", "instances.list", "zone.reset"} <= set(status["commands"])
     assert not {"player.set", "load.mob", "load.obj", "echo", "player.inventory"} & set(status["commands"])
@@ -218,3 +218,40 @@ async def test_cli_content(fake: FakePachimudServer, monkeypatch: pytest.MonkeyP
     assert out.exit_code == 0 and json.loads(out.stdout)["result"]["kind"] == "skills" and fake.content_reloads == ["skills"]
     out = await asyncio.to_thread(run.invoke, app, [*base, "content", "reload", "mondo"])
     assert out.exit_code != 0
+
+
+async def test_board_moderation(client: httpx.AsyncClient, fake: FakePachimudServer) -> None:
+    """`board.delete` (id riga, non posizione) e `board.clear` passano dal canale con l'attore; id o bacheca sconosciuti 404; sola lettura 409."""
+    status = data(await client.get(f"{LIVE}/status", headers=H))
+    assert {"board.delete", "board.clear"} <= set(status["commands"])
+    out = data(await client.delete(f"{LIVE}/boards/piazza/messages/1", headers=H))
+    assert out == {"ok": True, "boardId": "piazza", "id": 1, "remaining": 1}
+    assert fake.boards["piazza"] == [2] and any(f"actor={stack.TEST_USER} cmd=board.delete" in line for line in fake.audit)
+    assert error_code(await client.delete(f"{LIVE}/boards/piazza/messages/1", headers=H), 404) == "worldlive.not_found"  # gia' tolto
+    assert (
+        error_code(await client.delete(f"{LIVE}/boards/altra/messages/2", headers=H), 404) == "worldlive.not_found"
+    )  # id di un'altra bacheca
+    ro = {"X-World": "pachimud-ro"}
+    assert error_code(await client.delete(f"{LIVE}/boards/piazza", headers=ro), 409) == "world.read_only" and fake.boards["piazza"] == [2]
+    assert data(await client.delete(f"{LIVE}/boards/piazza", headers=H)) == {"ok": True, "boardId": "piazza", "removed": 1}
+    assert fake.boards["piazza"] == []
+    fake.write = False
+    assert error_code(await client.delete(f"{LIVE}/boards/piazza", headers=H), 409) == "worldlive.command_disabled"
+
+
+async def test_cli_board(fake: FakePachimudServer, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`live board delete|clear` contro il finto server pachimud."""
+    import asyncio
+    import json
+
+    from typer.testing import CliRunner
+
+    from pachimudeditor.cli import app
+
+    monkeypatch.setenv(ENV, TOKEN)
+    base = ["live", "--socket", fake.path, "--token-env", ENV]
+    run = CliRunner()
+    out = await asyncio.to_thread(run.invoke, app, [*base, "board", "delete", "piazza", "1"])
+    assert out.exit_code == 0 and json.loads(out.stdout)["result"]["remaining"] == 1
+    out = await asyncio.to_thread(run.invoke, app, [*base, "board", "clear", "piazza"])
+    assert out.exit_code == 0 and json.loads(out.stdout)["result"]["removed"] == 1 and fake.boards["piazza"] == []

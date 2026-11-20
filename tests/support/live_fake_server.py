@@ -757,7 +757,7 @@ class FakeLiveServer:
 # ------------------------------------------------------------------------------------------------------ profilo pachimud
 
 PACHIMUD_READ = ("ping", "info", "who", "player.get", "zone.list", "instances.list", "content.validate")
-PACHIMUD_WRITE = ("zone.reset", "zone.reload", "content.reload")
+PACHIMUD_WRITE = ("zone.reset", "zone.reload", "content.reload", "board.delete", "board.clear")
 PACHIMUD_ZONES = [
     (10, "Zona Alfa", 1000, 1099),
     (20, "Zona Vuota", 2000, 2099),
@@ -771,7 +771,7 @@ class FakePachimudServer(FakeLiveServer):
     `player.get` di sola lettura senza `move`, `zone.list` con `index == num == vnum` e `bottom`/`top`, `zone.reload` e `instances.list`.
     Niente `player.set`, `load.*`, `echo`, inventario."""
 
-    reads, writes, features = PACHIMUD_READ, PACHIMUD_WRITE, ["content.validate", "content.reload"]  # noqa: RUF012
+    reads, writes, features = PACHIMUD_READ, PACHIMUD_WRITE, ["content.validate", "content.reload", "board.delete", "board.clear"]  # noqa: RUF012
     mud = {"kind": "pachimud", "name": "Pachimud", "version": "0"}  # noqa: RUF012
 
     def __init__(self, path: str | Path, token: str, **kwargs: Any) -> None:
@@ -781,6 +781,8 @@ class FakePachimudServer(FakeLiveServer):
         self.content_reloads: list[str] = []
         self.content_errors: list[dict[str, Any]] = []
         """Problemi restituiti da `content.validate` e che fanno fallire `content.reload` (`reload_failed`)."""
+        self.boards: dict[str, list[int]] = {"piazza": [1, 2]}
+        """Bacheche: `board_id` -> id riga dei messaggi (come quelli seminati nel DB di prova dell'e2e)."""
         self.broken_zones: set[int] = set()
         """Zone il cui `zone.reload` fallisce con `reload_failed` (file non validi)."""
         self.players = {"tester": self._new_player("Tester", {"warrior": 5}, "playing"),
@@ -855,6 +857,26 @@ class FakePachimudServer(FakeLiveServer):
             raise Err("reload_failed", "YAML non valido", zone=vnum)
         self.reloaded.append(int(vnum or 0))
         return {"zone": vnum, "name": name, "reloaded": True, "rooms": 3, "mobs": 2, "objects": 4}
+
+    def c_board_delete(self, p: dict[str, Any], t: list[str]) -> Any:
+        """`board.delete` (estensione pachimud): `id` e' l'id riga del messaggio, non la posizione."""
+        _check_keys(p, ("board_id", "id"))
+        board_id, message_id = _str(p, "board_id"), _int(p, "id")
+        ids = self.boards.get(board_id or "", [])
+        if message_id not in ids:
+            raise Err("not_found", "messaggio inesistente", what="message")
+        t.append(f"board:{board_id}:{message_id}")
+        ids.remove(int(message_id or 0))
+        return {"ok": True, "board_id": board_id, "id": message_id, "remaining": len(ids)}
+
+    def c_board_clear(self, p: dict[str, Any], t: list[str]) -> Any:
+        """`board.clear` (estensione pachimud)."""
+        _check_keys(p, ("board_id",))
+        board_id = _str(p, "board_id") or ""
+        t.append(f"board:{board_id}")
+        removed = len(self.boards.get(board_id, []))
+        self.boards[board_id] = []
+        return {"ok": True, "board_id": board_id, "removed": removed}
 
     def c_content_validate(self, p: dict[str, Any], _t: list[str]) -> Any:
         """`content.validate` (estensione pachimud): `{ok, errors, warnings, issues[]}` con `severity` e `level`."""

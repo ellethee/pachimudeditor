@@ -235,5 +235,5 @@ acceso. Un mob con il vecchio `shop_id` e senza `shop` e' segnalato (il gioco lo
 La pagina **Bacheche** (`/boards`, capability `supports_boards`, sola lettura) elenca gli oggetti BOARD dei YAML (`board_id`, o il vnum se manca, come fa il gioco) e i `board_id` che hanno
 messaggi nel DB (`board_message`) anche senza oggetto (badge «senza oggetto»), con il conteggio. Un clic apre i messaggi (autore, data, titolo, testo) con ricerca; il numero mostrato e' quello con cui
 li legge il gioco. La scheda **Posta** mostra solo quante lettere aspettano ogni giocatore (`mail_message`): il testo non viene mai letto. Se una tabella manca (schema del gioco non aggiornato) la pagina
-lo dice e propone `pachimud db upgrade`. Cancellare messaggi o svuotare una bacheca dall'editor non e' possibile scrivendo sul DB: il gioco tiene i messaggi in memoria
-(`BoardStore`, caricata una volta sola) e il loro numero e' la posizione nella lista, quindi serve il canale live (`board.delete`, `board.clear`). Contratto: `backend/contract-content.md`.
+lo dice e propone `pachimud db upgrade`. Cancellare un messaggio («Cancella il messaggio», con conferma) o svuotare una bacheca («Svuota la bacheca») passa sempre dal canale live (`board.delete`, `board.clear`, con `allow_write`): il gioco
+tiene i messaggi in memoria (`BoardStore`, caricata una volta sola) e il loro numero e' la posizione nella lista, quindi l'editor non scrive mai su `board_message`. Senza canale connesso la pagina e' in sola lettura e lo dice. Contratto: `backend/contract-content.md`.

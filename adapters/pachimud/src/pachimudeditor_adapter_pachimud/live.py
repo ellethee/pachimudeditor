@@ -10,6 +10,8 @@ import os
 from pachimudeditor.sdk import (
     LiveAdapter,
     LiveClient,
+    LiveBoardClearOut,
+    LiveBoardDeleteOut,
     LiveContentReloadIn,
     LiveContentReloadOut,
     LiveContentValidateOut,
@@ -94,6 +96,16 @@ class LiveMixin(LiveAdapter, PachimudSupport):
     async def live_content_validate(self, *, strict: bool = False) -> LiveContentValidateOut:
         """Il gioco controlla i file dei contenuti (stessi loader del server; lettura)."""
         return await self._client().content_validate(strict=strict)
+
+    async def live_board_delete(self, board_id: str, message_id: int, *, actor: str | None = None) -> LiveBoardDeleteOut:
+        """Il gioco toglie il messaggio (id riga del DB) dal DB e dalla sua copia in memoria."""
+        self.ensure_writable()
+        return await self._client().board_delete(board_id, message_id, actor=actor)
+
+    async def live_board_clear(self, board_id: str, *, actor: str | None = None) -> LiveBoardClearOut:
+        """Il gioco svuota la bacheca nel DB e nella sua copia in memoria."""
+        self.ensure_writable()
+        return await self._client().board_clear(board_id, actor=actor)
 
     async def live_content_reload(self, reload: LiveContentReloadIn, *, actor: str | None = None) -> LiveContentReloadOut:
         """Il gioco rilegge razze, classi, skill, tabelle, social o cataloghi (tutto o niente)."""

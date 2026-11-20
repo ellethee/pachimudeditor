@@ -5,8 +5,8 @@ DB (`board_message`) anche senza oggetto. La posta e' solo un conteggio per dest
 Le tabelle sono opzionali (`schema.OPTIONAL_TABLES`): se mancano la risposta lo dice, senza errore.
 
 La moderazione (cancellare un messaggio, svuotare una bacheca) NON e' qui: il gioco tiene i messaggi in una copia in memoria
-(`BoardStore`) e la posizione nella lista e' il numero con cui si leggono, quindi una DELETE sul DB la lascerebbe stantia. Serve il
-canale live (`board.delete` / `board.clear`).
+(`BoardStore`) e la posizione nella lista e' il numero con cui si leggono, quindi una DELETE sul DB la lascerebbe stantia: si passa dal
+canale live (`board.delete` / `board.clear`, vedi `worldlive`).
 """
 
 from datetime import datetime

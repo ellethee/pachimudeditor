@@ -439,6 +439,26 @@ def content_reload(
     _run(ctx, "content.reload", {"kind": kind}, write=True)
 
 
+board_app = typer.Typer(help="Bacheche (estensione pachimud).", no_args_is_help=True)
+app.add_typer(board_app, name="board")
+
+
+@board_app.command("delete")
+def board_delete(
+    ctx: typer.Context,
+    board_id: Annotated[str, typer.Argument(help="Id della bacheca.")],
+    message_id: Annotated[int, typer.Argument(help="Id riga del messaggio in board_message (non la posizione).")],
+) -> None:
+    """`board.delete` (scrittura): toglie un messaggio dal DB e dalla memoria del gioco."""
+    _run(ctx, "board.delete", {"board_id": board_id, "id": message_id}, write=True)
+
+
+@board_app.command("clear")
+def board_clear(ctx: typer.Context, board_id: Annotated[str, typer.Argument(help="Id della bacheca.")]) -> None:
+    """`board.clear` (scrittura): svuota la bacheca nel DB e nella memoria del gioco."""
+    _run(ctx, "board.clear", {"board_id": board_id}, write=True)
+
+
 @app.command("instances")
 def instances(
     ctx: typer.Context,

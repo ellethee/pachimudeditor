@@ -15,8 +15,25 @@ export default {
     back: 'Tutte le bacheche',
     messages: 'Messaggi di «{id}»',
     noMessages: 'Nessun messaggio.',
-    message: { number: 'N.', author: 'Autore', date: 'Data', title: 'Titolo' },
-    readOnlyNote: 'Sola lettura: per cancellare i messaggi serve il canale live del gioco.',
+    message: { number: 'N.', author: 'Autore', date: 'Data', title: 'Titolo', id: 'Id riga' },
+    moderation: {
+      live: 'Cancellare passa dal gioco acceso (DB e memoria insieme): i giocatori vedono subito il cambiamento.',
+      noLive: 'Sola lettura: per cancellare messaggi serve il canale live del gioco (non configurato per questo mondo).',
+      disconnected: 'Sola lettura: il gioco non risponde sul canale live, quindi non si può cancellare.',
+      notAllowed: 'Sola lettura: il canale live non permette scritture o il gioco non ha i comandi per le bacheche.',
+    },
+    delete: {
+      button: 'Cancella il messaggio',
+      title: 'Cancellare il messaggio?',
+      message: 'Il messaggio n. {number} di {author} («{title}») sparisce dalla bacheca nel gioco acceso.',
+      done: 'Messaggio cancellato.',
+    },
+    clear: {
+      button: 'Svuota la bacheca',
+      title: 'Svuotare la bacheca?',
+      message: 'Tutti i {count} messaggi di «{id}» spariscono dal gioco acceso. Non si può annullare.',
+      done: '{count} messaggi cancellati.',
+    },
     mail: {
       privacy: 'Per privacy si vede solo quante lettere aspettano ogni giocatore, mai il testo.',
       total: 'Lettere in attesa: {count}',

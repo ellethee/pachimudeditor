@@ -33,6 +33,8 @@ from pachimudeditor.common.adapters.live import (
     LiveServerInfo,
     LiveStatus,
     LiveWho,
+    LiveBoardClearOut,
+    LiveBoardDeleteOut,
     LiveContentReloadIn,
     LiveContentReloadOut,
     LiveContentValidateOut,
@@ -197,6 +199,22 @@ async def reload_content(reload: LiveContentReloadIn, adapter: WriteLiveDep, act
     i problemi (`issues`) e il gioco resta com'era. Non tocca giocatori connessi, zone ne' hook Python. Mai ritentato."""
     with live_errors():
         return await adapter.live_content_reload(reload, actor=actor)
+
+
+@router.delete("/boards/{board_id}/messages/{message_id}", response_model=LiveBoardDeleteOut)
+async def delete_board_message(board_id: str, message_id: int, adapter: WriteLiveDep, actor: ActorDep) -> LiveBoardDeleteOut:
+    """Toglie un messaggio di bacheca dal gioco acceso, DB e copia in memoria insieme (estensione pachimud, comando `board.delete`).
+    `message_id` e' l'id riga di `board_message`, non la posizione. Messaggio o bacheca inesistenti: 404 `worldlive.not_found`.
+    Mai ritentato; non esiste una cancellazione diretta sul DB (il gioco la vedrebbe a meta')."""
+    with live_errors():
+        return await adapter.live_board_delete(board_id, message_id, actor=actor)
+
+
+@router.delete("/boards/{board_id}", response_model=LiveBoardClearOut)
+async def clear_board(board_id: str, adapter: WriteLiveDep, actor: ActorDep) -> LiveBoardClearOut:
+    """Svuota una bacheca nel gioco acceso, DB e copia in memoria insieme (estensione pachimud, comando `board.clear`). Mai ritentato."""
+    with live_errors():
+        return await adapter.live_board_clear(board_id, actor=actor)
 
 
 @router.get("/instances", response_model=LiveInstances)

@@ -523,6 +523,8 @@ Il profilo di **pachimud** (`mud.kind: "pachimud"`, `features: ["content.validat
 Risposta `{zone, name, reloaded, rooms, mobs, objects}`; errori `not_found` e `reload_failed` (`params.zone`: file non validi; la zona **non** resta svuotata, il gioco ripristina stanze, prototipi e reset e lascia intatti mob e oggetti vivi).
 
 **`content.validate`** (lettura, estensione pachimud): `{"strict"?: bool}` -> `{ok, errors, warnings, issues[{severity, level, code, message, file, line}]}` (`level` e' una copia di `severity`; `file` e `line` possono essere `null`).
+**`board.delete`** / **`board.clear`** (scrittura, estensione pachimud, in `hello.commands` e `hello.features`): `board.delete {board_id, id}` (`id` = id riga di `board_message`, non la posizione) -> `{ok, board_id, id, remaining}`, `not_found` se il messaggio non esiste o e' di un'altra bacheca; `board.clear {board_id}` -> `{ok, board_id, removed}`. Aggiornano DB e copia in memoria del gioco insieme. L'editor le espone come `DELETE /api/world/live/boards/...`. `board.list` (lettura, `[{board_id, count}]` solo dalla cache) non e' usato.
+
 **`content.reload`** (scrittura, estensione pachimud): `{"kind": "races"|"classes"|"skills"|"tables"|"socials"|"locales"|"all"}` -> `{ok, kind, reloaded{categoria:[id]}, errors[]}`; tutto o niente: se un file non si legge `reload_failed` con `params{kind, errors[{severity, code, message, file, line}]}`
 e il gioco resta com'era; `kind` sconosciuto `bad_params`. Entrambi sono in `hello.commands` e `hello.features`. L'editor li espone come `GET /api/world/live/content/validate` e `POST /api/world/live/content/reload` (409 `worldlive.content_reload_failed` con i problemi in `params.issues`).
 

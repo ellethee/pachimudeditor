@@ -306,6 +306,23 @@ class LiveContentReloadOut(AliasedBaseModel):
     errors: list[LiveContentIssue] = Field(default_factory=list)
 
 
+class LiveBoardDeleteOut(AliasedBaseModel):
+    """Esito di `board.delete` (estensione pachimud): il messaggio e' tolto dal DB e dalla copia in memoria del gioco."""
+
+    ok: bool = True
+    board_id: str
+    id: int
+    remaining: int = 0
+
+
+class LiveBoardClearOut(AliasedBaseModel):
+    """Esito di `board.clear` (estensione pachimud): bacheca svuotata nel DB e nella copia in memoria del gioco."""
+
+    ok: bool = True
+    board_id: str
+    removed: int = 0
+
+
 class LiveInstance(AliasedBaseModel):
     """Un'istanza in memoria (`instances.list`): mob o oggetto a terra."""
 
@@ -538,6 +555,14 @@ class LiveAdapter:
         """Il gioco rilegge dai file razze, classi, skill, tabelle, social o cataloghi (comando `content.reload`, solo se il MUD lo dichiara)."""
         raise api_error(409, "world.capability_missing", capability="supports_live")
 
+    async def live_board_delete(self, board_id: str, message_id: int, *, actor: str | None = None) -> LiveBoardDeleteOut:
+        """Toglie un messaggio di bacheca nel gioco (comando `board.delete`, `message_id` e' l'id riga del DB, solo se il MUD lo dichiara)."""
+        raise api_error(409, "world.capability_missing", capability="supports_live")
+
+    async def live_board_clear(self, board_id: str, *, actor: str | None = None) -> LiveBoardClearOut:
+        """Svuota una bacheca nel gioco (comando `board.clear`, solo se il MUD lo dichiara)."""
+        raise api_error(409, "world.capability_missing", capability="supports_live")
+
     async def live_load(self, kind: Literal["mob", "obj"], load: LiveLoadIn, *, actor: str | None = None) -> LiveLoadOut:
         """Crea mob o oggetti in una stanza o a un giocatore."""
         raise api_error(409, "world.capability_missing", capability="supports_live")
@@ -595,6 +620,8 @@ __all__ = [
     "LiveWhoPlayer",
     "LiveZone",
     "LiveContentIssue",
+    "LiveBoardClearOut",
+    "LiveBoardDeleteOut",
     "LiveContentReloadIn",
     "LiveContentReloadOut",
     "LiveContentValidateOut",

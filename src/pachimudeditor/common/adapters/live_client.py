@@ -41,6 +41,8 @@ from pachimudeditor.common.adapters.live import (
     LiveStatus,
     LiveWho,
     LiveZone,
+    LiveBoardClearOut,
+    LiveBoardDeleteOut,
     LiveContentReloadIn,
     LiveContentReloadOut,
     LiveContentValidateOut,
@@ -372,6 +374,15 @@ class LiveClient:
     async def content_reload(self, reload: LiveContentReloadIn, *, actor: str | None = None) -> LiveContentReloadOut:
         """`content.reload` (scrittura, estensione pachimud): `reload_failed` porta in `params.errors` i problemi (file e riga)."""
         return LiveContentReloadOut.model_validate(await self.call("content.reload", {"kind": reload.kind}, actor=actor, write=True) or {})
+
+    async def board_delete(self, board_id: str, message_id: int, *, actor: str | None = None) -> LiveBoardDeleteOut:
+        """`board.delete` (scrittura, estensione pachimud): `message_id` e' l'id riga di `board_message`, non la posizione."""
+        params = {"board_id": board_id, "id": message_id}
+        return LiveBoardDeleteOut.model_validate(await self.call("board.delete", params, actor=actor, write=True) or {})
+
+    async def board_clear(self, board_id: str, *, actor: str | None = None) -> LiveBoardClearOut:
+        """`board.clear` (scrittura, estensione pachimud)."""
+        return LiveBoardClearOut.model_validate(await self.call("board.clear", {"board_id": board_id}, actor=actor, write=True) or {})
 
     async def load(self, kind: Literal["mob", "obj"], load: LiveLoadIn, *, actor: str | None = None) -> LiveLoadOut:
         """`load.mob` / `load.obj` (scrittura)."""
