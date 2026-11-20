@@ -1,0 +1,86 @@
+{
+  "title": "Pachimudeditor Mascot Logo Specification Template",
+  "version": "1.0",
+  "description": "Template JSON con specifiche visive, cromatiche e di testo per la mascotte Elefante Vichingo in stile eSports (versione python/multi user dungeon). Modifica questo file e invialo nuovamente per generare nuove varianti.",
+  "text_configuration": {
+    "text_content": "PACHIMUDEDITOR",
+    "font_style": "eSports Slanted, Bold, Dynamic, Speed-Tail Arrows",
+    "text_color_breakdown": {
+      "part_1": {
+        "text": "PACHIMUD",
+        "hex_color": "#42B883",
+        "color_name": "Vue Emerald Green"
+      },
+      "part_2": {
+        "text": "EDITOR",
+        "hex_color": "#00B4FF",
+        "color_name": "Quasar Electric Cyan"
+      }
+    },
+    "banner_style": {
+      "background_fill": "#1A232A",
+      "border_color": "#A8E6CF",
+      "effect": "Slanted banner with shield and sword motif"
+    }
+  },
+  "color_palette": {
+    "background": {
+      "type": "Transparent",
+      "description": "Outer background removed (Isolated mascot with sticker border)"
+    },
+    "outer_sticker_border": {
+      "hex_color": "#A8E6CF",
+      "color_name": "Mint / Vue Light Tint",
+      "width_px_relative": 14
+    },
+    "primary_black_outline": {
+      "hex_color": "#000000",
+      "style": "Thick vector lineart"
+    },
+    "elephant_skin": {
+      "base": "#576E82",
+      "highlight": "#7B93A8",
+      "midtone_shadow": "#3A4D60",
+      "deep_shadow": "#212E3B"
+    },
+    "eyes": {
+      "iris_glow": "#00B4FF",
+      "inner_glow": "#80E5FF",
+      "expression": "Gentle, friendly, intelligent"
+    },
+    "viking_helmet": {
+      "metal_base": "#4D4843",
+      "metal_highlight": "#7A736B",
+      "celtic_engravings": "#42B883",
+      "forehead_v_emblem": {
+        "outer_v": "#35495E",
+        "inner_v": "#42B883",
+        "core_v": "#00B4FF"
+      }
+    },
+    "horns": {
+      "base_ring": "#262322",
+      "horn_base": "#45403B",
+      "horn_midtone": "#615A53",
+      "horn_highlight": "#827970"
+    },
+    "tusks": {
+      "base_ivory": "#F0EAE1",
+      "midtone_ivory": "#D4C8B3",
+      "shadow_ivory": "#9A8C77",
+      "mint_reflection": "#C8F2E0"
+    },
+    "speed_effects": {
+      "primary_lines": "#42B883",
+      "secondary_lines": "#00B4FF",
+      "accent_streaks": "#FFFFFF"
+    }
+  },
+  "art_style_and_composition": {
+    "art_style": "eSports Mascot Logo / Vector Graphic",
+    "view_angle": "Frontal, Symmetrical",
+    "speed_elements": "fantasy details, sparks, slanted typography",
+    "tusks_count": 4
+  },
+  "ai_generation_prompt_template": "Vector esports mascot logo of a friendly elephant wearing a dark iron Viking helmet with carved Celtic patterns and Vue emerald green (#42B883) and Quasar cyan (#00B4FF) glowing accents. Symmetrical front view with gentle bright blue eyes, four ivory tusks, slate-gray skin. Geometric V emblem on the forehead plate of the helmet. Fast horizontal speedlines and motion streaks cutting through the mascot in Vue green, cyan, and white. Slanted dynamic eSports banner at the bottom with the text '{TEXT_CONTENT}' in bold gradient typography. Thick mint sticker border (#A8E6CF), clean vector graphic, isolated on transparent background."
+}
