@@ -15,6 +15,7 @@ from pachimudeditor.sdk import (
     LiveContentReloadIn,
     LiveContentReloadOut,
     LiveContentValidateOut,
+    LiveError,
     LiveInstances,
     LivePlayerState,
     LiveServerInfo,
@@ -78,7 +79,20 @@ class LiveMixin(LiveAdapter, PachimudSupport):
     async def live_zone_reload(self, reload: LiveZoneReloadIn, *, actor: str | None = None) -> LiveZoneReloadOut:
         """Il gioco rilegge dai YAML la zona e rifa' il reset."""
         self.ensure_writable()
-        return await self._client().zone_reload(reload, actor=actor)
+        client = self._client()
+        try:
+            return await client.zone_reload(reload, actor=actor)
+        except LiveError as error:
+            if error.code != "reload_failed" or "errors" in error.params:
+                raise
+            # il gioco non dice quale file e' rotto: lo chiediamo a `content.validate` (lettura), cosi' l'editor mostra file e riga
+            try:
+                found = [i.model_dump() for i in (await client.content_validate()).issues if i.severity == "error"]
+            except LiveError:
+                found = []
+            if not found:
+                raise
+            raise LiveError(error.code, error.message, **{**error.params, "errors": found}) from error
 
     async def live_instances(
         self,

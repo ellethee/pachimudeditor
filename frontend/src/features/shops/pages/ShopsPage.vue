@@ -88,7 +88,6 @@ import { mdiClipboardCheckOutline, mdiMagnify, mdiRefresh, mdiReload } from '@qu
 import ContentProblemsPanel from '../../content/components/ContentProblemsPanel.vue'
 import { useContentLive } from '../../content/composables/use-content-live'
 import { describeError } from '../../content/helpers/describe-error'
-import { reloadLiveZone } from '../../playerfiles/services/live-api'
 import { useLive } from '../../playerfiles/helpers/live-state'
 import { useWorld } from '../../shared/helpers/world-state'
 import { listShops } from '../services/shops-api'
@@ -99,7 +98,7 @@ const $q = useQuasar()
 const router = useRouter()
 const live = useLive()
 const { capabilities } = useWorld()
-const { busy, canValidate, validate, refreshStatus } = useContentLive()
+const { busy, canValidate, validate, reloadZone: reloadZoneLive, refreshStatus } = useContentLive()
 
 const shops = ref<IShopItem[]>([])
 const loading = ref(false)
@@ -161,12 +160,7 @@ async function load(): Promise<void> {
 
 /** Chiede al gioco acceso di rileggere dai file la zona del negozio. */
 async function reloadZone(row: IShopItem): Promise<void> {
-  try {
-    const out = await reloadLiveZone(row.zoneId)
-    $q.notify({ type: 'positive', message: t('zones.detail.liveReloaded', { name: out.name, rooms: out.rooms, mobs: out.mobs, objects: out.objects }) })
-  } catch (e) {
-    $q.notify({ type: 'negative', message: await describeError(e) })
-  }
+  await reloadZoneLive(row.zoneId)
 }
 
 onMounted(async () => {

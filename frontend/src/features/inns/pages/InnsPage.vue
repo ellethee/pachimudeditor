@@ -108,7 +108,6 @@ import ContentProblemsPanel from '../../content/components/ContentProblemsPanel.
 import { useContentLive } from '../../content/composables/use-content-live'
 import { describeError } from '../../content/helpers/describe-error'
 import { listZones, nextMobVnum } from '../../mobs/services/mobs-api'
-import { reloadLiveZone } from '../../playerfiles/services/live-api'
 import { useLive } from '../../playerfiles/helpers/live-state'
 import { searchRooms } from '../../rooms/services/rooms-api'
 import type { IRoom } from '../../rooms/types/rooms'
@@ -122,7 +121,7 @@ const $q = useQuasar()
 const router = useRouter()
 const { capabilities, readOnly } = useWorld()
 const live = useLive()
-const { busy, canValidate, validate, refreshStatus } = useContentLive()
+const { busy, canValidate, validate, reloadZone: reloadZoneLive, refreshStatus } = useContentLive()
 
 /** «Ricarica zona»: canale live connesso, scrittura consentita e comando `zone.reload` dichiarato dal gioco. */
 const canReload = computed(() => live.canWrite.value && (live.status.value?.commands ?? []).includes('zone.reload'))
@@ -194,12 +193,7 @@ function filterRooms(value: string, update: (fn: () => void) => void): void {
 
 /** Chiede al gioco acceso di rileggere dai file la zona del locandiere (errori: live non disponibile, sola lettura, ricarica fallita). */
 async function reloadZone(row: IInnItem): Promise<void> {
-  try {
-    const out = await reloadLiveZone(row.zoneId)
-    $q.notify({ type: 'positive', message: t('zones.detail.liveReloaded', { name: out.name, rooms: out.rooms, mobs: out.mobs, objects: out.objects }) })
-  } catch (e) {
-    $q.notify({ type: 'negative', message: await describeError(e) })
-  }
+  await reloadZoneLive(row.zoneId)
 }
 
 /** Propone il prossimo vnum libero della zona scelta. */

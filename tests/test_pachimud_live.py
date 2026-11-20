@@ -111,6 +111,22 @@ async def test_zone_reload_failed_is_explained(client: httpx.AsyncClient, fake: 
     assert "10" in r.json()["detail"][0]["msg"] and "rimasta" in r.json()["detail"][0]["msg"]
 
 
+async def test_zone_reload_failed_carries_file_and_line_from_validate(client: httpx.AsyncClient, fake: FakePachimudServer) -> None:
+    """Il gioco non dice quale file e' rotto: l'adapter lo ricava da `content.validate` e li mette in `issues` (solo errori)."""
+    fake.broken_zones.add(10)
+    fake.content_errors = [
+        {"severity": "warning", "code": "translation-missing", "message": "manca en", "file": "a.yaml", "line": 3},
+        {"severity": "error", "code": "yaml-syntax", "message": "YAML non valido", "file": "zones/Z/mobs.yaml", "line": 7},
+    ]
+    r = await client.post(f"{LIVE}/zones/reload", json={"vnum": 10}, headers=H)
+    assert error_code(r, 409) == "worldlive.reload_failed"
+    params = r.json()["detail"][0]["params"]
+    assert [(i["file"], i["line"]) for i in params["issues"]] == [("zones/Z/mobs.yaml", 7)]
+    fake.content_errors = []  # validate non trova nulla: resta l'errore semplice, senza problemi
+    r = await client.post(f"{LIVE}/zones/reload", json={"vnum": 10}, headers=H)
+    assert error_code(r, 409) == "worldlive.reload_failed" and "issues" not in r.json()["detail"][0]["params"]
+
+
 async def test_zone_reload_disabled_without_allow_write(client: httpx.AsyncClient, fake: FakePachimudServer) -> None:
     """Gioco con `allow_write: false`: il comando non c'e', 409 `worldlive.command_disabled`."""
     fake.write = False

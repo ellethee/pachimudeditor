@@ -99,9 +99,10 @@ import { mdiArrowLeft, mdiDoor, mdiMap, mdiRefresh, mdiSkull, mdiSword } from '@
 import { useZoneDialogs } from '../composables/use-zone-dialogs'
 import { getZone, updateZone } from '../services/zones-api'
 import { useLive, refreshLiveStatus } from '../../playerfiles/helpers/live-state'
-import { getLiveZoneInstances, reloadLiveZone } from '../../playerfiles/services/live-api'
+import { getLiveZoneInstances } from '../../playerfiles/services/live-api'
 import type { ILiveInstances } from '../../playerfiles/types/live'
 import { describeError } from '../utils/errors'
+import { useContentLive } from '../../content/composables/use-content-live'
 import SectionsForm from '../../shared/components/SectionsForm.vue'
 import { useWorld } from '../../shared/helpers/world-state'
 import { getWorldOverview } from '../../world/services/world-api'
@@ -117,6 +118,7 @@ const { prepareZoneForm, validateRanges } = useZoneDialogs()
 const $q = useQuasar()
 
 const live = useLive()
+const { reloadZone: reloadZoneLive } = useContentLive()
 /** «Ricarica nel gioco»: canale live connesso, scrittura consentita e comando `zone.reload` dichiarato dal gioco (estensione pachimud). */
 const canReload = computed(() => live.canWrite.value && (live.status.value?.commands ?? []).includes('zone.reload'))
 const reloading = ref(false)
@@ -164,11 +166,7 @@ async function reloadInGame(): Promise<void> {
   if (!zone.value) return
   reloading.value = true
   try {
-    const out = await reloadLiveZone(zone.value.id)
-    void loadInstances()
-    $q.notify({ type: 'positive', message: t('zones.detail.liveReloaded', { name: out.name, rooms: out.rooms, mobs: out.mobs, objects: out.objects }) })
-  } catch (error) {
-    $q.notify({ type: 'negative', message: await describeError(error) })
+    if (await reloadZoneLive(zone.value.id)) void loadInstances()
   } finally {
     reloading.value = false
   }

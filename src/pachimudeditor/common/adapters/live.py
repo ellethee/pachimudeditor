@@ -78,7 +78,9 @@ def http_error(error: LiveError) -> HTTPException:
         return api_error(
             status, code, reason=p.get("reason", ""), level=p.get("level", ""), class_name=p.get("class", ""), vnum=p.get("vnum", "")
         )
-    if error.code == "reload_failed" and "errors" in p:  # `content.reload`: i problemi (file e riga) viaggiano nei parametri dell'errore
+    if error.code == "reload_failed" and "errors" in p:  # i problemi (file e riga) viaggiano nei parametri dell'errore
+        if "zone" in p:  # `zone.reload`: l'adapter li ha ricavati da `content.validate` (il gioco manda solo `zone`)
+            return api_error(409, "worldlive.reload_failed", zone=p["zone"], issues=_issues(p["errors"]), proto=error.code)
         return api_error(409, "worldlive.content_reload_failed", kind=p.get("kind", ""), issues=_issues(p["errors"]), proto=error.code)
     status, code = _PLAIN.get(error.code, (502, "worldlive.protocol_error"))
     if error.code == "bad_params" and p.get("field") and p.get("max") not in (None, ""):

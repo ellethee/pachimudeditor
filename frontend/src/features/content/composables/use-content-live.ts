@@ -4,6 +4,7 @@ import { useQuasar } from 'quasar'
 import { useLive } from '../../playerfiles/helpers/live-state'
 import { describeError } from '../helpers/describe-error'
 import { reloadIssues } from '../helpers/content-issues'
+import { reloadLiveZone } from '../../playerfiles/services/live-api'
 import { reloadContent, validateContent } from '../services/content-files-api'
 import type { IContentIssue, ReloadKind } from '../types/content-files'
 
@@ -67,5 +68,27 @@ export function useContentLive() {
     }
   }
 
-  return { issues, checked, busy, errors, warnings, canValidate, canReload, validate, reload, refreshStatus: live.refresh }
+  /**
+   * Chiede al gioco di rileggere dai file una zona. Se non riesce, i problemi (file e riga) vanno nel pannello.
+   * @param vnum vnum della zona
+   * @returns `true` se il gioco ha ricaricato
+   */
+  async function reloadZone(vnum: number): Promise<boolean> {
+    try {
+      const out = await reloadLiveZone(vnum)
+      $q.notify({ type: 'positive', message: t('zones.detail.liveReloaded', { name: out.name, rooms: out.rooms, mobs: out.mobs, objects: out.objects }) })
+      return true
+    } catch (error) {
+      const found = await reloadIssues(error)
+      if (found.length > 0) {
+        issues.value = found
+        checked.value = true
+      }
+      const where = found.filter((i) => i.severity === 'error').slice(0, 3).map((i) => [i.file ? `${i.file.split('/').slice(-2).join('/')}${i.line ? `:${i.line}` : ''}` : '', i.message].filter(Boolean).join(' '))
+      $q.notify({ type: 'negative', message: [await describeError(error), ...where].join('\n'), multiLine: true, timeout: 12000 })
+      return false
+    }
+  }
+
+  return { issues, checked, busy, errors, warnings, canValidate, canReload, validate, reload, reloadZone, refreshStatus: live.refresh }
 }
