@@ -1,0 +1,28 @@
+/** Messaggi italiani della feature (lingua di riferimento). */
+export default {
+  inns: {
+    title: 'Locande',
+    sectionTitle: 'Locanda',
+    description: 'I locandieri del gioco (receptionist): dove compaiono e dove manca un reset',
+    search: 'Cerca (mob, zona, stanza)',
+    empty: 'Nessuna locanda.',
+    isInnkeeper: 'Il mob è un locandiere (receptionist)',
+    hint: 'Con il locandiere nella stanza i giocatori possono usare «offer» (quanto costa custodire l\'equipaggiamento) e «rent» (lasciare il gioco in pensione). I costi e i rifiuti sono fissi come in LeU e non si configurano. Il locandiere deve essere caricato in una stanza da un reset.',
+    columns: { vnum: 'Vnum', name: 'Nome', zone: 'Zona', rooms: 'Stanze', status: 'Stato' },
+    noSpawn: 'Nessun reset lo carica',
+    noSpawnHint: 'Nessun reset carica questo locandiere in una stanza: «offer» e «rent» non si possono usare.',
+    missingRoom: 'stanza inesistente',
+    ok: 'ok',
+    onlyProblems: 'Solo con problemi',
+    create: 'Nuovo locandiere',
+    createTitle: 'Nuovo locandiere da template',
+    createHint: 'Crea un mob receptionist (livello 23, SENTINEL). Poi va caricato in una stanza con un reset.',
+    zone: 'Zona',
+    vnum: 'Vnum',
+    name: 'Nome',
+    defaultName: 'il locandiere',
+    created: 'Locandiere creato: mob {vnum}',
+    cancel: 'Annulla',
+    confirm: 'Crea',
+  },
+}

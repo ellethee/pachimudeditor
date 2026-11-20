@@ -9,6 +9,7 @@ import { localizeEnums } from '../../shared/helpers/enum-labels'
 import { createExtraEditor } from '../../shared/helpers/extra-fields'
 import { guardOf, guardSection } from '../../shared/helpers/record-guard'
 import { useWorld } from '../../shared/helpers/world-state'
+import InnField from '../../inns/components/InnField.vue'
 import ShopField from '../../shops/components/ShopField.vue'
 import { normalizeShop, shopProblems } from '../../shops/helpers/shop-defaults'
 import { buildCombatRows, buildIdentityRows, buildRoleRows } from '../helpers/field-rows'
@@ -105,8 +106,10 @@ export function useMobForm() {
     const rowsOf = (rows: IFieldRow[]): IFieldRow[] => lockRows(applyDescriptors(rows, 'mob', fieldOf, t))
     // il mondo dichiara `extra.shop` (pachimud): il negozio ha una scheda propria, non il JSON grezzo fra gli altri campi
     const hasShop = extraFieldsOf('mob').some((desc) => desc.name === 'shop')
+    // `extra.receptionist` (pachimud): la locanda ha una sezione propria, ben visibile e con la spiegazione
+    const hasInn = extraFieldsOf('mob').some((desc) => desc.name === 'receptionist')
     const extraEditor = createExtraEditor({
-      exclude: hasShop ? ['shop'] : [],
+      exclude: [...(hasShop ? ['shop'] : []), ...(hasInn ? ['receptionist'] : [])],
       t,
       te,
       descriptors: extraFieldsOf('mob'),
@@ -175,6 +178,18 @@ export function useMobForm() {
         container: { type: 'expansion', title: t('shops.sectionTitle'), defaultOpened: shop !== null },
       })
     }
+    if (hasInn) {
+      const receptionist = !!record?.extra?.receptionist
+      sections.push({
+        key: 'inn',
+        title: t('inns.sectionTitle'),
+        component: markRaw(FieldsSection),
+        props: { rows: [[{ field: 'receptionist', label: t('inns.sectionTitle'), component: markRaw(InnField), readonly: locked }]] },
+        initialValue: { receptionist },
+        order: 36,
+        container: { type: 'expansion', title: t('inns.sectionTitle'), defaultOpened: receptionist },
+      })
+    }
     if (extraEditor) sections.push(extraEditor.section)
     const banner = guardSection(guard)
     if (banner) sections.unshift(banner)
@@ -212,6 +227,10 @@ export function useMobForm() {
         // `null` toglie il negozio; confrontato con quello salvato per non toccare il file se non è cambiato
         const next = (results.shop as { shop?: unknown } | undefined)?.shop ?? null
         if (JSON.stringify(next) !== JSON.stringify(record?.extra?.shop ?? null)) body.extra = { ...body.extra, shop: next }
+      }
+      if (hasInn) {
+        const next = !!(results.inn as { receptionist?: unknown } | undefined)?.receptionist
+        if (next !== !!record?.extra?.receptionist) body.extra = { ...body.extra, receptionist: next }
       }
       return body
     }

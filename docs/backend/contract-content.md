@@ -60,3 +60,11 @@ Un negozio non e' un file: e' il campo `shop:` del mob (`extra.shop` di `/api/mo
 - `GET /content/mail` -> `{available, total, recipients[{recipient, count}]}`: solo conteggi per destinatario, il testo delle lettere non si legge mai.
 - Nessuna rotta di scrittura su `/content`: il gioco tiene i messaggi in una copia in memoria e il numero e' la posizione nella lista, quindi cancellare dal DB la lascerebbe stantia. La moderazione passa dal canale live: `DELETE /api/world/live/boards/{boardId}/messages/{messageId}` e `DELETE /api/world/live/boards/{boardId}` (vedi `contract-live.md`).
 - `GET /content/shops/options` -> `{objectTypes[], messageKeys[]}` (tipi comprabili e messaggi sostituibili).
+
+## Locande
+
+Una locanda e' il flag `receptionist` del mob (`extra.receptionist` di `/api/mobs`; con il mob nella stanza funzionano `offer` e `rent`).
+
+- `GET /content/inns` -> `InnItem[]` per i mob con `receptionist`, in ordine di vnum: `{vnum, name, zoneId, zoneName, rooms[{vnum, name|null}]}`. `rooms` e' l'elenco delle stanze in cui un reset
+  (di qualunque zona) carica il mob: vuoto = nessun reset lo carica; `name: null` = la stanza non esiste.
+

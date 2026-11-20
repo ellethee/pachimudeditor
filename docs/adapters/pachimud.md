@@ -230,6 +230,12 @@ comprati, margini (con la percentuale pagata), stanza, orari (`28` = sempre aper
 negozianti con ricerca, «Controlla i file» (`content.validate`, codici `shop-*` nel pannello dei problemi) e «Ricarica la zona nel gioco» (`zone.reload`) per applicare le modifiche al gioco
 acceso. Un mob con il vecchio `shop_id` e senza `shop` e' segnalato (il gioco lo ignora); si risolve attivando «Il mob e' un negoziante». Contratto: `backend/contract-content.md`.
 
+## Locande
+
+Una locanda e' un mob con `receptionist: true`: con lui nella stanza i giocatori usano `offer` e `rent` (costi e rifiuti fissi come in LeU, non configurabili da YAML). Nel dettaglio mob la sezione **Locanda**
+mostra il flag con la spiegazione. La pagina **Locande** (`/inns`) elenca tutti i locandieri con ricerca, segnala quelli che nessun reset carica in una stanza (o che puntano a una stanza inesistente),
+ha «Controlla i file» (`content.validate`) e «Nuovo locandiere» (mob receptionist da template nella zona scelta, da caricare poi in una stanza con un reset). Contratto: `backend/contract-content.md`.
+
 ## Bacheche e posta
 
 La pagina **Bacheche** (`/boards`, capability `supports_boards`, sola lettura) elenca gli oggetti BOARD dei YAML (`board_id`, o il vnum se manca, come fa il gioco) e i `board_id` che hanno

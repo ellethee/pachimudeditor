@@ -1,0 +1,28 @@
+/** English messages of the feature. */
+export default {
+  inns: {
+    title: 'Inns',
+    sectionTitle: 'Inn',
+    description: 'The game\'s innkeepers (receptionists): where they appear and where a reset is missing',
+    search: 'Search (mob, zone, room)',
+    empty: 'No inns.',
+    isInnkeeper: 'The mob is an innkeeper (receptionist)',
+    hint: 'With the innkeeper in the room players can use "offer" (what keeping their equipment costs) and "rent" (leave the game in storage). Costs and refusals are fixed as in LeU and cannot be configured. The innkeeper must be loaded into a room by a reset.',
+    columns: { vnum: 'Vnum', name: 'Name', zone: 'Zone', rooms: 'Rooms', status: 'Status' },
+    noSpawn: 'No reset loads it',
+    noSpawnHint: 'No reset loads this innkeeper into a room: "offer" and "rent" cannot be used.',
+    missingRoom: 'missing room',
+    ok: 'ok',
+    onlyProblems: 'Only with problems',
+    create: 'New innkeeper',
+    createTitle: 'New innkeeper from template',
+    createHint: 'Creates a receptionist mob (level 23, SENTINEL). Then load it into a room with a reset.',
+    zone: 'Zone',
+    vnum: 'Vnum',
+    name: 'Name',
+    defaultName: 'the innkeeper',
+    created: 'Innkeeper created: mob {vnum}',
+    cancel: 'Cancel',
+    confirm: 'Create',
+  },
+}
