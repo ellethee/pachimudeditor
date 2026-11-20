@@ -46,3 +46,13 @@ Con `read_only` ogni scrittura risponde 409 `world.read_only`.
 - `GET|PUT|DELETE /content/files/{area}/{path}`: `{path, layer, text}`; `PUT` body `{text}` crea o sostituisce nello strato dell'utente (un `.yaml` deve leggersi ed essere una mappa o una lista).
   Percorso: lettere, cifre, `_ - . /`, estensione dell'area, niente `..`: altrimenti 422 `content.invalid_path`; 422 `content.too_large` (`max` in KB); 422 `content.invalid` se il testo non e' UTF-8 valido.
 
+
+## Negozi
+
+Un negozio non e' un file: e' il campo `shop:` del mob (`extra.shop` di `/api/mobs`, chiavi del file: `produces[]`, `trades[]`, `profit_buy`, `profit_sell`, `room`, `open1`, `close1`,
+`open2`, `close2`, `no_money_reaction`, `attacked_reaction`, `messages{chiave:{lingua:testo}}`, `handler`). Si modifica con `PUT /mobs/{id}` `{extra: {shop: {...}}}` (validato come `ShopProto`: 422
+`pachimud.invalid_entry`; `null` toglie il negozio). Il vecchio `shopId` (`shop_id`) il gioco lo ignora.
+
+- `GET /content/shops` -> `ShopItem[]` per i mob con `shop` o con `shop_id`, in ordine di vnum: `{vnum, name, zoneId, zoneName, hasShop, legacyShopId, produces[{vnum, name|null}], trades[], profitBuy,
+  profitSell, room, roomName, open1, close1, open2, close2, handler}`. `name: null` = l'oggetto non esiste (il controllo del gioco lo segnala: `shop-object-missing`).
+- `GET /content/shops/options` -> `{objectTypes[], messageKeys[]}` (tipi comprabili e messaggi sostituibili).

@@ -222,3 +222,10 @@ un form per i campi semplici e un campo YAML per `levels`, `effects`, `handler`,
 Dopo ogni salvataggio, con il canale live connesso, l'editor chiede al gioco `content.validate` e mostra i problemi (gravita', codice, messaggio, file e riga);
 «Controlla i file» lo rifa' a richiesta e «Ricarica nel gioco» chiama `content.reload`.
 
+
+## Negozi
+
+Nel frontend la scheda **Negozio** del dettaglio mob (sezione dopo «Ruoli e servizi») modifica il campo `shop:` del mob: merci sempre in vendita (cercate per nome fra gli oggetti), tipi
+comprati, margini (con la percentuale pagata), stanza, orari (`28` = sempre aperto), reazioni, messaggi per lingua (it/en) e hook Python. La pagina **Negozi** (`/shops`) elenca tutti i
+negozianti con ricerca, «Controlla i file» (`content.validate`, codici `shop-*` nel pannello dei problemi) e «Ricarica la zona nel gioco» (`zone.reload`) per applicare le modifiche al gioco
+acceso. Un mob con il vecchio `shop_id` e senza `shop` e' segnalato (il gioco lo ignora); si risolve attivando «Il mob e' un negoziante». Contratto: `backend/contract-content.md`.

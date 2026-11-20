@@ -9,6 +9,8 @@ import { localizeEnums } from '../../shared/helpers/enum-labels'
 import { createExtraEditor } from '../../shared/helpers/extra-fields'
 import { guardOf, guardSection } from '../../shared/helpers/record-guard'
 import { useWorld } from '../../shared/helpers/world-state'
+import ShopField from '../../shops/components/ShopField.vue'
+import { normalizeShop, shopProblems } from '../../shops/helpers/shop-defaults'
 import { buildCombatRows, buildIdentityRows, buildRoleRows } from '../helpers/field-rows'
 import { getEnums, listClasses, listRaces, nextMobVnum } from '../services/mobs-api'
 import type { IContentRef, IMobEnums, IMobs, IMobsInput } from '../types/mobs'
@@ -101,7 +103,10 @@ export function useMobForm() {
     const lockRows = (rows: IFieldRow[]): IFieldRow[] =>
       guard.corrupted ? rows.map((row) => row.map((def) => ({ ...def, disable: true, readonly: true }))) : rows
     const rowsOf = (rows: IFieldRow[]): IFieldRow[] => lockRows(applyDescriptors(rows, 'mob', fieldOf, t))
+    // il mondo dichiara `extra.shop` (pachimud): il negozio ha una scheda propria, non il JSON grezzo fra gli altri campi
+    const hasShop = extraFieldsOf('mob').some((desc) => desc.name === 'shop')
     const extraEditor = createExtraEditor({
+      exclude: hasShop ? ['shop'] : [],
       t,
       te,
       descriptors: extraFieldsOf('mob'),
@@ -144,6 +149,32 @@ export function useMobForm() {
         container: { type: 'expansion', title: t('mobs.sections.roles'), defaultOpened: false },
       },
     ]
+    if (hasShop) {
+      const shop = record?.extra?.shop ?? null
+      sections.push({
+        key: 'shop',
+        title: t('shops.sectionTitle'),
+        component: markRaw(FieldsSection),
+        props: {
+          rows: [
+            [
+              {
+                field: 'shop',
+                label: t('shops.sectionTitle'),
+                component: markRaw(ShopField),
+                readonly: locked,
+                legacyShopId: record?.shopId ?? null,
+                // non si salva un negozio non valido (la scheda mostra il perché)
+                rules: [(value: unknown) => ((normalizeShop(value) && shopProblems(normalizeShop(value)!).length > 0) ? t('shops.errors.invalid') : true)],
+              },
+            ],
+          ],
+        },
+        initialValue: { shop },
+        order: 35,
+        container: { type: 'expansion', title: t('shops.sectionTitle'), defaultOpened: shop !== null },
+      })
+    }
     if (extraEditor) sections.push(extraEditor.section)
     const banner = guardSection(guard)
     if (banner) sections.unshift(banner)
@@ -177,6 +208,11 @@ export function useMobForm() {
       // `extra` (campi specifici del mondo) solo con le chiavi cambiate
       const extra = extraEditor?.collect(results.extra)
       if (extra) body.extra = extra
+      if (hasShop) {
+        // `null` toglie il negozio; confrontato con quello salvato per non toccare il file se non è cambiato
+        const next = (results.shop as { shop?: unknown } | undefined)?.shop ?? null
+        if (JSON.stringify(next) !== JSON.stringify(record?.extra?.shop ?? null)) body.extra = { ...body.extra, shop: next }
+      }
       return body
     }
 

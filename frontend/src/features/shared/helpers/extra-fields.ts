@@ -41,6 +41,8 @@ export interface IExtraEditorOptions extends IExtraI18n {
   enums: EnumMap | undefined
   /** Posizione della sezione nel dialog. */
   order: number
+  /** Chiavi di `extra` che il chiamante edita altrove (con una propria sezione): non diventano campi di questo editor. */
+  exclude?: readonly string[]
 }
 
 /** Editor di `extra` pronto per un dialog. */
@@ -136,7 +138,9 @@ function fieldFor(key: string, desc: ExtraDesc, label: string, enums: EnumMap | 
 export function createExtraEditor(options: IExtraEditorOptions): IExtraEditor | null {
   const extra = options.extra ?? {}
   const known = new Map(options.descriptors.map((desc) => [desc.name, desc]))
-  const keys = [...new Set([...known.keys(), ...Object.keys(extra)])].filter((key) => known.get(key)?.group !== 'diagnostic')
+  const keys = [...new Set([...known.keys(), ...Object.keys(extra)])].filter(
+    (key) => known.get(key)?.group !== 'diagnostic' && !options.exclude?.includes(key),
+  )
   if (!options.declared && keys.length === 0) return null
   const descriptors = new Map<string, ExtraDesc>(keys.map((key) => [key, known.get(key) ?? infer(extra[key])]))
   const rows: IFieldRow[] = keys.map((key) => {
