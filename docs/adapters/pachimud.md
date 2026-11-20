@@ -234,7 +234,8 @@ acceso. Un mob con il vecchio `shop_id` e senza `shop` e' segnalato (il gioco lo
 
 Una locanda e' un mob con `receptionist: true`: con lui nella stanza i giocatori usano `offer` e `rent` (costi e rifiuti fissi come in LeU, non configurabili da YAML). Nel dettaglio mob la sezione **Locanda**
 mostra il flag con la spiegazione. La pagina **Locande** (`/inns`) elenca tutti i locandieri con ricerca, segnala quelli che nessun reset carica in una stanza (o che puntano a una stanza inesistente),
-ha «Controlla i file» (`content.validate`) e «Nuovo locandiere» (mob receptionist da template nella zona scelta, da caricare poi in una stanza con un reset). Contratto: `backend/contract-content.md`.
+ha «Controlla i file» (`content.validate`), «Ricarica la zona nel gioco» (`zone.reload`, solo con il canale live connesso, la scrittura consentita e il comando dichiarato) e «Nuovo locandiere» (mob receptionist da
+template nella zona scelta; con la stanza facoltativa aggiunge anche il reset `M` che lo carica, nello script della zona della stanza: se e' diversa da quella del mob lo si segnala). Contratto: `backend/contract-content.md`.
 
 ## Bacheche e posta
 

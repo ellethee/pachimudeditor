@@ -1,5 +1,7 @@
 import { getUseAlovaInstance } from '@ilpachi/use-alova'
-import type { IInnItem } from '../types/inns'
+import { getResetCommands, replaceResetCommands } from '../../zones/services/zones-api'
+import { CommandType } from '../../zones/utils/reset-commands'
+import type { IInnItem, IInnkeeperCreated } from '../types/inns'
 
 /** Client HTTP dell'app, risolto a ogni chiamata. */
 function http(base: string) {
@@ -11,8 +13,17 @@ export async function listInns(): Promise<IInnItem[]> {
   return http('/api/content').Get<IInnItem[]>('/inns', { meta: { autoError: false }, cacheFor: 0 })
 }
 
-/** Crea un locandiere da template nella zona (`POST /api/mobs`, `extra.receptionist`); restituisce il vnum. */
-export async function createInnkeeper(zoneId: number, vnum: number, name: string): Promise<number> {
+/**
+ * Crea un locandiere da template nella zona (`POST /api/mobs`, `extra.receptionist`). Con `room` aggiunge in coda allo script di reset
+ * della zona della stanza un `M` che lo carica (se il mob e la stanza sono di zone diverse vale la zona della stanza).
+ * Se il reset fallisce il mob resta creato e `spawnError` dice perché.
+ */
+export async function createInnkeeper(
+  zoneId: number,
+  vnum: number,
+  name: string,
+  room: { vnum: number; zoneId: number } | null,
+): Promise<IInnkeeperCreated> {
   const created = await http('/api/mobs').Post<{ vnum: number }>(
     '',
     {
@@ -38,5 +49,16 @@ export async function createInnkeeper(zoneId: number, vnum: number, name: string
     },
     { meta: { autoError: false } },
   )
-  return created.vnum
+  if (!room) return { vnum: created.vnum, spawnedInZoneId: null, spawnError: null }
+  try {
+    const script = await getResetCommands(room.zoneId)
+    const keep = script.map(({ id: _id, zoneId: _zone, orderIndex: _order, extra: _extra, ...step }) => step)
+    await replaceResetCommands(room.zoneId, [
+      ...keep,
+      { commandType: CommandType.LOAD_MOB, ifFlag: false, arg1: created.vnum, arg2: 1, arg3: room.vnum, arg4: 1, argStr: null },
+    ])
+    return { vnum: created.vnum, spawnedInZoneId: room.zoneId, spawnError: null }
+  } catch (e) {
+    return { vnum: created.vnum, spawnedInZoneId: null, spawnError: e instanceof Error ? e.message : String(e) }
+  }
 }

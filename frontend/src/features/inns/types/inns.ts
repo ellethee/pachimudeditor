@@ -16,3 +16,12 @@ export interface IInnItem {
   /** Vuoto: nessun reset lo carica, `offer` e `rent` non funzionano. */
   rooms: IInnRoom[]
 }
+
+/** Esito della creazione di un locandiere. */
+export interface IInnkeeperCreated {
+  vnum: number
+  /** Zona dove è stato aggiunto il reset di spawn; `null` se non richiesto o fallito. */
+  spawnedInZoneId: number | null
+  /** Motivo per cui il reset non è stato aggiunto (il mob resta creato). */
+  spawnError: string | null
+}

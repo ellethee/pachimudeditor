@@ -59,4 +59,21 @@ describe('canale live (pachimud)', () => {
     assert.equal(await s.page.getByTestId('zone-live-reload').count(), 0)
     assert.equal(await s.page.getByTestId('zone-live-instances').count(), 0)
   })
+  it('UI: «Ricarica la zona nel gioco» in /inns, solo con il canale', async () => {
+    const live = (await Api.connect()).inWorld('pachimud-live')
+    const mob = (await live.byVnum('mobs', 1000))!
+    await live.call('PUT', `/api/mobs/${mob.id}`, { extra: { receptionist: true } })
+    try {
+      await pickWorld(s, 'Pachimud (live)')
+      await goto(s.page, '/inns')
+      await s.page.getByTestId('inn-reload-zone').first().click()
+      await s.page.locator('.q-notification', { hasText: 'Zona Zona Alfa ricaricata nel gioco' }).waitFor()
+      await pickWorld(s, 'Pachimud')
+      await goto(s.page, '/inns')
+      await s.page.getByTestId('inns-table').waitFor()
+      assert.equal(await s.page.getByTestId('inn-reload-zone').count(), 0)
+    } finally {
+      await live.call('PUT', `/api/mobs/${mob.id}`, { extra: { receptionist: false } })
+    }
+  })
 })

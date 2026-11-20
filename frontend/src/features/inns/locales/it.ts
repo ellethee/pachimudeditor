@@ -23,6 +23,11 @@ export default {
     defaultName: 'il locandiere',
     created: 'Locandiere creato: mob {vnum}',
     cancel: 'Annulla',
+    room: 'Stanza dove compare (facoltativa)',
+    roomHint: 'Se indicata aggiunge il reset che carica il locandiere in quella stanza',
+    reloadZone: 'Ricarica la zona nel gioco',
+    spawnOtherZone: 'La stanza è di un\'altra zona: il reset è stato aggiunto nella zona della stanza.',
+    spawnFailed: 'Il mob è stato creato ma il reset non è stato aggiunto: {error}',
     confirm: 'Crea',
   },
 }

@@ -23,6 +23,11 @@ export default {
     defaultName: 'the innkeeper',
     created: 'Innkeeper created: mob {vnum}',
     cancel: 'Cancel',
+    room: 'Room where it appears (optional)',
+    roomHint: 'If set, adds the reset that loads the innkeeper into that room',
+    reloadZone: 'Reload the zone in the game',
+    spawnOtherZone: 'The room belongs to another zone: the reset was added to the room\'s zone.',
+    spawnFailed: 'The mob was created but the reset was not added: {error}',
     confirm: 'Create',
   },
 }

@@ -65,6 +65,33 @@ describe('locande', () => {
     assert.equal(await rawI18nKey(s.page), null)
   })
 
+  it('un locandiere con stanza ha subito il reset di spawn: non compare «senza reset»', async () => {
+    await goto(s.page, '/inns')
+    await s.page.getByTestId('inn-create').click()
+    await s.page.getByTestId('inn-create-room').click()
+    await s.page.keyboard.type('Cantina')
+    await s.page.locator('.q-menu .q-item', { hasText: '1002' }).first().click()
+    await s.page.getByText('Nuovo locandiere da template').click()
+    await s.page.getByTestId('inn-create-confirm').click()
+    await s.page.waitForURL(/\/mobs\/\d+$/)
+    const vnum = Number(s.page.url().split('/').pop())
+    const zone = await api.byVnum('zones', 10)
+    const script = (await api.call('GET', `/api/zones/${zone.id}/reset-commands`)).data
+    assert.ok(script.some((c: { commandType: number; arg1: number; arg3: number }) => c.commandType === 0 && c.arg1 === vnum && c.arg3 === 1002))
+    await goto(s.page, '/inns')
+    const row = s.page.getByTestId('inn-row').filter({ hasText: String(vnum) })
+    await row.waitFor()
+    assert.equal(await row.getByTestId('inn-nospawn-badge').count(), 0)
+    // ripristino: tolgo il reset e il mob
+    await api.call('PUT', `/api/zones/${zone.id}/reset-commands`, {
+      commands: script.filter((c: { commandType: number; arg1: number }) => !(c.commandType === 0 && c.arg1 === vnum)).map(
+        ({ id: _i, zoneId: _z, orderIndex: _o, extra: _e, ...step }: Record<string, unknown>) => step,
+      ),
+    })
+    const made = await api.byVnum('mobs', vnum)
+    if (made) await api.call('DELETE', `/api/mobs/${made.id}`)
+  })
+
   it('nessun errore di console imprevisto', () => {
     assert.deepEqual(s.errors, [])
   })

@@ -42,6 +42,20 @@
             <q-badge v-else-if="hasMissingRoom(p.row)" color="negative" data-testid="inn-missing-room-badge">{{ t('inns.missingRoom') }}</q-badge>
             <span v-else class="text-positive">{{ t('inns.ok') }}</span>
           </q-td>
+          <q-td key="actions" :props="p" auto-width>
+            <q-btn
+              v-if="canReload"
+              flat
+              round
+              dense
+              :icon="mdiReload"
+              :aria-label="t('inns.reloadZone')"
+              data-testid="inn-reload-zone"
+              @click.stop="reloadZone(p.row)"
+            >
+              <q-tooltip>{{ t('inns.reloadZone') }}</q-tooltip>
+            </q-btn>
+          </q-td>
         </q-tr>
       </template>
     </q-table>
@@ -54,6 +68,20 @@
           <q-select v-model="zoneId" outlined dense emit-value map-options :options="zoneOptions" :label="t('inns.zone')" data-testid="inn-create-zone" @update:model-value="loadVnum" />
           <q-input v-model.number="newVnum" outlined dense type="number" :label="t('inns.vnum')" data-testid="inn-create-vnum" />
           <q-input v-model="newName" outlined dense :label="t('inns.name')" data-testid="inn-create-name" />
+          <q-select
+            v-model="room"
+            outlined
+            dense
+            clearable
+            use-input
+            input-debounce="200"
+            :options="roomOptions"
+            :option-label="(r: IRoom) => `#${r.vnum} — ${r.name}`"
+            :label="t('inns.room')"
+            :hint="t('inns.roomHint')"
+            data-testid="inn-create-room"
+            @filter="filterRooms"
+          />
           <q-banner v-if="createError" dense rounded class="bg-negative text-white" data-testid="inn-create-error">{{ createError }}</q-banner>
         </q-card-section>
         <q-card-actions align="right">
@@ -75,11 +103,15 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
-import { mdiClipboardCheckOutline, mdiMagnify, mdiPlus, mdiRefresh } from '@quasar/extras/mdi-v7'
+import { mdiClipboardCheckOutline, mdiMagnify, mdiPlus, mdiRefresh, mdiReload } from '@quasar/extras/mdi-v7'
 import ContentProblemsPanel from '../../content/components/ContentProblemsPanel.vue'
 import { useContentLive } from '../../content/composables/use-content-live'
 import { describeError } from '../../content/helpers/describe-error'
 import { listZones, nextMobVnum } from '../../mobs/services/mobs-api'
+import { reloadLiveZone } from '../../playerfiles/services/live-api'
+import { useLive } from '../../playerfiles/helpers/live-state'
+import { searchRooms } from '../../rooms/services/rooms-api'
+import type { IRoom } from '../../rooms/types/rooms'
 import type { IZoneRef } from '../../mobs/types/mobs'
 import { useWorld } from '../../shared/helpers/world-state'
 import { createInnkeeper, listInns } from '../services/inns-api'
@@ -89,7 +121,11 @@ const { t } = useI18n()
 const $q = useQuasar()
 const router = useRouter()
 const { capabilities, readOnly } = useWorld()
+const live = useLive()
 const { busy, canValidate, validate, refreshStatus } = useContentLive()
+
+/** «Ricarica zona»: canale live connesso, scrittura consentita e comando `zone.reload` dichiarato dal gioco. */
+const canReload = computed(() => live.canWrite.value && (live.status.value?.commands ?? []).includes('zone.reload'))
 
 const inns = ref<IInnItem[]>([])
 const loading = ref(false)
@@ -104,6 +140,8 @@ const newVnum = ref(0)
 const newName = ref('')
 const createError = ref('')
 const saving = ref(false)
+const room = ref<IRoom | null>(null)
+const roomOptions = ref<IRoom[]>([])
 
 const zoneOptions = computed(() => zones.value.map((z) => ({ value: z.id, label: `${z.name} (#${z.vnum})` })))
 
@@ -123,7 +161,12 @@ const rows = computed(() => {
 })
 
 const columns = computed(() =>
-  (['vnum', 'name', 'zone', 'rooms', 'status'] as const).map((name) => ({ name, label: t(`inns.columns.${name}`), field: name, align: 'left' as const })),
+  (['vnum', 'name', 'zone', 'rooms', 'status', 'actions'] as const).map((name) => ({
+    name,
+    label: name === 'actions' ? '' : t(`inns.columns.${name}`),
+    field: name,
+    align: 'left' as const,
+  })),
 )
 
 /** Apre il mob (nel gioco `id == vnum`). */
@@ -144,6 +187,21 @@ async function load(): Promise<void> {
   }
 }
 
+/** Cerca le stanze mentre si digita (per nome o vnum). */
+function filterRooms(value: string, update: (fn: () => void) => void): void {
+  void searchRooms(value).then((found) => update(() => (roomOptions.value = found)))
+}
+
+/** Chiede al gioco acceso di rileggere dai file la zona del locandiere (errori: live non disponibile, sola lettura, ricarica fallita). */
+async function reloadZone(row: IInnItem): Promise<void> {
+  try {
+    const out = await reloadLiveZone(row.zoneId)
+    $q.notify({ type: 'positive', message: t('zones.detail.liveReloaded', { name: out.name, rooms: out.rooms, mobs: out.mobs, objects: out.objects }) })
+  } catch (e) {
+    $q.notify({ type: 'negative', message: await describeError(e) })
+  }
+}
+
 /** Propone il prossimo vnum libero della zona scelta. */
 async function loadVnum(): Promise<void> {
   if (zoneId.value === null) return
@@ -157,6 +215,7 @@ async function loadVnum(): Promise<void> {
 /** Apre il dialogo di creazione. */
 async function openCreate(): Promise<void> {
   createError.value = ''
+  room.value = null
   newName.value = t('inns.defaultName')
   creating.value = true
   if (!zones.value.length) zones.value = await listZones()
@@ -170,9 +229,16 @@ async function create(): Promise<void> {
   saving.value = true
   createError.value = ''
   try {
-    const vnum = await createInnkeeper(zoneId.value, newVnum.value, newName.value.trim())
+    const { vnum, spawnedInZoneId, spawnError } = await createInnkeeper(
+      zoneId.value,
+      newVnum.value,
+      newName.value.trim(),
+      room.value ? { vnum: room.value.vnum, zoneId: room.value.zoneId } : null,
+    )
     creating.value = false
     $q.notify({ type: 'positive', message: t('inns.created', { vnum }) })
+    if (spawnedInZoneId !== null && spawnedInZoneId !== zoneId.value) $q.notify({ type: 'info', message: t('inns.spawnOtherZone') })
+    if (spawnError) $q.notify({ type: 'warning', message: t('inns.spawnFailed', { error: spawnError }) })
     await load()
     void router.push(`/mobs/${vnum}`)
   } catch (e) {
