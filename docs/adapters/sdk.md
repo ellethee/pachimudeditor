@@ -310,6 +310,7 @@ Modello completo: `adapters/dikumod/src/pachimudeditor_adapter_dikumod/players.p
 | `supports_live_inventory` | inventario e oggetti istanza dei giocatori connessi (`/api/world/live/players/{name}/inventory...`; richiede `supports_live` e la feature `inventory` del MUD) | idem; `PATCH`/`DELETE` con `read_only` 409 `world.read_only`, senza `expect` 422 |
 | `supports_transfer` | `export_zone_bundle` / `import_zone_dir` (`/api/transfer`) | idem |
 | `supports_content_races` | razze/classi YAML (`/api/content`) | idem |
+| `supports_boards` | bacheche e posta in sola lettura (`/api/content/boards`, `/api/content/mail`) | idem; la moderazione non c'e' (serve il canale live) |
 | `supports_reset_scripts` | script di reset modificabile (default vero) | informativa per il frontend |
 | `supports_extra_descriptions` | extra description sulle stanze (default vero) | informativa per il frontend |
 

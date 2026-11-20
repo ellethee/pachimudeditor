@@ -1,4 +1,4 @@
-"""Semina nel DB di gioco temporaneo un account con un personaggio (i personaggi non si creano dall'editor).
+"""Semina nel DB di gioco temporaneo un account con un personaggio (i personaggi non si creano dall'editor), due messaggi di bacheca e tre lettere.
 
 Uso: python <questo file> <cartella temporanea>   (cwd = radice del repo, come `tests.support.stack`)
 """
@@ -11,6 +11,7 @@ from pachimudeditor_adapter_pachimud.game_models.account import Account
 from pachimudeditor_adapter_pachimud.security import hash_password
 from pachimudeditor_adapter_pachimud.game_models.enums import Sex
 from pachimudeditor_adapter_pachimud.game_models.character import PlayerCharacter
+from pachimudeditor_adapter_pachimud.game_models.messages import BoardMessage, MailMessage
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -27,6 +28,13 @@ def main(workdir: Path) -> None:
             gold=10, sex=Sex.NEUTRAL, class_id="warrior", race_id="human", strength=12, dexterity=12,
             constitution=12, intelligence=12, wisdom=12, charisma=12, mana_current=10, mana_max=10,
         ))
+        s.add_all([
+            BoardMessage(board_id="piazza", author="Aldo", title="Vendo spada", text="Una spada quasi nuova"),
+            BoardMessage(board_id="piazza", author="Bea", title="Cerco gruppo", text="Per il drago"),
+            MailMessage(recipient="aldo", sender="Bea", text="SEGRETO"),
+            MailMessage(recipient="aldo", sender="Carlo", text="SEGRETO"),
+            MailMessage(recipient="bea", sender="Aldo", text="SEGRETO"),
+        ])
         s.commit()
     engine.dispose()
 

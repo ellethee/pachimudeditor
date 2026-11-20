@@ -131,6 +131,7 @@ class PachimudAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, LiveMi
             supports_players=report is not None and report.usable and not {"account", "player_character"} & set(report.missing_tables),
             supports_transfer=True,
             supports_content_races=True,
+            supports_boards=report is not None and report.usable,
             supports_reset_scripts=True,
             supports_extra_descriptions=True,
             supports_live=self.live_settings is not None,

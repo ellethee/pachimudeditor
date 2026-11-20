@@ -16,6 +16,8 @@ export interface IWorldCapabilities {
   supportsLiveInventory: boolean
   supportsTransfer: boolean
   supportsContentRaces: boolean
+  /** Bacheche e posta (rotte `/api/content/boards` e `/api/content/mail`, sola lettura). */
+  supportsBoards: boolean
   supportsResetScripts: boolean
   supportsExtraDescriptions: boolean
 }

@@ -102,6 +102,8 @@ class AdapterCapabilities(AliasedBaseModel):
     """`export_zone_bundle`/`import_zone_dir` (cartella YAML di zona)."""
     supports_content_races: bool = False
     """`/api/content`: razze, classi, skill, tabelle, social e cataloghi dei messaggi come YAML (strati di contenuti)."""
+    supports_boards: bool = False
+    """`/api/content/boards` e `/api/content/mail`: bacheche (oggetti BOARD e messaggi nel DB) e conteggio della posta, in sola lettura."""
     supports_reset_scripts: bool = True
     """Zone con script di reset modificabile."""
     supports_extra_descriptions: bool = True

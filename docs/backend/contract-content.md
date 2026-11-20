@@ -55,4 +55,8 @@ Un negozio non e' un file: e' il campo `shop:` del mob (`extra.shop` di `/api/mo
 
 - `GET /content/shops` -> `ShopItem[]` per i mob con `shop` o con `shop_id`, in ordine di vnum: `{vnum, name, zoneId, zoneName, hasShop, legacyShopId, produces[{vnum, name|null}], trades[], profitBuy,
   profitSell, room, roomName, open1, close1, open2, close2, handler}`. `name: null` = l'oggetto non esiste (il controllo del gioco lo segnala: `shop-object-missing`).
+- `GET /content/boards` (capability `supports_boards`) -> `{boardTable, mailTable, boards[{boardId, count, objects[{vnum, name, zoneId, zoneName}], maxMessages|null, orphan}]}`: gli oggetti BOARD dei YAML (`board_id`, o il vnum come fa il gioco) piu' i `board_id` con messaggi nel DB (`orphan` = nessun oggetto); `boardTable`/`mailTable` falsi se la tabella opzionale manca (nessun errore).
+- `GET /content/boards/{boardId}/messages?search=` -> `[{id, number, author, title, text, createdAt}]` dal piu' vecchio; `number` e' la posizione con cui li legge il gioco e non cambia con la ricerca (autore, titolo, testo). Bacheca senza messaggi: `[]`.
+- `GET /content/mail` -> `{available, total, recipients[{recipient, count}]}`: solo conteggi per destinatario, il testo delle lettere non si legge mai.
+- Nessuna rotta di scrittura: il gioco tiene i messaggi in una copia in memoria e il numero e' la posizione nella lista, quindi cancellare dal DB la lascerebbe stantia (la moderazione passera' da `board.delete`/`board.clear` del canale live).
 - `GET /content/shops/options` -> `{objectTypes[], messageKeys[]}` (tipi comprabili e messaggi sostituibili).

@@ -229,3 +229,11 @@ Nel frontend la scheda **Negozio** del dettaglio mob (sezione dopo «Ruoli e ser
 comprati, margini (con la percentuale pagata), stanza, orari (`28` = sempre aperto), reazioni, messaggi per lingua (it/en) e hook Python. La pagina **Negozi** (`/shops`) elenca tutti i
 negozianti con ricerca, «Controlla i file» (`content.validate`, codici `shop-*` nel pannello dei problemi) e «Ricarica la zona nel gioco» (`zone.reload`) per applicare le modifiche al gioco
 acceso. Un mob con il vecchio `shop_id` e senza `shop` e' segnalato (il gioco lo ignora); si risolve attivando «Il mob e' un negoziante». Contratto: `backend/contract-content.md`.
+
+## Bacheche e posta
+
+La pagina **Bacheche** (`/boards`, capability `supports_boards`, sola lettura) elenca gli oggetti BOARD dei YAML (`board_id`, o il vnum se manca, come fa il gioco) e i `board_id` che hanno
+messaggi nel DB (`board_message`) anche senza oggetto (badge «senza oggetto»), con il conteggio. Un clic apre i messaggi (autore, data, titolo, testo) con ricerca; il numero mostrato e' quello con cui
+li legge il gioco. La scheda **Posta** mostra solo quante lettere aspettano ogni giocatore (`mail_message`): il testo non viene mai letto. Se una tabella manca (schema del gioco non aggiornato) la pagina
+lo dice e propone `pachimud db upgrade`. Cancellare messaggi o svuotare una bacheca dall'editor non e' possibile scrivendo sul DB: il gioco tiene i messaggi in memoria
+(`BoardStore`, caricata una volta sola) e il loro numero e' la posizione nella lista, quindi serve il canale live (`board.delete`, `board.clear`). Contratto: `backend/contract-content.md`.
