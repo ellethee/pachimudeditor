@@ -26,14 +26,14 @@ pnpm run typecheck
 
 `run.ts` (setup/teardown globali, `support/stack.ts`):
 
-1. crea una cartella temporanea in `e2e/.tmp/run-*` con una copia delle definizioni di esempio (`tests/fixtures/pachimud_definitions/`), DB di gioco
-   SQLite seminato (zone 10 e 20, 3 stanze, 2 mob, 2 oggetti, 2 reset) e DB di autenticazione con
+1. crea una cartella temporanea in `e2e/.tmp/run-*` con una copia delle definizioni di esempio (`tests/fixtures/pachimud_definitions/`), mondo seminato come file YAML (`definitions/zones/`: zone 10 e 20, 3 stanze, 2 mob, 2 oggetti, 2 reset) e DB di gioco
+   SQLite con le sole tabelle dei giocatori e DB di autenticazione con
    l'utente di test (tramite `tests/support/stack.py`);
 2. avvia `uvicorn pachimudeditor.app:create_editor_app --factory` del backend sulla porta **8124**: serve anche il frontend buildato
    (`src/pachimudeditor/static`), quindi e' un unico processo;
 3. a fine test lo ferma con il suo **PID esatto** (SIGTERM, poi SIGKILL) e cancella la cartella.
 
-Il mondo `pachimud` ha parametri espliciti (`database_url` e `definitions_path` verso la cartella temporanea; lo script di seed usa i modelli copiati in `pachimudeditor_adapter_pachimud.game_models`). Il setup copia anche `area/` + `src/tables.c` di basedmud
+Il mondo `pachimud` ha parametri espliciti (`definitions_path` e `database_url` verso la cartella temporanea; i contenuti sono i YAML di `tests/support/stack.py::write_world`, il DB dei giocatori si crea con i modelli copiati in `pachimudeditor_adapter_pachimud.game_models`). Il setup copia anche `area/` + `src/tables.c` di basedmud
 (`E2E_BASEDMUD`, default il checkout fratello `../basedmud`, solo in lettura), e configura i mondi con `WEBEDITOR_WORLDS`:
 `pachimud` (default), `basedmud`, `basedmud-ro` (stessa copia, sola lettura), e, **solo se esiste la cartella `lib/` dei dati Diku Modificato**: `E2E_DIKUMOD`, default `/dati/luca/muds/leu/lib` (sola lettura sull'originale, i test lavorano su copie), `dikumod` (copia in sola lettura) e `dikumod-rw` (seconda copia scrivibile). Il prefisso dei file dati (`<prefisso>.wld`, ...) e' `leudata`, o `E2E_DIKUMOD_PREFIX` se impostata. Per il canale live lo stack avvia anche il **finto server `livectl`** (`tests/support/live_fake_cli.py`, socket nella cartella temporanea, token in `E2E_LIVE_TOKEN` solo nell'ambiente) e aggiunge i mondi `dikumod-live` (scrivibile) e `dikumod-live-ro` (sola lettura) con `params.live`. Se quella cartella non esiste quei mondi non esistono e `e2e/tests/dikumod.test.ts`, `playerfiles.test.ts` e `live.test.ts` vengono saltati. Il `pachimud.db` reale non viene mai aperto. Se la porta e' occupata il setup si interrompe.
 
@@ -52,7 +52,7 @@ tradotto sul vnum duplicato, delete 409. `tests/pages.test.ts` nessuna chiave i1
 `tests/worlds.test.ts` selettore di mondo con basedmud (copia temporanea di `area/`, mondo scrivibile + mondo `basedmud-ro`
 in sola lettura): capability nascoste, route guard, zone (anche id negativo), mob con `extra`, deep-link, sola lettura.
 `tests/world.test.ts` panoramica/ricerca/grafo, `tests/players.test.ts` account e personaggi (seminati da
-`support/seed_players.py`), `tests/instances.test.ts`, `tests/transfer.test.ts` (export + import in anteprima),
+`support/seed_players.py`), `tests/transfer.test.ts` (export + import in anteprima),
 `tests/content.test.ts` (razze/classi su una copia delle definizioni di esempio).
 Ogni file verifica anche l'assenza di errori di console (i 401/409 attesi dei test negativi sono ammessi
 esplicitamente con `session.allow`).

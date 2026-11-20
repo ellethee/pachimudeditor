@@ -21,9 +21,9 @@ def run_child(mode: str, **args: object) -> subprocess.CompletedProcess[str]:
 
 
 def test_optional_modules_only_with_pachimud_world() -> None:
-    """Senza mondo pachimud i moduli world/players/instances/transfer/content non sono registrati."""
+    """Senza mondo pachimud i moduli world/players/transfer/content non sono registrati."""
     names = {m.name for m in build_modules(["basedmud", "dikumod", "mapping"])}
-    optional = {"world", "players", "instances", "transfer", "content"}
+    optional = {"world", "players", "transfer", "content"}
     assert not names & optional and {"zones", "rooms", "convert"} <= names
     assert optional <= {m.name for m in build_modules(["pachimud"])}
 
@@ -51,12 +51,12 @@ def test_mapping_world_runs_without_pachimud(tmp_path: Path) -> None:
 
 
 def test_pachimud_world_params_without_game(tmp_path: Path) -> None:
-    """Un mondo pachimud con `database_url` e' accettato senza il gioco; senza parametri l'errore e' chiaro."""
-    ok = [{"id": "p", "kind": "pachimud", "params": {"database_url": f"sqlite+aiosqlite:///{tmp_path}/g.db"}}]
+    """Un mondo pachimud con `definitions_path` e' accettato senza il gioco; senza parametri l'errore e' chiaro."""
+    ok = [{"id": "p", "kind": "pachimud", "params": {"definitions_path": str(tmp_path / "definitions")}}]
     result = run_child("setup", worlds=ok)
     assert result.returncode == 0 and result.stdout.strip() == "OK ['p'] None", result.stdout + result.stderr
     result = run_child("setup", worlds=[{"id": "p", "kind": "pachimud"}])
-    assert result.returncode == 0 and result.stdout.startswith("ERR Mondo 'p'") and "database_url" in result.stdout, result.stdout
+    assert result.returncode == 0 and result.stdout.startswith("ERR Mondo 'p'") and "definitions_path" in result.stdout, result.stdout
 
 
 def test_pachimud_world_runs_without_pachimud_package(tmp_path: Path) -> None:

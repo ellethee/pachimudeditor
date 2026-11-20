@@ -1,6 +1,7 @@
 /** Mondo pachimud in sola lettura (`pachimud-ro`): istanze, giocatori e razze/classi non offrono azioni di scrittura. */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
+import { Api } from '../support/api.ts'
 import { goto, loginOk, openSession, tableRow, type Session } from '../support/browser.ts'
 
 describe('pachimud in sola lettura', () => {
@@ -26,13 +27,6 @@ describe('pachimud in sola lettura', () => {
     await button.waitFor()
     assert.equal(await button.isDisabled(), true, name)
   }
-
-  it('istanze: "Nuovo mob vivo" e "Nuovo oggetto vivo" disabilitati', async () => {
-    await goto(s.page, '/instances')
-    await assertDisabled(s.page, 'Nuovo mob vivo')
-    await s.page.getByRole('tab', { name: 'Oggetti' }).click()
-    await assertDisabled(s.page, 'Nuovo oggetto vivo')
-  })
 
   it('giocatori: nuovo account e azioni di riga disabilitati, ricarica e "Mostra personaggi" no', async () => {
     await goto(s.page, '/players')
@@ -61,5 +55,16 @@ describe('pachimud in sola lettura', () => {
       for (const name of ['Modifica', 'Elimina']) await assertDisabled(row, name)
       assert.equal(await row.locator('button[aria-label^="Disattiva"], button[aria-label="Riattiva"]').first().isDisabled(), true)
     }
+  })
+
+  it('skill, social, tabelle e cataloghi: creazione e scritture disabilitate o rifiutate', async () => {
+    for (const [path, create] of [['/content/skills', 'item-create'], ['/content/socials', 'item-create'], ['/content/tables', 'file-create'], ['/content/catalogs', 'file-create']] as const) {
+      await goto(s.page, path)
+      await s.page.getByTestId(create).waitFor()
+      assert.equal(await s.page.getByTestId(create).isDisabled(), true, path)
+    }
+    const api = (await Api.connect()).inWorld('pachimud-ro')
+    assert.equal((await api.post('/api/content/skills', { skillId: 'rosk', name: 'x' })).status, 409)
+    assert.equal((await api.call('PUT', '/api/content/files/tables/ro.yaml', { text: 'a: 1\n' })).status, 409)
   })
 })

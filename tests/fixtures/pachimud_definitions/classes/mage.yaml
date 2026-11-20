@@ -1,18 +1,100 @@
----
 class_id: mage
-name: Magic User
+index: 0
+name: Magic user
+abbreviation: Mu
 description: A class specializing in arcane magic and spellcasting.
-attrs_priority:
+attrs_priority:  # default di pachimud: in LeU lo sceglie il giocatore alla creazione
   - intelligence
   - wisdom
   - dexterity
   - strength
   - constitution
   - charisma
-attr_prime: intelligence
-thac0_00: 20
-thac0_32: 6
-hp_min: 6
-hp_max: 8
-weapon: 0
-skill_adept: 75
+exp_per_level:  # `titles[classe][livello].exp` di LeU (constants.c): esperienza totale per raggiungere il livello
+  [0, 1, 2500, 5000, 10000, 20000, 40000, 60000, 90000, 135000, 250000, 375000, 750000, 1250000, 1500000, 1875000, 2250000, 2625000, 3000000, 3375000, 3750000, 4150000, 4575000, 5050000, 5500000, 6250000, 7000000, 7750000, 8550000, 9350000, 10200000, 11200000, 12200000, 13200000, 14500000, 16000000, 18500000, 20000000, 23000000, 26000000, 30000000, 34000000, 38000000, 42000000, 46000000, 51000000, 56000000, 61000000, 66000000, 72000000, 80000000, 200000000, 231000000, 232000000, 233000000, 234000000, 235000000, 236000000, 237000000, 238000000, 239000000]
+titles:  # `titles` di LeU: titolo maschile e femminile per livello (indice = livello)
+  - {male: Man, female: Woman}
+  - {male: Supplicant, female: Supplicant}
+  - {male: Apprentice, female: Apprentice}
+  - {male: Student, female: Student}
+  - {male: Scholar, female: Scholar}
+  - {male: Trickster, female: Trickster}
+  - {male: Illusionist, female: Illusionist}
+  - {male: Cabalist, female: Cabalist}
+  - {male: Apparitionist, female: Apparitionist}
+  - {male: Medium, female: Gypsy}
+  - {male: Scribe, female: Scribe}
+  - {male: Sage, female: Sage}
+  - {male: Seer, female: Seeress}
+  - {male: Divinater, female: Divinatress}
+  - {male: Alchemist, female: Alchemist}
+  - {male: Evoker, female: Evoker}
+  - {male: Necromancer, female: Necromancer}
+  - {male: Abjurer, female: Abjuress}
+  - {male: Invoker, female: Invoker}
+  - {male: Enchanter, female: Enchantress}
+  - {male: Conjurer, female: Conjuress}
+  - {male: Summoner, female: Summoner}
+  - {male: Magician, female: Magician}
+  - {male: Spiritualist, female: Spiritualist}
+  - {male: Savant, female: Savanti}
+  - {male: Shaman, female: Shamaness}
+  - {male: Mystic, female: Mystic}
+  - {male: Wiccen, female: Wicca}
+  - {male: Mentalist, female: Mentalist}
+  - {male: Mnemonicist, female: Mnemonicist}
+  - {male: Nueromancer, female: Nueromancer}
+  - {male: Spellbinder, female: Spellbinder}
+  - {male: Synergist, female: Synergist}
+  - {male: Oculist, female: Oculist}
+  - {male: Thaumaturgist, female: Thaumaturgist}
+  - {male: SpellMaster, female: Spell Mistress}
+  - {male: Dispeller, female: Dispeller}
+  - {male: Warlock, female: War Witch}
+  - {male: Sorcerer, female: Sorceress}
+  - {male: Wizard, female: Wizard}
+  - {male: Great Wizard, female: Great Wizard}
+  - {male: Magus, female: Incantrix}
+  - {male: Serpent Mage, female: Serpent Mage}
+  - {male: Arch Magi, female: Majestrix}
+  - {male: Arch Magi, female: Majestrix}
+  - {male: Arch Magi, female: Majestrix}
+  - {male: Arch Magi, female: Majestrix}
+  - {male: Arch Magi, female: Majestrix}
+  - {male: Arch Magi, female: Majestrix}
+  - {male: Arch Magi, female: Majestrix}
+  - {male: Arch Magi, female: Majestrix}
+  - {male: Immortal Warlock, female: Immortal Enchantress}
+  - {male: Immortal Warlock, female: Immortal Enchantress}
+  - {male: Immortal Warlock, female: Immortal Enchantress}
+  - {male: Immortal Warlock, female: Immortal Enchantress}
+  - {male: Immortal Warlock, female: Immortal Enchantress}
+  - {male: Immortal Warlock, female: Immortal Enchantress}
+  - {male: Avatar of Magic, female: Empress of Magic}
+  - {male: God of magic, female: Goddess of magic}
+  - {male: Implementor, female: Implementrix}
+  - {male: Implementor, female: Implementrix}
+thac0:  # `thaco` di LeU (constants.c) per livello: piu' basso e' meglio
+  [100, 20, 20, 20, 20, 20, 19, 19, 19, 19, 19, 18, 18, 18, 18, 18, 17, 17, 17, 17, 17, 16, 16, 16, 16, 16, 15, 15, 15, 15, 15, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 11, 11, 11, 11, 11, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+hp_gain:  # `advance_level` di LeU (limits.c): number(n, m) sotto until_level, poi flat_after; + bonus Costituzione, diviso per le classi
+  dice: [2, 6]
+  until_level: 12
+  flat_after: 1
+  con_bonus_cap: 2
+saving_throws:  # `saving_throws` di LeU (spell_parser.c) per livello (indice = livello): piu' basso e' meglio
+  para: [16, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 11, 11, 11, 11, 11, 10, 10, 10, 10, 10, 8, 6, 4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  rod: [13, 11, 11, 11, 11, 11, 9, 9, 9, 9, 9, 7, 7, 7, 7, 7, 5, 5, 5, 5, 5, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  petri: [15, 13, 13, 13, 13, 13, 11, 11, 11, 11, 11, 9, 9, 9, 9, 9, 7, 7, 7, 7, 7, 5, 4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  breath: [17, 15, 15, 15, 15, 15, 13, 13, 13, 13, 13, 11, 11, 11, 11, 11, 9, 9, 9, 9, 9, 7, 5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  spell: [14, 12, 12, 12, 12, 12, 10, 10, 10, 10, 10, 8, 8, 8, 8, 8, 6, 6, 6, 6, 6, 4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+start_hp:  # `roll_abilities` di LeU: 10 + un tiro di dice + bonus, diviso per le classi
+  dice: [1, 4]
+  bonus: 0
+mana:  # `mana_limit` di LeU (limits.c): base + per_level * (livello // level_divisor); + ((INT / 3) + 2) * 3
+  base: 100
+  per_level: 5
+  level_divisor: 1
+magic_order: 0  # posizione in `BestMagicClass` di LeU (multiclass.c)
+variant: sorcerer  # alla creazione si puo' scegliere lo stregone (`CON_CHECK_MAGE_TYPE` di LeU)
+level_loss:  # `drop_level` di LeU (limits.c): punti ferita persi, in piu' al bonus di Costituzione, sotto il livello `below` (`low`) o da li' in su (`high`), almeno `minimum`
+  {below: 12, low: 6, high: 1, minimum: 3}

@@ -3,7 +3,7 @@
 MESSAGES: dict[str, str] = {
     "transfer.zone_not_found": "Zone not found",
     "transfer.no_files": "No file uploaded.",
-    "transfer.unsupported_file": "File «{file}» not recognised: expected a zip or zone.yaml, rooms.yaml, mobs.yaml, objects.yaml, resets.yaml.",
+    "transfer.unsupported_file": "File «{file}» not recognised: expected a zip or zone.yaml and room*/mob*/obj*/reset*.yaml files.",
     "transfer.invalid_archive": "«{file}» is not a valid zip.",
     "transfer.file_too_large": "«{file}» exceeds the {max_mb} MB limit.",
     "transfer.zone_missing": "The upload has no zone.yaml.",

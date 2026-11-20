@@ -56,18 +56,25 @@ async def test_delete_in_use_by_reset_409(client: httpx.AsyncClient) -> None:
 async def test_container_counts_as_usage(client: httpx.AsyncClient) -> None:
     """Un oggetto usato come contenitore (arg3 di PUT_OBJECT) e' considerato in uso."""
     zone = await by_vnum(client, "zones", 10)
-    cmds = {"commands": [{"commandType": 4, "arg1": 1000, "arg2": 1, "arg3": 1001, "arg4": 1}]}
+    cmds = {
+        "commands": [
+            {"commandType": 1, "arg1": 1001, "arg2": 1, "arg3": 1000},  # nel gioco un contenitore e' sempre anche un oggetto caricato
+            {"commandType": 4, "arg1": 1000, "arg2": 1, "arg3": 1001},
+        ]
+    }
     data(await client.put(f"/api/zones/{zone['id']}/reset-commands", json=cmds))
     free = await by_vnum(client, "objects", 1001)
+    assert {u["commandType"] for u in data(await client.get(f"/api/objects/{free['id']}/usage"))} == {1, 4}
     assert error_code(await client.delete(f"/api/objects/{free['id']}"), 409) == "objects.in_reset_usage"
 
 
 async def test_list_filters_and_ordering_http(client: httpx.AsyncClient) -> None:
     """Filtri/ordinamenti sulle statistiche via query string (alias camelCase, parametri ripetuti), rent compreso."""
     specs = {
-        1070: {"objectType": 1, "weight": 5, "cost": 100, "rent": 10, "value0": 2, "extraFlags": ["glow"], "wearFlags": ["take"], "affects": {"hitroll": 3}},
+        # value0 esiste solo per i tipi con un campo numerico in posizione 0 (qui FOOD: ore, ARMOR: classe armatura)
+        1070: {"objectType": 9, "weight": 5, "cost": 100, "rent": 10, "value0": 2, "extraFlags": ["glow"], "wearFlags": ["take"], "affects": {"hitroll": 3}},
         1071: {"objectType": 2, "weight": 20, "cost": 50, "rent": 5, "value0": -4, "extraFlags": ["glow", "hum"], "wearFlags": ["take", "body"]},
-        1072: {"objectType": 9, "weight": 1, "cost": 500, "rent": 0},
+        1072: {"objectType": 1, "weight": 1, "cost": 500, "rent": 0},
     }  # fmt: skip
     for vnum, spec in specs.items():
         data(await client.post("/api/objects", json=await _body(client, vnum, **spec)), 201)

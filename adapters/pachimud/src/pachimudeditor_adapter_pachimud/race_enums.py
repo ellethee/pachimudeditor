@@ -43,6 +43,7 @@ class MobileFlags(IntFlag):
     GAIN = auto()
     UPDATE_ALWAYS = auto()
     IS_CHANGER = auto()
+    IMMORTAL = auto()  # `ACT_IMMORTAL` di LeU: evento naturale, non si uccide (ne' trappole)
     MOB_FRIENDLY = TRAIN | PRACTICE | IS_HEALER | IS_CHANGER
 
 

@@ -2,22 +2,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { Api } from '../support/api.ts'
-import {
-  addFlag,
-  closeDiscarding,
-  confirm,
-  dismissError,
-  dialog,
-  goto,
-  loginOk,
-  openSession,
-  pickOption,
-  rawI18nKey,
-  saveDialog,
-  tableRow,
-  waitDialogsClosed,
-  type Session,
-} from '../support/browser.ts'
+import { addFlag, closeDiscarding, confirm, dialog, dismissError, goto, loginOk, openDetail, openSession, pickOption, rawI18nKey, saveDialog, saveForm, tableRow, type Session, waitDialogsClosed } from '../support/browser.ts'
 
 /** Vnum creati dai test. */
 const VNUMS = [1050, 1051, 1062, 1063, 1064, 2062, 1065, 1066]
@@ -246,13 +231,13 @@ describe('mob', () => {
   })
 
   it('modifica: i chip sono ricaricati, se ne aggiunge uno e si salva', async () => {
-    await tableRow(s.page, 'un goblin verde').locator('.pachi-t2-edit-item').click()
-    await dialog(s.page).locator('.q-chip', { hasText: 'SENTINEL' }).waitFor()
-    await dialog(s.page).locator('.q-chip', { hasText: 'AGGRESSIVE' }).waitFor()
+    await openDetail(s.page, tableRow(s.page, 'un goblin verde'))
+    await s.page.locator('.q-chip', { hasText: 'SENTINEL' }).waitFor()
+    await s.page.locator('.q-chip', { hasText: 'AGGRESSIVE' }).waitFor()
     await addFlag(s.page, 'Flag (digita e invio)', 'SCAVENGER')
     await s.page.getByLabel('Descrizione breve *').fill('un goblin rosso')
-    await saveDialog(s.page)
-    await waitDialogsClosed(s.page)
+    await saveForm(s.page)
+    await s.page.getByLabel("Torna all'elenco").click()
     await tableRow(s.page, 'un goblin rosso').waitFor()
     const mob = await api.byVnum('mobs', 1050)
     assert.deepEqual(mob.flags, ['SENTINEL', 'AGGRESSIVE', 'SCAVENGER'])

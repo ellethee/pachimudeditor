@@ -1,32 +1,38 @@
 """Allineamento editor <-> MUD vero: OPZIONALE, gira solo con `PACHIMUD_GAME_ROOT` che punta a un checkout del gioco.
 
-Il gioco non e' una dipendenza (modelli copiati in `game_models`): senza checkout questi test si saltano.
+Il gioco non e' una dipendenza (loader YAML in `loaders.py`, modelli del DB in `game_models`): senza checkout questi test si
+saltano. Il checkout e' solo letto: avviare pytest con `PYTHONDONTWRITEBYTECODE=1` per non creare `__pycache__` nel suo albero.
 
 - hash delle password: quelli dell'editor si verificano con `verify_password` del gioco e viceversa;
-- trasferimento zone: file scritti dall'editor letti dall'importer del gioco, e file del gioco letti dall'editor,
-  danno le stesse righe nel database;
-- allineamento dei dati dell'editor (enum, schemi dei file, colonne attese, revisioni alembic) con il gioco.
+- allineamento dei dati dell'editor (enum, loader YAML, colonne attese, revisioni alembic) con il gioco;
+- le `definitions/` reali del gioco si caricano senza errori e si riscrivono (su una COPIA) con gli stessi dati;
+- i file scritti dall'editor sono validi per i loader del gioco.
 """
 
 import re
 import shutil
-import sqlite3
 from pathlib import Path
 
 import pytest
+import yaml
 
+from pachimudeditor.common.adapters.models import (
+    ExitPatch,
+    MobPageParams,
+    MobPatch,
+    ObjectPageParams,
+    ObjectPatch,
+    RoomPageParams,
+    RoomPatch,
+)
+from pachimudeditor.common.adapters.registry import WorldConfig
 from pachimudeditor_adapter_pachimud import security as editor_security  # noqa: E402
 from pachimudeditor_adapter_pachimud.adapter import PachimudAdapter  # noqa: E402
-from pachimudeditor_adapter_pachimud.transfer.files import ZONE_FILES  # noqa: E402
-from pachimudeditor.common.adapters.models import ZonePageParams  # noqa: E402
-from pachimudeditor.common.adapters.registry import WorldConfig  # noqa: E402
-from tests.support.stack import DEFINITIONS_FIXTURE  # noqa: E402
 from tests.support.game_checkout import game_root, load  # noqa: E402
 from tests.support.zone_fixture import write_zone  # noqa: E402
+from tests.test_roundtrip import _rewrite_everything, _snapshot  # noqa: E402
 
 pytestmark = pytest.mark.skipif(game_root() is None, reason="PACHIMUD_GAME_ROOT non impostata: confronto col MUD saltato")
-
-TABLES = ("zone", "room", "exit", "room_extra_description", "mob_prototype", "object_prototype", "zone_reset_command")
 
 
 # ------------------------------------------------------------------------------ hash
@@ -53,16 +59,15 @@ def test_hash_made_by_game_verifies_in_editor() -> None:
 
 
 def test_editor_data_tables_match_game() -> None:
-    """Enum del gioco = tabelle dati dell'editor (nomi e valori); anche i flag di razze e mob."""
+    """Enum del gioco = tabelle dati dell'editor (nomi e valori); i tipi oggetto per nome (i numeri del gioco sono LeU)."""
     game_char, game_race, game_obj = load("character.enums"), load("character.race.enums"), load("object.enums")
     game_zone, game_room = load("zone.enums"), load("zone.room.enums")
 
-    from pachimudeditor_adapter_pachimud import race_enums
     from pachimudeditor.common import enums
+    from pachimudeditor_adapter_pachimud import race_enums
 
     pairs = [
         (game_char, enums, ["Sex", "Position"]),
-        (game_obj, enums, ["ObjectType"]),
         (game_zone, enums, ["ZoneCommandType", "ZoneResetMode"]),
         (game_room, enums, ["SectorType", "Direction", "DoorFlag"]),
         (
@@ -74,6 +79,8 @@ def test_editor_data_tables_match_game() -> None:
     for original, mine, names in pairs:
         for name in names:
             assert {m.name: m.value for m in getattr(original, name)} == {m.name: m.value for m in getattr(mine, name)}, name
+    ours = {m.name for m in enums.ObjectType} | {"DRINKCON"}
+    assert {m.name for m in game_obj.ObjectType} <= ours, {m.name for m in game_obj.ObjectType} - ours
 
 
 def _fields(model: type) -> dict[str, object]:
@@ -81,41 +88,63 @@ def _fields(model: type) -> dict[str, object]:
     return {n: (f.default if not f.is_required() else "<req>") for n, f in model.model_fields.items()}  # type: ignore[attr-defined]
 
 
+def _cls(module: object, *names: str) -> type:
+    """La prima classe esistente tra `names` (il gioco rinomina i modelli dei loader: `LoaderRoom` -> `RoomProto`)."""
+    return next(getattr(module, n) for n in names if hasattr(module, n))
+
+
 def test_loader_schemas_match_game() -> None:
-    """Gli schemi dei file YAML e delle definizioni (razze/classi) hanno gli stessi campi e default di quelli del gioco."""
+    """I loader YAML (contenuti e definizioni) hanno gli stessi campi e default di quelli del gioco."""
     g_class, g_race = load("character.classes.schema.loader_class"), load("character.race.schema.loader_race")
     g_mob, g_obj, g_room = load("mob.schema.loader_mob"), load("object.schema.loader_object"), load("zone.room.schema.loader_room")
-    g_reset, g_zone = load("zone.schema.loader_reset"), load("zone.schema.loader_zone")
+    g_zone = load("zone.schema.loader_zone")
 
-    from pachimudeditor_adapter_pachimud import definitions
-    from pachimudeditor_adapter_pachimud.transfer import schemas
+    from pachimudeditor_adapter_pachimud import definitions, loaders
 
-    for mine, theirs in [
-        (schemas.LoaderZone, g_zone.LoaderZone),
-        (schemas.LoaderExit, g_room.LoaderExit),
-        (schemas.LoaderExtraDescription, g_room.LoaderExtraDescription),
-        (schemas.LoaderRoom, g_room.LoaderRoom),
-        (schemas.LoaderRoomsFile, g_room.LoaderRoomsFile),
-        (schemas.LoaderMob, g_mob.LoaderMob),
-        (schemas.LoaderMobsFile, g_mob.LoaderMobsFile),
-        (schemas.LoaderObject, g_obj.LoaderObject),
-        (schemas.LoaderObjectsFile, g_obj.LoaderObjectsFile),
-        (schemas.LoaderLoadMob, g_reset.LoaderLoadMob),
-        (schemas.LoaderLoadObject, g_reset.LoaderLoadObject),
-        (schemas.LoaderGiveObject, g_reset.LoaderGiveObject),
-        (schemas.LoaderEquipObject, g_reset.LoaderEquipObject),
-        (schemas.LoaderPutObject, g_reset.LoaderPutObject),
-        (schemas.LoaderSetDoorState, g_reset.LoaderSetDoorState),
-        (schemas.LoaderRandomizeExits, g_reset.LoaderRandomizeExits),
+    pairs = [
+        (loaders.LoaderZone, g_zone.LoaderZone),
+        (loaders.LoaderResetContent, g_zone.LoaderResetContent),
+        (loaders.LoaderResetObject, g_zone.LoaderResetObject),
+        (loaders.LoaderResetObjectInventory, g_zone.LoaderResetObjectInventory),
+        (loaders.LoaderResetMob, g_zone.LoaderResetMob),
+        (loaders.LoaderResetDoor, g_zone.LoaderResetDoor),
+        (loaders.LoaderReset, g_zone.LoaderReset),
+        (loaders.LoaderResetFile, g_zone.LoaderResetFile),
+        (loaders.LoaderExit, _cls(g_room, "LoaderExit", "RoomExitProto")),
+        (loaders.LoaderExtraDescription, _cls(g_room, "LoaderExtraDescription", "ExtraDescriptionProto")),
+        (loaders.LoaderRoom, _cls(g_room, "LoaderRoom", "RoomProto")),
+        (loaders.LoaderMob, _cls(g_mob, "LoaderMob", "MobProto")),
         (definitions.LoaderRace, g_race.LoaderRace),
+        (definitions.BodyRange, g_race.BodyRange),
+        (definitions.RaceBody, g_race.RaceBody),
         (definitions.LoaderClass, g_class.LoaderClass),
-    ]:
+        (definitions.ClassTitle, g_class.ClassTitle),
+        (definitions.HpGain, g_class.HpGain),
+        (definitions.LevelLoss, g_class.LevelLoss),
+        (definitions.ClassMana, g_class.ClassMana),
+        (definitions.StartHp, g_class.StartHp),
+    ]
+    for name in (
+        "ObjectBaseProto LightProto ScrollProto WandProto WeaponProto ArmorProto ContainerProto DrinkConProto FoodProto MoneyProto "
+        "KeyProto AudioProto TrapProto GenericProto"
+    ).split():
+        pairs.append((getattr(loaders, name), getattr(g_obj, name)))
+    for mine, theirs in pairs:
         assert _fields(mine) == _fields(theirs), mine.__name__
+    assert set(loaders.TYPE_MODELS) == {t for proto in (g_obj.ObjectBaseProto.__subclasses__()) for t in _literals(proto)}, "tipi oggetto"
+
+
+def _literals(model: type) -> set[str]:
+    """I valori del campo `object_type` (un `Literal`) di un modello di oggetto."""
+    from typing import get_args
+
+    return set(get_args(model.model_fields["object_type"].annotation))  # type: ignore[attr-defined]
 
 
 def test_expected_columns_match_game_models() -> None:
     """Le colonne attese dall'editor (`EXPECTED`) coincidono con quelle dei modelli del MUD vero (nome e nullabilita')."""
-    load("database")  # registra i modelli del MUD
+    load("account.models")
+    load("character.models")
     Base = load("database.base").Base
 
     from pachimudeditor_adapter_pachimud.schema import EXPECTED
@@ -133,8 +162,11 @@ def test_known_revisions_match_alembic_chain() -> None:
     """`REVISIONS` e' la catena delle migration alembic del gioco, nell'ordine di applicazione."""
     from pachimudeditor_adapter_pachimud.schema import REVISIONS
 
-    versions = game_root() / "alembic" / "versions"
-    if not versions.is_dir():
+    versions = next(
+        (v for v in (game_root() / "src" / "pachimud" / "migrations" / "versions", game_root() / "alembic" / "versions") if v.is_dir()),
+        None,
+    )
+    if versions is None:
         pytest.skip("alembic/versions del gioco non trovato")
     down: dict[str, str | None] = {}
     for path in versions.glob("*.py"):
@@ -151,114 +183,79 @@ def test_known_revisions_match_alembic_chain() -> None:
     assert tuple(chain) == REVISIONS
 
 
-# ------------------------------------------------------------------------------ trasferimento zone
+# ------------------------------------------------------------------------------ definizioni reali
 
 
-def _dump(path: Path) -> dict[str, list[tuple]]:
-    """Tutte le righe delle tabelle di contenuto, ordinate per id."""
-    connection = sqlite3.connect(path)
-    try:
-        return {t: connection.execute(f"SELECT * FROM {t} ORDER BY id").fetchall() for t in TABLES}  # noqa: S608
-    finally:
-        connection.close()
+def _adapter(definitions: Path) -> PachimudAdapter:
+    """Un adapter (senza DB) sulle `definitions/` indicate."""
+    return PachimudAdapter(WorldConfig(id="game", kind="pachimud", params={"definitions_path": str(definitions)}))
 
 
-def _empty_game_db(path: Path) -> str:
-    """Un DB di gioco vuoto creato dal GIOCO (schema `Base.metadata.create_all`); restituisce l'URL async."""
-    load("database")
-    Base = load("database.base").Base
-    from sqlalchemy import create_engine as sync_engine
-
-    for suffix in ("", "-wal", "-shm"):
-        Path(f"{path}{suffix}").unlink(missing_ok=True)
-    engine = sync_engine(f"sqlite:///{path}")
-    Base.metadata.create_all(engine)
-    engine.dispose()
-    return f"sqlite+aiosqlite:///{path}"
+def test_real_definitions_load_without_errors() -> None:
+    """Le `definitions/` reali del gioco (sola lettura) si caricano: nessun file illeggibile ne' voce non valida."""
+    definitions = game_root() / "definitions"
+    adapter = _adapter(definitions)
+    report = adapter.schema_report()
+    assert report is not None and report.problems == [], [p.message for p in report.problems]
+    assert report.zones >= 1 and report.rooms >= 1 and report.mobs >= 1 and report.objects >= 1
 
 
-async def _game_import(path: Path, zone_dir: Path) -> None:
-    """Importa `zone_dir` con l'importer del GIOCO nel DB `path`."""
-    database = load("database.database")
-    game_import = load("zone.importer").import_zone_directory
-    engine = database.create_engine(_empty_game_db(path) if not path.exists() else f"sqlite+aiosqlite:///{path}")
-    try:
-        async with database.create_session_factory(engine)() as session:
-            await game_import(session, zone_dir)
-            await session.commit()
-    finally:
-        await engine.dispose()
+def test_packaged_classes_and_races_load() -> None:
+    """Le classi e le razze di default del gioco (`src/pachimud/definitions`) sono tutte valide per i modelli dell'editor."""
+    from pachimudeditor_adapter_pachimud.definitions import read_classes, read_races
+
+    base = game_root() / "src" / "pachimud" / "definitions"
+    if not base.is_dir():
+        pytest.skip("definizioni di default del gioco non trovate")
+    assert len(read_classes(base)) == len(list((base / "classes").glob("*.yaml"))) > 0
+    assert len(read_races(base)) == len(list((base / "races").glob("*.yaml"))) > 0
 
 
-async def _editor_import(path: Path, zone_dir: Path, *, create: bool = True) -> PachimudAdapter:
-    """Importa `zone_dir` con l'importer dell'EDITOR in un DB di gioco (creato dal gioco se manca)."""
-    url = _empty_game_db(path) if create else f"sqlite+aiosqlite:///{path}"
-    adapter = PachimudAdapter(
-        WorldConfig(id="eq", kind="pachimud", params={"database_url": url, "definitions_path": str(DEFINITIONS_FIXTURE)})
-    )
-    preview = await adapter.import_zone_dir(zone_dir, dry_run=False, confirm=True)
-    assert preview.applied and not preview.conflicts
-    return adapter
+async def test_real_zone_rewrite_is_semantically_identical(tmp_path: Path) -> None:
+    """Ogni zona reale, copiata in /tmp e riscritta voce per voce con i suoi stessi valori, ha gli stessi dati (mai l'originale)."""
+    source = game_root() / "definitions"
+    copy = tmp_path / "definitions"
+    shutil.copytree(source, copy, ignore=shutil.ignore_patterns("__pycache__", "*.example"))
+    adapter = _adapter(copy)
+    before = _snapshot(adapter)
+    await _rewrite_everything(adapter)
+    assert _snapshot(adapter) == before
+    assert adapter.schema_report().problems == []  # type: ignore[union-attr]
 
 
-async def _editor_export(adapter: PachimudAdapter, vnum: int, target: Path) -> Path:
-    """Esporta la zona `vnum` con l'editor in `target`."""
-    page = await adapter.list_zones(ZonePageParams())
-    zone = next(z for z in page.items if z.vnum == vnum)
-    bundle = await adapter.export_zone_bundle(zone.id)
-    target.mkdir(parents=True, exist_ok=True)
-    assert sorted(bundle.files) == sorted(ZONE_FILES)
-    for name, text in bundle.files.items():
-        (target / name).write_text(text, encoding="utf-8")
-    return target
+async def test_editor_written_files_are_valid_for_the_game(tmp_path: Path) -> None:
+    """Scritture dell'editor (creazioni, modifiche, spostamenti) su una copia: tutti i file passano i loader del gioco."""
+    definitions = tmp_path / "definitions"
+    shutil.copytree(game_root() / "definitions", definitions, ignore=shutil.ignore_patterns("__pycache__", "*.example"))
+    shutil.copytree(write_zone(tmp_path / "src" / "Terra"), definitions / "zones" / "Terra")
+    adapter = _adapter(definitions)
+    await adapter.update_room(8801, RoomPatch(name="Salone", description="Nuova descrizione."))
+    await adapter.update_mob(8801, MobPatch(level=9, hp_dice_count=2, hp_bonus=-3, flags=["SENTINEL"]))
+    await adapter.update_object(8801, ObjectPatch(extra={"typeFields": {"dice_count": 3}}))
+    await adapter.update_exit(8800, 8800 * 10, ExitPatch(description="Cambiata"))
+    await _check_with_game_loaders(definitions)
+    assert (await adapter.list_rooms(RoomPageParams(zone_id=88))).total == 4
+    assert (await adapter.list_mobs(MobPageParams(zone_id=88))).total == 2
+    assert (await adapter.list_objects(ObjectPageParams(zone_id=88))).total == 5
 
 
-async def test_game_files_editor_import_same_rows_as_game_import(tmp_path: Path) -> None:
-    """File del gioco -> importer dell'editor = stesse righe (ids compresi) dell'importer del gioco."""
-    zone_dir = write_zone(tmp_path / "zona")
-    await _game_import(tmp_path / "game.db", zone_dir)
-    adapter = await _editor_import(tmp_path / "editor.db", zone_dir)
-    await adapter.close()
-    game_rows, editor_rows = _dump(tmp_path / "game.db"), _dump(tmp_path / "editor.db")
-    assert editor_rows == game_rows
-    assert len(game_rows["room"]) == 3 and len(game_rows["exit"]) == 6 and len(game_rows["zone_reset_command"]) == 7
-
-
-async def test_editor_export_game_import_same_rows(tmp_path: Path) -> None:
-    """Zona esportata dall'editor -> importer del gioco = le stesse righe da cui e' stata esportata."""
-    zone_dir = write_zone(tmp_path / "zona")
-    adapter = await _editor_import(tmp_path / "origine.db", zone_dir)
-    exported = await _editor_export(adapter, 88, tmp_path / "esportata")
-    await adapter.close()
-    await _game_import(tmp_path / "game.db", exported)
-    assert _dump(tmp_path / "game.db") == _dump(tmp_path / "origine.db")
-
-
-async def test_real_zone_definitions_equivalent(tmp_path: Path) -> None:
-    """La zona di esempio `RavnFjord` (copia nelle fixture): gioco -> DB, esportata dall'editor, riletta dal gioco = stesse righe."""
-    source = DEFINITIONS_FIXTURE / "zones" / "RavnFjord"
-    if not source.is_dir():
-        pytest.skip("zona RavnFjord non trovata")
-    copy = tmp_path / "RavnFjord"
-    shutil.copytree(source, copy)
-    await _game_import(tmp_path / "a.db", copy)
-    adapter_b = await _editor_import(tmp_path / "b.db", copy)
-    await adapter_b.close()
-    assert _dump(tmp_path / "b.db") == _dump(tmp_path / "a.db")
-    adapter_a = PachimudAdapter(WorldConfig(id="a", kind="pachimud", params={"database_url": f"sqlite+aiosqlite:///{tmp_path / 'a.db'}"}))
-    exported = await _editor_export(adapter_a, _dump(tmp_path / "a.db")["zone"][0][1], tmp_path / "exp")
-    await adapter_a.close()
-    await _game_import(tmp_path / "c.db", exported)
-    assert _dump(tmp_path / "c.db") == _dump(tmp_path / "a.db")
-
-
-async def test_second_import_is_idempotent_like_game(tmp_path: Path) -> None:
-    """Reimportare la stessa zona (editor e gioco) lascia i dati come sono, tranne gli id dei reset (sostituiti)."""
-    zone_dir = write_zone(tmp_path / "zona")
-    await _game_import(tmp_path / "game.db", zone_dir)
-    await _game_import(tmp_path / "game.db", zone_dir)
-    adapter = await _editor_import(tmp_path / "editor.db", zone_dir)
-    again = await adapter.import_zone_dir(zone_dir, dry_run=False, confirm=True)
-    await adapter.close()
-    assert again.zone.action == "unchanged" and again.resets.changed is False
-    assert _dump(tmp_path / "editor.db") == _dump(tmp_path / "game.db")
+async def _check_with_game_loaders(definitions: Path) -> None:
+    """Valida ogni file YAML di zona con i loader (Pydantic) del gioco."""
+    load_yaml = load("config.loader").load_yaml
+    g_zone, g_room = load("zone.schema.loader_zone"), load("zone.room.schema.loader_room")
+    g_mob, g_obj = load("mob.schema.loader_mob"), load("object.schema.loader_object")
+    models = {
+        "zone": g_zone.LoaderZone,
+        "room": g_room.LoaderRoomsFile,
+        "mob": g_mob.LoaderMobsFile,
+        "obj": g_obj.LoaderObjectsFile,
+        "reset": g_zone.LoaderResetFile,
+    }
+    seen = 0
+    for path in (definitions / "zones").rglob("*.yaml"):
+        prefix = "zone" if path.name == "zone.yaml" else next((p for p in models if path.name.startswith(p)), None)
+        if prefix is not None:
+            load_yaml(path, models[prefix])
+            seen += 1
+    assert seen >= 10
+    assert yaml.safe_load((definitions / "zones" / "Terra" / "rooms.yaml").read_text(encoding="utf-8"))["rooms"][1]["name"] == "Salone"

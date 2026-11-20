@@ -31,22 +31,22 @@ describe('contenuti', () => {
     await goto(s.page, '/content/races')
     await s.page.getByRole('button', { name: 'Nuova razza' }).click()
     await dialog(s.page).getByLabel('Id', { exact: false }).first().fill('pwrace')
-    await dialog(s.page).getByLabel('Nome', { exact: false }).first().fill('Pw Razza')
+    await dialog(s.page).getByLabel('Nome', { exact: false }).first().fill('Aa Pw Razza')
     await dialog(s.page).getByLabel('Descrizione', { exact: false }).first().fill('Razza di prova')
     await saveDialog(s.page)
     await waitDialogsClosed(s.page)
-    await tableRow(s.page, 'Pw Razza').waitFor()
-    assert.equal((await api.get('/api/content/races/pwrace')).data.name, 'Pw Razza')
+    await tableRow(s.page, 'Aa Pw Razza').waitFor()
+    assert.equal((await api.get('/api/content/races/pwrace')).data.name, 'Aa Pw Razza')
 
-    await tableRow(s.page, 'Pw Razza').getByRole('button').first().click()
+    await tableRow(s.page, 'Aa Pw Razza').getByRole('button').first().click()
     await dialog(s.page).getByLabel('Descrizione', { exact: false }).first().fill('Razza modificata')
     await saveDialog(s.page)
     await waitDialogsClosed(s.page)
     assert.equal((await api.get('/api/content/races/pwrace')).data.description, 'Razza modificata')
 
-    await tableRow(s.page, 'Pw Razza').locator('.text-negative').click()
+    await tableRow(s.page, 'Aa Pw Razza').locator('.text-negative').click()
     await s.page.locator('.q-dialog').last().getByRole('button', { name: 'Elimina', exact: true }).click()
-    await tableRow(s.page, 'Pw Razza').waitFor({ state: 'detached' })
+    await tableRow(s.page, 'Aa Pw Razza').waitFor({ state: 'detached' })
   })
 
   it('nessun errore di console imprevisto', () => {

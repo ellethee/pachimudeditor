@@ -1,29 +1,36 @@
-"""Coerenza editor <-> modelli copiati del gioco (`game_models`): girano sempre, senza checkout del MUD.
+"""Coerenza editor <-> file YAML e <-> modelli copiati del gioco (`game_models`): girano sempre, senza checkout del MUD.
 
-- colonne attese dall'adapter (`EXPECTED`) = colonne dei modelli copiati;
-- zone importate dall'editor, esportate e reimportate = stesse righe (zona di prova e `RavnFjord` di esempio);
+- colonne attese dall'adapter (`EXPECTED`) = colonne dei modelli copiati (`account`, `player_character`, `board_message`, `mail_message`);
+- rilettura e riscrittura di una zona (la zona di prova «ricca» e `RavnFjord` di esempio) con i suoi stessi valori:
+  i file restano semanticamente identici (stessi dati, commenti conservati);
+- export -> import in un mondo vuoto: gli stessi file;
 - hash delle password: round-trip del formato Argon2id.
 Il confronto con il MUD vero e' opzionale: `tests/test_game_compat.py` (`PACHIMUD_GAME_ROOT`).
 """
 
 import shutil
-import sqlite3
 from pathlib import Path
 
-from sqlalchemy import create_engine as sync_engine
+import pytest
+import yaml
 
+from pachimudeditor.common.adapters.models import (
+    ExitPatch,
+    MobPatch,
+    ObjectPatch,
+    ResetCommandIn,
+    ResetScriptIn,
+    RoomPatch,
+    ZonePatch,
+)
+from pachimudeditor.common.adapters.registry import WorldConfig
 from pachimudeditor_adapter_pachimud import security as editor_security
 from pachimudeditor_adapter_pachimud.adapter import PachimudAdapter
 from pachimudeditor_adapter_pachimud.game_models import Base
 from pachimudeditor_adapter_pachimud.schema import EXPECTED
-from pachimudeditor_adapter_pachimud.transfer.files import ZONE_FILES
-from pachimudeditor.common.adapters.models import ZonePageParams
-from pachimudeditor.common.adapters.registry import WorldConfig
 from tests.support import stack
 from tests.support.stack import DEFINITIONS_FIXTURE
 from tests.support.zone_fixture import write_zone
-
-TABLES = ("zone", "room", "exit", "room_extra_description", "mob_prototype", "object_prototype", "zone_reset_command")
 
 
 def test_hash_format_and_roundtrip() -> None:
@@ -43,89 +50,92 @@ def test_expected_columns_match_copied_models() -> None:
         for name, spec in columns.items():
             if name != "id":
                 assert spec.null == table.c[name].nullable, f"{table_name}.{name}"
-    assert set(EXPECTED) == set(Base.metadata.tables)
+    assert set(EXPECTED) == set(Base.metadata.tables) == {"account", "player_character", "board_message", "mail_message"}
 
 
-def _dump(path: Path) -> dict[str, list[tuple]]:
-    """Tutte le righe delle tabelle di contenuto, ordinate per id."""
-    connection = sqlite3.connect(path)
-    try:
-        return {t: connection.execute(f"SELECT * FROM {t} ORDER BY id").fetchall() for t in TABLES}  # noqa: S608
-    finally:
-        connection.close()
+def _world(tmp_path: Path, zone_dir: Path) -> PachimudAdapter:
+    """Un adapter su `definitions/` temporanee (razze/classi di esempio) con `zone_dir` come unica zona."""
+    definitions = tmp_path / "definitions"
+    shutil.copytree(DEFINITIONS_FIXTURE, definitions, ignore=shutil.ignore_patterns("zones", "README.md"), dirs_exist_ok=True)
+    shutil.copytree(zone_dir, definitions / "zones" / zone_dir.name)
+    return PachimudAdapter(WorldConfig(id="rt", kind="pachimud", params={"definitions_path": str(definitions)}))
 
 
-def _empty_db_url(path: Path) -> str:
-    """Un DB di gioco vuoto con lo schema dei modelli copiati; restituisce l'URL async."""
-    for suffix in ("", "-wal", "-shm"):
-        Path(f"{path}{suffix}").unlink(missing_ok=True)
-    engine = sync_engine(f"sqlite:///{path}")
-    Base.metadata.create_all(engine)
-    engine.dispose()
-    return f"sqlite+aiosqlite:///{path}"
+def _snapshot(adapter: PachimudAdapter) -> dict[str, object]:
+    """Il contenuto di tutti i file YAML delle zone come dati (indipendente da formato e ordine dei commenti)."""
+    root = adapter.params.definitions_path / "zones"
+    return {str(p.relative_to(root)): yaml.safe_load(p.read_text(encoding="utf-8")) for p in sorted(root.rglob("*.yaml"))}
 
 
-def _adapter(path: Path, *, create: bool = True) -> PachimudAdapter:
-    """Adapter su un DB (nuovo con `create`) con le definizioni di esempio."""
-    url = _empty_db_url(path) if create else f"sqlite+aiosqlite:///{path}"
-    return PachimudAdapter(
-        WorldConfig(id="rt", kind="pachimud", params={"database_url": url, "definitions_path": str(DEFINITIONS_FIXTURE)})
-    )
+async def _rewrite_everything(adapter: PachimudAdapter) -> None:
+    """Rilegge ogni entita' e la riscrive con i suoi stessi valori (PATCH completa), come farebbe il form dell'editor."""
+    from pachimudeditor.common.adapters.models import MobPageParams, ObjectPageParams, RoomPageParams, ZonePageParams
+
+    for z in (await adapter.list_zones(ZonePageParams())).items:
+        await adapter.update_zone(
+            z.id, ZonePatch.model_validate(z.model_dump(by_alias=False, exclude={"id", "extra"}) | {"extra": z.extra})
+        )
+        for r in (await adapter.list_rooms(RoomPageParams(zone_id=z.id))).items:
+            detail = await adapter.get_room(r.id)
+            await adapter.update_room(r.id, RoomPatch.model_validate(r.model_dump(by_alias=False, exclude={"id", "zone_id"})))
+            for e in detail.exits:
+                body = e.model_dump(by_alias=False, include={"description", "keywords", "door_flag", "is_open", "is_locked", "key_vnum"})
+                await adapter.update_exit(r.id, e.id, ExitPatch.model_validate(body | {"target_room_id": e.target_room_id}))
+        for m in (await adapter.list_mobs(MobPageParams(zone_id=z.id))).items:
+            await adapter.update_mob(m.id, MobPatch.model_validate(m.model_dump(by_alias=False, exclude={"id", "zone_id", "is_trainer"})))
+        for o in (await adapter.list_objects(ObjectPageParams(zone_id=z.id))).items:
+            await adapter.update_object(o.id, ObjectPatch.model_validate(o.model_dump(by_alias=False, exclude={"id", "zone_id"})))
+        script = await adapter.list_reset_commands(z.id)
+        await adapter.replace_reset_commands(
+            z.id,
+            ResetScriptIn(
+                commands=[
+                    ResetCommandIn.model_validate(
+                        c.model_dump(by_alias=False, exclude={"id", "zone_id", "order_index", "extra", "if_value", "comment", "if_flag"})
+                    )
+                    for c in script
+                ]
+            ),
+        )
 
 
-async def _export(adapter: PachimudAdapter, vnum: int, target: Path) -> Path:
-    """Esporta la zona `vnum` in `target`."""
-    page = await adapter.list_zones(ZonePageParams())
-    zone = next(z for z in page.items if z.vnum == vnum)
-    bundle = await adapter.export_zone_bundle(zone.id)
-    target.mkdir(parents=True, exist_ok=True)
-    assert sorted(bundle.files) == sorted(ZONE_FILES)
-    for name, text in bundle.files.items():
-        (target / name).write_text(text, encoding="utf-8")
-    return target
+@pytest.mark.parametrize("name", ["rich", "RavnFjord"])
+async def test_rewrite_with_same_values_keeps_files(tmp_path: Path, name: str) -> None:
+    """Riscrivere ogni voce con i suoi stessi valori non cambia i dati dei file (RavnFjord e la zona di prova ricca)."""
+    zone_dir = write_zone(tmp_path / "src" / "Terra") if name == "rich" else DEFINITIONS_FIXTURE / "zones" / "RavnFjord"
+    adapter = _world(tmp_path, zone_dir)
+    before = _snapshot(adapter)
+    assert adapter.schema_report().problems == []  # type: ignore[union-attr]
+    await _rewrite_everything(adapter)
+    assert _snapshot(adapter) == before
+    assert adapter.schema_report().problems == []  # type: ignore[union-attr]
 
 
-async def _roundtrip(tmp_path: Path, zone_dir: Path, vnum: int | None) -> dict[str, list[tuple]]:
-    """Importa `zone_dir`, esporta, reimporta in un altro DB: restituisce le righe dei due (devono coincidere)."""
-    first = _adapter(tmp_path / "a.db")
-    preview = await first.import_zone_dir(zone_dir, dry_run=False, confirm=True)
+async def test_comments_survive_writes(tmp_path: Path) -> None:
+    """Una modifica a una voce non perde i commenti del file."""
+    adapter = _world(tmp_path, write_zone(tmp_path / "src" / "Terra"))
+    await adapter.update_room(8801, RoomPatch(name="Salone"))
+    text = (adapter.params.definitions_path / "zones" / "Terra" / "rooms.yaml").read_text(encoding="utf-8")
+    assert "# l'atrio: il cuore della zona" in text and "name: Salone" in text
+
+
+async def test_export_import_roundtrip(tmp_path: Path) -> None:
+    """Esporta la zona ricca e la reimporta in un mondo vuoto: gli stessi file (testo identico)."""
+    adapter = _world(tmp_path / "a", write_zone(tmp_path / "src" / "Terra"))
+    bundle = await adapter.export_zone_bundle(88)
+    assert sorted(bundle.files) == sorted(["zone.yaml", "rooms.yaml", "rooms_cantine.yaml", "mobs.yaml", "objects.yaml", "resets.yaml"])
+    staged = tmp_path / "staged"
+    staged.mkdir()
+    for file_name, text in bundle.files.items():
+        (staged / file_name).write_text(text, encoding="utf-8")
+    empty = tmp_path / "empty"
+    shutil.copytree(DEFINITIONS_FIXTURE, empty, ignore=shutil.ignore_patterns("zones", "README.md"))
+    other = PachimudAdapter(WorldConfig(id="rt2", kind="pachimud", params={"definitions_path": str(empty)}))
+    preview = await other.import_zone_dir(staged, dry_run=False, confirm=True)
     assert preview.applied and not preview.conflicts
-    rows_a = _dump(tmp_path / "a.db")
-    exported = await _export(first, vnum if vnum is not None else rows_a["zone"][0][1], tmp_path / "exp")
-    await first.close()
-    second = _adapter(tmp_path / "b.db")
-    assert (await second.import_zone_dir(exported, dry_run=False, confirm=True)).applied
-    await second.close()
-    assert _dump(tmp_path / "b.db") == rows_a
-    return rows_a
-
-
-async def test_zone_export_import_roundtrip(tmp_path: Path) -> None:
-    """Zona di prova: import -> export -> import = stesse righe (ids compresi)."""
-    rows = await _roundtrip(tmp_path, write_zone(tmp_path / "zona"), 88)
-    assert len(rows["room"]) == 3 and len(rows["exit"]) == 6 and len(rows["zone_reset_command"]) == 7
-
-
-async def test_sample_zone_roundtrip(tmp_path: Path) -> None:
-    """La zona di esempio `RavnFjord` (fixture) fa lo stesso giro."""
-    copy = tmp_path / "RavnFjord"
-    shutil.copytree(DEFINITIONS_FIXTURE / "zones" / "RavnFjord", copy)
-    rows = await _roundtrip(tmp_path, copy, None)
-    assert rows["room"]
-
-
-async def test_second_import_is_idempotent(tmp_path: Path) -> None:
-    """Reimportare la stessa zona la lascia com'e' (zona `unchanged`, stesse righe)."""
-    zone_dir = write_zone(tmp_path / "zona")
-    adapter = _adapter(tmp_path / "editor.db")
-    await adapter.import_zone_dir(zone_dir, dry_run=False, confirm=True)
-    before = _dump(tmp_path / "editor.db")
-    again = await adapter.import_zone_dir(zone_dir, dry_run=False, confirm=True)
-    await adapter.close()
-    assert again.zone.action == "unchanged" and again.resets.changed is False
-    after = _dump(tmp_path / "editor.db")  # gli id dei figli (extra description, reset) possono essere rigenerati
-    assert {k: len(v) for k, v in after.items()} == {k: len(v) for k, v in before.items()}
-    assert after["room"] == before["room"] and after["zone"] == before["zone"]
+    assert (await other.export_zone_bundle(88)).files == bundle.files
+    again = await other.import_zone_dir(staged, dry_run=True, confirm=False)
+    assert again.zone.action == "unchanged" and not again.resets.changed
 
 
 def test_stack_world_params_point_to_tmp(tmp_path: Path) -> None:

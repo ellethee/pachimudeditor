@@ -142,7 +142,9 @@ def test_describe_pachimud_fields() -> None:
     room = {f.name: f for f in next(r for r in info.resources if r.type == "room").fields}
     assert room["sectorType"].enum == "sectorType" and room["flags"].type == "flags"
     assert room["description"].type == "text" and room["clanId"].nullable
-    assert "exits" not in room and "extra" not in room
+    assert "exits" not in room and room["extra"].type == "dict"  # `extra` e' il campo generico, descritto da `extraFields`
+    extra_names = {f.name for r in info.resources if r.type == "room" for f in r.extra_fields}
+    assert extra_names == {"enabled", "area"}
 
 
 # --------------------------------------------------------------------------- HTTP
@@ -193,7 +195,6 @@ async def test_capability_guard(client: httpx.AsyncClient) -> None:
     for path in (
         "/api/players/accounts",
         "/api/world/overview",
-        "/api/instances/mobs",
         "/api/content/races",
         "/api/transfer/zones/1/export/bundle",
     ):
@@ -219,13 +220,21 @@ async def test_read_only_world(client: httpx.AsyncClient) -> None:
         await adapter.create_zone(ZoneIn(vnum=99, name="X"))
 
 
-async def test_extra_not_supported_by_pachimud(client: httpx.AsyncClient) -> None:
-    """`extra` e' sempre vuoto in uscita; in ingresso valorizzato e' rifiutato (422 `world.extra_unsupported`)."""
-    zone = data(await client.get("/api/zones/1"))
-    assert zone["extra"] == {}
+async def test_extra_of_pachimud(client: httpx.AsyncClient) -> None:
+    """`extra` di una zona ha le chiavi di pachimud (`zoneId`, `description`, `folder`); chiavi estranee: 422 `pachimud.extra_unknown`."""
+    zone = data(await client.get("/api/zones/10"))
+    assert zone["extra"] == {
+        "zoneId": "zona_alfa",
+        "description": "",
+        "folder": "ZonaAlfa",
+        "climate": "temperate",
+        "prototypesOnly": False,
+        "extendsZone": None,
+    }
     response = await client.post("/api/zones", json={"vnum": 77, "name": "X", "extra": {"a": 1}})
-    assert error_code(response, 422) == "world.extra_unsupported"
-    assert data(await client.post("/api/zones", json={"vnum": 77, "name": "X", "extra": {}}), 201)["extra"] == {}
+    assert error_code(response, 422) == "pachimud.extra_unknown"
+    created = data(await client.post("/api/zones", json={"vnum": 77, "name": "X", "extra": {"description": "Una zona."}}), 201)
+    assert created["extra"]["description"] == "Una zona." and created["extra"]["zoneId"] == "x"
 
 
 async def test_worlds_endpoint_empty(client: httpx.AsyncClient) -> None:

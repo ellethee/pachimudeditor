@@ -84,6 +84,7 @@ nav:
       - Famiglie di adapter: adapters/families.md
       - SDK e adapter esterni: adapters/sdk.md
       - pachimud: adapters/pachimud.md
+      - pachimud, canale live: adapters/pachimud-live.md
       - basedmud: adapters/basedmud.md
       - dikumod: adapters/dikumod.md
       - dikumod, canale live: adapters/dikumod-live.md

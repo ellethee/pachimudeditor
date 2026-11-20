@@ -9,18 +9,14 @@ from collections.abc import AsyncIterator
 import httpx
 import pytest_asyncio
 from pachifast import create_app
-from pachimudeditor_adapter_pachimud.game_models.zone import Zone
-from pachimudeditor_adapter_pachimud.game_models.enums import Direction, SectorType
-from pachimudeditor_adapter_pachimud.game_models.room import Exit, Room
 from pachimudeditor.common.adapters.plugins import available_kinds
+from pachimudeditor.common.enums import Direction
 from pachimudeditor.modules import build_modules
+from pachimudeditor_adapter_pachimud.apps.world.module import module as world_module
+from tests.helpers import data, error_code
+from tests.support.stack import edit_world_file, write_world_file
 
 MODULES = build_modules(available_kinds())
-from sqlalchemy import select
-
-from pachimudeditor_adapter_pachimud.apps.world.module import module as world_module
-from tests.support import gamedb
-from tests.helpers import data, error_code
 
 
 @pytest_asyncio.fixture
@@ -35,36 +31,18 @@ async def wclient(token: str) -> AsyncIterator[httpx.AsyncClient]:
 
 
 async def _add_cross_zone_content() -> None:
-    """Zona 30 (range 3000-3009) con una stanza vuota e fuori range, un'uscita verso la zona 10, e un'uscita
+    """Zona 30 (range 3000-3009, disattivata) con una stanza vuota e fuori range, un'uscita verso la zona 10, e un'uscita
     pendente nella stanza 1002 della zona 10."""
-    async with gamedb.get_session_factory()() as s:
-        alpha = (await s.execute(select(Zone).where(Zone.vnum == 10))).scalar_one()
-        third = Zone(
-            vnum=30,
-            name="Zona Terza",
-            builder="t",
-            bottom_vnum=3000,
-            top_vnum=3009,
-            min_level=1,
-            max_level=2,
-            lifespan_minutes=5,
-            reset_mode=alpha.reset_mode,
-            enabled=False,
-        )
-        s.add(third)
-        await s.flush()
-        stray = Room(vnum=5000, zone_id=third.id, name="Fuori", description="  ", sector_type=SectorType.CITY, flags=[])
-        s.add(stray)
-        await s.flush()
-        piazza = (await s.execute(select(Room).where(Room.vnum == 1000))).scalar_one()
-        cantina = (await s.execute(select(Room).where(Room.vnum == 1002))).scalar_one()
-        s.add_all(
-            [
-                Exit(room_id=stray.id, direction=Direction.EAST, target_room_id=piazza.id),
-                Exit(room_id=cantina.id, direction=Direction.WEST, target_room_id=None),
-            ]
-        )
-        await s.commit()
+    write_world_file(
+        "ZonaTerza/zone.yaml",
+        "zone_id: zona_terza\nvnum: 30\nname: Zona Terza\nbuilder: t\nbottom_vnum: 3000\ntop_vnum: 3009\nmin_level: 1\nmax_level: 2\n"
+        "lifespan_minutes: 5\nreset_mode: EMPTY\nenabled: false\n",
+    )
+    write_world_file(
+        "ZonaTerza/rooms.yaml",
+        "rooms:\n  - vnum: 5000\n    name: Fuori\n    description: '  '\n    sector_type: CITY\n    exits:\n      east:\n        target_vnum: 1000\n",
+    )
+    edit_world_file("ZonaAlfa/rooms.yaml", "    sector_type: INSIDE\n", "    sector_type: INSIDE\n    exits:\n      west: {}\n")
 
 
 async def test_requires_auth(anon: httpx.AsyncClient) -> None:

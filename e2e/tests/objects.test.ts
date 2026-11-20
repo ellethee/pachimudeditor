@@ -2,22 +2,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { Api } from '../support/api.ts'
-import {
-  addFlag,
-  closeDiscarding,
-  confirm,
-  dismissError,
-  dialog,
-  goto,
-  loginOk,
-  openSession,
-  pickOption,
-  rawI18nKey,
-  saveDialog,
-  tableRow,
-  waitDialogsClosed,
-  type Session,
-} from '../support/browser.ts'
+import { addFlag, closeDiscarding, confirm, dialog, dismissError, goto, loginOk, openDetail, openSession, pickOption, rawI18nKey, saveDialog, saveForm, tableRow, type Session, waitDialogsClosed } from '../support/browser.ts'
 
 /** Vnum creati dai test. */
 const VNUMS = [1060, 1061, 1062, 1063, 1064, 2062]
@@ -198,13 +183,13 @@ describe('oggetti', () => {
   })
 
   it('modifica: i chip sono ricaricati, se ne aggiunge uno e si salva', async () => {
-    await tableRow(s.page, 'un elmo di ferro').locator('.pachi-t2-edit-item').click()
-    await dialog(s.page).locator('.q-chip', { hasText: 'GLOW' }).waitFor()
-    await dialog(s.page).locator('.q-chip', { hasText: 'HEAD' }).waitFor()
+    await openDetail(s.page, tableRow(s.page, 'un elmo di ferro'))
+    await s.page.locator('.q-chip', { hasText: 'GLOW' }).waitFor()
+    await s.page.locator('.q-chip', { hasText: 'HEAD' }).waitFor()
     await addFlag(s.page, 'Wear flag (digita e invio)', 'WIELD')
     await s.page.getByLabel('Descrizione breve *').fill('un elmo di bronzo')
-    await saveDialog(s.page)
-    await waitDialogsClosed(s.page)
+    await saveForm(s.page)
+    await s.page.getByLabel("Torna all'elenco").click()
     await tableRow(s.page, 'un elmo di bronzo').waitFor()
     const obj = await api.byVnum('objects', 1060)
     assert.deepEqual(obj.extraFlags, ['GLOW', 'MAGIC'])

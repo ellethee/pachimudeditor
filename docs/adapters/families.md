@@ -8,8 +8,8 @@ Le famiglie sono tre, e si distinguono per **dove sta la fonte di verità** e **
 
 | Famiglia | I dati stanno in | Chi conosce il formato | Esempi | `kind` |
 |---|---|---|---|---|
-| [FileBased](#filebased) | file del MUD (aree, file dati) | codice Python dell'adapter, spesso con una libreria standalone | Diku Modificato, basedmud / ROM 2.4 | `dikumod`, `basedmud` |
-| [DatabaseBased](#databasebased) | un database (SQLAlchemy) | lo schema del database, letto al volo | pachimud | `pachimud` |
+| [FileBased](#filebased) | file del MUD (aree, file dati, YAML) | codice Python dell'adapter, spesso con una libreria standalone | Diku Modificato, basedmud / ROM 2.4, pachimud (contenuti YAML) | `dikumod`, `basedmud`, `pachimud` |
+| [DatabaseBased](#databasebased) | un database (SQLAlchemy) | lo schema del database, letto al volo | nessun adapter attuale (pachimud lo usa solo per account e personaggi) | - |
 | [Mapped](#mapped) | file del MUD | un **file YAML di mappatura**, nessun codice | tbaMUD e altri MUD a token (non provato) | `mapping` |
 
 Quale scegliere per un MUD nuovo: se i dati sono in un database, DatabaseBased. Se sono in file di un formato a token della
@@ -64,7 +64,7 @@ I dati sono file del MUD (`.are`, `dikumoddata.wld`, ...). L'adapter ha un **sto
 - [canale di controllo live](../backend/live-control-protocol.md): per modificare al volo un MUD acceso senza passare dai file
   (`LiveAdapter`, un piccolo modulo nel MUD).
 
-**Adapter:** [dikumod](dikumod.md) (Diku Modificato) e [basedmud](basedmud.md) (ROM 2.4 / QuickMUD / basedmud).
+**Adapter:** [dikumod](dikumod.md) (Diku Modificato), [basedmud](basedmud.md) (ROM 2.4 / QuickMUD / basedmud) e [pachimud](pachimud.md) (contenuti in YAML, `id == vnum`).
 
 ## DatabaseBased
 
@@ -84,14 +84,16 @@ reale al volo (riflessione) e lo confronta con le revisioni note.
 
 - Transazioni, vincoli e query vere: ricerca globale, uso nei reset e grafo tra zone sono interrogazioni, non scansioni.
 - È l'unica famiglia che si presta alle entità "vive" del gioco (account, personaggi, istanze di mob e oggetti), esposte con
-  capability dedicate (`supports_players`, `supports_instances`).
+  capability dedicate (`supports_players`; `supports_instances` per i mondi che le hanno).
 - Dipende dallo schema del MUD: quando il gioco cambia schema bisogna riallineare i modelli e le revisioni note
   ([contribuire](../contributing.md)).
 - Il gioco può tenere i dati in memoria: una modifica al database non è vista finché il server non ricarica.
 
 **Estensioni tipiche:** istanze vive, giocatori e account, trasferimento di zone (cartella YAML di scambio), razze e classi.
 
-**Adapter:** [pachimud](pachimud.md).
+**Adapter:** nessuno dedicato. [pachimud](pachimud.md) fino al commit `e958b4e` del gioco teneva nel database anche i contenuti; ora ha
+contenuti su file YAML (famiglia FileBased) e usa questo meccanismo (riflessione, controllo dello schema) solo per le tabelle `account` e
+`player_character`.
 
 ## Mapped
 

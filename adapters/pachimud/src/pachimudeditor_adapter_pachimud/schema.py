@@ -1,9 +1,10 @@
-"""Schema del database di pachimud letto "al volo" (schema-on-read): riflessione delle tabelle reali.
+"""Schema del database di pachimud letto "al volo" (schema-on-read): riflessione delle tabelle `account` e `player_character` (e, solo
+per il controllo di compatibilita', `board_message` e `mail_message`: bacheche e posta).
 
-L'editor NON importa i modelli ORM del gioco. All'apertura del mondo si leggono con `MetaData.reflect` le tabelle
-`zone`, `room`, `exit`, ... del database vero e su di esse si mappano (mapping imperativo, senza relazioni) classi
-minime con gli stessi nomi dei modelli del gioco (`Zone`, `Room`, ...). Il significato delle colonne intere (enum)
-sta nelle tabelle dati di `common/enums.py`.
+Nel gioco il database tiene account, personaggi, bacheche e posta (piu' `alembic_version`): zone, stanze, mob, oggetti e reset sono file
+YAML (vedi `store.py`). L'editor NON importa i modelli ORM del gioco: all'apertura si riflettono con `MetaData.reflect` le due
+tabelle e su di esse si mappano (mapping imperativo, senza relazioni) classi minime con gli stessi nomi dei modelli del gioco
+(`Account`, `PlayerCharacter`). Il significato delle colonne intere (enum) sta nelle tabelle dati di `common/enums.py`.
 
 Compatibilita' con il gioco:
 
@@ -11,10 +12,10 @@ Compatibilita' con il gioco:
   revisione che le ha introdotte;
 - il controllo (`SchemaReport`) legge `alembic_version` e confronta: revisione ignota, colonne attese assenti o
   colonne NOT NULL sconosciute senza default danno *avvisi*, mai un errore;
-- una colonna assente ma non essenziale (es. `race_id`, `arg_str`, `heal_rate`) e' "non supportata": in lettura vale
-  il valore neutro, in scrittura e' accettato solo quello (422 `world.field_unsupported`) e `describe()` la marca
-  `unsupported`; una tabella opzionale assente (`account`, `mob_instance`, ...) spegne la capability collegata;
-- mancano tabelle o colonne essenziali (chiavi, vnum): il mondo e' "incompatibile" (503 `world.unavailable`).
+- una colonna assente ma non essenziale (es. `language`, `inventory`) e' "non supportata": in lettura vale il valore
+  neutro, in scrittura e' accettato solo quello (422 `world.field_unsupported`); una tabella assente spegne la capability
+  dei giocatori;
+- mancano colonne essenziali (chiavi): il database e' "incompatibile" (503 `world.unavailable`).
 """
 
 import asyncio
@@ -33,14 +34,38 @@ from sqlalchemy.orm import registry
 
 log = logging.getLogger(__name__)
 
-REVISIONS: tuple[str, ...] = ("64f2026e1334", "f8c896cb5dd8", "848330e8786f", "9d4aa2f29079")
+REVISIONS: tuple[str, ...] = (
+    "64f2026e1334", "f8c896cb5dd8", "848330e8786f", "9d4aa2f29079", "2c458b1b4355", "1d51263b0036",
+    "37151e482628", "f608a52c9ecf", "a3c7d1e95b20", "c4d8e2b1f6a7", "d2f5a8c1e3b9", "62dcb871813e",
+    "e5a1c9d37b42", "a7b2d94c1e60", "b8c3e05d2f71", "a9e3c4d7f152", "c4d8e1a7b930", "d1a5b9c3e7f2",
+    "e3b7c1d5a902", "f6a2c8d4e1b7", "a7d1e5c9b3f4", "b8e2d4f6a1c3", "c9f3a5b7d2e4", "d1a4b6c8e2f5",
+    "e2b5c7d9f1a3", "f3c6d8e0a2b4", "a4f7c1d9b3e6",
+)  # fmt: skip
 """Revisioni alembic del gioco note, dalla piu' vecchia (`alembic/versions` del repo pachimud)."""
 
 REVISION_NOTES: dict[str, str] = {
     "64f2026e1334": "schema iniziale",
-    "f8c896cb5dd8": "livelli di zona, heal/mana rate, clan e owner delle stanze",
-    "848330e8786f": "zone_reset_command.arg_str",
-    "9d4aa2f29079": "mob_prototype.race_id e class_id",
+    "2c458b1b4355": "le FK verso le stanze passano da room.id a room.vnum (current_room_vnum)",
+    "1d51263b0036": "rimosse mob_instance e object_instance",
+    "37151e482628": "player_character.inventory (JSON)",
+    "c4d8e2b1f6a7": "account.language",
+    "d2f5a8c1e3b9": "rimosso player_character.strength_percentile",
+    "62dcb871813e": "rimosse le tabelle dei contenuti: nel DB restano account e player_character",
+    "e5a1c9d37b42": "player_character.description",
+    "a7b2d94c1e60": "player_character.move_current/move_max/height/weight/played_seconds",
+    "b8c3e05d2f71": "player_character.class_levels (multiclasse)",
+    "a9e3c4d7f152": "player_character.affects (effetti temporanei)",
+    "c4d8e1a7b930": "player_character.poison_strength",
+    "d1a5b9c3e7f2": "player_character.speaks",
+    "e3b7c1d5a902": "istanti con fuso orario (UTC)",
+    "f6a2c8d4e1b7": "position come enum in PostgreSQL",
+    "a7d1e5c9b3f4": "player_character.affect_mods",
+    "b8e2d4f6a1c3": "player_character.spellbook (libro degli incantesimi dello stregone)",
+    "c9f3a5b7d2e4": "player_character.aliases e prompt",
+    "d1a4b6c8e2f5": "monete in banca del giocatore (colonna poi unita in bank_gold)",
+    "e2b5c7d9f1a3": "le monete in banca stanno in player_character.bank_gold",
+    "f3c6d8e0a2b4": "tabelle board_message (bacheche) e mail_message (posta)",
+    "a4f7c1d9b3e6": "player_character.rented_at e rent_cost (pensione)",
 }
 HEAD = REVISIONS[-1]
 """L'ultima revisione nota."""
@@ -88,136 +113,6 @@ def _now() -> datetime:
 
 
 EXPECTED: dict[str, dict[str, Col]] = {
-    "zone": {
-        "id": _ID,
-        "vnum": _c("int", essential=True),
-        "name": _c("str"),
-        "builder": _c("str"),
-        "bottom_vnum": _c("int"),
-        "top_vnum": _c("int"),
-        "min_level": _c("int", since=1, default=1),
-        "max_level": _c("int", since=1, default=1),
-        "lifespan_minutes": _c("int"),
-        "reset_mode": _c("int"),
-        "enabled": _c("bool", default=True),
-    },
-    "room": {
-        "id": _ID,
-        "vnum": _c("int", essential=True),
-        "zone_id": _c("int", essential=True),
-        "name": _c("str"),
-        "description": _c("str"),
-        "sector_type": _c("int"),
-        "flags": _c("list", default=list),
-        "heal_rate": _c("int", since=1, default=100),
-        "mana_rate": _c("int", since=1, default=100),
-        "clan_id": _c("str", null=True, since=1),
-        "owner": _c("str", null=True, since=1),
-    },
-    "exit": {
-        "id": _ID,
-        "room_id": _c("int", essential=True),
-        "direction": _c("int", essential=True),
-        "description": _c("str", null=True),
-        "keywords": _c("str", null=True),
-        "door_flag": _c("int", default=0),
-        "is_open": _c("bool", default=True),
-        "is_locked": _c("bool", default=False),
-        "key_vnum": _c("int", null=True),
-        "target_room_id": _c("int", null=True),
-    },
-    "room_extra_description": {
-        "id": _ID,
-        "room_id": _c("int", essential=True),
-        "keywords": _c("str"),
-        "text": _c("str"),
-    },
-    "mob_prototype": {
-        "id": _ID,
-        "vnum": _c("int", essential=True),
-        "zone_id": _c("int", essential=True),
-        "keywords": _c("str"),
-        "short_description": _c("str"),
-        "long_description": _c("str"),
-        "detailed_description": _c("str"),
-        "level": _c("int"),
-        "thac0": _c("int"),
-        "armor_class": _c("int"),
-        "hp_dice_count": _c("int"),
-        "hp_die_size": _c("int"),
-        "hp_bonus": _c("int"),
-        "damage_dice_count": _c("int"),
-        "damage_die_size": _c("int"),
-        "damage_bonus": _c("int"),
-        "gold": _c("int"),
-        "experience": _c("int"),
-        "sex": _c("int"),
-        "flags": _c("list", default=list),
-        "debuff_skill_id": _c("str", null=True),
-        "alignment": _c("int", default=0),
-        "shop_id": _c("str", null=True),
-        "quest_ids": _c("list", default=list),
-        "is_banker": _c("bool", default=False),
-        "teaches_class_ids": _c("list", null=True),
-        "teaches_skill_ids": _c("list", null=True),
-        "race_id": _c("str", null=True, since=3),
-        "class_id": _c("str", null=True, since=3),
-    },
-    "object_prototype": {
-        "id": _ID,
-        "vnum": _c("int", essential=True),
-        "zone_id": _c("int", essential=True),
-        "keywords": _c("str"),
-        "short_description": _c("str"),
-        "long_description": _c("str"),
-        "action_description": _c("str", null=True),
-        "object_type": _c("int"),
-        "weight": _c("int"),
-        "cost": _c("int"),
-        "rent": _c("int"),
-        "value_0": _c("int", null=True),
-        "value_1": _c("int", null=True),
-        "value_2": _c("int", null=True),
-        "value_3": _c("int", null=True),
-        "extra_flags": _c("list", default=list),
-        "wear_flags": _c("list", default=list),
-        "affects": _c("dict", default=dict),
-    },
-    "zone_reset_command": {
-        "id": _ID,
-        "zone_id": _c("int", essential=True),
-        "order_index": _c("int", essential=True),
-        "command_type": _c("int", essential=True),
-        "if_flag": _c("bool", default=False),
-        "arg1": _c("int", null=True),
-        "arg2": _c("int", null=True),
-        "arg3": _c("int", null=True),
-        "arg4": _c("int", null=True),
-        "arg_str": _c("str", null=True, since=2),
-    },
-    "mob_instance": {
-        "id": _ID,
-        "prototype_id": _c("int", essential=True),
-        "room_id": _c("int", essential=True),
-        "hit_points_current": _c("int"),
-        "hit_points_max": _c("int"),
-        "gold": _c("int", null=True),
-        "master_character_id": _c("int", null=True),
-        "charmed_until": _c("datetime", null=True),
-    },
-    "object_instance": {
-        "id": _ID,
-        "prototype_id": _c("int", essential=True),
-        "room_id": _c("int", null=True),
-        "character_id": _c("int", null=True),
-        "container_instance_id": _c("int", null=True),
-        "mob_instance_id": _c("int", null=True),
-        "equipped_slot": _c("str", null=True),
-        "liquid_amount": _c("int", null=True),
-        "charges": _c("int", null=True),
-        "liquid_type": _c("int", null=True),
-        "liquid_poisoned": _c("bool", null=True),
-    },
     "account": {
         "id": _ID,
         "username": _c("str", essential=True),
@@ -226,6 +121,7 @@ EXPECTED: dict[str, dict[str, Col]] = {
         "created_at": _c("datetime", default=_now),
         "last_login_at": _c("datetime", null=True),
         "is_banned": _c("bool", default=False),
+        "language": _c("str", null=True, since=9),
     },
     "player_character": {
         "id": _ID,
@@ -236,12 +132,12 @@ EXPECTED: dict[str, dict[str, Col]] = {
         "hit_points_current": _c("int"),
         "hit_points_max": _c("int"),
         "gold": _c("int", default=0),
-        "current_room_id": _c("int", null=True),
+        "current_room_vnum": _c("int", null=True),
         "sex": _c("int"),
         "class_id": _c("str"),
         "race_id": _c("str"),
+        "class_levels": _c("dict", default=dict, since=14),
         "strength": _c("int"),
-        "strength_percentile": _c("int", default=0),
         "dexterity": _c("int"),
         "constitution": _c("int"),
         "intelligence": _c("int"),
@@ -249,74 +145,74 @@ EXPECTED: dict[str, dict[str, Col]] = {
         "charisma": _c("int"),
         "mana_current": _c("int"),
         "mana_max": _c("int"),
+        "move_current": _c("int", default=0, since=13),
+        "move_max": _c("int", default=0, since=13),
+        "height": _c("int", default=0, since=13),
+        "weight": _c("int", default=0, since=13),
+        "played_seconds": _c("int", default=0, since=13),
         "known_skill_ids": _c("list", default=list),
         "practices": _c("int", default=0),
         "skill_percentages": _c("dict", default=dict),
         "alignment": _c("int", default=0),
         "preferences": _c("list", default=list),
+        "inventory": _c("list", default=list, since=6),
         "position": _c("str", default="STANDING"),
         "hunger": _c("int", default=24),
         "thirst": _c("int", default=24),
         "drunk": _c("int", default=0),
+        "affects": _c("dict", default=dict, since=15),
+        "affect_mods": _c("dict", default=dict, since=20),
+        "spellbook": _c("dict", default=dict, since=21),
+        "aliases": _c("dict", default=dict, since=22),
+        "prompt": _c("str", default="", since=22),
+        "speaks": _c("str", default="common", since=17),
+        "poison_strength": _c("int", default=0, since=16),
         "poison_ticks": _c("int", default=0),
         "wimpy_level": _c("int", default=0),
         "is_player_killer": _c("bool", default=False),
         "title": _c("str", default=""),
+        "description": _c("str", default="", since=12),
         "active_quest_ids": _c("list", default=list),
         "completed_quest_ids": _c("list", default=list),
         "quest_progress": _c("dict", default=dict),
         "quest_points": _c("int", default=0),
         "bank_gold": _c("int", default=0),
+        "rented_at": _c("datetime", null=True, since=26),
+        "rent_cost": _c("int", default=0, since=26),
         "created_at": _c("datetime", default=_now),
         "last_played_at": _c("datetime", null=True),
+    },
+    "board_message": {
+        "id": _ID,
+        "board_id": _c("str", since=25),
+        "author": _c("str", since=25),
+        "title": _c("str", since=25),
+        "text": _c("str", since=25),
+        "created_at": _c("datetime", default=_now, since=25),
+    },
+    "mail_message": {
+        "id": _ID,
+        "recipient": _c("str", since=25),
+        "sender": _c("str", since=25),
+        "text": _c("str", since=25),
+        "created_at": _c("datetime", default=_now, since=25),
     },
 }
 """Tabella -> colonna -> specifica, per la revisione `HEAD`."""
 
-CORE_TABLES: tuple[str, ...] = (
-    "zone",
-    "room",
-    "exit",
-    "mob_prototype",
-    "object_prototype",
-    "zone_reset_command",
-)
-"""Senza una di queste il mondo non e' utilizzabile."""
+CORE_TABLES: tuple[str, ...] = ()
+"""Tabelle senza le quali il database non e' utilizzabile (nessuna: i contenuti sono su file)."""
 
 OPTIONAL_TABLES: dict[str, str] = {
-    "room_extra_description": "supports_extra_descriptions",
-    "mob_instance": "supports_instances",
-    "object_instance": "supports_instances",
     "account": "supports_players",
     "player_character": "supports_players",
+    "board_message": "bacheche",
+    "mail_message": "posta",
 }
-"""Tabella opzionale -> capability che spegne se manca."""
+"""Tabella -> capability che spegne se manca."""
 
-CLASS_NAMES: dict[str, str] = {
-    "zone": "Zone",
-    "room": "Room",
-    "exit": "Exit",
-    "room_extra_description": "RoomExtraDescription",
-    "mob_prototype": "MobPrototype",
-    "object_prototype": "ObjectPrototype",
-    "zone_reset_command": "ZoneResetCommand",
-    "mob_instance": "MobInstance",
-    "object_instance": "ObjectInstance",
-    "account": "Account",
-    "player_character": "PlayerCharacter",
-}
+CLASS_NAMES: dict[str, str] = {"account": "Account", "player_character": "PlayerCharacter"}
 """Tabella -> nome della classe mappata (gli stessi nomi dei modelli del gioco)."""
-
-RESOURCE_OF_TABLE: dict[str, str] = {
-    "zone": "zone",
-    "room": "room",
-    "exit": "exit",
-    "room_extra_description": "extra_description",
-    "mob_prototype": "mob",
-    "object_prototype": "object",
-    "zone_reset_command": "reset_command",
-}
-"""Tabella -> tipo di risorsa di `describe()` (per marcare i campi non supportati)."""
 
 
 # ------------------------------------------------------------------------------ righe mappate
@@ -385,15 +281,6 @@ def _camel(name: str) -> str:
 class GameModels:
     """Le classi mappate di un database di gioco (una per tabella presente) e le informazioni sul suo schema."""
 
-    Zone: type[GameRow]
-    Room: type[GameRow]
-    Exit: type[GameRow]
-    RoomExtraDescription: type[GameRow] | None
-    MobPrototype: type[GameRow]
-    ObjectPrototype: type[GameRow]
-    ZoneResetCommand: type[GameRow]
-    MobInstance: type[GameRow] | None
-    ObjectInstance: type[GameRow] | None
     Account: type[GameRow] | None
     PlayerCharacter: type[GameRow] | None
 
@@ -422,14 +309,6 @@ class GameModels:
     def column(self, table: str, name: str) -> bool:
         """`True` se la colonna esiste nel DB."""
         return table in self.tables and name in self.tables[table].c
-
-    def unsupported_fields(self, resource: str) -> frozenset[str]:
-        """I campi (camelCase) di una risorsa di `describe()` senza colonna nel DB."""
-        out: set[str] = set()
-        for table, resource_type in RESOURCE_OF_TABLE.items():
-            if resource_type == resource:
-                out |= {_camel(c) for c in self.unsupported.get(table, {})}
-        return frozenset(out)
 
 
 def models_of(session: AsyncSession) -> GameModels:

@@ -1,20 +1,17 @@
-"""Transfer: esportazione/importazione di zone nel formato YAML dell'importer del gioco."""
+"""Transfer: esportazione/importazione di zone come cartelle di file YAML (il formato del gioco)."""
 
 import io
+import shutil
 import zipfile
 from collections.abc import AsyncIterator
 from pathlib import Path
 
 import httpx
 import pytest_asyncio
-from pachimudeditor_adapter_pachimud.game_models.base import Base
-from tests.support.gamedb import create_engine
-from pachimudeditor_adapter_pachimud.game_models.zone import Zone
-from sqlalchemy import select
 
 from pachimudeditor.common.adapters.registry import WorldConfig, WorldRegistry, get_registry, set_registry
 from tests.helpers import data, error_code
-from tests.support import gamedb, stack
+from tests.support import stack
 from tests.support.extra_apps import build_app, make_client
 
 FILES = ("zone.yaml", "rooms.yaml", "mobs.yaml", "objects.yaml", "resets.yaml")
@@ -61,7 +58,8 @@ async def test_export_zip_and_bundle(api: httpx.AsyncClient) -> None:
     bundle = data(await api.get(f"/api/transfer/zones/{zid}/export/bundle"))
     assert bundle["files"] == texts and bundle["warnings"] == []
     assert "name: Zona Alfa" in texts["zone.yaml"] and "reset_mode: EMPTY" in texts["zone.yaml"]
-    assert "type: LOAD_MOB" in texts["resets.yaml"] and "hp_dice: 1d8+0" in texts["mobs.yaml"]
+    assert "mob_vnum: 1000" in texts["resets.yaml"] and "hp_dice: 1d8+0" in texts["mobs.yaml"]
+    assert "# la piazza e il vicolo" in texts["rooms.yaml"]  # i file sono quelli su disco, commenti inclusi
 
 
 async def test_export_not_found(api: httpx.AsyncClient) -> None:
@@ -75,28 +73,20 @@ async def test_export_requires_auth() -> None:
         assert (await c.get("/api/transfer/zones/1/export")).status_code == 401
 
 
-async def test_roundtrip_into_empty_db(api: httpx.AsyncClient) -> None:
-    """Esporta, importa in un DB vuoto, riesporta: i cinque file sono identici."""
+async def test_roundtrip_into_empty_world(api: httpx.AsyncClient) -> None:
+    """Esporta, importa in un secondo mondo senza zone, riesporta: i file sono identici."""
     original = await _export_files(api, await _zone_id(api, 10))
-    # secondo mondo pachimud con un DB di gioco vuoto (stesso schema): l'import avviene li', scelto con X-World
+    # secondo mondo pachimud con `definitions/` senza zone: l'import avviene li', scelto con X-World
     from tests.stack_fixtures import WORKDIR
 
-    path = WORKDIR / "roundtrip.db"
-    for suffix in ("", "-wal", "-shm"):
-        Path(f"{path}{suffix}").unlink(missing_ok=True)
-    engine = create_engine(f"sqlite+aiosqlite:///{path}")
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    await engine.dispose()
+    empty = WORKDIR / "definitions_rt"
+    shutil.rmtree(empty, ignore_errors=True)
+    shutil.copytree(stack.DEFINITIONS_FIXTURE, empty, ignore=shutil.ignore_patterns("zones", "README.md"))
     previous = get_registry()
     registry = WorldRegistry(
         [
             WorldConfig(id="pachimud", kind="pachimud", params=stack.world_params(WORKDIR)),
-            WorldConfig(
-                id="rt",
-                kind="pachimud",
-                params={**stack.world_params(WORKDIR), "database_url": f"sqlite+aiosqlite:///{path}"},
-            ),
+            WorldConfig(id="rt", kind="pachimud", params={"definitions_path": str(empty)}),
         ],
         "pachimud",
     )
@@ -184,7 +174,7 @@ async def test_import_warnings(api: httpx.AsyncClient) -> None:
             "    detailed_description: d\n    level: 1\n    thac0: 1\n    armor_class: 1\n"
             "    hp_dice: 1d1+0\n    damage_dice: 1d1+0\n    race_id: nonesiste\n"
         ),
-        "resets.yaml": "resets:\n  - type: LOAD_MOB\n    mob_vnum: 1400\n    room_vnum: 4444\n",
+        "resets.yaml": "resets:\n  mobs:\n    - mob_vnum: 1400\n      max_existing: 1\n      room_vnum: 4444\n      room_limit: 1\n",
     }
     preview = data(await api.post("/api/transfer/zones/import", files=[("files", ("w.zip", _zip(files), ""))]))
     codes = {w["code"] for w in preview["warnings"]}
@@ -217,11 +207,10 @@ async def test_zip_slip_names_are_ignored(api: httpx.AsyncClient, tmp_path: Path
     assert not (tmp_path.parent / "zone.yaml").exists()
 
 
-async def test_real_game_db_untouched() -> None:
-    """Rete di sicurezza: la sessione dei test non e' quella reale."""
-    async with gamedb.get_session_factory()() as session:
-        assert "pachimudeditor-pytest" in str(get_registry().get("pachimud").params.database_url)  # type: ignore[attr-defined]
-        assert (await session.execute(select(Zone))).scalars().first() is not None
+async def test_real_game_world_untouched() -> None:
+    """Rete di sicurezza: il mondo dei test non e' quello reale (DB e definizioni nella cartella temporanea)."""
+    params = get_registry().get("pachimud").params  # type: ignore[attr-defined]
+    assert "pachimudeditor-pytest" in str(params.database_url) and "pachimudeditor-pytest" in str(params.definitions_path)
 
 
 def test_zip_members_summing_over_limit(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]

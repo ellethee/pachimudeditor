@@ -46,7 +46,7 @@ describe('conversione tra mondi', () => {
     assert.equal(await s.page.getByTestId('convert-run').isDisabled(), true)
     await s.page.getByTestId('convert-confirm').click()
     await s.page.getByTestId('convert-run').click()
-    await s.page.getByTestId('convert-done').waitFor()
+    await s.page.getByTestId('convert-done').waitFor({ timeout: 90_000 }) // la conversione scrive ogni voce su file YAML (~600 scritture, ~17 s)
     assert.equal((await api.call('GET', '/api/zones')).data.items.some((z: { vnum: number }) => z.vnum === 3700), true)
     await Promise.all([s.page.waitForNavigation({ waitUntil: 'load' }), s.page.getByTestId('convert-open-target').click()])
     await s.page.waitForLoadState('networkidle')

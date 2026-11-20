@@ -3,11 +3,11 @@
 from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pachifast.i18n import api_error
 from pydantic import BaseModel
-from sqlalchemy import Integer, delete, func, select
+from sqlalchemy import Integer, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pachimudeditor_adapter_pachimud.definitions import read_classes, read_races
@@ -16,6 +16,9 @@ from pachimudeditor.sdk import conflict, not_found
 from pachimudeditor.common.enums import Position
 
 from .schemas import CharacterDetail, CharacterSummary, OptionOut, RefOut
+
+if TYPE_CHECKING:
+    from pachimudeditor_adapter_pachimud.adapter import PachimudAdapter
 
 
 def humanize(value: str) -> str:
@@ -28,7 +31,7 @@ def enum_options(enum_cls: type[Enum]) -> list[OptionOut]:
     return [OptionOut(value=int(m.value), label=humanize(m.name)) for m in enum_cls]  # type: ignore[call-overload]
 
 
-def content_refs(definitions: Path | None) -> tuple[list[RefOut], list[RefOut]]:
+def content_refs(definitions: "Path | tuple[Path, ...] | None") -> tuple[list[RefOut], list[RefOut]]:
     """Razze e classi correnti dagli YAML di `definitions/` del mondo (rilette a ogni chiamata)."""
     return (
         sorted((RefOut(id=r.race_id, name=r.name) for r in read_races(definitions).values()), key=lambda x: x.name),
@@ -49,13 +52,14 @@ async def ensure_account_exists(session: AsyncSession, account_id: int) -> None:
         raise api_error(422, "players.invalid_account", loc=("body", "accountId"), id=account_id)
 
 
-async def ensure_room_exists(session: AsyncSession, room_id: int, field: str = "currentRoomId") -> None:
-    """422 `players.invalid_room` se la stanza non esiste."""
-    if await session.get(models_of(session).Room, room_id) is None:
+def ensure_room_exists(adapter: "PachimudAdapter", room_id: int, field: str = "currentRoomId") -> int:
+    """Il vnum della stanza (`id == vnum`); 422 `players.invalid_room` se non esiste nei file del mondo."""
+    if adapter.sync().find("room", room_id) is None:
         raise api_error(422, "players.invalid_room", loc=("body", field), id=room_id)
+    return room_id
 
 
-def ensure_class_race_valid(definitions: Path | None, class_id: str | None, race_id: str | None) -> None:
+def ensure_class_race_valid(definitions: "Path | tuple[Path, ...] | None", class_id: str | None, race_id: str | None) -> None:
     """422 `players.invalid_class` / `players.invalid_race` se l'id non e' nelle definizioni YAML."""
     if class_id is None and race_id is None:
         return
@@ -82,66 +86,60 @@ async def get_character_or_404(session: AsyncSession, character_id: int) -> Any:
     return row
 
 
-async def _context(session: AsyncSession, rows: Sequence[Any]) -> tuple[dict[int, str], dict[int, Any]]:
-    """Username degli account e stanze referenziati dalle righe."""
-    m = models_of(session)
-    Account, Room = m.Account, m.Room  # noqa: N806
+async def _context(session: AsyncSession, rows: Sequence[Any]) -> dict[int, str]:
+    """Username degli account referenziati dalle righe."""
+    Account = models_of(session).Account  # noqa: N806
     account_ids = {r.account_id for r in rows}
-    room_ids = {r.current_room_id for r in rows if r.current_room_id is not None}
-    accounts: dict[int, str] = {}
-    rooms: dict[int, Any] = {}
-    if account_ids:
-        res = await session.execute(select(Account.id, Account.username).where(Account.id.in_(account_ids)))
-        accounts = {i: u for i, u in res.all()}
-    if room_ids:
-        res = await session.execute(select(Room).where(Room.id.in_(room_ids)))
-        rooms = {r.id: r for r in res.scalars().all()}
-    return accounts, rooms
+    if not account_ids:
+        return {}
+    res = await session.execute(select(Account.id, Account.username).where(Account.id.in_(account_ids)))
+    return {i: u for i, u in res.all()}
 
 
-async def to_summaries(session: AsyncSession, rows: Sequence[Any]) -> list[CharacterSummary]:
-    """Righe di lista arricchite con username dell'account e vnum/nome della stanza."""
-    accounts, rooms = await _context(session, rows)
+async def to_summaries(session: AsyncSession, rows: Sequence[Any], adapter: "PachimudAdapter") -> list[CharacterSummary]:
+    """Righe di lista arricchite con username dell'account e vnum/nome della stanza (dai file del mondo)."""
+    accounts = await _context(session, rows)
+    store = adapter.sync()
     out: list[CharacterSummary] = []
     for row in rows:
         item = CharacterSummary.model_validate(row)
         item.account_username = accounts.get(row.account_id)
-        room = rooms.get(row.current_room_id) if row.current_room_id is not None else None
+        room = store.find("room", row.current_room_vnum) if row.current_room_vnum is not None else None
         if room is not None:
-            item.current_room_vnum, item.current_room_name = room.vnum, room.name
+            item.current_room_id, item.current_room_vnum, item.current_room_name = room.vnum, room.vnum, room.model.name
+        elif row.current_room_vnum is not None:
+            item.current_room_vnum = row.current_room_vnum  # la stanza non esiste piu': resta il vnum
         out.append(item)
     return out
 
 
-async def to_detail(session: AsyncSession, row: Any) -> CharacterDetail:
+async def to_detail(session: AsyncSession, row: Any, adapter: "PachimudAdapter") -> CharacterDetail:
     """Scheda completa con contesto e numero di oggetti posseduti."""
-    base = (await to_summaries(session, [row]))[0]
+    base = (await to_summaries(session, [row], adapter))[0]
     detail = CharacterDetail.model_validate(row)
     detail.account_username = base.account_username
+    detail.current_room_id = base.current_room_id
     detail.current_room_vnum = base.current_room_vnum
     detail.current_room_name = base.current_room_name
-    detail.item_count = len(await collect_item_ids(session, row.id))
+    detail.item_count = len(flatten_inventory(row.inventory))
     return detail
 
 
-async def collect_item_ids(session: AsyncSession, character_id: int) -> list[int]:
-    """Id di tutte le istanze possedute: dirette e annidate in contenitori (risalita per livelli)."""
-    ObjectInstance = models_of(session).ObjectInstance  # noqa: N806
-    res = await session.execute(select(ObjectInstance.id).where(ObjectInstance.character_id == character_id))
-    found = [i for (i,) in res.all()]
-    frontier = list(found)
-    while frontier:
-        res = await session.execute(select(ObjectInstance.id).where(ObjectInstance.container_instance_id.in_(frontier)))
-        frontier = [i for (i,) in res.all() if i not in found]
-        found.extend(frontier)
-    return found
+def flatten_inventory(inventory: Any) -> list[tuple[dict[str, Any], int | None]]:
+    """Le voci dell'inventario JSON del personaggio in ordine di visita (padre prima dei figli): `(voce, indice del padre)`.
+    L'`id` di una voce e' la sua posizione in questa lista."""
+    out: list[tuple[dict[str, Any], int | None]] = []
 
+    def visit(entries: Any, parent: int | None) -> None:
+        """Scende nei `contents`."""
+        for entry in entries if isinstance(entries, list) else []:
+            if not isinstance(entry, dict):
+                continue
+            out.append((entry, parent))
+            visit(entry.get("contents"), len(out) - 1)
 
-async def delete_items(session: AsyncSession, item_ids: Sequence[int]) -> None:
-    """Elimina le istanze indicate (senza commit)."""
-    ObjectInstance = models_of(session).ObjectInstance  # noqa: N806
-    if item_ids:
-        await session.execute(delete(ObjectInstance).where(ObjectInstance.id.in_(list(item_ids))))
+    visit(inventory, None)
+    return out
 
 
 async def count_characters(session: AsyncSession, account_ids: Sequence[int]) -> dict[int, int]:
@@ -157,17 +155,15 @@ async def count_characters(session: AsyncSession, account_ids: Sequence[int]) ->
     return {i: c for i, c in res.all()}
 
 
-async def prototype_by(session: AsyncSession, *, prototype_id: int | None, vnum: int | None) -> Any:
-    """Il prototipo per id o vnum; 422 se mancano entrambi, 404/422 se non esiste."""
-    if prototype_id is None and vnum is None:
+def prototype_by(adapter: "PachimudAdapter", *, prototype_id: int | None, vnum: int | None) -> Any:
+    """L'oggetto prototipo per vnum (`prototypeId == vnum`); 422 se mancano entrambi o non esiste."""
+    wanted = prototype_id if prototype_id is not None else vnum
+    if wanted is None:
         raise api_error(422, "players.prototype_required", loc=("body", "prototypeId"))
-    ObjectPrototype = models_of(session).ObjectPrototype  # noqa: N806
-    stmt = select(ObjectPrototype)
-    stmt = stmt.where(ObjectPrototype.id == prototype_id) if prototype_id is not None else stmt.where(ObjectPrototype.vnum == vnum)
-    proto = (await session.execute(stmt)).scalars().first()
-    if proto is None:
+    item = adapter.sync().find("object", wanted)
+    if item is None:
         raise api_error(422, "players.invalid_prototype", loc=("body", "prototypeId"))
-    return proto
+    return item
 
 
 def dump(model: BaseModel) -> dict:

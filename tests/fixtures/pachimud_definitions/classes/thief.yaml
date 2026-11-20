@@ -1,10 +1,100 @@
 class_id: thief
+index: 3
 name: Thief
+abbreviation: Th
 description: A class specializing in stealth, agility, and cunning.
-attrs_priority:
+attrs_priority:  # default di pachimud: in LeU lo sceglie il giocatore alla creazione
   - dexterity
   - strength
   - constitution
   - intelligence
   - wisdom
   - charisma
+exp_per_level:  # `titles[classe][livello].exp` di LeU (constants.c): esperienza totale per raggiungere il livello
+  [0, 1, 1250, 2500, 5000, 10000, 20000, 40000, 70000, 110000, 160000, 220000, 440000, 660000, 880000, 1100000, 1320000, 1540000, 1760000, 1980000, 2200000, 2600000, 2900000, 3200000, 3500000, 3800000, 4150000, 4500000, 4850000, 5200000, 5550000, 5900000, 6300000, 6700000, 7100000, 7500000, 7900000, 8300000, 8750000, 9200000, 9650000, 10075000, 10575000, 11075000, 11600000, 12200000, 12900000, 13700000, 14600000, 17000000, 20000000, 220000000, 230000000, 230500000, 231000000, 232000000, 233000000, 241000000, 242000000, 243000000, 244000000]
+titles:  # `titles` di LeU: titolo maschile e femminile per livello (indice = livello)
+  - {male: Man, female: Woman}
+  - {male: Delinquent, female: Delinquent}
+  - {male: Miscreant, female: Miscreant}
+  - {male: Footpad, female: Footpad}
+  - {male: Pilferer, female: Pilferess}
+  - {male: Filcher, female: Filcheress}
+  - {male: Pincher, female: Pincheress}
+  - {male: Snatcher, female: Snatcheress}
+  - {male: Ninja, female: Ninja}
+  - {male: Pick-Pocket, female: Pick-Pocket}
+  - {male: Cut-Purse, female: Cut-Purse}
+  - {male: Sharper, female: Sharper}
+  - {male: Burgler, female: Burgler}
+  - {male: Robber, female: Robber}
+  - {male: Mugger, female: Mugger}
+  - {male: Magsman, female: Magswoman}
+  - {male: Bandito, female: Bandita}
+  - {male: Highwayman, female: Bandit}
+  - {male: Brigand, female: Brigand}
+  - {male: Agent, female: Agent}
+  - {male: Outlaw, female: Outlaw}
+  - {male: Blade, female: Blade}
+  - {male: Quick-Blade, female: Quick-Blade}
+  - {male: Knifer, female: Knifer}
+  - {male: Sneak, female: Sneak}
+  - {male: Thief, female: Thief}
+  - {male: Special Agent, female: Special Agent}
+  - {male: Collector, female: Collector}
+  - {male: Hand, female: Hand}
+  - {male: Unseen, female: Unseen}
+  - {male: Thug, female: Thug}
+  - {male: Cut-Throat, female: Cut-Throat}
+  - {male: Grand-Thief, female: Grand-Thief}
+  - {male: Repossessor, female: Repossessor}
+  - {male: Killer, female: Killer}
+  - {male: Secret Agent, female: Secret Agent}
+  - {male: Renegade, female: Renegade}
+  - {male: Murderer, female: Murderess}
+  - {male: Butcher, female: Butcheress}
+  - {male: Slayer, female: Slayer}
+  - {male: Executioner, female: Executioner}
+  - {male: Assassin, female: Assassin}
+  - {male: Master Assassin, female: Mistress Assassin}
+  - {male: Master Thief, female: Master Thief}
+  - {male: Master Thief, female: Master Thief}
+  - {male: Master Thief, female: Master Thief}
+  - {male: Master Thief, female: Master Thief}
+  - {male: Master Thief, female: Master Thief}
+  - {male: Master Thief, female: Master Thief}
+  - {male: Master Thief, female: Master Thief}
+  - {male: Master Thief, female: Master Thief}
+  - {male: Immortal Assasin, female: Immortal Assasin}
+  - {male: Immortal Assasin, female: Immortal Assasin}
+  - {male: Immortal Assasin, female: Immortal Assasin}
+  - {male: Immortal Assasin, female: Immortal Assasin}
+  - {male: Immortal Assasin, female: Immortal Assasin}
+  - {male: Immortal Assasin, female: Immortal Assasin}
+  - {male: ' Demi God', female: Demi Goddess}
+  - {male: ' God', female: Goddess}
+  - {male: Implementor, female: Implementrix}
+  - {male: Implementor, female: Implementrix}
+thac0:  # `thaco` di LeU (constants.c) per livello: piu' basso e' meglio
+  [100, 20, 20, 20, 19, 19, 19, 19, 18, 18, 18, 17, 17, 17, 17, 16, 16, 16, 15, 15, 15, 15, 14, 14, 14, 13, 13, 13, 13, 12, 12, 12, 11, 11, 11, 11, 10, 10, 10, 9, 9, 9, 9, 8, 8, 8, 7, 7, 7, 7, 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+hp_gain:  # `advance_level` di LeU (limits.c): number(n, m) sotto until_level, poi flat_after; + bonus Costituzione, diviso per le classi
+  dice: [2, 10]
+  until_level: 12
+  flat_after: 2
+  con_bonus_cap: 2
+saving_throws:  # `saving_throws` di LeU (spell_parser.c) per livello (indice = livello): piu' basso e' meglio
+  para: [16, 14, 14, 13, 13, 11, 11, 10, 10, 8, 8, 7, 7, 5, 5, 4, 4, 3, 3, 3, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  rod: [18, 16, 16, 15, 15, 13, 13, 12, 12, 10, 10, 9, 9, 7, 7, 6, 6, 5, 5, 5, 5, 4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  petri: [17, 15, 15, 14, 14, 12, 12, 11, 11, 9, 9, 8, 8, 6, 6, 5, 5, 4, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  breath: [20, 17, 17, 16, 16, 13, 13, 12, 12, 9, 9, 8, 8, 5, 5, 4, 4, 4, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  spell: [19, 17, 17, 16, 16, 14, 14, 13, 13, 11, 11, 10, 10, 8, 8, 7, 7, 6, 6, 6, 6, 4, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+start_hp:  # `roll_abilities` di LeU: 10 + un tiro di dice + bonus, diviso per le classi
+  dice: [1, 6]
+  bonus: 0
+  group: thief_psi
+mana:  # `mana_limit` di LeU (limits.c): base + per_level * (livello // level_divisor); + ((INT / 3) + 2) * 3
+  base: 100
+  per_level: 0
+  level_divisor: 1
+magic_order: 7  # posizione in `BestMagicClass` di LeU (multiclass.c)
+level_loss:  # `drop_level` di LeU (limits.c): punti ferita persi, in piu' al bonus di Costituzione, sotto il livello `below` (`low`) o da li' in su (`high`), almeno `minimum`
+  {below: 12, low: 10, high: 2, minimum: 4}

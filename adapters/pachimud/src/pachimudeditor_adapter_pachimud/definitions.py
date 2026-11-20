@@ -27,8 +27,22 @@ class Stats(BaseModel):
     charisma: int = 0
 
 
+class BodyRange(BaseModel):
+    """Altezza (cm) e peso (kg) di un personaggio nuovo: un valore a caso fra minimo e massimo."""
+
+    height: tuple[int, int]
+    weight: tuple[int, int]
+
+
+class RaceBody(BaseModel):
+    """Altezza e peso per sesso."""
+
+    male: BodyRange
+    female: BodyRange
+
+
 class LoaderRace(BaseModel):
-    """Una razza (`definitions/races/<id>.yaml`)."""
+    """Una razza (`races/<id>.yaml`)."""
 
     race_id: str
     name: str
@@ -53,25 +67,81 @@ class LoaderRace(BaseModel):
     points: Optional[int] = 0
     class_multiplier: Optional[list[int]] = []
     start_room: Optional[int] = None
+    class_max_level: dict[str, int] = {}
+    body: Optional[RaceBody] = None
+    default_language: str = "common"
+    class_skills: dict[str, dict[str, int]] = {}
+    order: Optional[int] = None
+    class_choices: list[list[str]] = []
+    stat_modifiers: dict[str, int] = {}
+    start_hp_bonus: int = 0
+    move_modifier: int = 0
+
+
+class ClassTitle(BaseModel):
+    """Titolo di un livello: maschile e femminile."""
+
+    male: str
+    female: str
+
+
+class HpGain(BaseModel):
+    """Punti ferita guadagnati a ogni livello."""
+
+    dice: tuple[int, int]
+    until_level: int
+    flat_after: int
+    con_bonus_cap: Optional[int] = None
+
+
+class LevelLoss(BaseModel):
+    """Punti ferita persi scendendo di livello."""
+
+    below: int
+    low: int
+    high: int
+    minimum: int
+
+
+class ClassMana(BaseModel):
+    """Mana per classe."""
+
+    base: int = 0
+    per_level: int = 0
+    level_divisor: int = 1
+    only_class_cap: Optional[int] = None
+
+
+class StartHp(BaseModel):
+    """Punti ferita di partenza."""
+
+    dice: tuple[int, int]
+    bonus: int = 0
+    group: Optional[str] = None
 
 
 class LoaderClass(BaseModel):
-    """Una classe (`definitions/classes/<id>.yaml`)."""
+    """Una classe (`classes/<id>.yaml`)."""
 
     class_id: str = ""
     disabled: Optional[bool] = False
+    index: Optional[int] = None
     abbreviation: str = ""
     name: str = ""
     description: str = ""
-    add_strength: Optional[bool] = None
     attrs_priority: list[str] = []
-    attr_prime: str = ""
-    thac0_00: int = 0
-    thac0_32: int = 0
-    hp_min: int = 0
-    hp_max: int = 0
-    weapon: int = 0
-    skill_adept: int = 0
+    exp_per_level: list[int] = []
+    titles: list[ClassTitle] = []
+    thac0: list[int] = []
+    hp_gain: Optional[HpGain] = None
+    level_loss: Optional[LevelLoss] = None
+    start_hp: Optional[StartHp] = None
+    mana: Optional[ClassMana] = None
+    magic_order: Optional[int] = None
+    pure_move_bonus: int = 0
+    variant: Optional[str] = None
+    start_alignment: Optional[int] = None
+    saving_throws: dict[str, list[int]] = {}
 
 
 def load_yaml(path: Path, model: type[BaseModel]) -> BaseModel:
@@ -94,14 +164,24 @@ def _read(directory: Path, model: type[BaseModel], id_field: str) -> dict[str, B
     return found
 
 
-def read_races(definitions: Path | None) -> dict[str, LoaderRace]:
-    """Le razze caricabili, per `race_id`."""
-    return _read(definitions / "races", LoaderRace, "race_id") if definitions else {}  # type: ignore[return-value]
+def _layers(definitions: "Path | tuple[Path, ...] | None") -> tuple[Path, ...]:
+    """Una cartella o una serie di strati (il successivo sostituisce lo stesso id del precedente)."""
+    if definitions is None:
+        return ()
+    return (definitions,) if isinstance(definitions, Path) else tuple(definitions)
 
 
-def read_classes(definitions: Path | None) -> dict[str, LoaderClass]:
-    """Le classi caricabili (non `disabled`), per `class_id`."""
-    if not definitions:
-        return {}
-    classes = _read(definitions / "classes", LoaderClass, "class_id")
-    return {key: value for key, value in classes.items() if not value.disabled}  # type: ignore[attr-defined,misc]
+def read_races(definitions: "Path | tuple[Path, ...] | None") -> dict[str, LoaderRace]:
+    """Le razze caricabili, per `race_id` (strati in ordine: il gioco ha prima il suo pacchetto, poi `definitions_path`)."""
+    found: dict[str, LoaderRace] = {}
+    for layer in _layers(definitions):
+        found.update(_read(layer / "races", LoaderRace, "race_id"))  # type: ignore[arg-type]
+    return found
+
+
+def read_classes(definitions: "Path | tuple[Path, ...] | None") -> dict[str, LoaderClass]:
+    """Le classi caricabili (non `disabled`), per `class_id`, con gli stessi strati delle razze."""
+    found: dict[str, LoaderClass] = {}
+    for layer in _layers(definitions):
+        found.update(_read(layer / "classes", LoaderClass, "class_id"))  # type: ignore[arg-type]
+    return {key: value for key, value in found.items() if not value.disabled}

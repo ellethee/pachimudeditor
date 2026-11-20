@@ -30,16 +30,16 @@ Priorita': variabili d'ambiente > `.env` della cartella > `pachimudeditor.yaml` 
       kind: pachimud
       name: Pachimud
       params:
-        database_url: sqlite+aiosqlite:////percorso/pachimud.db   # URL SQLAlchemy async
-        definitions_path: /percorso/definitions                    # races/, classes/ (e zones/)
+        definitions_path: /percorso/definitions                    # contenuti YAML: zones/, classes/, races/ (obbligatorio)
+        database_url: sqlite+aiosqlite:////percorso/pachimud.db   # facoltativo: account e personaggi (URL SQLAlchemy async)
         # config_path: /percorso/pachimud.yaml   # facoltativo: ne legge database_url/definition_path
   ```
 
   I path SQLite/`definitions_path` relativi si risolvono rispetto alla cartella di lavoro; `config_path` (il `pachimud.yaml`
   del game server) fornisce i valori mancanti e i suoi path relativi si risolvono rispetto alla sua cartella; i parametri
-  espliciti vincono. Ripiego: senza `database_url` e `config_path`, la variabile `PACHIMUD_CONFIG_PATH`. All'avvio (e con
-  `pachimudeditor worlds check`) si verifica la revisione alembic del database: revisione ignota o colonne assenti sono
-  avvisi, e le funzioni collegate (es. `race_id` dei mob) si disattivano; dettagli in la [guida agli adapter](../adapters/sdk.md).
+  espliciti vincono. Ripiego: senza `definitions_path` e `config_path`, la variabile `PACHIMUD_CONFIG_PATH`. All'avvio (e con
+  `pachimudeditor worlds check`) si leggono i file YAML (i file o le voci non validi sono segnalati con file e riga) e si verifica la revisione
+  alembic del database dei giocatori: revisione ignota o colonne assenti sono avvisi; dettagli in la [guida agli adapter](../adapters/sdk.md).
 - Il DB dell'editor (utenti, ecc.) e' il DB di autenticazione di pachifast, SEPARATO dai database dei MUD: le
   connessioni ai MUD le gestiscono solo gli adapter.
 - DB auth e migration: `init` genera `migrations/auth/` e `project_modules.py` NELLA cartella di lavoro (pachifast

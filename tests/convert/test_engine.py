@@ -132,7 +132,7 @@ async def test_blocked_by_foreign_vnums(rom_world, pachimud_world):
 async def test_safety_checks(rom_world, pachimud_world):
     """Arrivo in sola lettura, stesso mondo e zona inesistente sono rifiutati."""
     with pytest.raises(HTTPException) as error:
-        await convert(pachimud_world, rom_world(read_only=True), plan(1))
+        await convert(pachimud_world, rom_world(read_only=True), plan(10))
     assert error.value.status_code == 409 and code_of(error.value) == "world.read_only"
     src = rom_world()
     with pytest.raises(HTTPException) as same:
@@ -187,10 +187,10 @@ async def test_rollback_restores_replaced_zone(rom_world, pachimud_world):
 
 async def test_pachimud_to_basedmud(pachimud_world, empty_rom):
     """pachimud -> BasedMud: i file `.are` riletti da un adapter nuovo hanno stanze, uscite, stato porta e reset."""
-    s = await read_zone(pachimud_world, 1)
+    s = await read_zone(pachimud_world, 10)
     exit_out = s.rooms[0].exits[0]
     await pachimud_world.update_exit(s.rooms[0].id, exit_out.id, ExitPatch(door_flag=DoorFlag.CLOSABLE, is_open=False))
-    report = await convert(pachimud_world, empty_rom, plan(1), dry_run=False, confirm=True)
+    report = await convert(pachimud_world, empty_rom, plan(10), dry_run=False, confirm=True)
     assert report.applied and not report.errors
     fresh = type(empty_rom)(empty_rom.config)
     zones = await list_all_zones(fresh)
@@ -201,8 +201,8 @@ async def test_pachimud_to_basedmud(pachimud_world, empty_rom):
     assert closed.door_flag == DoorFlag.CLOSABLE and closed.target_room_vnum == 1001
     assert any(r.extra_descriptions for r in t.rooms)
     assert [(c.command_type.name, c.arg1) for c in t.resets if c.command_type.name != "SET_DOOR_STATE"] == [
+        ("LOAD_OBJECT", 1000),  # pachimud emette prima gli oggetti, poi i mob
         ("LOAD_MOB", 1000),
-        ("LOAD_OBJECT", 1000),
     ]
     await assert_zone_valid(fresh, zones[0].id)
     # round trip: indietro in pachimud con un altro intervallo, nessuna perdita sostanziale

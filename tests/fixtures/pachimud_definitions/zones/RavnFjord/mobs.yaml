@@ -1,4 +1,3 @@
----
 mobs:
   - vnum: 400000
     keywords: guardia ravnfjord
@@ -13,7 +12,457 @@ mobs:
     gold: 50
     experience: 200
     sex: MALE
-    flags: [SENTINEL]
+    flags:
+      - SENTINEL
     alignment: 500
     race_id: human
     class_id: warrior
+    persona: >-
+      Sei una guardia del villaggio vichingo di Ravnfjord: dura ma onesta, di poche parole. Conosci la piazza, il mercato
+      e il vicolo buio a nord (non ci vai volentieri). Non sai nulla del mondo fuori dal villaggio.
+  - vnum: 400001
+    keywords: fabbro sigrid fabbra
+    short_description: Sigrid la Fabbra
+    long_description: Sigrid la Fabbra è china sull'incudine, martello in mano.
+    detailed_description: Una donna robusta dalle braccia coperte di cicatrici da
+      fucina. I suoi occhi valutano ogni arma con occhio esperto.
+    level: 8
+    thac0: 18
+    armor_class: 8
+    hp_dice: 3d8+10
+    damage_dice: 1d6+2
+    gold: 1000
+    sex: FEMALE
+    flags:
+      - sentinel
+    shop_id: fucina_ravnfjord
+  - vnum: 400002
+    keywords: topo gigante topone
+    short_description: un topo gigante
+    long_description: Un topo gigante ti fissa da un angolo, i baffi fremono.
+    detailed_description: Un roditore enorme, pelo sporco, denti gialli e affilati.
+    level: 1
+    thac0: 20
+    armor_class: 10
+    hp_dice: 2d6+0
+    damage_dice: 1d3+0
+    gold: 15
+    experience: 100
+  - vnum: 400003
+    keywords: jorgen mercante
+    short_description: Jørgen il Mercante
+    long_description: Jørgen il mercante sta sistemando dello stoccafisso sopra al
+      bancone.
+    detailed_description: Una lunga barba rossiccia incornicia un volto segnato dal
+      tempo e dai viaggi in mare. A giudicare dalle sule braccia e dalle sue spalle
+      riesce a scaricare e trasportare tutta la sua merce da solo.
+    level: 8
+    thac0: 18
+    armor_class: 8
+    hp_dice: 3d8+10
+    damage_dice: 1d6+2
+    gold: 1000
+    sex: MALE
+    flags:
+      - sentinel
+    shop_id: mercante_ravnfjord
+  - vnum: 400004
+    keywords: avatar teenelaf maestro
+    short_description: L'avatar di TeenELaf
+    long_description: L'emanazione di TeenELaf
+    detailed_description: è circondato da una tenue alone tremulo
+    level: 60
+    thac0: -20
+    armor_class: 1000
+    hp_dice: 20d20+120
+    damage_dice: 1000d1+1000
+    gold: 10000
+    experience: 10000
+    flags:
+      - sentinel
+    debuff_skill_id: cecita
+  - vnum: 400005
+    keywords: oogway maestro saggio
+    short_description: Maestro Oogway
+    long_description: Il Maestro Oogway sta meditando seduto sulla cima del suo bastone
+    detailed_description: A guardarlo bene sembra proprio una tartaruga gigante.
+    level: 100
+    thac0: 20
+    armor_class: 10
+    hp_dice: 4d8+1000
+    damage_dice: 29d29+1999
+    experience: 10000
+    flags:
+      - sentinel
+    alignment: 1000
+  - vnum: 400006
+    keywords: capitano porto ufficiale
+    short_description: il capitano del porto
+    long_description: Il capitano del porto controlla i registri degli attracchi,
+      penna in mano.
+    detailed_description: Un uomo dal viso segnato dal sale, l'uniforme blu sbiadita
+      dal sole. Tiene sempre a portata di mano un registro spesso.
+    level: 6
+    thac0: 19
+    armor_class: 9
+    hp_dice: 2d8+5
+    damage_dice: 1d4+0
+    gold: 10
+    sex: MALE
+    flags:
+      - sentinel
+  - vnum: 400007
+    keywords: oste taverna locandiere
+    short_description: l'oste della taverna
+    long_description: L'oste della taverna pulisce un boccale con uno straccio, osservando
+      gli avventori.
+    detailed_description: Un uomo robusto con un grembiule macchiato di birra, sempre
+      pronto a versare da bere.
+    level: 5
+    thac0: 19
+    armor_class: 9
+    hp_dice: 2d8+4
+    damage_dice: 1d3+0
+    gold: 15
+    sex: MALE
+    flags:
+      - sentinel
+    shop_id: taverna_ravnfjord
+  - vnum: 400008
+    keywords: locandiera locanda oste
+    short_description: la locandiera
+    long_description: La locandiera riordina le lenzuola di una camera libera, canticchiando
+      piano.
+    detailed_description: Una donna dai modi gentili, sempre indaffarata a preparare
+      le camere per gli ospiti che, per ora, non arrivano mai davvero.
+    level: 4
+    thac0: 20
+    armor_class: 10
+    hp_dice: 2d6+3
+    damage_dice: 1d2+0
+    gold: 5
+    sex: FEMALE
+    flags:
+      - sentinel
+  - vnum: 400009
+    keywords: banchiere banca cassiere
+    short_description: il banchiere
+    long_description: Il banchiere conta monete dietro un bancone di legno robusto.
+    detailed_description: Un uomo minuto e preciso, con dita agili abituate a contare
+      in fretta. Non si fida di nessuno, tranne dei suoi registri.
+    level: 7
+    thac0: 19
+    armor_class: 8
+    hp_dice: 2d8+6
+    damage_dice: 1d4+0
+    gold: 50
+    sex: MALE
+    flags:
+      - sentinel
+    is_banker: true
+  - vnum: 400010
+    keywords: erborista erbe
+    short_description: l'erborista
+    long_description: L'erborista è china tra mazzi di erbe appese ad essiccare.
+    detailed_description: Una donna anziana dalle mani macchiate di verde, esperta
+      di ogni pianta che cresce vicino al fiordo.
+    level: 5
+    thac0: 20
+    armor_class: 9
+    hp_dice: 2d6+4
+    damage_dice: 1d2+0
+    gold: 8
+    sex: FEMALE
+    flags:
+      - sentinel
+    shop_id: erboristeria_ravnfjord
+  - vnum: 400011
+    keywords: pescivendolo pesce pescheria
+    short_description: il pescivendolo
+    long_description: Il pescivendolo grida il prezzo del pesce fresco dietro al suo
+      bancone.
+    detailed_description: Un uomo dalle braccia forti e l'odore di mare addosso, che
+      conosce ogni barca del porto per nome.
+    level: 5
+    thac0: 19
+    armor_class: 9
+    hp_dice: 2d8+4
+    damage_dice: 1d3+0
+    gold: 10
+    sex: MALE
+    flags:
+      - sentinel
+    shop_id: pescheria_ravnfjord
+  - vnum: 400012
+    keywords: conciapelli pelli conceria
+    short_description: il conciapelli
+    long_description: Il conciapelli lavora una pelle tesa su un telaio di legno.
+    detailed_description: Un uomo dall'odore pungente addosso, le mani indurite da
+      anni di lavoro con pelli e sale.
+    level: 5
+    thac0: 19
+    armor_class: 9
+    hp_dice: 2d8+4
+    damage_dice: 1d3+0
+    gold: 10
+    sex: MALE
+    flags:
+      - sentinel
+    shop_id: conceria_ravnfjord
+  - vnum: 400013
+    keywords: armaiolo armi arco
+    short_description: l'armaiolo
+    long_description: L'armaiolo intaglia un arco, controllando la curva del legno
+      controluce.
+    detailed_description: Un uomo silenzioso, con un occhio esperto per il legno buono
+      e la corda giusta.
+    level: 6
+    thac0: 18
+    armor_class: 8
+    hp_dice: 2d8+5
+    damage_dice: 1d4+0
+    gold: 15
+    sex: MALE
+    flags:
+      - sentinel
+    shop_id: armaiolo_ravnfjord
+  - vnum: 400014
+    keywords: vasaio vasi ceramica
+    short_description: il vasaio
+    long_description: Il vasaio gira la ruota con un piede, modellando l'argilla con
+      mani sicure.
+    detailed_description: Un uomo tranquillo, coperto di polvere d'argilla dalla testa
+      ai piedi, orgoglioso di ogni pezzo che esce dal suo forno.
+    level: 4
+    thac0: 20
+    armor_class: 9
+    hp_dice: 2d6+3
+    damage_dice: 1d2+0
+    gold: 8
+    sex: MALE
+    flags:
+      - sentinel
+    shop_id: vasaio_ravnfjord
+  - vnum: 400015
+    keywords: tessitrice tessuti telaio
+    short_description: la tessitrice
+    long_description: La tessitrice lavora al telaio, il filo che scorre veloce tra
+      le sue dita.
+    detailed_description: Una donna paziente, capace di riconoscere ogni tipo di lana
+      al solo tatto.
+    level: 4
+    thac0: 20
+    armor_class: 9
+    hp_dice: 2d6+3
+    damage_dice: 1d2+0
+    gold: 8
+    sex: FEMALE
+    flags:
+      - sentinel
+    shop_id: tessitrice_ravnfjord
+  - vnum: 400016
+    keywords: maestro guerriero veterano
+    short_description: il maestro guerriero
+    long_description: Il maestro guerriero fa roteare un'ascia con calma, i muscoli
+      tesi sotto vecchie cicatrici.
+    detailed_description: Un veterano dal fisico ancora solido, che ha insegnato a
+      maneggiare un'arma a più giovani di quanti ne ricordi.
+    level: 15
+    thac0: 10
+    armor_class: 4
+    hp_dice: 6d10+30
+    damage_dice: 2d6+3
+    sex: MALE
+    flags:
+      - sentinel
+      - guildmaster
+    teaches_class_ids:
+      - warrior
+  - vnum: 400017
+    keywords: sacerdote njord tempio
+    short_description: il sacerdote di Njord
+    long_description: Il sacerdote di Njord prega sommessamente davanti a un piccolo
+      altare di pietra.
+    detailed_description: Un uomo dalla voce calma, avvolto in una veste semplice,
+      che dedica ogni giorno al dio del mare.
+    level: 12
+    thac0: 13
+    armor_class: 6
+    hp_dice: 5d8+20
+    damage_dice: 1d6+1
+    sex: MALE
+    flags:
+      - sentinel
+      - guildmaster
+    shop_id: tempio_ravnfjord
+    teaches_class_ids:
+      - cleric
+  - vnum: 400018
+    keywords: cavaliere custode paladino
+    short_description: il cavaliere custode
+    long_description: Il cavaliere custode veglia in armatura completa accanto all'altare.
+    detailed_description: Un guerriero dalla fede incrollabile, la sua armatura lucidata
+      fino a brillare anche nella penombra del tempio.
+    level: 15
+    thac0: 10
+    armor_class: 3
+    hp_dice: 6d10+35
+    damage_dice: 2d6+3
+    sex: MALE
+    flags:
+      - sentinel
+      - guildmaster
+    teaches_class_ids:
+      - paladin
+  - vnum: 400019
+    keywords: mago torre stregone
+    short_description: il mago della torre
+    long_description: Il mago della torre studia un tomo antico, mormorando parole
+      che non suonano umane.
+    detailed_description: Una figura magra avvolta in una tunica runica, gli occhi
+      che brillano di una luce innaturale quando si concentra.
+    level: 15
+    thac0: 14
+    armor_class: 7
+    hp_dice: 4d8+15
+    damage_dice: 1d4+0
+    flags:
+      - sentinel
+      - guildmaster
+    shop_id: torre_mago_ravnfjord
+    teaches_class_ids:
+      - mage
+      - sorcerer
+  - vnum: 400020
+    keywords: maestro ladro ombra
+    short_description: il maestro ladro
+    long_description: Il maestro ladro è appoggiato nell'ombra, quasi invisibile finché
+      non parla.
+    detailed_description: Un uomo magro dai movimenti silenziosi, che sembra sapere
+      sempre più di quanto dice.
+    level: 14
+    thac0: 12
+    armor_class: 5
+    hp_dice: 5d8+20
+    damage_dice: 1d6+2
+    sex: MALE
+    flags:
+      - sentinel
+      - guildmaster
+    shop_id: rifugio_ladro_ravnfjord
+    teaches_class_ids:
+      - thief
+  - vnum: 400021
+    keywords: monaco anziano monastero
+    short_description: il monaco anziano
+    long_description: Il monaco anziano siede immobile in meditazione, il respiro
+      quasi impercettibile.
+    detailed_description: Un uomo minuto dall'età indecifrabile, il cui sguardo sembra
+      vedere più di quanto dovrebbe.
+    level: 15
+    thac0: 11
+    armor_class: 4
+    hp_dice: 5d10+25
+    damage_dice: 2d4+2
+    flags:
+      - sentinel
+      - guildmaster
+    teaches_class_ids:
+      - monk
+  - vnum: 400022
+    keywords: marinaio porto
+    short_description: un marinaio
+    long_description: Un marinaio cammina barcollando leggermente, ancora abituato
+      al rollio della nave.
+    detailed_description: Un uomo abbronzato dal sole e dal vento, con un tatuaggio
+      sbiadito su un braccio.
+    level: 3
+    thac0: 20
+    armor_class: 9
+    hp_dice: 2d6+3
+    damage_dice: 1d3+0
+    gold: 3
+    experience: 5
+    sex: MALE
+    flags:
+      - stay-zone
+  - vnum: 400023
+    keywords: ubriaco vagabondo
+    short_description: un ubriaco
+    long_description: Un ubriaco canta a squarciagola una vecchia canzone, inciampando
+      nei propri piedi.
+    detailed_description: Un uomo trasandato, che sa di birra da tre giorni e non
+      ricorda più il proprio nome.
+    level: 2
+    thac0: 21
+    armor_class: 10
+    hp_dice: 1d6+2
+    damage_dice: 1d2+0
+    gold: 1
+    experience: 2
+    sex: MALE
+    flags:
+      - stay-zone
+  - vnum: 400024
+    keywords: mendicante vagabondo
+    short_description: un mendicante
+    long_description: Un mendicante siede contro un muro, la mano tesa verso chiunque
+      passi.
+    detailed_description: Una figura magra avvolta in stracci, gli occhi stanchi ma
+      ancora vivaci.
+    level: 2
+    thac0: 21
+    armor_class: 10
+    hp_dice: 1d6+2
+    damage_dice: 1d2+0
+    gold: 2
+    experience: 2
+    flags:
+      - stay-zone
+  - vnum: 400025
+    keywords: ragazzo strada monello
+    short_description: un ragazzo di strada
+    long_description: Un ragazzo di strada corre tra le bancarelle, sempre un passo
+      avanti a qualche guaio.
+    detailed_description: Un monello dai vestiti troppo grandi, veloce e furbo più
+      di quanto la sua età lasci pensare.
+    level: 1
+    thac0: 22
+    armor_class: 10
+    hp_dice: 1d4+1
+    damage_dice: 1d2+0
+    gold: 1
+    experience: 1
+    sex: MALE
+    flags:
+      - stay-zone
+  - vnum: 400026
+    keywords: gatto randagio
+    short_description: un gatto randagio
+    long_description: Un gatto randagio si stiracchia al sole, poi torna a osservare
+      tutto con aria annoiata.
+    detailed_description: Un gatto magro dal pelo arruffato, diffidente ma curioso
+      di ogni cosa nuova.
+    level: 1
+    thac0: 22
+    armor_class: 8
+    hp_dice: 1d4+0
+    damage_dice: 1d2+0
+    experience: 1
+    flags:
+      - stay-zone
+  - vnum: 400027
+    keywords: cane porto
+    short_description: un cane del porto
+    long_description: Un cane del porto annusa l'aria salmastra, la coda che si muove
+      pigra.
+    detailed_description: Un cane dal pelo ispido, abituato a farsi dare gli avanzi
+      dai pescatori.
+    level: 1
+    thac0: 22
+    armor_class: 8
+    hp_dice: 1d6+0
+    damage_dice: 1d2+0
+    experience: 1
+    flags:
+      - stay-zone

@@ -1,0 +1,99 @@
+class_id: monk
+index: 5
+name: Monk
+abbreviation: Mo
+description: A class of unarmed martial artists who train body and mind.
+attrs_priority:  # default di pachimud: in LeU lo sceglie il giocatore alla creazione
+  - dexterity
+  - wisdom
+  - strength
+  - constitution
+  - intelligence
+  - charisma
+exp_per_level:  # `titles[classe][livello].exp` di LeU (constants.c): esperienza totale per raggiungere il livello
+  [0, 1, 1000, 2000, 4250, 8500, 17000, 34000, 68000, 98000, 200000, 325000, 450000, 575000, 725000, 925000, 1200000, 1500000, 2100000, 2500000, 2900000, 3300000, 3800000, 4400000, 5000000, 5600000, 6200000, 6900000, 7600000, 8300000, 8900000, 9700000, 10500000, 11300000, 12100000, 13000000, 13900000, 14800000, 15700000, 16700000, 17700000, 18700000, 20000000, 22000000, 23500000, 25500000, 27500000, 30000000, 37500000, 45000000, 55000000, 200000000, 231000000, 232000000, 233000000, 234000000, 235000000, 236000000, 237000000, 238000000, 239000000]
+titles:  # `titles` di LeU: titolo maschile e femminile per livello (indice = livello)
+  - {male: Man, female: ' Woman'}
+  - {male: White Belt, female: White Belt}
+  - {male: Initiate, female: Initiate}
+  - {male: Brother, female: Sister}
+  - {male: Layman, female: Laywoman}
+  - {male: Student, female: Student}
+  - {male: Practitioner, female: Practitioner}
+  - {male: Exponent, female: Exponent}
+  - {male: Adept, female: Adept}
+  - {male: Monk, female: Monk}
+  - {male: Shodan, female: Shodan}
+  - {male: Shinobi, female: Shinobi}
+  - {male: Genin, female: Kuniochi}
+  - {male: Disciple, female: Disciple}
+  - {male: Chunin, female: Chunin}
+  - {male: Nidan, female: Nidan}
+  - {male: Expert, female: Expert}
+  - {male: Jonin, female: Jonin}
+  - {male: Hwarang, female: Hwarang}
+  - {male: Sandan, female: Sandan}
+  - {male: Sabom, female: Sabom}
+  - {male: Sensei, female: Sensei}
+  - {male: Sifu, female: Sifu}
+  - {male: Guru, female: Guru}
+  - {male: Pendakar, female: Pendakar}
+  - {male: Yodan, female: Yodan}
+  - {male: Master, female: Master}
+  - {male: Superior Master, female: Superior Master}
+  - {male: Ginsu Master, female: Ginsu Master}
+  - {male: Godan, female: Godan}
+  - {male: Leopard Master, female: Leopard Master}
+  - {male: Tiger Master, female: Tiger Master}
+  - {male: Snake Master, female: Snake Master}
+  - {male: Crane Master, female: Crane Master}
+  - {male: Dragon Master, female: Dragon Master}
+  - {male: Rokudan, female: Rokudan}
+  - {male: Master of Seasons, female: Master of Seasons}
+  - {male: Master of the Winds, female: Master of the Winds}
+  - {male: Master of Harmony, female: Master of Harmony}
+  - {male: Shogun, female: Shogun}
+  - {male: Shichidan, female: Shichidan}
+  - {male: Hachidan, female: Hachidan}
+  - {male: Kudan, female: Kudan}
+  - {male: Grand Master, female: Grand Master}
+  - {male: Grand Master, female: Grand Master}
+  - {male: Grand Master, female: Grand Master}
+  - {male: Grand Master, female: Grand Master}
+  - {male: Grand Master, female: Grand Master}
+  - {male: Grand Master, female: Grand Master}
+  - {male: Grand Master, female: Grand Master}
+  - {male: Grand Master, female: Grand Master}
+  - {male: Immortal Grand Master, female: Immortal Grand Master}
+  - {male: Immortal Grand Master, female: Immortal Grand Master}
+  - {male: Immortal Grand Master, female: Immortal Grand Master}
+  - {male: Immortal Grand Master, female: Immortal Grand Master}
+  - {male: Immortal Grand Master, female: Immortal Grand Master}
+  - {male: Immortal Grand Master, female: Immortal Grand Master}
+  - {male: Demi God, female: Demi Goddess}
+  - {male: God, female: Goddess}
+  - {male: Implementor, female: Implementrix}
+  - {male: Implementor, female: Implementrix}
+thac0:  # `thaco` di LeU (constants.c) per livello: piu' basso e' meglio
+  [100, 20, 20, 19, 19, 18, 18, 17, 17, 16, 16, 15, 15, 14, 14, 13, 13, 12, 12, 11, 11, 10, 10, 9, 9, 8, 8, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+hp_gain:  # `advance_level` di LeU (limits.c): number(n, m) sotto until_level, poi flat_after; + bonus Costituzione, diviso per le classi
+  dice: [2, 10]
+  until_level: 17
+  flat_after: 3
+  con_bonus_cap: 2
+saving_throws:  # `saving_throws` di LeU (spell_parser.c) per livello (indice = livello): piu' basso e' meglio
+  para: [16, 14, 14, 13, 13, 11, 11, 10, 10, 8, 8, 7, 7, 5, 5, 4, 4, 3, 3, 3, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  rod: [18, 16, 16, 15, 15, 13, 13, 12, 12, 10, 10, 9, 9, 7, 7, 6, 6, 5, 5, 5, 5, 4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  petri: [17, 15, 15, 14, 14, 12, 12, 11, 11, 9, 9, 8, 8, 6, 6, 5, 5, 4, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  breath: [20, 17, 17, 16, 16, 13, 13, 12, 12, 9, 9, 8, 8, 5, 5, 4, 4, 4, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  spell: [19, 17, 17, 16, 16, 14, 14, 13, 13, 11, 11, 10, 10, 8, 8, 7, 7, 6, 6, 6, 6, 4, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+start_hp:  # `roll_abilities` di LeU: 10 + un tiro di dice + bonus, diviso per le classi
+  dice: [1, 6]
+  bonus: 0
+mana:  # `mana_limit` di LeU (limits.c): base + per_level * (livello // level_divisor); + ((INT / 3) + 2) * 3
+  base: 100
+  per_level: 0
+  level_divisor: 1
+magic_order: 10  # posizione in `BestMagicClass` di LeU (multiclass.c)
+level_loss:  # `drop_level` di LeU (limits.c): punti ferita persi, in piu' al bonus di Costituzione, sotto il livello `below` (`low`) o da li' in su (`high`), almeno `minimum`
+  {below: 17, low: 10, high: 3, minimum: 4}

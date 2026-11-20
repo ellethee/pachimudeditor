@@ -27,5 +27,7 @@ class Account(Base):
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(UTC))
     last_login_at: Mapped[datetime | None] = mapped_column(default=None, nullable=True)
     is_banned: Mapped[bool] = mapped_column(default=False, nullable=False)
+    language: Mapped[str | None] = mapped_column(default=None, nullable=True)
+    """Codice lingua dei messaggi; `None`: quella predefinita del server."""
 
     characters: Mapped[list[PlayerCharacter]] = relationship(back_populates="account")

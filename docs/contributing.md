@@ -37,7 +37,7 @@ su copie temporanee e a fine sessione si verifica che gli originali siano intatt
 | `DIKUMOD_LIB` | cartella `lib/` dei dati di Diku Modificato (solo DikuMod1, "leu"); default `/dati/luca/muds/leu/lib` se esiste (senza, i test `real_dikumod` si saltano) |
 | `DIKUMOD_PREFIX` | prefisso dei file dati (`<prefisso>.wld`, ...); default `leudata` se i file di `leu` esistono, altrimenti `dikumoddata`: **con dati di un'altra cartella serve il valore esatto** perche' i test non trovino i file mancanti |
 | `DIKUMOD_SRC` | radice del progetto Diku Modificato (`Makefile`, `src/`, `lib/`), usata da `tests/live` per costruire il MUD su una copia; default `/dati/luca/muds/leu` |
-| `PACHIMUD_GAME_ROOT` | checkout del MUD pachimud per il confronto dei modelli (test `tests/test_game_compat.py`) |
+| `PACHIMUD_GAME_ROOT` | checkout del MUD pachimud per il confronto dei loader YAML e dei modelli (test `tests/test_game_compat.py`, vedi «Riallineare i loader YAML») |
 
 ```bash
 # default: usa la cartella ufficiale /dati/luca/muds/leu (sola lettura) e ../basedmud/area
@@ -49,21 +49,26 @@ DIKUMOD_LIB=/percorso/leu/lib DIKUMOD_PREFIX=leudata DIKUMOD_SRC=/percorso/leu B
 `-rs` elenca i test saltati col motivo. La CI fallisce se i test saltati superano `MAX_SKIPPED` (`.github/workflows/ci.yml`):
 dopo aver aggiunto fixture sintetiche o test, aggiorna la soglia al nuovo valore (con un piccolo margine).
 
-## Mantenere i modelli allineati col MUD
+## Riallineare i loader YAML
 
-Il MUD pachimud non e' una dipendenza: i modelli SQLAlchemy del suo database sono **copiati** in
-`adapters/pachimud/src/pachimudeditor_adapter_pachimud/game_models/` (intestazione in ogni file con la provenienza) e le
-definizioni di esempio in `tests/fixtures/pachimud_definitions/`. Quando il MUD cambia schema:
+Il MUD pachimud non e' una dipendenza. Dal commit `e958b4e` i suoi contenuti (zone, stanze, mob, oggetti, reset) sono file YAML e il DB
+tiene solo account e personaggi: l'editor ne tiene una **copia** dei loader Pydantic in
+`adapters/pachimud/src/pachimudeditor_adapter_pachimud/loaders.py` (da `zone/schema/loader_zone.py`,
+`zone/room/schema/loader_room.py`, `mob/schema/loader_mob.py`, `object/schema/loader_object.py`), di razze/classi in `definitions.py`, dei modelli SQLAlchemy
+`Account`/`PlayerCharacter` in `game_models/` e le definizioni di esempio (razze, classi, zona `RavnFjord`) in
+`tests/fixtures/pachimud_definitions/`. Quando il MUD cambia formato:
 
-1. ricopia i file corrispondenti di `pachimud/{database,account,character,mob,object,zone}` (stessa mappa dell'intestazione),
-   rimuovendo i metodi che usano il game server e correggendo gli import verso `game_models`;
-2. aggiorna `EXPECTED`/`REVISIONS` in `adapter .../schema.py` e le enum in `common/enums.py` / `race_enums.py` se serve;
-3. verifica con un checkout a portata di mano (le dipendenze del MUD devono essere importabili, ad es. con
-   `PYTHONPATH` sul `site-packages` del suo `.venv`; `PYTHONDONTWRITEBYTECODE=1` per non scrivere nel checkout):
-   `PACHIMUD_GAME_ROOT=/percorso/pachimud uv run pytest tests/test_game_compat.py`
-   (confronta enum, schemi dei file YAML, colonne attese, catena alembic e import di zone con il MUD vero; senza la
-   variabile i test sono saltati e la CI non ne ha bisogno);
-4. `uv run pytest -q` deve restare verde senza gioco.
+1. riallinea `loaders.py` (stessi campi, default e validatori; `extra="forbid"` sugli oggetti) e, se serve, `definitions.py`, le enum in
+   `common/enums.py` / `race_enums.py` e le copie di `game_models/{account,character}.py`;
+2. se cambia il significato di un campo aggiorna `mapping.py` (voce YAML <-> DTO, `VALUE_SLOTS` per i `value0..3` degli oggetti) e `fields.py`
+   (chiavi di `extra`); per una nuova revisione alembic aggiorna `REVISIONS`/`EXPECTED` in `schema.py`;
+3. ricopia le definizioni di esempio da `definitions/` del MUD in `tests/fixtures/pachimud_definitions/`;
+4. verifica con un checkout a portata di mano (le dipendenze del MUD devono essere importabili, ad es. con `PYTHONPATH` sul
+   `site-packages` del suo `.venv`; **`PYTHONDONTWRITEBYTECODE=1`** per non scrivere nel checkout):
+   `PYTHONDONTWRITEBYTECODE=1 PACHIMUD_GAME_ROOT=/percorso/pachimud uv run pytest tests/test_game_compat.py`
+   (confronta enum, loader, colonne attese, catena alembic, carica senza errori le `definitions/` reali, le riscrive su una copia con gli
+   stessi dati e fa validare i file scritti dall'editor ai loader del gioco; senza la variabile i test sono saltati e la CI non ne ha bisogno);
+5. `uv run pytest -q` deve restare verde senza gioco.
 
 ## Questa documentazione
 

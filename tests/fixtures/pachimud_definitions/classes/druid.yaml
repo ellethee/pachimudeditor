@@ -1,0 +1,99 @@
+class_id: druid
+index: 4
+name: Druid
+abbreviation: Dr
+description: A class that draws on the power of nature and the wilds.
+attrs_priority:  # default di pachimud: in LeU lo sceglie il giocatore alla creazione
+  - wisdom
+  - intelligence
+  - constitution
+  - dexterity
+  - strength
+  - charisma
+exp_per_level:  # `titles[classe][livello].exp` di LeU (constants.c): esperienza totale per raggiungere il livello
+  [0, 1, 2000, 4000, 7500, 12500, 20000, 35000, 60000, 90000, 125000, 200000, 300000, 500000, 750000, 1000000, 1350000, 1700000, 2100000, 2500000, 3000000, 3500000, 4000000, 4500000, 5000000, 5500000, 6000000, 6500000, 7000000, 7500000, 8000000, 8600000, 9200000, 9800000, 10450000, 11125000, 11800000, 12475000, 13175000, 14000000, 15000000, 16500000, 18000000, 19750000, 21500000, 23250000, 25120000, 27150000, 29500000, 35000000, 40000000, 201000000, 236000000, 237000000, 238000000, 239000000, 240000000, 241000000, 242000000, 243000000, 244000000]
+titles:  # `titles` di LeU: titolo maschile e femminile per livello (indice = livello)
+  - {male: Man, female: ' Woman'}
+  - {male: Aspirant, female: Aspirant}
+  - {male: Ovate, female: Ovate}
+  - {male: Sprout, female: Sprout}
+  - {male: Courser, female: Courser}
+  - {male: Tracker, female: Tracker}
+  - {male: Guide, female: Guide}
+  - {male: Pathfinder, female: Pathfinder}
+  - {male: Green-Peace Keeper, female: Green-Peace Keeper}
+  - {male: Warder, female: Warder}
+  - {male: Pagan, female: Pagan}
+  - {male: Watcher, female: Watcher}
+  - {male: Woodsman, female: Woodsman}
+  - {male: Pict, female: Pict}
+  - {male: Tree Hugger, female: Tree Hugger}
+  - {male: Celt, female: Celt}
+  - {male: Animist, female: Animist}
+  - {male: Hedge, female: Hedge}
+  - {male: Tender, female: Tender}
+  - {male: Strider, female: Strider}
+  - {male: Druid, female: Druidess}
+  - {male: Aquarian, female: Aquarian}
+  - {male: Arbolist, female: Arbolist}
+  - {male: Dionysian, female: Dionysian}
+  - {male: Herbalist, female: Herbalist}
+  - {male: Naturalist, female: Naturalist}
+  - {male: Silvian, female: Silvian}
+  - {male: Forrestal, female: Forrestal}
+  - {male: Ancient, female: Ancient}
+  - {male: Archdruid, female: Archdruidess}
+  - {male: Great Druid, female: Great Druidess}
+  - {male: Grand Druid, female: Grand Druid}
+  - {male: Master of Fire, female: Mistress of Fire}
+  - {male: Master of Stone, female: Mistress of Stone}
+  - {male: Master of Air, female: Mistress of Air}
+  - {male: Master of Water, female: Mistress of Water}
+  - {male: Hierophant Initiate, female: Hierophant Initiate}
+  - {male: Hierophant Druid, female: Heirophant Druidess}
+  - {male: Hierophant Adept, female: Heirophant Adept}
+  - {male: Heirophant Master, female: Heirophant Master}
+  - {male: Numinous Hierophant, female: Numinous Hierophant}
+  - {male: Mystic Hierophant, female: Mystic Hierophant}
+  - {male: Arcane Hierophant, female: Arcane Hierophant}
+  - {male: Cabal Hierophant, female: Cabal Hierophant}
+  - {male: Cabal Hierophant, female: Cabal Hieorphant}
+  - {male: Cabal Hierophant, female: Cabal Hierophant}
+  - {male: Cabal Hierophant, female: Cabal Hierophant}
+  - {male: Cabal Hierophant, female: Cabal Hierophant}
+  - {male: Cabal Hierophant, female: Cabal Hierophant}
+  - {male: Cabal Hierophant, female: Cabal Hierophant}
+  - {male: Cabal Hierophant, female: Cabal Hierophant}
+  - {male: Immortal Hierophant, female: Immortal Hierophant}
+  - {male: Immortal Hierophant, female: Immortal Hierophant}
+  - {male: Immortal Hierophant, female: Immortal Hierophant}
+  - {male: Immortal Hierophant, female: Immortal Hierophant}
+  - {male: Immortal Hierophant, female: Immortal Hierophant}
+  - {male: Immortal Hierophant, female: Immortal Hierophant}
+  - {male: Demi God, female: Demi Goddess}
+  - {male: God, female: Goddess}
+  - {male: Implementor, female: Implementrix}
+  - {male: Implementor, female: Implementrix}
+thac0:  # `thaco` di LeU (constants.c) per livello: piu' basso e' meglio
+  [100, 20, 20, 20, 19, 19, 19, 18, 18, 18, 17, 17, 17, 16, 16, 16, 15, 15, 15, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10, 10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 7, 6, 6, 6, 5, 5, 5, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+hp_gain:  # `advance_level` di LeU (limits.c): number(n, m) sotto until_level, poi flat_after; + bonus Costituzione, diviso per le classi
+  dice: [2, 14]
+  until_level: 15
+  flat_after: 3
+  con_bonus_cap: 2
+saving_throws:  # `saving_throws` di LeU (spell_parser.c) per livello (indice = livello): piu' basso e' meglio
+  para: [11, 10, 10, 10, 9, 9, 9, 7, 7, 7, 6, 6, 6, 5, 5, 5, 4, 4, 4, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  rod: [16, 14, 14, 14, 13, 13, 13, 11, 11, 11, 10, 10, 10, 9, 9, 9, 8, 8, 8, 6, 6, 5, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  petri: [15, 13, 13, 13, 12, 12, 12, 10, 10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 7, 5, 5, 4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  breath: [18, 16, 16, 16, 15, 15, 15, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10, 10, 10, 8, 8, 7, 6, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  spell: [17, 15, 15, 15, 14, 14, 14, 12, 12, 12, 11, 11, 11, 10, 10, 10, 9, 9, 9, 7, 7, 6, 5, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+start_hp:  # `roll_abilities` di LeU: 10 + un tiro di dice + bonus, diviso per le classi
+  dice: [1, 8]
+  bonus: 0
+mana:  # `mana_limit` di LeU (limits.c): base + per_level * (livello // level_divisor); + ((INT / 3) + 2) * 3
+  base: 100
+  per_level: 5
+  level_divisor: 3
+magic_order: 2  # posizione in `BestMagicClass` di LeU (multiclass.c)
+level_loss:  # `drop_level` di LeU (limits.c): punti ferita persi, in piu' al bonus di Costituzione, sotto il livello `below` (`low`) o da li' in su (`high`), almeno `minimum`
+  {below: 15, low: 14, high: 3, minimum: 5}

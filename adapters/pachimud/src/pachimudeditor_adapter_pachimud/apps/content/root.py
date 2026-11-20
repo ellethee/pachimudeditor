@@ -1,6 +1,8 @@
-"""Contenuti del gioco in YAML: razze e classi (`definitions/races`, `definitions/classes`). Prefisso `/api/content`.
+"""Contenuti del gioco in YAML: razze e classi (`definitions/races`, `definitions/classes`), skill, tabelle, social, cataloghi dei messaggi
+e testi lunghi (`files_store.py`). Prefisso `/api/content`.
 
-Il game server legge questi file una sola volta all'avvio: ogni modifica ha effetto al riavvio del server.
+Il game server legge questi file all'avvio: ogni modifica ha effetto al riavvio, oppure subito con `content.reload` di livectl
+(`POST /api/world/live/content/reload`), se il canale live e' configurato.
 """
 
 from collections.abc import Mapping
@@ -12,15 +14,13 @@ from pachifast.database import AliasedBaseModel
 from pachifast.i18n import api_error
 from pachifast.router_factory import get_router
 
-from sqlalchemy import func, literal, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from pachimudeditor_adapter_pachimud import race_enums
 from pachimudeditor_adapter_pachimud.definitions import LoaderClass, LoaderRace, Stats
-from pachimudeditor_adapter_pachimud.schema import models_of
+from pachimudeditor_adapter_pachimud.apps.content import files_store
+from pachimudeditor_adapter_pachimud.apps.content.files_store import Layers
 from pachimudeditor_adapter_pachimud.apps.content.yaml_store import StoredFile, YamlDirStore
 from pachimudeditor.sdk import require_capability
-from pachimudeditor_adapter_pachimud.editor.db import PachimudDep, ReadOnlyGuard, SessionDep
+from pachimudeditor_adapter_pachimud.editor.db import PachimudDep, ReadOnlyGuard
 
 router = get_router(deps=[Depends(require_capability("supports_content_races")), ReadOnlyGuard])
 
@@ -162,28 +162,22 @@ class ContentStatus(AliasedBaseModel):
 IdParam = Annotated[str, PathParam(pattern=r"^[a-z0-9][a-z0-9_]{0,63}$")]
 
 
-async def _race_usage(session: AsyncSession) -> dict[str, int]:
-    """`race_id -> numero di mob` (una sola query)."""
-    MobPrototype = models_of(session).MobPrototype  # noqa: N806
-    if "race_id" not in MobPrototype.__table__.c:
-        return {}
-    rows = await session.execute(
-        select(MobPrototype.race_id, func.count()).where(MobPrototype.race_id.is_not(None)).group_by(MobPrototype.race_id)
-    )
-    return {race_id: count for race_id, count in rows}
+async def _race_usage(adapter: PachimudDep) -> dict[str, int]:
+    """`race_id -> numero di mob` (dai file YAML delle zone)."""
+    usage: dict[str, int] = {}
+    for mob in adapter.sync().all_items("mob"):
+        if mob.model.race_id:
+            usage[mob.model.race_id] = usage.get(mob.model.race_id, 0) + 1
+    return usage
 
 
-async def _class_usage(session: AsyncSession) -> dict[str, int]:
+async def _class_usage(adapter: PachimudDep) -> dict[str, int]:
     """`class_id -> numero di mob` che la usano (`class_id`) o la insegnano (`teaches_class_ids`)."""
     usage: dict[str, int] = {}
-    MobPrototype = models_of(session).MobPrototype  # noqa: N806
-    table = MobPrototype.__table__.c
-    class_col = MobPrototype.class_id if "class_id" in table else literal(None)
-    rows = await session.execute(select(class_col, MobPrototype.teaches_class_ids))
-    for class_id, teaches in rows:
-        ids = set(teaches or [])
-        if class_id:
-            ids.add(class_id)
+    for mob in adapter.sync().all_items("mob"):
+        ids = set(mob.model.teaches_class_ids or [])
+        if mob.model.class_id:
+            ids.add(mob.model.class_id)
         for value in ids:
             usage[value] = usage.get(value, 0) + 1
     return usage
@@ -262,54 +256,54 @@ async def status(races_store: RacesDep, classes_store: ClassesDep) -> ContentSta
 
 
 @router.get("/races", response_model=list[RaceItem])
-async def list_races(session: SessionDep, races_store: RacesDep) -> list[RaceItem]:
+async def list_races(adapter: PachimudDep, races_store: RacesDep) -> list[RaceItem]:
     """Tutte le razze (anche disattivate o non valide), ordinate per nome."""
-    usage = await _race_usage(session)
+    usage = await _race_usage(adapter)
     return sorted((_race_item(races_store, s, usage) for s in races_store.stored()), key=lambda i: (i.name.lower(), i.race_id))
 
 
 @router.post("/races", response_model=RaceItem, status_code=201)
-async def create_race(body: RaceBody, session: SessionDep, races_store: RacesDep) -> RaceItem:
+async def create_race(body: RaceBody, adapter: PachimudDep, races_store: RacesDep) -> RaceItem:
     """Crea `races/<raceId>.yaml`. 409 `content.id_taken`, 422 `content.invalid_id|invalid`."""
-    return _race_item(races_store, races_store.create(_payload(body)), await _race_usage(session))
+    return _race_item(races_store, races_store.create(_payload(body)), await _race_usage(adapter))
 
 
 @router.get("/races/{item_id}", response_model=RaceItem)
-async def get_race(item_id: IdParam, session: SessionDep, races_store: RacesDep) -> RaceItem:
+async def get_race(item_id: IdParam, adapter: PachimudDep, races_store: RacesDep) -> RaceItem:
     """Una razza. 404 `content.not_found`."""
     stored = races_store.locate(item_id)
     if stored is None:
         raise api_error(404, "content.not_found", id=item_id)
-    return _race_item(races_store, stored, await _race_usage(session))
+    return _race_item(races_store, stored, await _race_usage(adapter))
 
 
 @router.put("/races/{item_id}", response_model=RaceItem)
-async def update_race(item_id: IdParam, body: RaceBody, session: SessionDep, races_store: RacesDep) -> RaceItem:
+async def update_race(item_id: IdParam, body: RaceBody, adapter: PachimudDep, races_store: RacesDep) -> RaceItem:
     """Aggiorna i campi inviati, preservando commenti e formato. L'id non e' modificabile (422 `content.id_mismatch`)."""
     if body.race_id != item_id:
         raise api_error(422, "content.id_mismatch", id=item_id, body_id=body.race_id)
-    return _race_item(races_store, races_store.update(item_id, _payload(body)), await _race_usage(session))
+    return _race_item(races_store, races_store.update(item_id, _payload(body)), await _race_usage(adapter))
 
 
 @router.post("/races/{item_id}/disable", response_model=RaceItem)
-async def disable_race(item_id: IdParam, session: SessionDep, races_store: RacesDep) -> RaceItem:
+async def disable_race(item_id: IdParam, adapter: PachimudDep, races_store: RacesDep) -> RaceItem:
     """Disattiva la razza rinominando il file in `.yaml.disabled` (il game server non lo carica piu')."""
-    return _race_item(races_store, races_store.set_disabled(item_id, True), await _race_usage(session))
+    return _race_item(races_store, races_store.set_disabled(item_id, True), await _race_usage(adapter))
 
 
 @router.post("/races/{item_id}/enable", response_model=RaceItem)
-async def enable_race(item_id: IdParam, session: SessionDep, races_store: RacesDep) -> RaceItem:
+async def enable_race(item_id: IdParam, adapter: PachimudDep, races_store: RacesDep) -> RaceItem:
     """Riattiva una razza disattivata."""
-    return _race_item(races_store, races_store.set_disabled(item_id, False), await _race_usage(session))
+    return _race_item(races_store, races_store.set_disabled(item_id, False), await _race_usage(adapter))
 
 
 @router.delete("/races/{item_id}", status_code=204, response_model=None, skip_envelope=True)
-async def delete_race(item_id: IdParam, session: SessionDep, races_store: RacesDep) -> None:
+async def delete_race(item_id: IdParam, adapter: PachimudDep, races_store: RacesDep) -> None:
     """Elimina il file. 409 `content.race_in_use` (con `count`) se dei mob usano la razza."""
     stored = races_store.locate(item_id)
     if stored is None:
         raise api_error(404, "content.not_found", id=item_id)
-    count = (await _race_usage(session)).get(item_id, 0)
+    count = (await _race_usage(adapter)).get(item_id, 0)
     if count:
         raise api_error(409, "content.race_in_use", id=item_id, count=count)
     races_store.delete(item_id)
@@ -319,54 +313,218 @@ async def delete_race(item_id: IdParam, session: SessionDep, races_store: RacesD
 
 
 @router.get("/classes", response_model=list[ClassItem])
-async def list_classes(session: SessionDep, classes_store: ClassesDep) -> list[ClassItem]:
+async def list_classes(adapter: PachimudDep, classes_store: ClassesDep) -> list[ClassItem]:
     """Tutte le classi (anche disabilitate o non valide), ordinate per nome."""
-    usage = await _class_usage(session)
+    usage = await _class_usage(adapter)
     return sorted((_class_item(classes_store, s, usage) for s in classes_store.stored()), key=lambda i: (i.name.lower(), i.class_id))
 
 
 @router.post("/classes", response_model=ClassItem, status_code=201)
-async def create_class(body: ClassBody, session: SessionDep, classes_store: ClassesDep) -> ClassItem:
+async def create_class(body: ClassBody, adapter: PachimudDep, classes_store: ClassesDep) -> ClassItem:
     """Crea `classes/<classId>.yaml`. 409 `content.id_taken`, 422 `content.invalid_id|invalid`."""
-    return _class_item(classes_store, classes_store.create(_payload(body)), await _class_usage(session))
+    return _class_item(classes_store, classes_store.create(_payload(body)), await _class_usage(adapter))
 
 
 @router.get("/classes/{item_id}", response_model=ClassItem)
-async def get_class(item_id: IdParam, session: SessionDep, classes_store: ClassesDep) -> ClassItem:
+async def get_class(item_id: IdParam, adapter: PachimudDep, classes_store: ClassesDep) -> ClassItem:
     """Una classe. 404 `content.not_found`."""
     stored = classes_store.locate(item_id)
     if stored is None:
         raise api_error(404, "content.not_found", id=item_id)
-    return _class_item(classes_store, stored, await _class_usage(session))
+    return _class_item(classes_store, stored, await _class_usage(adapter))
 
 
 @router.put("/classes/{item_id}", response_model=ClassItem)
-async def update_class(item_id: IdParam, body: ClassBody, session: SessionDep, classes_store: ClassesDep) -> ClassItem:
+async def update_class(item_id: IdParam, body: ClassBody, adapter: PachimudDep, classes_store: ClassesDep) -> ClassItem:
     """Aggiorna i campi inviati, preservando commenti e formato. L'id non e' modificabile."""
     if body.class_id != item_id:
         raise api_error(422, "content.id_mismatch", id=item_id, body_id=body.class_id)
-    return _class_item(classes_store, classes_store.update(item_id, _payload(body)), await _class_usage(session))
+    return _class_item(classes_store, classes_store.update(item_id, _payload(body)), await _class_usage(adapter))
 
 
 @router.post("/classes/{item_id}/disable", response_model=ClassItem)
-async def disable_class(item_id: IdParam, session: SessionDep, classes_store: ClassesDep) -> ClassItem:
+async def disable_class(item_id: IdParam, adapter: PachimudDep, classes_store: ClassesDep) -> ClassItem:
     """Disattiva la classe rinominando il file in `.yaml.disabled` (il `ClassManager` non lo carica piu')."""
-    return _class_item(classes_store, classes_store.set_disabled(item_id, True), await _class_usage(session))
+    return _class_item(classes_store, classes_store.set_disabled(item_id, True), await _class_usage(adapter))
 
 
 @router.post("/classes/{item_id}/enable", response_model=ClassItem)
-async def enable_class(item_id: IdParam, session: SessionDep, classes_store: ClassesDep) -> ClassItem:
+async def enable_class(item_id: IdParam, adapter: PachimudDep, classes_store: ClassesDep) -> ClassItem:
     """Riattiva una classe disattivata."""
-    return _class_item(classes_store, classes_store.set_disabled(item_id, False), await _class_usage(session))
+    return _class_item(classes_store, classes_store.set_disabled(item_id, False), await _class_usage(adapter))
 
 
 @router.delete("/classes/{item_id}", status_code=204, response_model=None, skip_envelope=True)
-async def delete_class(item_id: IdParam, session: SessionDep, classes_store: ClassesDep) -> None:
+async def delete_class(item_id: IdParam, adapter: PachimudDep, classes_store: ClassesDep) -> None:
     """Elimina il file. 409 `content.class_in_use` (con `count`) se dei mob la usano o la insegnano."""
     stored = classes_store.locate(item_id)
     if stored is None:
         raise api_error(404, "content.not_found", id=item_id)
-    count = (await _class_usage(session)).get(item_id, 0)
+    count = (await _class_usage(adapter)).get(item_id, 0)
     if count:
         raise api_error(409, "content.class_in_use", id=item_id, count=count)
     classes_store.delete(item_id)
+
+
+# --- file a strati: skill, tabelle, social, cataloghi, testi -------------------------------------------------------------------
+
+
+def _layers(adapter: PachimudDep) -> Layers:
+    """Gli strati di contenuti del mondo attivo (base del gioco, poi `definitions_path`)."""
+    return Layers(tuple(adapter.params.layers))
+
+
+AreaParam = Annotated[str, PathParam(pattern=r"^(tables|locales|texts)$")]
+FilePath = Annotated[str, PathParam(description="percorso relativo dentro l'area, es. `it/commands/social.yaml`")]
+
+
+class FileEntry(AliasedBaseModel):
+    """Un file di contenuti: percorso relativo all'area, strato (`user` = modificato qui, `base` = del gioco) e dimensione."""
+
+    path: str
+    layer: str
+    size: int
+
+
+class FileContent(AliasedBaseModel):
+    """Il testo di un file di contenuti."""
+
+    path: str
+    layer: str
+    text: str
+
+
+class FileBody(AliasedBaseModel):
+    """Il testo da scrivere in un file."""
+
+    text: str
+
+
+class SkillBody(AliasedBaseModel):
+    """Skill da creare o modificare: solo i campi inviati; `advanced` e' il YAML degli altri campi (`levels`, `effects`, `messages`, ...)."""
+
+    skill_id: str | None = None
+    kind: str | None = None
+    name: str | None = None
+    description: str | None = None
+    disabled: bool | None = None
+    mana: int | None = None
+    beats: int | None = None
+    fail: int | None = None
+    min_position: str | None = None
+    violent: bool | None = None
+    max_learn: int | None = None
+    saving: str | None = None
+    element: str | None = None
+    targets: list[str] | None = None
+    advanced: str | None = None
+
+
+class SkillItem(SkillBody):
+    """Una skill come restituita dall'API."""
+
+    skill_id: str
+    layer: str = "base"
+    levels: dict[str, int] = {}
+    error: str | None = None
+    """Il file non si legge (YAML o forma errati): solo id e messaggio."""
+
+
+class SocialBody(AliasedBaseModel):
+    """Un social: alias, posizione minima, testi per lingua (chiavi: `no_arg`, `found`, `others_found`, ...)."""
+
+    aliases: list[str] = []
+    position: str = "resting"
+    victim_min_position: int = 0
+    hide: bool = False
+    messages: dict[str, dict[str, str]] = {}
+
+
+class SocialItem(SocialBody):
+    """Un social come restituito dall'API."""
+
+    name: str
+    layer: str = "base"
+
+
+@router.get("/files/{area}", response_model=list[FileEntry])
+async def list_content_files(area: AreaParam, adapter: PachimudDep) -> list[dict[str, Any]]:
+    """I file di `tables` (senza i social), `locales` (cataloghi dei messaggi) o `texts` (testi lunghi), strati fusi."""
+    return files_store.list_files(_layers(adapter), area)
+
+
+@router.get("/files/{area}/{rel:path}", response_model=FileContent)
+async def get_content_file(area: AreaParam, rel: FilePath, adapter: PachimudDep) -> dict[str, Any]:
+    """Il testo di un file (strato dell'utente, altrimenti base). 404 `content.not_found`, 422 `content.invalid_path`."""
+    return files_store.read_file(_layers(adapter), area, rel)
+
+
+@router.put("/files/{area}/{rel:path}", response_model=FileContent)
+async def put_content_file(area: AreaParam, rel: FilePath, body: FileBody, adapter: PachimudDep) -> dict[str, Any]:
+    """Crea o sostituisce il file nello strato dell'utente. I `.yaml` devono leggersi (422 `content.invalid` con riga e colonna)."""
+    return files_store.write_file(_layers(adapter), area, rel, body.text)
+
+
+@router.delete("/files/{area}/{rel:path}", status_code=204, response_model=None, skip_envelope=True)
+async def delete_content_file(area: AreaParam, rel: FilePath, adapter: PachimudDep) -> None:
+    """Elimina il file dello strato dell'utente (ripristina quello di base, se c'e'). 404 se non e' dell'utente."""
+    files_store.delete_file(_layers(adapter), area, rel)
+
+
+@router.get("/skills", response_model=list[SkillItem])
+async def list_skills(adapter: PachimudDep) -> list[dict[str, Any]]:
+    """Le skill (incantesimi e abilita') di tutti gli strati, per id."""
+    return files_store.list_skills(_layers(adapter))
+
+
+@router.post("/skills", response_model=SkillItem, status_code=201)
+async def create_skill(body: SkillBody, adapter: PachimudDep) -> dict[str, Any]:
+    """Crea `skills/<skillId>.yaml` nello strato dell'utente. 409 `content.id_taken`, 422 `content.invalid_id|invalid`."""
+    return files_store.save_skill(_layers(adapter), body.skill_id or "", _fields(body), body.advanced, create=True)
+
+
+@router.get("/skills/{item_id}", response_model=SkillItem)
+async def get_skill(item_id: IdParam, adapter: PachimudDep) -> dict[str, Any]:
+    """Una skill con i campi avanzati (`advanced`, YAML). 404 `content.not_found`."""
+    return files_store.get_skill(_layers(adapter), item_id)
+
+
+@router.put("/skills/{item_id}", response_model=SkillItem)
+async def update_skill(item_id: IdParam, body: SkillBody, adapter: PachimudDep) -> dict[str, Any]:
+    """Aggiorna i campi inviati nello strato dell'utente (una skill solo di base ne viene copiata li'), commenti salvi."""
+    return files_store.save_skill(_layers(adapter), item_id, _fields(body), body.advanced, create=False)
+
+
+@router.delete("/skills/{item_id}", status_code=204, response_model=None, skip_envelope=True)
+async def delete_skill(item_id: IdParam, adapter: PachimudDep) -> None:
+    """Elimina la skill dallo strato dell'utente (404 se esiste solo nella base del gioco)."""
+    files_store.delete_skill(_layers(adapter), item_id)
+
+
+def _fields(body: SkillBody) -> dict[str, Any]:
+    """I soli campi semplici inviati dal client (`None` esplicito = toglie la chiave)."""
+    return {k: v for k, v in body.model_dump(exclude_unset=True, by_alias=False).items() if k in files_store.SKILL_SCALARS}
+
+
+@router.get("/socials", response_model=list[SocialItem])
+async def list_socials(adapter: PachimudDep) -> list[dict[str, Any]]:
+    """I social (`tables/socials*.yaml`, strati e lingue fusi), per nome."""
+    return files_store.list_socials(_layers(adapter))
+
+
+@router.post("/socials/{item_id}", response_model=SocialItem, status_code=201)
+async def create_social(item_id: IdParam, body: SocialBody, adapter: PachimudDep) -> dict[str, Any]:
+    """Crea un social in `tables/socials.yaml` dello strato dell'utente. 409 `content.id_taken`."""
+    return files_store.save_social(_layers(adapter), item_id, body.model_dump(by_alias=False), create=True)
+
+
+@router.put("/socials/{item_id}", response_model=SocialItem)
+async def update_social(item_id: IdParam, body: SocialBody, adapter: PachimudDep) -> dict[str, Any]:
+    """Scrive il social (tutti i campi) nello strato dell'utente, anche se esisteva solo nella base."""
+    return files_store.save_social(_layers(adapter), item_id, body.model_dump(by_alias=False), create=False)
+
+
+@router.delete("/socials/{item_id}", status_code=204, response_model=None, skip_envelope=True)
+async def delete_social(item_id: IdParam, adapter: PachimudDep) -> None:
+    """Toglie il social dallo strato dell'utente (ripristina quello di base, se c'e')."""
+    files_store.delete_social(_layers(adapter), item_id)

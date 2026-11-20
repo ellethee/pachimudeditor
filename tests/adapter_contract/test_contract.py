@@ -81,7 +81,11 @@ async def test_zone_crud_and_paging(adapter: WorldAdapter) -> None:
     """Creazione, lettura, ricerca, paginazione, aggiornamento ed eliminazione di una zona."""
     zone = await new_zone(adapter, "Foresta contratto")
     assert (await adapter.get_zone(zone.id)).name == "Foresta contratto"
-    assert zone.extra == {} or adapter.describe().kind != "pachimud"  # pachimud non ha campi extra
+    assert (
+        zone.extra == {}
+        or adapter.describe().kind != "pachimud"
+        or set(zone.extra) == {"zoneId", "description", "folder", "climate", "prototypesOnly", "extendsZone"}
+    )  # extra di pachimud: vedi `fields.py`
 
     found = await adapter.list_zones(ZonePageParams(search="Foresta contratto"))
     assert [z.id for z in found.items] == [zone.id] and found.total == 1
@@ -195,6 +199,9 @@ async def test_exits_and_graph(adapter: WorldAdapter) -> None:
     zone = await new_zone(adapter)
     a, b = await new_room(adapter, zone, "A"), await new_room(adapter, zone, "B")
     north = await adapter.create_exit(a.id, ExitIn(direction=Direction.NORTH, target_room_id=b.id))
+    incoming = await adapter.incoming_exits(b.id)
+    assert [(i.room_id, i.direction) for i in incoming] == [(a.id, Direction.NORTH)] and incoming[0].exit_id == north.id
+    assert await adapter.incoming_exits(a.id) == []
     assert (north.target_room_vnum, north.target_room_name) == (b.vnum, "B")
     with expect_error(409, "rooms.exit_direction_taken"):
         await adapter.create_exit(a.id, ExitIn(direction=Direction.NORTH))

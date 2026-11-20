@@ -22,31 +22,28 @@ describe('mondo: panoramica, ricerca, grafo', () => {
     assert.equal(await rawI18nKey(s.page), null)
   })
 
-  it('panoramica: il link della zona apre davvero l\'editor della zona', async () => {
+  it('panoramica: il link della zona apre la pagina di dettaglio della zona', async () => {
     await s.page.locator('table tbody tr', { hasText: 'Zona Alfa' }).getByRole('link', { name: 'Zona Alfa' }).click()
-    await dialog(s.page).getByLabel('Nome *').waitFor()
-    assert.equal(await dialog(s.page).getByLabel('Nome *').inputValue(), 'Zona Alfa')
-    await s.page.getByLabel('Chiudi').first().click()
-    await waitDialogsClosed(s.page)
+    await s.page.waitForURL(/\/zones\/\d+/)
+    await s.page.getByLabel('Nome *').waitFor()
+    assert.equal(await s.page.getByLabel('Nome *').inputValue(), 'Zona Alfa')
   })
 
-  it('ricerca: trova un mob e il risultato apre l\'editor del mob', async () => {
+  it('ricerca: trova un mob e il risultato apre la pagina del mob', async () => {
     await goto(s.page, '/world/search?q=guardia')
     const hit = s.page.locator('.q-item', { hasText: 'una guardia' })
     await hit.waitFor()
     await hit.click()
-    await dialog(s.page).getByLabel('Descrizione breve *').waitFor()
-    assert.equal(await dialog(s.page).getByLabel('Descrizione breve *').inputValue(), 'una guardia')
-    await s.page.getByLabel('Chiudi').first().click()
-    await waitDialogsClosed(s.page)
+    await s.page.waitForURL(/\/mobs\/\d+/)
+    await s.page.getByLabel('Descrizione breve *').waitFor()
+    assert.equal(await s.page.getByLabel('Descrizione breve *').inputValue(), 'una guardia')
   })
 
-  it('ricerca: un oggetto apre l\'editor dell\'oggetto', async () => {
+  it('ricerca: un oggetto apre la pagina dell\'oggetto', async () => {
     await goto(s.page, '/world/search?q=spada')
     await s.page.locator('.q-item', { hasText: 'una spada' }).click()
-    await dialog(s.page).getByLabel('Descrizione breve *').waitFor()
-    await s.page.getByLabel('Chiudi').first().click()
-    await waitDialogsClosed(s.page)
+    await s.page.waitForURL(/\/objects\/\d+/)
+    await s.page.getByLabel('Descrizione breve *').waitFor()
   })
 
   it('grafo tra zone: nodi e senza chiavi grezze', async () => {

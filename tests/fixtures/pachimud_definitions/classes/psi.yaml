@@ -1,0 +1,100 @@
+class_id: psi
+index: 10
+name: Psionist
+abbreviation: Ps
+description: A class that wields the power of the mind.
+attrs_priority:  # default di pachimud: in LeU lo sceglie il giocatore alla creazione
+  - wisdom
+  - intelligence
+  - dexterity
+  - constitution
+  - strength
+  - charisma
+exp_per_level:  # `titles[classe][livello].exp` di LeU (constants.c): esperienza totale per raggiungere il livello
+  [0, 1, 2200, 4400, 8800, 16500, 30000, 55000, 100000, 200000, 400000, 600000, 800000, 1000000, 1200000, 1500000, 1800000, 2100000, 2400000, 2700000, 3000000, 3300000, 3750000, 4200000, 4650000, 5150000, 5650000, 6250000, 7000000, 7750000, 8500000, 9300000, 10000000, 10900000, 11700000, 12600000, 13500000, 14500000, 15500000, 16500000, 17500000, 18500000, 20000000, 22000000, 25000000, 29000000, 33000000, 37000000, 41000000, 45000000, 55000000, 200000000, 231000000, 232000000, 233000000, 234000000, 235000000, 236000000, 237000000, 238000000, 239000000]
+titles:  # `titles` di LeU: titolo maschile e femminile per livello (indice = livello)
+  - {male: Man, female: Woman}
+  - {male: Brain, female: Brain}
+  - {male: Seeker, female: Seeker}
+  - {male: Finder, female: Finder}
+  - {male: Psycho, female: Psycho}
+  - {male: Psychic, female: Psychic}
+  - {male: Telepath, female: Telepath}
+  - {male: Controller, female: Controller}
+  - {male: Mind Bender, female: Mind Bender}
+  - {male: Palm Reader, female: Palm Reader}
+  - {male: Fortune Teller, female: Fortune Teller}
+  - {male: Sensor, female: Sensor}
+  - {male: Divinator, female: Divinator}
+  - {male: Clairsentient, female: Clairsentient}
+  - {male: Firestarter, female: Firestarter}
+  - {male: Metapsionic, female: Metapsionic}
+  - {male: Psionic Student, female: Psionic Student}
+  - {male: Psionic Tutor, female: Psionic Tutor}
+  - {male: Psionic Instructor, female: Psionic Instructor}
+  - {male: Psionic Teacher, female: Psionic Teacher}
+  - {male: Grand Psionic, female: Grand Psionic}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Psionist, female: Psionist}
+  - {male: Immortal Psionist, female: Immortal Psionist}
+  - {male: Immortal Psionist, female: Immortal Psionist}
+  - {male: Immortal Psionist, female: Immortal Psionist}
+  - {male: Immortal Psionist, female: Immortal Psionist}
+  - {male: Immortal Psionist, female: Immortal Psionist}
+  - {male: Immortal Psionist, female: Immortal Psionist}
+  - {male: Immortal Psionist, female: Immortal Psionist}
+  - {male: Immortal Psionist, female: Immortal Psionist}
+  - {male: Immortal Psionist, female: Immortal Psionist}
+  - {male: Immortal Psionist, female: Immortal Psionist}
+thac0:  # `thaco` di LeU (constants.c) per livello: piu' basso e' meglio
+  [100, 20, 20, 20, 19, 19, 19, 19, 18, 18, 18, 17, 17, 17, 17, 16, 16, 16, 15, 15, 15, 15, 14, 14, 14, 13, 13, 13, 13, 12, 12, 12, 11, 11, 11, 11, 10, 10, 10, 9, 9, 9, 9, 8, 8, 8, 7, 7, 7, 7, 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+hp_gain:  # `advance_level` di LeU (limits.c): number(n, m) sotto until_level, poi flat_after; + bonus Costituzione, diviso per le classi
+  dice: [2, 10]
+  until_level: 12
+  flat_after: 2
+  con_bonus_cap: 2
+saving_throws:  # `saving_throws` di LeU (spell_parser.c) per livello (indice = livello): piu' basso e' meglio
+  para: [16, 14, 14, 13, 13, 11, 11, 10, 10, 8, 8, 7, 7, 5, 5, 4, 4, 3, 3, 3, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  rod: [18, 16, 16, 15, 15, 13, 13, 12, 12, 10, 10, 9, 9, 7, 7, 6, 6, 5, 5, 5, 5, 4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  petri: [17, 15, 15, 14, 14, 12, 12, 11, 11, 9, 9, 8, 8, 6, 6, 5, 5, 4, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  breath: [20, 17, 17, 16, 16, 13, 13, 12, 12, 9, 9, 8, 8, 5, 5, 4, 4, 4, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  spell: [19, 17, 17, 16, 16, 14, 14, 13, 13, 11, 11, 10, 10, 8, 8, 7, 7, 6, 6, 6, 6, 4, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+start_hp:  # `roll_abilities` di LeU: 10 + un tiro di dice + bonus, diviso per le classi
+  dice: [1, 6]
+  bonus: 0
+  group: thief_psi
+mana:  # `mana_limit` di LeU (limits.c): base + per_level * (livello // level_divisor); + ((INT / 3) + 2) * 3
+  base: 100
+  per_level: 5
+  level_divisor: 1
+magic_order: 5  # posizione in `BestMagicClass` di LeU (multiclass.c)
+level_loss:  # `drop_level` di LeU (limits.c): punti ferita persi, in piu' al bonus di Costituzione, sotto il livello `below` (`low`) o da li' in su (`high`), almeno `minimum`
+  {below: 12, low: 10, high: 2, minimum: 4}

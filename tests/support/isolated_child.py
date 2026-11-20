@@ -119,11 +119,10 @@ async def pachimud_scenario(app) -> None:  # type: ignore[no-untyped-def]
         preview = await call("POST", "/api/transfer/zones/import?dryRun=false&confirm=true", files=upload)
         assert preview["applied"] is True and preview["rooms"]["create"] == 1, preview
         assert (await call("GET", "/api/zones"))["total"] == 3
-        # giocatori, mondo, istanze, contenuti
+        # giocatori, mondo, contenuti
         account = await call("POST", "/api/players/accounts", 201, json={"username": "mario", "password": "password123"})
         assert (await call("GET", "/api/players/accounts"))["total"] == 1 and account["isBanned"] is False
         assert (await call("GET", "/api/world/overview"))["counts"]["zones"] == 3
-        assert (await call("GET", "/api/instances/mobs"))["total"] == 0
         assert len(await call("GET", "/api/content/races")) >= 30
         assert any(r["id"] == "human" for r in await call("GET", "/api/meta/races"))
     assert "pachimud" not in sys.modules, "pachimud importato durante l'uso del mondo"
@@ -144,7 +143,7 @@ def serve_pachimud() -> None:
 
 
 def setup_pachimud_params() -> None:
-    """`prepare_worlds` accetta un mondo pachimud con `database_url` e senza il gioco; senza parametri e' un errore chiaro."""
+    """`prepare_worlds` accetta un mondo pachimud con `definitions_path` e senza il gioco; senza parametri e' un errore chiaro."""
     from pachimudeditor.common.adapters.bootstrap import WorldSetupError, prepare_worlds
 
     os.environ["WEBEDITOR_WORLDS"] = json.dumps(ARGS["worlds"])

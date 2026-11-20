@@ -1,11 +1,99 @@
----
 class_id: cleric
+index: 1
 name: Cleric
+abbreviation: Cl
 description: A class specializing in divine magic and healing.
-attrs_priority:
+attrs_priority:  # default di pachimud: in LeU lo sceglie il giocatore alla creazione
   - wisdom
   - intelligence
   - strength
   - dexterity
   - constitution
   - charisma
+exp_per_level:  # `titles[classe][livello].exp` di LeU (constants.c): esperienza totale per raggiungere il livello
+  [0, 1, 1500, 3000, 6000, 13000, 27500, 55000, 110000, 225000, 450000, 675000, 900000, 1250000, 1350000, 1575000, 1800000, 2025000, 2250000, 2475000, 2700000, 3000000, 3300000, 3700000, 4100000, 4600000, 5100000, 5600000, 6100000, 6600000, 7200000, 7800000, 8400000, 9000000, 9700000, 10500000, 11300000, 12200000, 13200000, 14300000, 15500000, 17500000, 20500000, 24500000, 28500000, 33500000, 38500000, 44500000, 50500000, 57500000, 65000000, 200000000, 231000000, 232000000, 233000000, 234000000, 235000000, 236000000, 237000000, 238000000, 239000000]
+titles:  # `titles` di LeU: titolo maschile e femminile per livello (indice = livello)
+  - {male: Man, female: Woman}
+  - {male: Layman, female: Laywoman}
+  - {male: Seeker, female: Seeker}
+  - {male: Believer, female: Believer}
+  - {male: Novice, female: Novice}
+  - {male: Initiate, female: Initiate}
+  - {male: Attendant, female: Attendant}
+  - {male: Acolyte, female: Acolyte}
+  - {male: Minion, female: Minion}
+  - {male: Adept, female: Adept}
+  - {male: Priest, female: Priestess}
+  - {male: Missionary, female: Missionary}
+  - {male: Levite, female: Levitess}
+  - {male: Curate, female: Curate}
+  - {male: Chaplain, female: Chaplain}
+  - {male: Padre, female: Matron}
+  - {male: Canon, female: Canon}
+  - {male: Vicar, female: Vicaress}
+  - {male: Deacon, female: Deaconess}
+  - {male: Shaman, female: Shamaness}
+  - {male: Speaker, female: Speaker}
+  - {male: Confessor, female: Confessor}
+  - {male: Expositer, female: Expositress}
+  - {male: Mystic, female: Mystic}
+  - {male: Hermit, female: Hermitess}
+  - {male: Faith Healer, female: Faith Healer}
+  - {male: Healer, female: Healer}
+  - {male: Lay Healer, female: Lay Healer}
+  - {male: Illuminator, female: Illuminatrix}
+  - {male: Evangelist, female: Evangelist}
+  - {male: Voice, female: Voice}
+  - {male: Templar, female: Templar}
+  - {male: Hospitalier, female: Hospitalier}
+  - {male: Chuirgeon, female: Chuirgeoness}
+  - {male: Chuirgeon General, female: Chuirgeon General}
+  - {male: Inquisitor, female: Inquisitrix}
+  - {male: Abbot, female: Mother Superior}
+  - {male: Reverend, female: Reverend Mother}
+  - {male: Bishop, female: Bishop}
+  - {male: Arch Bishop, female: Arch Bishop}
+  - {male: Cardinal, female: Mother Superior}
+  - {male: Patriarch, female: Matriarch}
+  - {male: Grand Inquisitor, female: Grand Inquisitrix}
+  - {male: High Priest, female: High Priestess}
+  - {male: High Priest, female: High Priestess}
+  - {male: High Priest, female: High Priestess}
+  - {male: High Priest, female: High Priestess}
+  - {male: High Priest, female: High Priestess}
+  - {male: High Priest, female: High Priestess}
+  - {male: High Priest, female: High Priestess}
+  - {male: High Priest, female: High Priestess}
+  - {male: Immortal Cardinal, female: Immortal Priestess}
+  - {male: Immortal Cardinal, female: Immortal Priestess}
+  - {male: Immortal Cardinal, female: Immortal Priestess}
+  - {male: Immortal Cardinal, female: Immortal Priestess}
+  - {male: Immortal Cardinal, female: Immortal Priestess}
+  - {male: Immortal Cardinal, female: Immortal Priestess}
+  - {male: Inquisitor, female: Inquisitress}
+  - {male: God, female: Goddess}
+  - {male: Implementor, female: Implementress}
+  - {male: Implementor, female: Implementress}
+thac0:  # `thaco` di LeU (constants.c) per livello: piu' basso e' meglio
+  [100, 20, 20, 20, 19, 19, 19, 18, 18, 18, 17, 17, 17, 16, 16, 16, 15, 15, 15, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10, 10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 7, 6, 6, 6, 5, 5, 5, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+hp_gain:  # `advance_level` di LeU (limits.c): number(n, m) sotto until_level, poi flat_after; + bonus Costituzione, diviso per le classi
+  dice: [3, 15]
+  until_level: 12
+  flat_after: 3
+  con_bonus_cap: 2
+saving_throws:  # `saving_throws` di LeU (spell_parser.c) per livello (indice = livello): piu' basso e' meglio
+  para: [11, 10, 10, 10, 9, 9, 9, 7, 7, 7, 6, 6, 6, 5, 5, 5, 4, 4, 4, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  rod: [16, 14, 14, 14, 13, 13, 13, 11, 11, 11, 10, 10, 10, 9, 9, 9, 8, 8, 8, 6, 6, 5, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  petri: [15, 13, 13, 13, 12, 12, 12, 10, 10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 7, 5, 5, 4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  breath: [18, 16, 16, 16, 15, 15, 15, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10, 10, 10, 8, 8, 7, 6, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  spell: [17, 15, 15, 15, 14, 14, 14, 12, 12, 12, 11, 11, 11, 10, 10, 10, 9, 9, 9, 7, 7, 6, 5, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+start_hp:  # `roll_abilities` di LeU: 10 + un tiro di dice + bonus, diviso per le classi
+  dice: [1, 8]
+  bonus: 0
+mana:  # `mana_limit` di LeU (limits.c): base + per_level * (livello // level_divisor); + ((INT / 3) + 2) * 3
+  base: 100
+  per_level: 5
+  level_divisor: 3
+magic_order: 3  # posizione in `BestMagicClass` di LeU (multiclass.c)
+level_loss:  # `drop_level` di LeU (limits.c): punti ferita persi, in piu' al bonus di Costituzione, sotto il livello `below` (`low`) o da li' in su (`high`), almeno `minimum`
+  {below: 12, low: 15, high: 3, minimum: 5}

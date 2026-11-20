@@ -10,7 +10,6 @@ import pytest_asyncio
 from pachifast import create_app
 
 from pachimudeditor_adapter_pachimud.apps.content.module import module as content_module
-from pachimudeditor_adapter_pachimud.apps.instances.module import module as instances_module
 from pachimudeditor_adapter_pachimud.apps.players.module import module as players_module
 from pachimudeditor_adapter_pachimud.apps.transfer.module import module as transfer_module
 from pachimudeditor.common.adapters.plugins import available_kinds
@@ -22,9 +21,9 @@ HUGE = 10**30
 OVER_INT = 2**63
 _modules = build_modules(available_kinds())
 _names = {m.name for m in _modules}
-_app = create_app((*_modules, *(m for m in (content_module, instances_module, players_module, transfer_module) if m.name not in _names)))
+_app = create_app((*_modules, *(m for m in (content_module, players_module, transfer_module) if m.name not in _names)))
 
-LISTS = ["zones", "rooms", "mobs", "objects", "instances/mobs", "instances/objects", "players/accounts", "players/characters"]
+LISTS = ["zones", "rooms", "mobs", "objects", "players/accounts", "players/characters"]
 BY_ID = [
     "zones/{}",
     "zones/{}/usage",
@@ -36,8 +35,6 @@ BY_ID = [
     "mobs/{}/usage",
     "objects/{}",
     "objects/{}/usage",
-    "instances/mobs/{}",
-    "instances/objects/{}",
     "players/accounts/{}",
     "players/characters/{}",
     "players/characters/{}/inventory",
@@ -122,7 +119,7 @@ async def test_zip_bomb_and_big_yaml_rejected(api: httpx.AsyncClient) -> None:
 
 async def test_too_many_records_and_many_vnums(api: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     """Troppi record: 422; molti vnum (oltre il limite variabili SQLite) in una dry-run: nessun errore SQL."""
-    from pachimudeditor_adapter_pachimud.transfer import importer
+    from pachimudeditor_adapter_pachimud.transfer import service as importer
 
     rooms = "rooms:\n" + "".join(f"- {{vnum: {n}, name: r, description: d}}\n" for n in range(10001, 12001))
     files = [("files", ("zone.yaml", ZONE.replace("top_vnum: 2", "top_vnum: 20000"), "")), ("files", ("rooms.yaml", rooms, ""))]

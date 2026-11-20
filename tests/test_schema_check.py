@@ -1,6 +1,7 @@
-"""Compatibilita' con lo schema del gioco: revisioni note/ignote e degrado quando mancano colonne o tabelle.
+"""Compatibilita' del DB dei giocatori con lo schema del gioco: revisioni note/ignote e degrado quando mancano colonne o tabelle.
 
-I database di prova sono creati con i modelli copiati del gioco e poi "invecchiati" o alterati con SQL.
+Nel DB del gioco restano solo `account` e `player_character`: i contenuti (YAML) non dipendono dallo schema. I database di prova sono
+creati con i modelli copiati del gioco e poi "invecchiati" o alterati con SQL.
 """
 
 import sqlite3
@@ -10,34 +11,19 @@ import httpx
 import pytest
 from fastapi import HTTPException
 
-
-from pachimudeditor_adapter_pachimud.adapter import PachimudAdapter  # noqa: E402
-from pachimudeditor_adapter_pachimud.schema import HEAD, REVISIONS  # noqa: E402
-from pachimudeditor.common.adapters.models import (  # noqa: E402
-    ExtraDescriptionIn,
-    MobIn,
-    ResetCommandIn,
-    ResetScriptIn,
-    RoomIn,
-    RoomPageParams,
-    ZonePageParams,
-)
-from pachimudeditor.common.adapters.registry import WorldConfig, WorldRegistry, get_registry, set_registry  # noqa: E402
-from tests.helpers import data, error_code  # noqa: E402
-from tests.support import stack  # noqa: E402
+from pachimudeditor.common.adapters.models import RoomIn, ZonePageParams
+from pachimudeditor.common.adapters.registry import WorldConfig, WorldRegistry, get_registry, set_registry
+from pachimudeditor_adapter_pachimud.adapter import PachimudAdapter
+from pachimudeditor_adapter_pachimud.schema import HEAD, REVISIONS
+from tests.helpers import data, error_code
+from tests.support import stack
 
 OLD_COLUMNS = [
-    "ALTER TABLE mob_prototype DROP COLUMN race_id",
-    "ALTER TABLE mob_prototype DROP COLUMN class_id",
-    "ALTER TABLE zone_reset_command DROP COLUMN arg_str",
-    "ALTER TABLE room DROP COLUMN heal_rate",
-    "ALTER TABLE room DROP COLUMN mana_rate",
-    "ALTER TABLE room DROP COLUMN clan_id",
-    "ALTER TABLE room DROP COLUMN owner",
-    "ALTER TABLE zone DROP COLUMN min_level",
-    "ALTER TABLE zone DROP COLUMN max_level",
+    "ALTER TABLE account DROP COLUMN language",
+    "ALTER TABLE player_character DROP COLUMN inventory",
 ]
-"""Come uno schema alla revisione iniziale `64f2026e1334`."""
+"""Come uno schema alla revisione `1d51263b0036` (prima dell'inventario JSON e della lingua)."""
+OLD_REVISION = REVISIONS[5]
 
 
 def world(tmp_path: Path, *sql: str, revision: str | None = HEAD) -> PachimudAdapter:
@@ -66,49 +52,26 @@ async def test_current_revision_is_ok(tmp_path: Path) -> None:
     """Revisione piu' recente nota e nessuna colonna assente: stato `ok`, nessun avviso, tutte le capability."""
     adapter = world(tmp_path)
     report = adapter.schema_report()
-    assert report is not None and report.status == "ok" and report.revision == HEAD == REVISIONS[-1]
-    assert report.warnings == [] and report.unsupported == {}
+    assert report is not None and report.db is not None
+    assert report.db.status == "ok" and report.db.revision == HEAD == REVISIONS[-1]
+    assert report.warnings == [] and report.db.unsupported == {}
+    assert report.summary().startswith("3 stanze, 2 mob, 2 oggetti; giocatori: schema ok")
     caps = adapter.capabilities()
-    assert caps.supports_players and caps.supports_instances and caps.supports_transfer and caps.supports_extra_descriptions
+    assert caps.supports_players and caps.supports_transfer and caps.supports_extra_descriptions and not caps.supports_instances
     await adapter.close()
 
 
 async def test_old_schema_degrades_gracefully(tmp_path: Path) -> None:
-    """Schema iniziale: stato `behind`, campi mancanti `unsupported`, lettura con neutri, scrittura solo di neutri."""
-    adapter = world(tmp_path, *OLD_COLUMNS, revision=REVISIONS[0])
+    """Schema senza `inventory` e `language`: stato `behind`, colonne `unsupported`, il resto del mondo funziona."""
+    adapter = world(tmp_path, *OLD_COLUMNS, revision=OLD_REVISION)
     report = adapter.schema_report()
-    assert report is not None and report.status == "behind" and report.revision == REVISIONS[0]
-    assert report.unsupported["mob_prototype"] == ["class_id", "race_id"] and report.warnings == []
-    info = adapter.describe()
-    mob = {f.name: f for f in next(r for r in info.resources if r.type == "mob").fields}
-    assert mob["raceId"].unsupported and mob["classId"].unsupported and not mob["keywords"].unsupported
-    zone = {f.name: f for f in next(r for r in info.resources if r.type == "zone").fields}
-    assert zone["minLevel"].unsupported and zone["maxLevel"].read_only
-    # lettura: valori neutri
-    zones = await adapter.list_zones(ZonePageParams())
-    assert zones.total == 2 and zones.items[0].min_level == 1
-    room = await adapter.get_room((await adapter.list_rooms(RoomPageParams())).items[0].id)
-    assert room.heal_rate == 100 and room.clan_id is None
-    # scrittura: il neutro passa, il resto e' 422
-    created = await adapter.create_mob(MobIn(vnum=1500, zone_id=zones.items[0].id, keywords="k", short_description="s"))
-    assert created.race_id is None
-    with pytest.raises(HTTPException) as error:
-        await adapter.create_mob(MobIn(vnum=1501, zone_id=zones.items[0].id, keywords="k", short_description="s", race_id="human"))
-    assert error.value.status_code == 422 and error.value.detail[0]["code"] == "world.field_unsupported"
-    with pytest.raises(HTTPException):
-        await adapter.create_room(RoomIn(vnum=1600, zone_id=zones.items[0].id, name="x", heal_rate=200))
-    await adapter.create_room(RoomIn(vnum=1600, zone_id=zones.items[0].id, name="x"))
-    scripts = await adapter.replace_reset_commands(
-        zones.items[0].id, ResetScriptIn(commands=[ResetCommandIn(command_type=1, arg1=1000, arg2=1, arg3=1000)])
-    )
-    assert scripts[0].arg_str is None
-    with pytest.raises(HTTPException):
-        await adapter.replace_reset_commands(
-            zones.items[0].id, ResetScriptIn(commands=[ResetCommandIn(command_type=3, arg1=1000, arg2=1, arg_str="wield")])
-        )
-    # export/import YAML continuano a funzionare
-    bundle = await adapter.export_zone_bundle(zones.items[0].id)
-    assert "race_id" not in bundle.files["mobs.yaml"] and bundle.warnings == []
+    assert report is not None and report.db is not None
+    assert report.db.status == "behind" and report.db.revision == OLD_REVISION
+    assert report.db.unsupported == {"account": ["language"], "player_character": ["inventory"]} and report.warnings == []
+    models = adapter.connection.schema().models  # type: ignore[union-attr]
+    assert not models.column("player_character", "inventory") and models.column("player_character", "name")
+    assert adapter.capabilities().supports_players
+    assert (await adapter.list_zones(ZonePageParams())).total == 2  # i contenuti sono su file
     await adapter.close()
 
 
@@ -116,7 +79,7 @@ async def test_unknown_revision_warns_but_works(tmp_path: Path) -> None:
     """Revisione ignota (gioco piu' recente): avviso, stato `unknown`, il mondo funziona."""
     adapter = world(tmp_path, revision="ffffffffffff")
     report = adapter.schema_report()
-    assert report is not None and report.status == "unknown"
+    assert report is not None and report.db is not None and report.db.status == "unknown"
     assert [i.code for i in report.warnings] == ["unknown_revision"]
     assert (await adapter.list_zones(ZonePageParams())).total == 2
     await adapter.close()
@@ -126,94 +89,106 @@ async def test_unversioned_database(tmp_path: Path) -> None:
     """Senza `alembic_version`: stato `unversioned` con avviso."""
     adapter = world(tmp_path, revision=None)
     report = adapter.schema_report()
-    assert report is not None and report.status == "unversioned" and report.revision is None
+    assert report is not None and report.db is not None and report.db.status == "unversioned" and report.db.revision is None
     assert [i.code for i in report.warnings] == ["unversioned"]
     await adapter.close()
 
 
 async def test_unknown_required_column_is_a_warning(tmp_path: Path) -> None:
-    """Una colonna NOT NULL nuova e senza default: avviso (gli inserimenti potrebbero fallire), nient'altro."""
-    adapter = world(
-        tmp_path, "ALTER TABLE zone ADD COLUMN futuro INTEGER NOT NULL DEFAULT 0", "ALTER TABLE room ADD COLUMN extra_nuova VARCHAR"
-    )
-    report = adapter.schema_report()
-    assert report is not None and report.status == "ok"
-    assert report.warnings == []  # ha un default: nessun avviso
-    assert any(i.code == "unknown_column" for i in report.issues)
-    await adapter.close()
-
-
-async def test_optional_tables_switch_off_capabilities(tmp_path: Path) -> None:
-    """Senza giocatori/istanze/extra description le capability collegate sono false e il resto funziona."""
+    """Una colonna nuova: con default solo informazione; NOT NULL senza default: avviso (gli inserimenti potrebbero fallire)."""
     adapter = world(
         tmp_path,
-        "DROP TABLE object_instance",
-        "DROP TABLE mob_instance",
-        "DROP TABLE player_character",
-        "DROP TABLE account",
-        "DROP TABLE room_extra_description",
+        "ALTER TABLE account ADD COLUMN futuro INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE player_character ADD COLUMN nuova VARCHAR",
     )
-    caps = adapter.capabilities()
-    assert not caps.supports_players and not caps.supports_instances and not caps.supports_extra_descriptions
-    assert caps.supports_transfer
     report = adapter.schema_report()
-    assert report is not None and report.status == "ok" and len(report.missing_tables) == 5
-    zones = await adapter.list_zones(ZonePageParams())
-    room_id = (await adapter.create_room(RoomIn(vnum=1700, zone_id=zones.items[0].id, name="solo"))).id
-    await adapter.delete_room(room_id)
-    bundle = await adapter.export_zone_bundle(zones.items[0].id)
-    assert "extra_descriptions" not in bundle.files["rooms.yaml"]
-    with pytest.raises(HTTPException) as error:
-        await adapter.create_extra_description(room_id, ExtraDescriptionIn(keywords="a", text="b"))
-    assert error.value.status_code in (404, 409)
+    assert report is not None and report.db is not None and report.db.status == "ok"
+    assert report.warnings == []
+    assert any(i.code == "unknown_column" for i in report.db.issues)
     await adapter.close()
 
 
-async def test_missing_core_table_is_incompatible_503(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
-    """Manca una tabella obbligatoria: 503 `world.unavailable` per quel mondo (gli altri funzionano), mai un 500."""
-    adapter = world(tmp_path, "DROP TABLE exit")
-    assert adapter.schema_report() is not None and adapter.schema_report().status == "incompatible"  # type: ignore[union-attr]
-    assert adapter.unavailable_reason() and "exit" in adapter.unavailable_reason()  # type: ignore[operator]
+async def test_missing_players_tables_switch_off_capability(tmp_path: Path) -> None:
+    """Senza `account`/`player_character` niente giocatori; i contenuti (YAML) funzionano e si possono scrivere."""
+    adapter = world(tmp_path, "DROP TABLE player_character", "DROP TABLE account")
+    caps = adapter.capabilities()
+    assert not caps.supports_players and not caps.supports_instances and caps.supports_transfer and caps.supports_extra_descriptions
+    report = adapter.schema_report()
+    assert report is not None and report.db is not None and report.db.status == "ok" and len(report.db.missing_tables) == 2
+    zones = await adapter.list_zones(ZonePageParams())
+    room = await adapter.create_room(RoomIn(vnum=1700, zone_id=zones.items[0].id, name="solo"))
+    await adapter.delete_room(room.id)
+    await adapter.close()
+
+
+async def test_incompatible_players_db_is_503_only_for_players(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """Manca una colonna essenziale: i giocatori rispondono 503 `world.unavailable` (dettaglio solo nel log), i contenuti funzionano."""
+    adapter = world(tmp_path, "ALTER TABLE player_character RENAME COLUMN account_id TO account_ref")
+    report = adapter.schema_report()
+    assert report is not None and report.db is not None and report.db.status == "incompatible"
+    assert not adapter.capabilities().supports_players
     with pytest.raises(HTTPException) as error:
-        await adapter.list_zones(ZonePageParams())
+        async with adapter.session():
+            pass
     assert error.value.status_code == 503 and error.value.detail[0]["code"] == "world.unavailable"
     # niente percorso/driver nella risposta, dettaglio solo nel log
-    assert str(tmp_path) not in str(error.value.detail) and "exit" not in str(error.value.detail)
-    assert any("exit" in r.getMessage() for r in caplog.records)
-    assert adapter.describe().kind == "pachimud" and adapter.capabilities().supports_players is False
+    assert str(tmp_path) not in str(error.value.detail) and "account_id" not in str(error.value.detail)
+    assert any("account_id" in r.getMessage() for r in caplog.records)
+    assert (await adapter.list_zones(ZonePageParams())).total == 2
     await adapter.close()
 
 
 async def test_missing_database_file_is_not_created(tmp_path: Path) -> None:
-    """File SQLite inesistente: 503 e NESSUN DB vuoto creato (come faceva aiosqlite)."""
+    """File SQLite inesistente: giocatori non disponibili e NESSUN DB vuoto creato; i contenuti funzionano."""
+    stack.seed_game_db(tmp_path)
     missing = tmp_path / "non-esiste.db"
-    adapter = PachimudAdapter(WorldConfig(id="w", kind="pachimud", params={"database_url": f"sqlite+aiosqlite:///{missing}"}))
+    adapter = PachimudAdapter(
+        WorldConfig(
+            id="w",
+            kind="pachimud",
+            params={"database_url": f"sqlite+aiosqlite:///{missing}", "definitions_path": str(tmp_path / "definitions")},
+        )
+    )
     with pytest.raises(HTTPException) as error:
-        await adapter.list_zones(ZonePageParams())
+        async with adapter.session():
+            pass
     assert error.value.status_code == 503
-    assert not missing.exists() and adapter.schema_report() is None
+    report = adapter.schema_report()
+    assert not missing.exists() and report is not None and report.db is None and not adapter.capabilities().supports_players
+    assert (await adapter.list_zones(ZonePageParams())).total == 2
     await adapter.close()
 
 
-async def test_http_503_on_broken_world_keeps_others_working(client: httpx.AsyncClient, tmp_path: Path) -> None:
-    """Due mondi pachimud: quello rotto risponde 503 con codice stabile, il default continua a funzionare."""
-    broken = world(tmp_path, "DROP TABLE zone_reset_command")
-    await broken.close()
-    previous = get_registry()
+async def test_world_without_database_url(tmp_path: Path) -> None:
+    """Senza `database_url` il mondo ha solo i contenuti (nessuna capability dei giocatori)."""
+    stack.seed_game_db(tmp_path)
+    adapter = PachimudAdapter(WorldConfig(id="w", kind="pachimud", params={"definitions_path": str(tmp_path / "definitions")}))
+    assert not adapter.capabilities().supports_players and adapter.capabilities().supports_transfer
+    assert (await adapter.list_zones(ZonePageParams())).total == 2
+    await adapter.close()
+
+
+async def test_missing_definitions_is_503_keeps_others_working(
+    client: httpx.AsyncClient, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Due mondi pachimud: quello senza cartella delle definizioni risponde 503 con codice stabile, il default continua a funzionare."""
     registry = WorldRegistry(
         [
             WorldConfig(id="pachimud", kind="pachimud", params=stack.current_params()),
-            WorldConfig(id="rotto", kind="pachimud", params=broken.config.params),
+            WorldConfig(id="rotto", kind="pachimud", params={"definitions_path": str(tmp_path / "non-esiste")}),
         ],
         "pachimud",
     )
+    previous = get_registry()
     set_registry(registry)
     try:
-        assert error_code(await client.get("/api/zones", headers={"X-World": "rotto"}), 503) == "world.unavailable"
-        assert error_code(await client.get("/api/world/overview", headers={"X-World": "rotto"}), 409) == "world.capability_missing"
+        response = await client.get("/api/zones", headers={"X-World": "rotto"})
+        assert error_code(response, 503) == "world.unavailable" and str(tmp_path) not in response.text
+        assert any("non-esiste" in r.getMessage() for r in caplog.records)
         assert data(await client.get("/api/zones"))["total"] == 2
         worlds = {w["id"]: w for w in data(await client.get("/api/worlds"))}
-        assert set(worlds) == {"pachimud", "rotto"} and worlds["rotto"]["capabilities"]["supportsWorldOverview"] is False
+        assert set(worlds) == {"pachimud", "rotto"} and worlds["rotto"]["capabilities"]["supportsPlayers"] is False
+        assert registry.get("rotto").unavailable_reason()  # type: ignore[attr-defined]
     finally:
         await registry.aclose_all()
         set_registry(previous)
@@ -221,14 +196,14 @@ async def test_http_503_on_broken_world_keeps_others_working(client: httpx.Async
 
 async def test_schema_is_read_once_and_refreshable(tmp_path: Path) -> None:
     """Lo schema si legge una volta; `refresh=True` lo rilegge (dopo una migration del gioco)."""
-    adapter = world(tmp_path, *OLD_COLUMNS, revision=REVISIONS[0])
-    first = adapter.connection.schema()
-    assert adapter.connection.schema() is first
+    adapter = world(tmp_path, *OLD_COLUMNS, revision=OLD_REVISION)
+    first = adapter.connection.schema()  # type: ignore[union-attr]
+    assert adapter.connection.schema() is first  # type: ignore[union-attr]
     connection = sqlite3.connect(tmp_path / "game.db")
-    connection.execute("ALTER TABLE mob_prototype ADD COLUMN race_id VARCHAR")
+    connection.execute("ALTER TABLE account ADD COLUMN language VARCHAR")
     connection.commit()
     connection.close()
-    assert "race_id" in adapter.connection.schema().report.unsupported.get("mob_prototype", [])
-    refreshed = adapter.connection.schema(refresh=True)
-    assert "race_id" not in refreshed.report.unsupported.get("mob_prototype", [])
+    assert "language" in adapter.connection.schema().report.unsupported.get("account", [])  # type: ignore[union-attr]
+    refreshed = adapter.connection.schema(refresh=True)  # type: ignore[union-attr]
+    assert "language" not in refreshed.report.unsupported.get("account", [])
     await adapter.close()

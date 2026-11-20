@@ -8,7 +8,17 @@ from tests.helpers import data
 async def test_enums(client: httpx.AsyncClient) -> None:
     """Tutte le enum previste, come coppie {value, label} con value intero."""
     enums = data(await client.get("/api/meta/enums"))
-    assert set(enums) == {"sectorType", "direction", "doorFlag", "zoneResetMode", "sex", "objectType", "zoneCommandType"}
+    assert set(enums) == {
+        "sectorType",
+        "direction",
+        "doorFlag",
+        "zoneResetMode",
+        "sex",
+        "climate",
+        "openCmd",
+        "objectType",
+        "zoneCommandType",
+    }
     for options in enums.values():
         assert options and all(isinstance(o["value"], int) and o["label"] for o in options)
     assert [o["value"] for o in enums["direction"]] == [0, 1, 2, 3, 4, 5]

@@ -8,7 +8,7 @@ gia' buildato e incluso, con il comando `pachimudeditor`.
 
 Il core e' generico: i mondi (MUD) arrivano da **adapter**, pacchetti Python separati nello stesso monorepo (`adapters/`),
 scoperti con gli entry point `pachimudeditor.adapters` e installabili come *extras*. Per il mondo pachimud l'adapter legge
-e scrive il database del server di gioco (`database_url` del mondo, o quello del suo `pachimud.yaml`) con SQLAlchemy,
+e scrive i file YAML del gioco (`definitions_path` del mondo, o quella del suo `pachimud.yaml`) e il suo database dei giocatori con SQLAlchemy,
 senza importare il pacchetto `pachimud`; gli utenti dell'editor stanno in un DB SEPARATO, nella *cartella di lavoro*.
 
 - `src/pachimudeditor/` il core (wheel `pachimudeditor`): `app.py` (factory), `modules.py` (moduli pachifast), `apps/`
@@ -35,7 +35,7 @@ pachimudeditor serve --workdir ~/pachimudeditor --open     # http://127.0.0.1:81
 
 | Extra | Pacchetto | `kind` | Famiglia ([dettagli](docs/adapters/families.md)) | Cosa legge/scrive |
 | --- | --- | --- | --- | --- |
-| `pachimud` | `pachimudeditor-adapter-pachimud` | `pachimud` | DatabaseBased | il database del gioco (SQLAlchemy) + pagine panoramica/giocatori/istanze/trasferimento/contenuti |
+| `pachimud` | `pachimudeditor-adapter-pachimud` | `pachimud` | FileBased (+ DB giocatori) | i file YAML del gioco (zone, stanze, mob, oggetti, reset, classi, razze) e il suo database SQLAlchemy di account e personaggi + pagine panoramica/giocatori/trasferimento/contenuti |
 | `basedmud` | `pachimudeditor-adapter-basedmud` | `basedmud` | FileBased | file area `.are` di basedmud / ROM 2.4 / QuickMUD |
 | `dikumod` | `pachimudeditor-adapter-dikumod` | `dikumod` | FileBased | file dati di Diku Modificato (DikuMod1) |
 | `mapping` | `pachimudeditor-adapter-mapping` | `mapping` | Mapped | qualunque MUD su file descritto da un YAML di mappatura |
@@ -88,16 +88,16 @@ Priorita': variabili d'ambiente > `.env` della cartella > `pachimudeditor.yaml` 
       kind: pachimud
       name: Pachimud
       params:
-        database_url: sqlite+aiosqlite:////percorso/a/pachimud/pachimud.db   # URL SQLAlchemy async
-        definitions_path: /percorso/a/pachimud/definitions                    # races/, classes/ (e zones/)
+        definitions_path: /percorso/a/pachimud/definitions                    # contenuti YAML: zones/, classes/, races/ (obbligatorio)
+        database_url: sqlite+aiosqlite:////percorso/a/pachimud/pachimud.db   # facoltativo: account e personaggi (URL SQLAlchemy async)
         # config_path: /percorso/a/pachimud/pachimud.yaml   # facoltativo: ne legge database_url/definition_path
   ```
 
   I path SQLite/`definitions_path` relativi si risolvono rispetto alla cartella di lavoro; `config_path` (il `pachimud.yaml`
   del game server) fornisce i valori mancanti e i suoi path relativi si risolvono rispetto alla sua cartella; i parametri
-  espliciti vincono. Ripiego: senza `database_url` e `config_path`, la variabile `PACHIMUD_CONFIG_PATH`. All'avvio (e con
-  `pachimudeditor worlds check`) si verifica la revisione alembic del database: revisione ignota o colonne assenti sono
-  avvisi, e le funzioni collegate (es. `race_id` dei mob) si disattivano; dettagli in `docs/adapters/index.md`.
+  espliciti vincono. Ripiego: senza `definitions_path` e `config_path`, la variabile `PACHIMUD_CONFIG_PATH`. All'avvio (e con
+  `pachimudeditor worlds check`) si leggono i file YAML (i file o le voci non validi sono segnalati con file e riga) e si verifica la revisione
+  alembic del database dei giocatori: revisione ignota o colonne assenti sono avvisi; dettagli in `docs/adapters/index.md`.
 - Il DB dell'editor (utenti, ecc.) e' il DB di autenticazione di pachifast, SEPARATO dai database dei MUD: le
   connessioni ai MUD le gestiscono solo gli adapter.
 - DB auth e migration: `init` genera `migrations/auth/` e `project_modules.py` NELLA cartella di lavoro (pachifast

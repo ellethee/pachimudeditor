@@ -89,9 +89,11 @@ describe('zone', () => {
 
   it('modifica una zona', async () => {
     await tableRow(s.page, 'Zona Pw').locator('.pachi-t2-edit-item').click()
+    await s.page.getByRole('heading', { name: /70 — Zona Pw/ }).waitFor()
     await s.page.getByLabel('Nome *').fill('Zona Pw rinominata')
-    await saveDialog(s.page)
-    await waitDialogsClosed(s.page)
+    await s.page.getByTestId('form-save').click()
+    await s.page.getByRole('heading', { name: /Zona Pw rinominata/ }).waitFor()
+    await goto(s.page, '/zones')
     await tableRow(s.page, 'Zona Pw rinominata').waitFor()
     assert.equal((await api.byVnum('zones', 70)).name, 'Zona Pw rinominata')
   })

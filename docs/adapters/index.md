@@ -3,7 +3,7 @@
 Il backend non parla più direttamente con il database di pachimud: ogni router (zone, stanze, mob,
 oggetti, meta) chiama un **`WorldAdapter`**, l'oggetto che sa dove vivono i dati di un "mondo" (un MUD).
 Nessun mondo è implicito: i mondi sono quelli di `webeditor_worlds`. Gli adapter si raggruppano in tre **famiglie** (FileBased,
-DatabaseBased, Mapped): vedi [famiglie di adapter](families.md). Ad esempio `kind: pachimud` (DatabaseBased) legge il database del gioco
+DatabaseBased, Mapped): vedi [famiglie di adapter](families.md). Ad esempio `kind: pachimud` legge i contenuti dai file YAML del gioco e i giocatori dal suo database
 con SQLAlchemy (schema-on-read, nessun import del pacchetto `pachimud`): vedi [adapter pachimud](pachimud.md).
 
 ```
@@ -26,7 +26,7 @@ router (apps/*/root.py nel core; nei pacchetti adapter per le pagine specifiche)
 | `common/adapters/worlds.py` | `GET /api/worlds` |
 | `sdk.py` | **API pubblica per gli adapter esterni** (re-esporta i nomi stabili; vedi "Adapter come pacchetti") |
 | `common/adapters/plugins.py` | `AdapterPlugin`, scoperta con `importlib.metadata.entry_points`, caricamento lazy di factory/moduli/regole, stato dei kind (`adapters list`) |
-| `adapters/pachimud/` (pacchetto `pachimudeditor-adapter-pachimud`) | `PachimudAdapter` (mixin `zones`, `rooms`, `prototypes`, `meta`) + `params` (database_url/definitions_path/config_path), `schema` (riflessione, revisioni note, controllo), `connection` (engine/sessioni del mondo), `definitions` (razze/classi), `security` (Argon2id), `race_enums`, `transfer/` (schemi, writer/reader, import e anteprima dei YAML di zona), `editor/` (crud, db, reset_usage, istanze), `apps/{world,players,instances,transfer,content}` (le pagine API del gioco), `convert.py` (sapore); vedi [adapter pachimud](pachimud.md) |
+| `adapters/pachimud/` (pacchetto `pachimudeditor-adapter-pachimud`) | `PachimudAdapter` (mixin `zones`, `rooms`, `prototypes`, `meta`) sui file YAML del gioco: `store` (cache/indici/scrittura atomica con commenti), `loaders` (copie dei loader del gioco), `mapping` (YAML <-> DTO), `resets` (script piatto <-> reset annidati), `integrity`, `params` (definitions_path/database_url/config_path), `schema` + `connection` (DB dei soli giocatori: riflessione, revisioni note, controllo), `definitions` (razze/classi), `security` (Argon2id), `race_enums`, `transfer/` (export/import delle cartelle di zona), `editor/` (crud, db), `apps/{world,players,transfer,content}` (le pagine API del gioco), `convert.py` (sapore); vedi [adapter pachimud](pachimud.md) |
 | `adapters/basedmud/` (`pachimudeditor-adapter-basedmud`) | `BasedMudAdapter` su file `.are` (libreria `rom_lib` inclusa): `store` (cache/indici/scrittura), `mapping` (ROM <-> DTO), mixin `zones`, `rooms`, `prototypes`, `meta`, `convert.py` (sapore); vedi [adapter basedmud](basedmud.md) |
 | `adapters/dikumod/` (`pachimudeditor-adapter-dikumod`) | `DikumodAdapter` sui file dati di Diku Modificato (libreria `dikumod_lib` inclusa): `store` (cache/indici/override), `mapping`, mixin `zones`, `rooms`, `prototypes`, `meta`, `convert.py` (sapore); vedi [adapter dikumod](dikumod.md) |
 | `adapters/mapping/` (`pachimudeditor-adapter-mapping`) | `MappingAdapter` generico guidato da un YAML (`schema`, `grammar`, `writer`, `model`, `store`, mixin `zones`/`rooms`/`prototypes`, `adapter`) con `examples/` (`rom.yaml`, `diku_classic.yaml`, `minimud/`); vedi [adapter mapping](mapping.md) |
@@ -45,8 +45,8 @@ webeditor_worlds:
     kind: pachimud
     name: Pachimud
     params:
-      database_url: sqlite+aiosqlite:////percorso/pachimud/pachimud.db
-      definitions_path: /percorso/pachimud/definitions
+      definitions_path: /percorso/pachimud/definitions        # contenuti YAML (obbligatorio)
+      database_url: sqlite+aiosqlite:////percorso/pachimud/pachimud.db   # giocatori (facoltativo)
   - {id: basedmud, kind: basedmud, name: BasedMud, path: /percorso/basedmud/area, read_only: true}
   - {id: tba, kind: mapping, name: tbaMUD, mapping: /percorso/tba.mapping.yaml, path: /percorso/tba/lib}
 webeditor_default_world: pachimud     # facoltativo: altrimenti "pachimud" se presente, o il primo

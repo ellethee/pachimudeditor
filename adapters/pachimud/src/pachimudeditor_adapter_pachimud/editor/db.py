@@ -42,7 +42,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_db)]
 def reject_writes_if_read_only(request: Request, adapter: PachimudDep) -> None:
     """Dipendenza di router: 409 `world.read_only` su ogni metodo non sicuro se il mondo e' in sola lettura.
 
-    Da mettere su interi router (players, instances, content) cosi' una nuova rotta di scrittura non resta scoperta.
+    Da mettere su interi router (players, content) cosi' una nuova rotta di scrittura non resta scoperta.
     """
     if request.method not in ("GET", "HEAD", "OPTIONS"):
         adapter.ensure_writable()

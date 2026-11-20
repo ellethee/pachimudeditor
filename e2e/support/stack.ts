@@ -29,10 +29,13 @@ export const HAS_DIKUMOD = existsSync(DIKUMOD_SRC)
 export const LIVE_TOKEN = 'e2e-live-token-' + 'x'.repeat(24)
 /** Percorso del socket del finto server live (assoluto e corto: il limite di `sun_path` e' 107 byte). */
 export const LIVE_SOCKET = (workdir: string): string => join(workdir, 'live.sock')
+/** Socket del finto server live con il profilo pachimud (mondo `pachimud-live`). */
+export const PACHIMUD_LIVE_SOCKET = (workdir: string): string => join(workdir, 'live-pachimud.sock')
 /** Avvia il finto server `livectl` (processo Python) e attende `ready`; restituisce il processo. */
-export function startFakeLive(workdir: string): Promise<ChildProcess> {
+export function startFakeLive(workdir: string, profile: 'dikumod' | 'pachimud' = 'dikumod'): Promise<ChildProcess> {
+  const socket = profile === 'pachimud' ? PACHIMUD_LIVE_SOCKET(workdir) : LIVE_SOCKET(workdir)
   return new Promise((done, fail) => {
-    const child = spawn(join(BACKEND, '.venv', 'bin', 'python'), ['-m', 'tests.support.live_fake_cli', LIVE_SOCKET(workdir), LIVE_TOKEN], {
+    const child = spawn(join(BACKEND, '.venv', 'bin', 'python'), ['-m', 'tests.support.live_fake_cli', socket, LIVE_TOKEN, profile], {
       cwd: BACKEND,
       stdio: ['ignore', 'pipe', 'inherit'],
     })
@@ -83,6 +86,18 @@ function prepareExtras(workdir: string, pachimud: { databaseUrl: string; definit
     { id: 'basedmud', kind: 'basedmud', name: 'BasedMud', path: based },
     { id: 'basedmud-ro', kind: 'basedmud', name: 'BasedMud (sola lettura)', path: based, read_only: true },
     { id: 'pachimud-ro', kind: 'pachimud', name: 'Pachimud (sola lettura)', read_only: true, params: { database_url: pachimud.databaseUrl, definitions_path: pachimud.definitionsPath } },
+    // canale live con il profilo pachimud (stessi file del mondo `pachimud`): sempre presente, il finto server lo avvia `startStack`
+    {
+      id: 'pachimud-live',
+      kind: 'pachimud',
+      name: 'Pachimud (live)',
+      read_only: false,
+      params: {
+        database_url: pachimud.databaseUrl,
+        definitions_path: pachimud.definitionsPath,
+        live: { socket: PACHIMUD_LIVE_SOCKET(workdir), token_env: 'E2E_LIVE_TOKEN', timeout_ms: 2000 },
+      },
+    },
   ]
   if (HAS_DIKUMOD) {
     const dikumodRo = join(workdir, 'dikumod', 'lib')
@@ -154,6 +169,7 @@ export async function startStack(port = Number(process.env.E2E_PORT ?? 8124), op
   )
 
   let fakeLive: ChildProcess | undefined
+  const fakePachimud = options.noWorlds ? undefined : await startFakeLive(workdir, 'pachimud')
   if (HAS_DIKUMOD && !options.noWorlds) {
     fakeLive = await startFakeLive(workdir)
     process.env.E2E_LIVE_SOCKET_DIR = workdir // per i test che fermano/riavviano il finto server (ereditata da `node --test`)
@@ -202,6 +218,7 @@ export async function startStack(port = Number(process.env.E2E_PORT ?? 8124), op
         })
       })
     }
+    fakePachimud?.kill('SIGKILL')
     fakeLive?.kill('SIGKILL') // il PID puo' essere stato cambiato da un test che l'ha riavviato: vedi `E2E_LIVE_PID`
     const restarted = Number(process.env.E2E_LIVE_PID)
     if (restarted && restarted !== fakeLive?.pid) {

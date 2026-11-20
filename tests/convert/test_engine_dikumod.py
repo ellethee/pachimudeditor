@@ -37,7 +37,7 @@ async def test_dikumod_to_pachimud(dikumod_small, pachimud_world):
     s = await read_zone(pachimud_world, target.id)
     assert sorted(r.vnum for r in s.rooms) == [1, 2]  # la stanza 0 e' della zona 0
     by_type = {c.command_type.name: c for c in s.resets}
-    assert by_type["EQUIP_OBJECT"].arg_str == "wield" and by_type["EQUIP_OBJECT"].if_flag is True
+    assert by_type["EQUIP_OBJECT"].arg_str == "wield"  # `if_flag` non esiste nei reset YAML del gioco
     assert by_type["LOAD_OBJECT"].arg3 == 2
     await assert_zone_valid(pachimud_world, target.id)
 
@@ -65,7 +65,7 @@ async def test_basedmud_and_pachimud_to_dikumod(rom_world, pachimud_world, dikum
     await assert_zone_valid(dikumod_small, created.id)
     after_first = await snapshot(dikumod_small)
     assert len(after_first) == len(before) + 1
-    again = await convert(pachimud_world, dikumod_small, plan(1, vnum_policy={"mode": "shift_to"}), dry_run=False, confirm=True)
+    again = await convert(pachimud_world, dikumod_small, plan(10, vnum_policy={"mode": "shift_to"}), dry_run=False, confirm=True)
     assert again.applied and not again.errors, again.errors
     alfa = next(z for z in await list_all_zones(dikumod_small) if z.name == "Zona Alfa")
     await assert_zone_valid(dikumod_small, alfa.id)
@@ -92,11 +92,11 @@ async def test_emoji_not_encodable_is_422_in_preview_and_run(request, pachimud_w
 
     Verso BasedMud una zona nuova e' utf-8 (emoji ammesse): qui si sostituisce una zona latin-1 esistente.
     """
-    room = (await read_zone(pachimud_world, 1)).rooms[0]
+    room = (await read_zone(pachimud_world, 10)).rooms[0]
     await pachimud_world.update_room(room.id, RoomPatch(name="Piazza \U0001f600"))
     world = request.getfixturevalue(target)
     if target == "empty_rom":  # arrivo: area latin-1 gia' presente con lo stesso vnum di zona
-        src = await convert(pachimud_world, world, plan(1), dry_run=False, confirm=True)
+        src = await convert(pachimud_world, world, plan(10), dry_run=False, confirm=True)
         assert src.applied
         entry = world.store.zone_by_id((await list_all_zones(world))[0].id)
         entry.area.encoding = "latin-1"
@@ -105,6 +105,6 @@ async def test_emoji_not_encodable_is_422_in_preview_and_run(request, pachimud_w
         kw = {"vnum_policy": {"mode": "shift_to"}}
     before = await snapshot(world)
     with pytest.raises(HTTPException) as err:
-        await convert(pachimud_world, world, plan(1, **kw), dry_run=dry_run, confirm=True)
+        await convert(pachimud_world, world, plan(10, **kw), dry_run=dry_run, confirm=True)
     assert err.value.status_code == 422 and err.value.detail[0]["code"] == code
     assert await snapshot(world) == before

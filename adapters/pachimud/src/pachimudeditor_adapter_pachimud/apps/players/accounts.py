@@ -17,7 +17,7 @@ from pachimudeditor_adapter_pachimud.editor.db import SessionDep
 from pachimudeditor.sdk import conflict
 from pachimudeditor_adapter_pachimud.editor.pagination import default_order
 
-from .helpers import collect_item_ids, count_characters, delete_items
+from .helpers import count_characters
 from .schemas import AccountIn, AccountOut, AccountPatch, PasswordIn
 
 router = get_router(prefix="")
@@ -129,7 +129,7 @@ async def set_password(account_id: int, data: PasswordIn, session: SessionDep) -
 @router.delete("/accounts/{account_id}", status_code=204, response_model=None, skip_envelope=True)
 async def delete_account(account_id: int, session: SessionDep, cascade: bool = Query(False)) -> None:
     """Elimina un account. Con personaggi: 409 `players.account_has_characters`, salvo `?cascade=true`
-    che elimina anche personaggi e relativo inventario."""
+    che elimina anche i personaggi (con il loro inventario)."""
     m = models_of(session)
     PlayerCharacter = m.PlayerCharacter  # noqa: N806
     account = await crud.get_or_404(session, m.Account, account_id, code="players.account_not_found")
@@ -137,7 +137,6 @@ async def delete_account(account_id: int, session: SessionDep, cascade: bool = Q
     if characters and not cascade:
         raise conflict("players.account_has_characters", count=len(characters))
     for character in characters:
-        await delete_items(session, await collect_item_ids(session, character.id))
         await session.delete(character)
     await session.flush()
     await session.delete(account)

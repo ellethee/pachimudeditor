@@ -1,28 +1,24 @@
-"""`PachimudAdapter`: il mondo pachimud (database SQLAlchemy letto "al volo" + YAML di definizioni).
+"""`PachimudAdapter`: il mondo pachimud, con i contenuti su file YAML e giocatori/account nel database di gioco.
 
-Implementa `WorldAdapter` componendo i mixin per area (`zones`, `rooms`, `prototypes`, `meta`). NON importa il gioco:
-apre il database indicato dai parametri del mondo (`database_url`, `definitions_path`, `config_path`: vedi
-`adapters.pachimud.params`), ne rifletta le tabelle (`adapters.pachimud.schema`) e gestisce da se' engine e sessioni
-(`adapters.pachimud.connection`). `id` = chiave primaria della riga. Capability: tutte quelle che lo schema reale e la
-configurazione permettono (panoramica mondo, istanze, giocatori, trasferimento YAML, razze/classi).
+Implementa `WorldAdapter` componendo i mixin per area (`zones`, `rooms`, `prototypes`, `meta`). NON importa il gioco.
+
+- **Contenuti** (zone, stanze, uscite, mob, oggetti, reset, classi, razze): file YAML sotto `definitions_path`
+  (`zones/<Zona>/{zone,rooms*,mobs*,objects*,resets*}.yaml`, `classes/`, `races/`), letti e scritti da `store.py`. `id == vnum`
+  (la zona: `vnum` di `zone.yaml`). Il gioco non ricarica a caldo: le modifiche hanno effetto al suo riavvio.
+- **Giocatori e account**: tabelle `account` e `player_character` del database indicato da `database_url` (riflesse,
+  `schema.py`), riga per riga come le scrive il game server.
+
+Capability: panoramica mondo, giocatori (se il DB c'e'), trasferimento di zone, razze/classi, script di reset ed extra
+description. Niente istanze su disco: nel gioco vivono solo in memoria (si leggono dal canale live, `instances.list`).
 """
 
 import logging
-import tempfile
+from dataclasses import dataclass, field
 from pathlib import Path
+
 from pachifast.i18n import api_error
 from starlette.concurrency import run_in_threadpool
 
-from pachimudeditor_adapter_pachimud.meta import MetaMixin
-from pachimudeditor_adapter_pachimud.prototypes import PrototypesMixin
-from pachimudeditor_adapter_pachimud.rooms import RoomsMixin
-from pachimudeditor_adapter_pachimud.schema import SchemaReport, SchemaUnavailable, models_of
-from pachimudeditor_adapter_pachimud.transfer.files import snapshot_zone, zone_slug
-from pachimudeditor_adapter_pachimud.transfer.importer import import_zone_directory, parse_zone_dir
-from pachimudeditor_adapter_pachimud.transfer.preview import build_preview
-from pachimudeditor_adapter_pachimud.zones import ZonesMixin
-from pachimudeditor.sdk import AdapterCapabilities, AdapterInfo, ResourceInfo, WorldAdapter
-from pachimudeditor.sdk import describe_resource
 from pachimudeditor.common.adapters.models import (
     ExitIn,
     ExitOut,
@@ -41,83 +37,112 @@ from pachimudeditor.common.adapters.models import (
     ZoneIn,
     ZoneOut,
 )
-from pachimudeditor.sdk import WorldConfig
+from pachimudeditor.common.enums import ZoneCommandType
+from pachimudeditor.sdk import AdapterCapabilities, AdapterInfo, ResourceInfo, WorldAdapter, describe_resource, finish_resource
+from pachimudeditor_adapter_pachimud import integrity
+from pachimudeditor_adapter_pachimud.fields import EXTRA, FLAG_LISTS, READ_ONLY
+from pachimudeditor_adapter_pachimud.live import LiveMixin
+from pachimudeditor_adapter_pachimud.meta import MetaMixin
+from pachimudeditor_adapter_pachimud.prototypes import PrototypesMixin
+from pachimudeditor_adapter_pachimud.rooms import RoomsMixin
+from pachimudeditor_adapter_pachimud.schema import SchemaIssue, SchemaReport, SchemaUnavailable
+from pachimudeditor_adapter_pachimud.transfer import service as transfer
+from pachimudeditor_adapter_pachimud.zones import ZonesMixin
 
 log = logging.getLogger(__name__)
 
 
-class PachimudAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, WorldAdapter):
-    """Adapter del database di pachimud (vedi docstring del modulo)."""
+@dataclass
+class WorldReport:
+    """Stato del mondo per `worlds check`: contenuti YAML (conteggi, problemi dei file) e schema del DB dei giocatori."""
 
-    def __init__(self, config: WorldConfig) -> None:
-        """Risolve i parametri del mondo (`PachimudConfigError` se mancano o non sono validi)."""
-        super().__init__(config)
+    zones: int
+    rooms: int
+    mobs: int
+    objects: int
+    db: SchemaReport | None = None
+    problems: list[SchemaIssue] = field(default_factory=list)
+    """Problemi dei file YAML (YAML rotto, voci non valide, vnum duplicate)."""
 
-    # ------------------------------------------------------------------ schema e capability
+    @property
+    def warnings(self) -> list[SchemaIssue]:
+        """Problemi dei file e avvisi dello schema del DB (le semplici informazioni sono escluse)."""
+        return [*self.problems, *(self.db.warnings if self.db is not None else [])]
 
-    def schema_report(self, *, refresh: bool = False) -> SchemaReport | None:
-        """Il rapporto di compatibilita' con il gioco (revisione alembic, colonne assenti, ...) o `None` se il DB non e'
-        utilizzabile (`unavailable_reason()` ne dice il motivo)."""
+    def summary(self) -> str:
+        """Una riga per `worlds check`: `45 stanze, 28 mob, 32 oggetti; giocatori: schema ok, revisione X; 1 problema nei file`."""
+        db = f"giocatori: {self.db.summary()}" if self.db is not None else "giocatori: DB non disponibile"
+        problems = f"; {len(self.problems)} problemi nei file" if self.problems else ""
+        return f"{self.rooms} stanze, {self.mobs} mob, {self.objects} oggetti; {db}{problems}"
+
+
+class PachimudAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, LiveMixin, WorldAdapter):
+    """Adapter del gioco pachimud (vedi docstring del modulo)."""
+
+    # ------------------------------------------------------------------ stato e capability
+
+    def unavailable_reason(self) -> str | None:
+        """Perche' il mondo non e' utilizzabile ora (cartella `zones` assente), o `None` se lo e'."""
+        if not self.params.definitions_path.is_dir():
+            return f"cartella delle definizioni non trovata: {self.params.definitions_path}"
+        return None
+
+    def players_schema(self, *, refresh: bool = False) -> SchemaReport | None:
+        """Il rapporto di compatibilita' del DB dei giocatori, o `None` se non e' configurato/utilizzabile."""
+        if self.connection is None:
+            return None
         try:
             return self.connection.schema(refresh=refresh).report
         except SchemaUnavailable as exc:
             return exc.report
 
-    def unavailable_reason(self) -> str | None:
-        """Perche' il database non e' utilizzabile ora, o `None` se lo e'."""
-        try:
-            self.connection.schema()
-        except SchemaUnavailable as exc:
-            return str(exc)
-        return None
+    def schema_report(self, *, refresh: bool = False) -> WorldReport | None:
+        """Stato del mondo (contenuti YAML e DB dei giocatori) o `None` se le definizioni non esistono."""
+        if self.unavailable_reason() is not None:
+            return None
+        store = self.sync()
+        problems = [SchemaIssue("error" if i.severity == "error" else "warning", i.code, i.text()) for i in store.issues]
+        return WorldReport(
+            zones=len(store.zones),
+            rooms=len(store.vnums("room")),
+            mobs=len(store.vnums("mob")),
+            objects=len(store.vnums("object")),
+            db=self.players_schema(refresh=refresh),
+            problems=problems,
+        )
 
     def log_schema_report(self) -> None:
-        """Scrive nel log lo stato dello schema (avvisi inclusi): da chiamare all'avvio dell'app."""
+        """Scrive nel log lo stato del mondo (avvisi inclusi): da chiamare all'avvio dell'app."""
+        name = f"mondo {self.config.id!r} ({self.params.definitions_path})"
         report = self.schema_report(refresh=True)
-        name = f"mondo {self.config.id!r} ({self.params.redacted_url()})"
         if report is None:
             log.warning("%s non utilizzabile: %s", name, self.unavailable_reason())
             return
         log.info("%s: %s", name, report.summary())
         for issue in report.warnings:
-            log.warning("%s: schema [%s] %s", name, issue.code, issue.message)
+            log.warning("%s: [%s] %s", name, issue.code, issue.message)
 
     def capabilities(self) -> AdapterCapabilities:
-        """Le capability consentite dallo schema reale e dalla configurazione; `read_only` e' da configurazione.
-
-        Con il DB non utilizzabile restano solo `read_only` e le funzioni che non lo richiedono.
-        """
-        try:
-            models = self.connection.schema().models
-        except SchemaUnavailable:
-            return AdapterCapabilities(read_only=self.config.read_only, supports_reset_scripts=False, supports_extra_descriptions=False)
+        """Le capability consentite dalla configurazione e dal DB dei giocatori; `read_only` e' da configurazione."""
+        report = self.players_schema()
         return AdapterCapabilities(
             read_only=self.config.read_only,
             supports_world_overview=True,
-            supports_instances=models.has("mob_instance") and models.has("object_instance") and models.has("player_character"),
-            supports_players=models.has("account") and models.has("player_character") and models.has("object_instance"),
+            supports_players=report is not None and report.usable and not {"account", "player_character"} & set(report.missing_tables),
             supports_transfer=True,
-            supports_content_races=self.params.definitions_path is not None,
+            supports_content_races=True,
             supports_reset_scripts=True,
-            supports_extra_descriptions=models.has("room_extra_description"),
+            supports_extra_descriptions=True,
+            supports_live=self.live_settings is not None,
         )
 
     def describe(self) -> AdapterInfo:
-        """Descrittori dei campi ricavati dagli schemi Pydantic dei DTO; i campi senza colonna nel DB sono `unsupported`."""
-        try:
-            models = self.connection.schema().models
-        except SchemaUnavailable:
-            models = None
+        """Descrittori dei campi ricavati dagli schemi Pydantic dei DTO, con le chiavi di `extra` di pachimud."""
 
-        def resource(info: ResourceInfo) -> ResourceInfo:
-            """Marca i campi non supportati dallo schema reale."""
-            if models is None:
-                return info
-            unsupported = models.unsupported_fields(info.type)
-            if not unsupported:
-                return info
-            fields = [f.model_copy(update={"unsupported": True, "read_only": True}) if f.name in unsupported else f for f in info.fields]
-            return info.model_copy(update={"fields": fields})
+        def finish(info: ResourceInfo) -> ResourceInfo:
+            """Completa la risorsa con le chiavi di `extra` e i campi derivati."""
+            enums = {name: key for (res, name), key in FLAG_LISTS.items() if res == info.type}
+            return finish_resource(info, EXTRA.get(info.type, []), enums=enums, read_only=READ_ONLY.get(info.type, frozenset()))
 
         resources = [
             describe_resource("zone", ZoneOut, ZoneIn),
@@ -133,30 +158,27 @@ class PachimudAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, WorldA
             kind=self.config.kind,
             name=self.config.name or "Pachimud",
             capabilities=self.capabilities(),
-            resources=[resource(r) for r in resources],
+            resources=[finish(r) for r in resources],
         )
+
+    def unsupported_reset_types(self) -> frozenset[int]:
+        """`R` (rimescola le uscite) non esiste nel gioco: la conversione lo scarta riportando la perdita."""
+        return frozenset({int(ZoneCommandType.RANDOMIZE_EXITS)})
+
+    # ------------------------------------------------------------------ integrita'
+
+    def integrity(self) -> list[integrity.Warn]:
+        """I problemi di qualita' dei dati del mondo (vedi `integrity.py`)."""
+        return integrity.collect(self.sync())
 
     # ------------------------------------------------------------------ trasferimento YAML
 
     async def export_zone_bundle(self, zone_id: int) -> ZoneBundle:
-        """I cinque file YAML di una zona (formato dell'importer del gioco), con eventuali warning di validita'."""
-        async with self.session() as session:
-            zone = await session.get(models_of(session).Zone, zone_id)
-            if zone is None:
-                raise api_error(404, "transfer.zone_not_found", id=zone_id)
-            snapshot = await snapshot_zone(session, zone)
-            texts = snapshot.texts()
-            vnum, name, folder = zone.vnum, zone.name, zone_slug(zone)
-        warnings: list[str] = []
-        with tempfile.TemporaryDirectory(prefix="pachimud-export-") as tmp:
-            for file_name, text in texts.items():
-                (Path(tmp) / file_name).write_text(text, encoding="utf-8")
-            try:
-                parse_zone_dir(Path(tmp))
-            except Exception as error:  # dati incoerenti nel DB: si esporta comunque, segnalando
-                detail = error.detail[0].get("msg", "") if hasattr(error, "detail") and error.detail else str(error)
-                warnings.append(str(detail))
-        return ZoneBundle(zone_vnum=vnum, zone_name=name, folder=folder, files=texts, warnings=warnings)
+        """I file YAML della zona come testo, esattamente come sono su disco."""
+        zone = self.sync().zone(zone_id)
+        if zone is None:
+            raise api_error(404, "transfer.zone_not_found", id=zone_id)
+        return transfer.bundle(self.store, zone)
 
     async def import_zone_dir(self, directory: Path, *, dry_run: bool, confirm: bool) -> ImportPreview:
         """Anteprima e, con `dry_run=False` e `confirm=True`, import (upsert per vnum, mai cancellazioni).
@@ -167,12 +189,12 @@ class PachimudAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, WorldA
             raise api_error(422, "transfer.confirm_required", loc=("query", "confirm"))
         if not dry_run:
             self.ensure_writable()
-        parsed = await run_in_threadpool(parse_zone_dir, directory)  # YAML+pydantic sincroni: fuori dal loop
+        parsed = await run_in_threadpool(transfer.parse_zone_dir, directory)  # YAML+pydantic sincroni: fuori dal loop
         race_ids, class_ids = self.content_ids()
-        async with self.session() as session:
-            preview = await build_preview(session, parsed, race_ids, class_ids)
-            if dry_run:
-                return preview
+        if dry_run:
+            return transfer.preview(self.sync(), parsed, race_ids, class_ids)
+        async with self.writing():
+            preview = transfer.preview(self.store, parsed, race_ids, class_ids)
             if preview.conflicts:
                 raise api_error(
                     409,
@@ -180,11 +202,6 @@ class PachimudAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, WorldA
                     count=len(preview.conflicts),
                     vnums=", ".join(f"{c.kind} {c.vnum} (zona {c.zone_vnum})" for c in preview.conflicts[:10]),
                 )
-            try:
-                await import_zone_directory(session, directory, race_ids=race_ids, class_ids=class_ids, parsed=parsed)
-                await session.commit()
-            except Exception:
-                await session.rollback()
-                raise
+            transfer.apply(self.store, parsed)
             preview.applied = True
             return preview

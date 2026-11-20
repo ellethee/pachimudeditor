@@ -146,6 +146,25 @@ export async function saveDialog(page: Page): Promise<void> {
 }
 
 /**
+ * Salva la maschera inline di una pagina di dettaglio (pulsante Salva) e attende la notifica di conferma.
+ * @param page pagina
+ */
+export async function saveForm(page: Page): Promise<void> {
+  await page.getByTestId('form-save').click()
+  await page.locator('.q-notification.bg-positive').first().waitFor({ timeout: 60_000 }) // su dati reali Diku Modificato il salvataggio di una stanza con uscite richiede ~16 s
+}
+
+/**
+ * Apre il dettaglio dalla riga di una lista (pulsante di modifica) e attende la pagina.
+ * @param page pagina
+ * @param row riga della tabella
+ */
+export async function openDetail(page: Page, row: Locator): Promise<void> {
+  await row.locator('.pachi-t2-edit-item').click()
+  await page.waitForURL(/\/(zones|rooms|mobs|objects)\/\d+/)
+}
+
+/**
  * Conferma un dialog di conferma (pulsante positivo con icona, oppure "OK").
  * @param page pagina
  */

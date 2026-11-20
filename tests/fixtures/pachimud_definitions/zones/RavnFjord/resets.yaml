@@ -1,23 +1,370 @@
 ---
+# Reset della zona Ravnfjord (vnum 400000-400099).
+# max_existing = copie massime nel mondo, room_limit = copie massime nella stanza.
+# Per i negozianti l'inventario (senza wear_slot) e' la merce in vendita.
 resets:
-  - type: LOAD_MOB
-    mob_vnum: 400000
-    max_existing: 1
-    room_vnum: 400001
-    room_limit: 1
+  objects:
+    # Piazza del Villaggio
+    - obj_vnum: 400003 # bacheca del villaggio
+      max_existing: 1
+      room_vnum: 400000
+      room_limit: 1
+    - obj_vnum: 400004 # fontana
+      max_existing: 1
+      room_vnum: 400000
+      room_limit: 1
+    # Vicolo Buio
+    - obj_vnum: 400009 # cadavere di un anziano vichingo
+      max_existing: 1
+      room_vnum: 400002
+      room_limit: 1
+    - obj_vnum: 400010 # stoccafisso
+      max_existing: 10
+      room_vnum: 400045
+      room_limit: 10
+    - obj_vnum: 400016 # idromele
+      max_existing: 15
+      room_vnum: 400045
+      room_limit: 15
+    - obj_vnum: 400017 # vino
+      max_existing: 25
+      room_vnum: 400045
+      room_limit: 25
+    - obj_vnum: 400021 # ascia bipenne
+      max_existing: 12
+      room_vnum: 400045
+      room_limit: 12
+    - obj_vnum: 400022 # pugnale runico
+      max_existing: 12
+      room_vnum: 400045
+      room_limit: 12
+    - obj_vnum: 400022 # pugnale runico
+      max_existing: 12
+      room_vnum: 400045
+      room_limit: 12
+    - obj_vnum: 400022 # pugnale runico
+      max_existing: 12
+      room_vnum: 400045
+      room_limit: 12
+    - obj_vnum: 400022 # pugnale runico
+      max_existing: 12
+      room_vnum: 400045
+      room_limit: 12
+    - obj_vnum: 400022 # pugnale runico
+      max_existing: 12
+      room_vnum: 400045
+      room_limit: 12
+    - obj_vnum: 400024 # martello da guerra
+      max_existing: 12
+      room_vnum: 400045
+      room_limit: 12
+    - obj_vnum: 400014 # giubba di cuoio
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400028 # gambali
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400029 # stivali
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400028 # gambali
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400029 # stivali
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400028 # gambali
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400029 # stivali
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400028 # gambali
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400029 # stivali
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400028 # gambali
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400029 # stivali
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400020 # mantello di lana
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    - obj_vnum: 400036 # borsa a sacco
+      max_existing: 13
+      room_vnum: 400045
+      room_limit: 13
+    # Trappole
+    - obj_vnum: 400901 # lastra a pressione
+      max_existing: 1
+      room_vnum: 400026
+      room_limit: 1
+    - obj_vnum: 400902 # ago avvelenato
+      max_existing: 1
+      room_vnum: 400027
+      room_limit: 1
+    - obj_vnum: 400903 # runa lampeggiante
+      max_existing: 1
+      room_vnum: 400038
+      room_limit: 1
+    - obj_vnum: 400904 # glifo
+      max_existing: 1
+      room_vnum: 400037
+      room_limit: 1
+    - obj_vnum: 400905 # braciere d'incenso
+      max_existing: 1
+      room_vnum: 400040
+      room_limit: 1
+    - obj_vnum: 400906 # botte d'olio
+      max_existing: 1
+      room_vnum: 400021
+      room_limit: 1
 
-  - type: LOAD_OBJECT
-    obj_vnum: 400000
-    max_existing: 1
-    room_vnum: 400001
+  mobs:
+    # --- Guardie ---
+    - mob_vnum: 400000 # guardia nella piazza del mercato
+      max_existing: 2
+      room_vnum: 400001
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400000
+          wear_slot: WIELD
+    - mob_vnum: 400000 # guardia alla porta est
+      max_existing: 2
+      room_vnum: 400016
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400000
+          wear_slot: WIELD
 
-  - type: EQUIP_OBJECT
-    if_flag: true
-    obj_vnum: 400000
-    max_existing: 1
-    wear_slot: WIELD
+    # --- Negozianti e artigiani ---
+    - mob_vnum: 400001 # Sigrid la Fabbra, Fucina
+      max_existing: 1
+      room_vnum: 400003
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400021 # ascia bipenne
+        - obj_vnum: 400022 # pugnale runico
+        - obj_vnum: 400024 # martello da guerra
+    - mob_vnum: 400003 # Jorgen il Mercante, Negozio
+      max_existing: 1
+      room_vnum: 400009
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400010 # stoccafisso
+        - obj_vnum: 400016 # idromele
+        - obj_vnum: 400017 # vino
+    - mob_vnum: 400010 # erborista
+      max_existing: 1
+      room_vnum: 400028
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400011 # erbe medicinali
+          max_existing: 10
+        - obj_vnum: 400012 # infuso curativo
+          max_existing: 10
+    - mob_vnum: 400011 # pescivendolo
+      max_existing: 1
+      room_vnum: 400029
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400013 # aringhe affumicate
+          max_existing: 10
+        - obj_vnum: 400010 # stoccafisso
+          max_existing: 10
+    - mob_vnum: 400012 # conciapelli
+      max_existing: 1
+      room_vnum: 400030
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400014 # giubba di cuoio
+        - obj_vnum: 400028 # gambali
+        - obj_vnum: 400029 # stivali
+        - obj_vnum: 400020 # mantello di lana
+    - mob_vnum: 400013 # armaiolo
+      max_existing: 1
+      room_vnum: 400031
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400015 # arco corto
+        - obj_vnum: 400001 # spada corta d'acciaio
+        - obj_vnum: 400002 # scudo di legno
+        - obj_vnum: 400026 # corazza di maglia
+        - obj_vnum: 400027 # elmo cornuto
+    - mob_vnum: 400014 # vasaio
+      max_existing: 1
+      room_vnum: 400013
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400018 # vaso di terracotta
+          max_existing: 5
+    - mob_vnum: 400015 # tessitrice
+      max_existing: 1
+      room_vnum: 400014
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400019 # tappeto di lana
+          max_existing: 3
+        - obj_vnum: 400034 # mantello ricamato
+          max_existing: 2
 
-  - type: SET_DOOR_STATE
-    room_vnum: 400001
-    direction: NORTH
-    state: CLOSED
+    # --- Taverna, locanda, porto, banca ---
+    - mob_vnum: 400007 # oste
+      max_existing: 1
+      room_vnum: 400032
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400016 # idromele
+          max_existing: 10
+        - obj_vnum: 400017 # vino
+          max_existing: 10
+    - mob_vnum: 400008 # locandiera
+      max_existing: 1
+      room_vnum: 400033
+      room_limit: 1
+    - mob_vnum: 400006 # capitano del porto
+      max_existing: 1
+      room_vnum: 400022
+      room_limit: 1
+    - mob_vnum: 400009 # banchiere
+      max_existing: 1
+      room_vnum: 400041
+      room_limit: 1
+
+    # --- Maestri di gilda ---
+    - mob_vnum: 400016 # maestro guerriero, Campo di Addestramento
+      max_existing: 1
+      room_vnum: 400034
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400021 # ascia bipenne
+          max_existing: 2
+          wear_slot: WIELD
+    - mob_vnum: 400017 # sacerdote di Njord, Tempio
+      max_existing: 1
+      room_vnum: 400035
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400032 # veste del sacerdote
+          max_existing: 1
+          wear_slot: BODY
+        - obj_vnum: 400035 # amuleto di Njord
+          max_existing: 1
+          wear_slot: NECK_1
+    - mob_vnum: 400018 # cavaliere custode, Tempio
+      max_existing: 1
+      room_vnum: 400035
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400025 # spada lunga runica benedetta
+          max_existing: 1
+          wear_slot: WIELD
+        - obj_vnum: 400026 # corazza di maglia
+          max_existing: 2
+          wear_slot: BODY
+        - obj_vnum: 400027 # elmo cornuto
+          max_existing: 2
+          wear_slot: HEAD
+    - mob_vnum: 400019 # mago della torre, sommita'
+      max_existing: 1
+      room_vnum: 400038
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400023 # bastone runico
+          max_existing: 1
+          wear_slot: WIELD
+        - obj_vnum: 400031 # tunica runica
+          max_existing: 1
+          wear_slot: BODY
+    - mob_vnum: 400020 # maestro ladro, Rifugio
+      max_existing: 1
+      room_vnum: 400027
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400022 # pugnale runico
+          max_existing: 2
+          wear_slot: WIELD
+        - obj_vnum: 400030 # bracciali runici
+          max_existing: 1
+          wear_slot: WRIST_L
+    - mob_vnum: 400021 # monaco anziano, Monastero
+      max_existing: 1
+      room_vnum: 400040
+      room_limit: 1
+      inventory:
+        - obj_vnum: 400033 # fasce da combattimento
+          max_existing: 1
+          wear_slot: HANDS
+
+    # --- Personaggi speciali ---
+    - mob_vnum: 400005 # Maestro Oogway, Monastero
+      max_existing: 1
+      room_vnum: 400040
+      room_limit: 1
+    - mob_vnum: 400004 # avatar di TeenELaf, Sala della Vecchia Gilda
+      max_existing: 1
+      room_vnum: 400015
+      room_limit: 1
+
+    # --- Popolazione ---
+    - mob_vnum: 400022 # marinaio, ponte della nave
+      max_existing: 2
+      room_vnum: 400024
+      room_limit: 1
+    - mob_vnum: 400022 # marinaio, banchina
+      max_existing: 2
+      room_vnum: 400020
+      room_limit: 1
+    - mob_vnum: 400023 # ubriaco, taverna
+      max_existing: 1
+      room_vnum: 400032
+      room_limit: 1
+    - mob_vnum: 400024 # mendicante, piazzetta di Njord
+      max_existing: 1
+      room_vnum: 400008
+      room_limit: 1
+    - mob_vnum: 400025 # ragazzo di strada, viale del mercato
+      max_existing: 1
+      room_vnum: 400006
+      room_limit: 1
+    - mob_vnum: 400026 # gatto randagio, vicolo delle case
+      max_existing: 1
+      room_vnum: 400042
+      room_limit: 1
+    - mob_vnum: 400027 # cane del porto, banchina nord
+      max_existing: 1
+      room_vnum: 400020
+      room_limit: 1
+    - mob_vnum: 400002 # topo gigante, vicolo buio
+      max_existing: 3
+      room_vnum: 400002
+      room_limit: 2
+    - mob_vnum: 400002 # topo gigante, magazzini
+      max_existing: 3
+      room_vnum: 400021
+      room_limit: 1
+
+  doors:
+    # Il vicolo buio ha una porta che, qui, resta aperta
+    - room_vnum: 400001
+      direction: NORTH
+      state: OPEN
+    - room_vnum: 400002
+      direction: SOUTH
+      state: OPEN

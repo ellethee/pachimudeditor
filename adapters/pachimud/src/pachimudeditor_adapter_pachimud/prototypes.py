@@ -1,14 +1,13 @@
-"""Mob e object prototype sul database di pachimud (mixin di `PachimudAdapter`)."""
+"""Mob e oggetti prototipo (mixin di `PachimudAdapter`): voci di `mobs*.yaml` e `objects*.yaml`.
+
+`id == vnum`. Il mob ha i dadi `hp_dice`/`damage_dice` (`XdY+Z`) spezzati nei tre campi del DTO e le sei statistiche in
+`extra`; l'oggetto ha i campi del suo tipo in `extra.typeFields` (e, per i soli campi numerici, in `value_0..3`).
+"""
 
 from typing import Any
 
-from pachifast.database.pagination import paginate
-from pachifast.schemas.responses import PageParams, PaginatedResponse
-from sqlalchemy import ColumnElement, Select, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from pachimudeditor_adapter_pachimud.base import PachimudSupport
-from pachimudeditor_adapter_pachimud.schema import models_of
+from pachifast.schemas.responses import PaginatedResponse
+from ruamel.yaml.comments import CommentedMap
 
 from pachimudeditor.common.adapters.models import (
     MobIn,
@@ -21,197 +20,233 @@ from pachimudeditor.common.adapters.models import (
     ObjectPatch,
     ResetUsage,
 )
-from pachimudeditor_adapter_pachimud.editor import crud
-from pachimudeditor_adapter_pachimud.editor.pagination import default_order, order_clause, paginate_filtered, range_clauses
+from pachimudeditor.common.enums import ObjectType
 from pachimudeditor.sdk import conflict, mob_query, object_query
-from pachimudeditor_adapter_pachimud.editor.instances import ensure_mob_has_no_instances, ensure_object_has_no_instances
-from pachimudeditor_adapter_pachimud.editor.reset_usage import ensure_not_used, ensure_not_used_by_resets, find_reset_usage
+from pachimudeditor_adapter_pachimud import mapping
+from pachimudeditor_adapter_pachimud.base import PachimudSupport
+from pachimudeditor_adapter_pachimud.loaders import LoaderMob, type_fields
+from pachimudeditor_adapter_pachimud.rooms import check_extra, move_raw, norm_area
+from pachimudeditor_adapter_pachimud.store import Item, plain
 
-
-async def _ensure_vnum_free(session: AsyncSession, model: type, code: str, vnum: int, *, ignore_id: int | None = None) -> None:
-    """409 `code` se un altro prototipo di `model` usa gia' `vnum`."""
-    existing = (await session.execute(select(model).where(model.vnum == vnum))).scalars().first()  # type: ignore[attr-defined]
-    if existing is not None and existing.id != ignore_id:
-        raise conflict(code, vnum=vnum)
-
-
-_OBJECT_QUERY_FIELDS = (
-    "object_type", "wear_flag", "extra_flag", "affect", "min_affect",
-    *(f"{b}_{f}" for f in object_query.RANGE_FIELDS for b in ("min", "max")),
-)  # fmt: skip
-"""Parametri di `ObjectPageParams` gestiti qui (non sono filtri di uguaglianza su colonna per pachifast)."""
-
-
-def _object_clauses(model: Any, params: ObjectPageParams) -> list[ColumnElement[bool]]:
-    """Clausole SQL dei filtri scalari (tipo e intervalli, zona): i `valueN` nulli non soddisfano un intervallo."""
-    clauses: list[ColumnElement[bool]] = []
-    if params.zone_id is not None:
-        clauses.append(model.zone_id == params.zone_id)
-    if params.object_type:
-        clauses.append(model.object_type.in_(params.object_type))
-    for field in object_query.RANGE_FIELDS:
-        low, high = getattr(params, f"min_{field}"), getattr(params, f"max_{field}")
-        if low is not None:
-            clauses.append(getattr(model, field) >= low)
-        if high is not None:
-            clauses.append(getattr(model, field) <= high)
-    return clauses
-
-
-def _order_clause(model: Any, field: str, desc: bool) -> ColumnElement[Any]:
-    """ORDER BY di un campo, con i nulli sempre in fondo."""
-    column = getattr(model, field)
-    return column.desc().nulls_last() if desc else column.asc().nulls_last()
+MOB_EXTRA = frozenset(
+    {"area", "name", "attacks", "persona", "postmaster", "receptionist", "weaponImmunity", "breath", "breathCost", "shop", *mapping.STATS}
+)
+OBJECT_EXTRA = frozenset({"area", "typeFields", "extraDescriptions"})
 
 
 class PrototypesMixin(PachimudSupport):
     """Operazioni su mob e oggetti prototipo."""
 
-    # ---- mob
+    # ------------------------------------------------------------------ mob
+
+    def _mob_extra(self, raw: Any, extra: dict[str, Any]) -> Any:
+        """Applica le statistiche di `extra` alla voce; restituisce l'area richiesta (`...` se non indicata)."""
+        check_extra(extra, MOB_EXTRA)
+        for stat in mapping.STATS:
+            if stat in extra:
+                mapping.put(raw, stat, int(extra[stat]), default=0)
+        if "name" in extra:
+            mapping.put(raw, "name", str(extra["name"] or ""), default="")
+        if "attacks" in extra:
+            mapping.put(raw, "attacks", int(extra["attacks"]), default=1)
+        if "persona" in extra:
+            mapping.put(raw, "persona", str(extra["persona"] or ""), default="")
+        for key, name in (("postmaster", "postmaster"), ("receptionist", "receptionist")):
+            if key in extra:
+                mapping.put(raw, name, bool(extra[key]), default=False)
+        if "weaponImmunity" in extra:
+            value = extra["weaponImmunity"]
+            mapping.put(raw, "weapon_immunity", None if value in (None, "") else int(value))
+        if "breath" in extra:
+            mapping.put(raw, "breath", [str(b) for b in extra["breath"] or []], default=[])
+        if "breathCost" in extra:
+            mapping.put(raw, "breath_cost", int(extra["breathCost"]), default=30)
+        if "shop" in extra:
+            mapping.put(raw, "shop", mapping.shop_value(extra["shop"]))
+        return norm_area(extra["area"]) if "area" in extra else ...
 
     async def list_mobs(self, params: MobPageParams) -> PaginatedResponse[MobOut]:
-        """Mob paginati, filtrabili per zona (`zoneId`) e per statistiche, cercabili per nome/vnum, ordinabili
-        (nulli in fondo); ordine di default per vnum. Gli stessi risultati degli adapter su file (`mob_query`)."""
-        mob_query.check(params)
-        order = mob_query.parse_order(params)
-        async with self.session() as session:
-            model = models_of(session).MobPrototype
-            clauses = range_clauses(model, params, mob_query.RANGE_FIELDS)
-            if params.zone_id is not None:
-                clauses.append(model.zone_id == params.zone_id)
-            if params.sex:
-                clauses.append(model.sex.in_(params.sex))
-            if params.race_id:
-                clauses.append(model.race_id.in_(params.race_id))
-            if params.class_id:
-                clauses.append(model.class_id.in_(params.class_id))
-            if params.flag or params.trainer is not None:
-                # i flag stanno in una colonna JSON: si risolvono in Python (stesse funzioni degli adapter su file)
-                rows = (await session.execute(select(model.id, model.flags).where(*clauses))).all()
-                keep = [
-                    r.id for r in rows if mob_query.match_flags(r.flags, params)
-                    and mob_query.match_trainer(mob_query.is_trainer_flags(r.flags), params)
-                ]  # fmt: skip
-                clauses.append(model.id.in_(keep))
-            ordering = [order_clause(model, field, desc) for field, desc in order]
-            return await paginate_filtered(session, model, params, MobOut, clauses, ordering)
+        """Mob paginati (ordine di default per vnum), filtro `zoneId`, ricerca su descrizione/keywords/vnum."""
+        self.sync()
+        mobs = self.store.all_items("mob")
+        if params.zone_id is not None:
+            mobs = [m for m in mobs if m.zone.vnum == params.zone_id]
+        return mob_query.page_mobs([mapping.mob_out(m, m.zone.vnum) for m in mobs], params)
 
     async def get_mob(self, mob_id: int) -> MobOut:
         """Un mob prototype."""
-        async with self.session() as session:
-            return MobOut.model_validate(await crud.get_or_404(session, models_of(session).MobPrototype, mob_id, code="mobs.not_found"))
+        mob = self.find_or_404("mob", mob_id, "mobs.not_found")
+        return mapping.mob_out(mob, mob.zone.vnum)
 
     async def create_mob(self, data: MobIn) -> MobOut:
-        """Crea un mob prototype (il vnum deve essere libero)."""
+        """Crea un mob nel file `mobs.yaml` della zona (o in quello dell'area `extra.area`)."""
         self.ensure_writable()
-        values = self.values(data)
-        async with self.session() as session:
-            await _ensure_vnum_free(session, models_of(session).MobPrototype, "mobs.vnum_taken", data.vnum)
-            return MobOut.model_validate(await crud.create(session, models_of(session).MobPrototype, values))
+        values = data.model_dump(by_alias=False, exclude={"extra", "zone_id"})
+        check_extra(data.extra, MOB_EXTRA)
+        async with self.writing():
+            self.sync()
+            if self.store.find("mob", data.vnum) is not None:
+                raise conflict("mobs.vnum_taken", vnum=data.vnum)
+            zone = self.zone_or_404(data.zone_id)
+            file = self.store.file_for(zone, "mob", norm_area(data.extra.get("area")))
+            raw = CommentedMap()
+            mapping.mob_apply(raw, values)
+            self._mob_extra(raw, {k: v for k, v in data.extra.items() if k != "area"})
+            raw = _ordered(raw, mapping.MOB_ORDER)
+            LoaderMob.model_validate(plain(raw))
+            file.list_of(create=True).append(raw)
+            self.store.save(file)
+            return await self.get_mob(data.vnum)
 
     async def update_mob(self, mob_id: int, data: MobPatch) -> MobOut:
-        """Aggiornamento parziale. Cambiare il vnum e' rifiutato (409 `mobs.vnum_in_use`) finche' un reset lo usa."""
+        """Aggiornamento parziale. Cambiare il vnum e' 409 `mobs.vnum_in_use` se un reset lo usa; `zoneId` (o
+        `extra.area`) sposta il mob in un altro file."""
         self.ensure_writable()
-        changes = self.values(data, exclude_unset=True)
-        async with self.session() as session:
-            mob = await crud.get_or_404(session, models_of(session).MobPrototype, mob_id, code="mobs.not_found")
-            if data.vnum is not None:
-                await _ensure_vnum_free(session, models_of(session).MobPrototype, "mobs.vnum_taken", data.vnum, ignore_id=mob_id)
-                if data.vnum != mob.vnum:
-                    await ensure_not_used(session, "mob", mob.vnum, code="mobs.vnum_in_use")
-            return MobOut.model_validate(
-                await crud.update(session, models_of(session).MobPrototype, mob_id, changes, code="mobs.not_found")
-            )
+        changes = data.model_dump(by_alias=False, exclude_unset=True, exclude={"extra"})
+        async with self.writing():
+            mob = self.find_or_404("mob", mob_id, "mobs.not_found")
+            new_vnum = changes.get("vnum", mob.vnum)
+            if new_vnum != mob.vnum:
+                if self.store.find("mob", new_vnum) is not None:
+                    raise conflict("mobs.vnum_taken", vnum=new_vnum)
+                self.ensure_unused("mob", mob.vnum, "mobs.vnum_in_use")
+            area = self._mob_extra(mob.raw, data.extra or {})
+            mapping.mob_apply(mob.raw, {k: v for k, v in changes.items() if k != "zone_id"}, mob.model)
+            self._relocate(mob, changes.get("zone_id"), area)
+            return await self._after_save(mob, "mob")
+
+    def _relocate(self, item: Item, zone_id: int | None, area: Any) -> None:
+        """Sposta la voce nel file della zona/area di destinazione (se diversa) e rinfresca il suo modello."""
+        item.revalidate()
+        target_zone = self.zone_or_404(zone_id) if zone_id is not None and zone_id != item.zone.vnum else item.zone
+        target_area = item.area if area is ... else area
+        touched = {item.file}
+        if target_zone is not item.zone or target_area != item.area:
+            target_file = self.store.file_for(target_zone, item.kind, target_area)
+            if target_file is not item.file:
+                move_raw(item, target_file)
+                touched.add(target_file)
+        self.store.save(*touched)
+
+    async def _after_save(self, item: Item, kind: str) -> Any:
+        """Il DTO aggiornato dell'entita' (riletta dopo il salvataggio, che ha ricostruito gli indici)."""
+        return await (self.get_mob if kind == "mob" else self.get_object)(item.vnum)
 
     async def delete_mob(self, mob_id: int) -> None:
-        """Elimina un mob prototype: 409 `mobs.in_reset_usage` o `mobs.has_instances`."""
+        """Elimina il mob: 409 `mobs.in_reset_usage` se un reset lo referenzia."""
         self.ensure_writable()
-        async with self.session() as session:
-            mob = await crud.get_or_404(session, models_of(session).MobPrototype, mob_id, code="mobs.not_found")
-            await ensure_not_used_by_resets(session, "mob", mob.vnum, code="mobs.in_reset_usage")
-            await ensure_mob_has_no_instances(session, mob_id)
-            await crud.delete(session, models_of(session).MobPrototype, mob_id, code="mobs.not_found")
+        async with self.writing():
+            mob = self.find_or_404("mob", mob_id, "mobs.not_found")
+            self.ensure_unused("mob", mob_id, "mobs.in_reset_usage")
+            _remove(mob)
+            self.store.save(mob.file)
 
     async def mob_usage(self, mob_id: int) -> list[ResetUsage]:
-        """I comandi di reset (di qualsiasi zona) che referenziano questo mob per vnum."""
-        async with self.session() as session:
-            mob = await crud.get_or_404(session, models_of(session).MobPrototype, mob_id, code="mobs.not_found")
-            return await find_reset_usage(session, "mob", mob.vnum)
+        """I reset che referenziano il mob per vnum."""
+        self.find_or_404("mob", mob_id, "mobs.not_found")
+        return self.find_usage("mob", mob_id)
 
-    # ---- oggetti
+    # ------------------------------------------------------------------ oggetti
+
+    @staticmethod
+    def _object_fields(object_type: str, data_values: list[int | None], extra: dict[str, Any], *, lenient: bool = False) -> dict[str, Any]:
+        """I campi del tipo da scrivere: prima i `value_N` numerici dati, poi `extra.typeFields` (che prevale); con
+        `lenient` (cambio di tipo) le chiavi del vecchio tipo che il nuovo non ha sono ignorate."""
+        fields = mapping.values_to_fields(object_type, {i: v for i, v in enumerate(data_values) if v is not None})
+        given = extra.get("typeFields") or {}
+        fields.update({k: v for k, v in given.items() if not lenient or k in type_fields(object_type)})
+        return fields
 
     async def list_objects(self, params: ObjectPageParams) -> PaginatedResponse[ObjectOut]:
-        """Oggetti paginati, filtrabili per zona (`zoneId`) e per statistiche, cercabili per nome/vnum, ordinabili
-        (nulli in fondo); ordine di default per vnum. Gli stessi risultati degli adapter su file (`object_query`)."""
-        object_query.check(params)
-        order = object_query.parse_order(params)
-        async with self.session() as session:
-            model = models_of(session).ObjectPrototype
-            clauses = _object_clauses(model, params)
-            if object_query.needs_json(params):
-                # flag e affect stanno in colonne JSON: si risolvono in Python (stessa funzione degli adapter su file)
-                rows = (await session.execute(select(model.id, model.extra_flags, model.wear_flags, model.affects).where(*clauses))).all()
-                clauses.append(
-                    model.id.in_([r.id for r in rows if object_query.match_json(r.extra_flags, r.wear_flags, r.affects, params)])
-                )
-            ordering = [_order_clause(model, field, desc) for field, desc in order]
-
-            def apply(_params: PageParams, kwargs: dict[str, Any], stmt: Select, _model: type) -> tuple[dict[str, Any], Select]:
-                """Aggiunge filtri e ORDER BY (poi il vnum di default come spareggio)."""
-                return kwargs, stmt.where(*clauses).order_by(*ordering)
-
-            plain = params.model_copy(update={"orderBy": None, **dict.fromkeys(_OBJECT_QUERY_FIELDS)})
-            raw = await paginate(session, model, plain, extra_filters=[apply, default_order("vnum")])
-            return PaginatedResponse[ObjectOut](
-                items=[ObjectOut.model_validate(r) for r in raw.items],
-                total=raw.total,
-                page=raw.page,
-                pageSize=raw.pageSize,
-                pages=raw.pages,
-            )
+        """Oggetti paginati (ordine di default per vnum), filtro `zoneId`, ricerca su descrizione/keywords/vnum."""
+        self.sync()
+        objects = self.store.all_items("object")
+        if params.zone_id is not None:
+            objects = [o for o in objects if o.zone.vnum == params.zone_id]
+        return object_query.page_objects([mapping.object_out(o, o.zone.vnum) for o in objects], params)
 
     async def get_object(self, object_id: int) -> ObjectOut:
         """Un object prototype."""
-        async with self.session() as session:
-            return ObjectOut.model_validate(
-                await crud.get_or_404(session, models_of(session).ObjectPrototype, object_id, code="objects.not_found")
-            )
+        obj = self.find_or_404("object", object_id, "objects.not_found")
+        return mapping.object_out(obj, obj.zone.vnum)
 
     async def create_object(self, data: ObjectIn) -> ObjectOut:
-        """Crea un object prototype (il vnum deve essere libero)."""
+        """Crea un oggetto nel file `objects.yaml` della zona (o in quello dell'area `extra.area`)."""
         self.ensure_writable()
-        values = self.values(data)
-        async with self.session() as session:
-            await _ensure_vnum_free(session, models_of(session).ObjectPrototype, "objects.vnum_taken", data.vnum)
-            return ObjectOut.model_validate(await crud.create(session, models_of(session).ObjectPrototype, values))
+        values = data.model_dump(by_alias=False, exclude={"extra", "zone_id"})
+        check_extra(data.extra, OBJECT_EXTRA)
+        async with self.writing():
+            self.sync()
+            if self.store.find("object", data.vnum) is not None:
+                raise conflict("objects.vnum_taken", vnum=data.vnum)
+            zone = self.zone_or_404(data.zone_id)
+            file = self.store.file_for(zone, "object", norm_area(data.extra.get("area")))
+            raw = CommentedMap()
+            type_name = mapping.type_name(data.object_type)
+            fields = self._object_fields(type_name, [data.value_0, data.value_1, data.value_2, data.value_3], data.extra)
+            mapping.object_apply(raw, values, fields)
+            mapping.apply_object_extra_descriptions(raw, data.extra)
+            mapping.check_object(raw)
+            file.list_of(create=True).append(raw)
+            self.store.save(file)
+            return await self.get_object(data.vnum)
 
     async def update_object(self, object_id: int, data: ObjectPatch) -> ObjectOut:
-        """Aggiornamento parziale. Cambiare il vnum e' rifiutato (409 `objects.vnum_in_use`) finche' un reset o
-        la chiave di un'uscita lo referenzia."""
+        """Aggiornamento parziale. Cambiare il vnum e' 409 `objects.vnum_in_use` se un reset o la chiave di un'uscita
+        lo referenzia; `zoneId` (o `extra.area`) sposta l'oggetto in un altro file."""
         self.ensure_writable()
-        changes = self.values(data, exclude_unset=True)
-        async with self.session() as session:
-            obj = await crud.get_or_404(session, models_of(session).ObjectPrototype, object_id, code="objects.not_found")
-            if data.vnum is not None:
-                await _ensure_vnum_free(session, models_of(session).ObjectPrototype, "objects.vnum_taken", data.vnum, ignore_id=object_id)
-                if data.vnum != obj.vnum:
-                    await ensure_not_used(session, "object", obj.vnum, code="objects.vnum_in_use")
-            return ObjectOut.model_validate(
-                await crud.update(session, models_of(session).ObjectPrototype, object_id, changes, code="objects.not_found")
-            )
+        changes = data.model_dump(by_alias=False, exclude_unset=True, exclude={"extra"})
+        extra = data.extra or {}
+        check_extra(extra, OBJECT_EXTRA)
+        async with self.writing():
+            obj = self.find_or_404("object", object_id, "objects.not_found")
+            new_vnum = changes.get("vnum", obj.vnum)
+            if new_vnum != obj.vnum:
+                if self.store.find("object", new_vnum) is not None:
+                    raise conflict("objects.vnum_taken", vnum=new_vnum)
+                self.ensure_unused("object", obj.vnum, "objects.vnum_in_use")
+            new_type = mapping.type_name(ObjectType(changes["object_type"])) if "object_type" in changes else obj.model.object_type
+            values = [changes.get(f"value_{i}") for i in range(4)]
+            fields = self._object_fields(new_type, values, extra, lenient="object_type" in changes)
+            mapping.object_apply(obj.raw, {k: v for k, v in changes.items() if k != "zone_id"}, fields)
+            mapping.apply_object_extra_descriptions(obj.raw, extra)
+            mapping.check_object(obj.raw)
+            self._relocate(obj, changes.get("zone_id"), norm_area(extra["area"]) if "area" in extra else ...)
+            return await self._after_save(obj, "object")
 
     async def delete_object(self, object_id: int) -> None:
-        """Elimina un object prototype: 409 `objects.in_reset_usage`, `objects.in_exit_key_usage`, `objects.has_instances`."""
+        """Elimina l'oggetto: 409 `objects.in_reset_usage` o `objects.in_exit_key_usage`."""
         self.ensure_writable()
-        async with self.session() as session:
-            obj = await crud.get_or_404(session, models_of(session).ObjectPrototype, object_id, code="objects.not_found")
-            await ensure_not_used_by_resets(session, "object", obj.vnum, code="objects.in_reset_usage")
-            await ensure_not_used(session, "object", obj.vnum, code="objects.in_exit_key_usage")
-            await ensure_object_has_no_instances(session, object_id)
-            await crud.delete(session, models_of(session).ObjectPrototype, object_id, code="objects.not_found")
+        async with self.writing():
+            obj = self.find_or_404("object", object_id, "objects.not_found")
+            self.ensure_unused("object", object_id, "objects.in_reset_usage", include_exit_keys=False)
+            self.ensure_unused("object", object_id, "objects.in_exit_key_usage")
+            _remove(obj)
+            self.store.save(obj.file)
 
     async def object_usage(self, object_id: int) -> list[ResetUsage]:
-        """I comandi di reset (e le chiavi di uscita) che referenziano questo oggetto per vnum."""
-        async with self.session() as session:
-            obj = await crud.get_or_404(session, models_of(session).ObjectPrototype, object_id, code="objects.not_found")
-            return await find_reset_usage(session, "object", obj.vnum)
+        """I reset (e le chiavi di uscite) che referenziano l'oggetto per vnum."""
+        self.find_or_404("object", object_id, "objects.not_found")
+        return self.find_usage("object", object_id)
+
+
+def _remove(item: Item) -> None:
+    """Toglie la voce (per identita') dalla lista del suo file."""
+    seq = item.file.list_of()
+    assert seq is not None
+    for index, candidate in enumerate(seq):
+        if candidate is item.raw:
+            del seq[index]
+            return
+
+
+def _ordered(raw: Any, order: tuple[str, ...]) -> Any:
+    """Un `CommentedMap` con le chiavi nell'ordine dei file del gioco (le altre in coda)."""
+    out = CommentedMap()
+    for key in order:
+        if key in raw:
+            out[key] = raw[key]
+    for key in raw:
+        if key not in out:
+            out[key] = raw[key]
+    return out

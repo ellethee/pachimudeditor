@@ -49,9 +49,9 @@ async def test_validation_422(client: httpx.AsyncClient) -> None:
 
 
 async def test_invalid_zone_reference_409(client: httpx.AsyncClient) -> None:
-    """Zona inesistente: viola la FK -> 409 `common.editor.invalid_reference`."""
+    """Zona inesistente: 404 `zones.not_found` (la zona e' la cartella che contiene il file della stanza)."""
     response = await client.post("/api/rooms", json={"vnum": 1021, "zoneId": 999999, "name": "x"})
-    assert error_code(response, 409) == "common.editor.invalid_reference"
+    assert error_code(response, 404) == "zones.not_found"
 
 
 async def test_detail_has_resolved_exit_targets(client: httpx.AsyncClient) -> None:
@@ -78,8 +78,10 @@ async def test_exits_crud(client: httpx.AsyncClient) -> None:
     assert error_code(await client.delete(f"/api/rooms/{a['id']}/exits/{other['id']}"), 409) == "rooms.exit_not_in_room"
     clash = await client.put(f"/api/rooms/{b['id']}/exits/{other['id']}", json={"direction": 0})
     assert clash.status_code == 200  # stessa direzione: nessun conflitto con se stessa
-    assert (await client.delete(f"/api/rooms/{a['id']}/exits/{ex['id']}")).status_code == 204
+    assert upd["id"] == a["vnum"] * 10 + 4 and upd["id"] != ex["id"]  # l'id di un'uscita e' `vnum * 10 + direzione`
     assert error_code(await client.delete(f"/api/rooms/{a['id']}/exits/{ex['id']}"), 404) == "rooms.exit_not_found"
+    assert (await client.delete(f"/api/rooms/{a['id']}/exits/{upd['id']}")).status_code == 204
+    assert error_code(await client.delete(f"/api/rooms/{a['id']}/exits/{upd['id']}"), 404) == "rooms.exit_not_found"
 
 
 async def test_extra_descriptions_crud(client: httpx.AsyncClient) -> None:
@@ -111,22 +113,17 @@ async def test_clone(client: httpx.AsyncClient) -> None:
 
 async def test_delete_cascades_exits_and_extras(client: httpx.AsyncClient) -> None:
     """Eliminare una stanza elimina le sue uscite/extra; le uscite altrui verso di lei restano senza destinazione."""
-    from tests.support.gamedb import get_session_factory
-    from pachimudeditor_adapter_pachimud.game_models.room import Exit, RoomExtraDescription
-    from sqlalchemy import select
-
     room = await _new_room(client, 1040)
     data(await client.post(f"/api/rooms/{room['id']}/exits", json={"direction": 0}), 201)
     data(await client.post(f"/api/rooms/{room['id']}/extra-descriptions", json={"keywords": "k", "text": "t"}), 201)
     neighbour = await by_vnum(client, "rooms", 1002)
     inbound = data(await client.post(f"/api/rooms/{neighbour['id']}/exits", json={"direction": 2, "targetRoomId": room["id"]}), 201)
     assert (await client.delete(f"/api/rooms/{room['id']}")).status_code == 204
-    async with get_session_factory()() as session:
-        assert (await session.execute(select(Exit).where(Exit.room_id == room["id"]))).scalars().all() == []
-        assert (await session.execute(select(RoomExtraDescription).where(RoomExtraDescription.room_id == room["id"]))).scalars().all() == []
+    assert error_code(await client.get(f"/api/rooms/{room['id']}"), 404) == "rooms.not_found"  # uscite ed extra erano nella sua voce
     survivor = data(await client.get(f"/api/rooms/{neighbour['id']}"))["exits"]
     assert [e["id"] for e in survivor if e["id"] == inbound["id"]] == [inbound["id"]]
-    assert next(e for e in survivor if e["id"] == inbound["id"])["targetRoomId"] is None
+    mine = next(e for e in survivor if e["id"] == inbound["id"])
+    assert mine["targetRoomId"] is None and mine["targetRoomVnum"] == 1040  # il vnum resta nel file: l'integrita' lo segnala
 
 
 async def test_delete_in_use_by_reset_409(client: httpx.AsyncClient) -> None:
@@ -187,3 +184,18 @@ async def test_list_invalid_filters_422(client: httpx.AsyncClient) -> None:
     assert error_code(await client.get("/api/rooms", params={"orderBy": "nope"}), 422) == "api.invalid_order_by"
     for bad in ({"minManaRate": "x"}, {"sectorType": "abc"}, {"maxHealRate": 10**12}):
         assert (await client.get("/api/rooms", params=bad)).status_code == 422, bad
+
+
+async def test_vnum_change_moves_game_references(client: httpx.AsyncClient) -> None:
+    """`id == vnum`: cambiando il vnum l'id segue, e con lui le uscite (in e out) e le extra description."""
+    a = await _new_room(client, 1060)
+    b = await _new_room(client, 1061)
+    data(await client.post(f"/api/rooms/{a['id']}/exits", json={"direction": 0, "targetRoomId": b["id"]}), 201)
+    data(await client.post(f"/api/rooms/{b['id']}/exits", json={"direction": 2, "targetRoomId": a["id"]}), 201)
+    data(await client.post(f"/api/rooms/{b['id']}/extra-descriptions", json={"keywords": "k", "text": "t"}), 201)
+    moved = data(await client.put(f"/api/rooms/{b['id']}", json={"vnum": 1062}))
+    assert moved["id"] == 1062 and moved["vnum"] == 1062
+    assert [(e["targetRoomId"], e["roomId"]) for e in moved["exits"]] == [(a["id"], 1062)]
+    assert len(moved["extraDescriptions"]) == 1 and moved["extraDescriptions"][0]["roomId"] == 1062
+    (inbound,) = data(await client.get(f"/api/rooms/{a['id']}"))["exits"]
+    assert inbound["targetRoomId"] == 1062 and inbound["targetRoomVnum"] == 1062

@@ -1,16 +1,17 @@
-"""Stanze, uscite ed extra description sul database di pachimud (mixin di `PachimudAdapter`)."""
+"""Stanze, uscite ed extra description (mixin di `PachimudAdapter`).
 
+Convenzioni degli `id`: stanza = vnum; uscita = `vnum * 10 + direzione`; extra description = `vnum * 1000 + posizione`
+nella lista della stanza (cancellare una extra fa scalare le successive). Le uscite stanno nel dict `exits` della
+voce (chiave = nome della direzione); lo stato porta (`is_open`/`is_locked`) e' nell'uscita stessa.
+"""
+
+import copy
 from typing import Any
 
 from pachifast.i18n import api_error
 from pachifast.schemas.responses import PaginatedResponse
-from sqlalchemy import delete as sa_delete
-from sqlalchemy import func, select, update as sa_update
-from sqlalchemy.ext.asyncio import AsyncSession
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
-from pachimudeditor_adapter_pachimud.base import PachimudSupport
-from pachimudeditor_adapter_pachimud.schema import models_of
-from pachimudeditor.sdk import rules
 from pachimudeditor.common.adapters.models import (
     ExitIn,
     ExitOut,
@@ -18,6 +19,7 @@ from pachimudeditor.common.adapters.models import (
     ExtraDescriptionIn,
     ExtraDescriptionOut,
     ExtraDescriptionPatch,
+    IncomingExit,
     ResetUsage,
     RoomCloneIn,
     RoomDetail,
@@ -27,275 +29,390 @@ from pachimudeditor.common.adapters.models import (
     RoomPageParams,
     RoomPatch,
 )
-from pachimudeditor_adapter_pachimud.editor import crud
-from pachimudeditor.sdk import conflict, room_query
-from pachimudeditor_adapter_pachimud.editor.pagination import order_clause, paginate_filtered, range_clauses
-from pachimudeditor_adapter_pachimud.editor.instances import ensure_room_has_no_occupants
-from pachimudeditor_adapter_pachimud.editor.reset_usage import ensure_not_used, ensure_not_used_by_resets, find_reset_usage
 from pachimudeditor.common.enums import Direction, DoorFlag, SectorType
+from pachimudeditor.sdk import conflict, room_query, rules
+from pachimudeditor_adapter_pachimud import mapping
+from pachimudeditor_adapter_pachimud.base import PachimudSupport
+from pachimudeditor_adapter_pachimud.loaders import LoaderRoom
+from pachimudeditor_adapter_pachimud.store import Item, plain
+
+ROOM_EXTRA = frozenset({"enabled", "area"})
+EXIT_EXTRA = frozenset({"isMale", "openCmd", "climb"})
 
 
-async def _ensure_room_vnum_free(session: AsyncSession, vnum: int, *, ignore_id: int | None = None) -> None:
-    """409 `rooms.vnum_taken` se un'altra stanza usa già `vnum`."""
-    Room = models_of(session).Room  # noqa: N806
-    existing = (await session.execute(select(Room).where(Room.vnum == vnum))).scalars().first()
-    if existing is not None and existing.id != ignore_id:
-        raise conflict("rooms.vnum_taken", vnum=vnum)
+def check_extra(extra: dict[str, Any], allowed: frozenset[str]) -> None:
+    """422 `pachimud.extra_unknown` per chiavi di `extra` che il tipo non ha."""
+    for key in extra:
+        if key not in allowed:
+            raise api_error(422, "pachimud.extra_unknown", key=key)
 
 
-async def _exit_out_one(session: AsyncSession, exit_row: Any) -> ExitOut:
-    """Un'uscita, con vnum/nome della destinazione risolti quando presente."""
-    m = models_of(session)
-    target = await session.get(m.Room, exit_row.target_room_id) if exit_row.target_room_id else None
-    return ExitOut.model_validate(
-        {
-            **{c.name: getattr(exit_row, c.name) for c in m.Exit.__table__.c},
-            "target_room_vnum": target.vnum if target else None,
-            "target_room_name": target.name if target else None,
-        }
-    )
+def norm_area(value: Any) -> str | None:
+    """L'area richiesta in `extra`: il testo vuoto (campo svuotato nel form) vale «nessuna area»."""
+    text = str(value).strip() if value is not None else ""
+    return text or None
 
 
-async def _exits_out(session: AsyncSession, room_id: int) -> list[ExitOut]:
-    """Le uscite di una stanza, con vnum/nome della destinazione risolti."""
-    Exit = models_of(session).Exit  # noqa: N806
-    exits = (await session.execute(select(Exit).where(Exit.room_id == room_id))).scalars().all()
-    return [await _exit_out_one(session, exit_row) for exit_row in exits]
-
-
-async def _extras(session: AsyncSession, room_id: int) -> list[Any]:
-    """Le extra description della stanza (nessuna se la tabella non esiste nel DB)."""
-    Extra = models_of(session).RoomExtraDescription  # noqa: N806
-    if Extra is None:
-        return []
-    return list((await session.execute(select(Extra).where(Extra.room_id == room_id))).scalars().all())
-
-
-async def _room_detail(session: AsyncSession, room: Any) -> RoomDetail:
-    """Una stanza completa di uscite ed extra description."""
-    extra_descriptions = await _extras(session, room.id)
-    return RoomDetail(
-        **RoomOut.model_validate(room).model_dump(by_alias=False),
-        exits=await _exits_out(session, room.id),
-        extra_descriptions=[ExtraDescriptionOut.model_validate(e) for e in extra_descriptions],
-    )
-
-
-async def _check_exit(session: AsyncSession, room_id: int, final: dict[str, object], touched: set[str]) -> None:
-    """Coerenza di un'uscita (regole in `rules.check_exit`; la chiave deve esistere come oggetto)."""
-
-    async def key_exists(vnum: int) -> bool:
-        """Esiste un oggetto con quel vnum?"""
-        ObjectPrototype = models_of(session).ObjectPrototype  # noqa: N806
-        return (await session.execute(select(ObjectPrototype.id).where(ObjectPrototype.vnum == vnum))).first() is not None
-
-    await rules.check_exit(room_id, final, touched, key_exists)
+def move_raw(item: Item, target_file: Any) -> None:
+    """Sposta la voce (per identita') dalla lista del suo file a quella di `target_file`."""
+    source = item.file.list_of()
+    assert source is not None
+    for index, candidate in enumerate(source):
+        if candidate is item.raw:
+            del source[index]
+            break
+    target_file.list_of(create=True).append(item.raw)
 
 
 class RoomsMixin(PachimudSupport):
     """Operazioni su stanze, uscite ed extra description."""
 
-    @staticmethod
-    def _extra_model(session: AsyncSession) -> Any:
-        """La classe delle extra description (409 `world.capability_missing` se il DB non ha la tabella)."""
-        model = models_of(session).RoomExtraDescription
-        if model is None:
-            raise api_error(409, "world.capability_missing", capability="supports_extra_descriptions")
-        return model
+    # ------------------------------------------------------------------ DTO
+
+    def _detail(self, vnum: int) -> RoomDetail:
+        """`RoomDetail` della stanza `vnum` (letta dall'archivio aggiornato)."""
+        room = self.find_or_404("room", vnum, "rooms.not_found")
+        names = self.store.room_names()
+        base = mapping.room_out(room, room.zone.vnum).model_dump(by_alias=False)
+        return RoomDetail(
+            **base,
+            exits=[mapping.exit_out(room, k, names) for k in sorted(room.model.exits, key=lambda k: Direction[k.upper()])],
+            extra_descriptions=[mapping.extra_desc_out(vnum, i, e) for i, e in enumerate(room.model.extra_descriptions)],
+        )
+
+    def _apply_extra(self, item: Item, extra: dict[str, Any]) -> Any:
+        """Applica `extra` (`enabled`, `area`) alla voce; restituisce l'area richiesta (`...` se non indicata)."""
+        check_extra(extra, ROOM_EXTRA)
+        if "enabled" in extra:
+            mapping.put(item.raw, "enabled", bool(extra["enabled"]), default=True)
+        return norm_area(extra["area"]) if "area" in extra else ...
+
+    # ------------------------------------------------------------------ stanze
 
     async def list_rooms(self, params: RoomPageParams) -> PaginatedResponse[RoomOut]:
-        """Stanze paginate, filtrabili per zona (`zoneId`) e per statistiche, cercabili per nome/vnum, ordinabili
-        (nulli in fondo); ordine di default per vnum. Gli stessi risultati degli adapter su file (`room_query`)."""
-        room_query.check(params)
-        order = room_query.parse_order(params)
-        async with self.session() as session:
-            model = models_of(session).Room
-            clauses = range_clauses(model, params, room_query.RANGE_FIELDS)
-            if params.zone_id is not None:
-                clauses.append(model.zone_id == params.zone_id)
-            if params.sector_type:
-                clauses.append(model.sector_type.in_(params.sector_type))
-            if params.clan_id:
-                clauses.append(model.clan_id.in_(params.clan_id))
-            if params.owner:
-                clauses.append(func.lower(model.owner).contains(params.owner.lower(), autoescape=True))
-            if params.flag:
-                # i flag stanno in una colonna JSON: si risolvono in Python (stessa funzione degli adapter su file)
-                rows = (await session.execute(select(model.id, model.flags).where(*clauses))).all()
-                clauses.append(model.id.in_([r.id for r in rows if room_query.match_flags(r.flags, params)]))
-            ordering = [order_clause(model, field, desc) for field, desc in order]
-            return await paginate_filtered(session, model, params, RoomOut, clauses, ordering)
+        """Stanze paginate (ordine di default per vnum), filtro `zoneId`, ricerca su nome/vnum."""
+        self.sync()
+        rooms = self.store.all_items("room")
+        if params.zone_id is not None:
+            rooms = [r for r in rooms if r.zone.vnum == params.zone_id]
+        return room_query.page_rooms([mapping.room_out(r, r.zone.vnum) for r in rooms], params)
 
     async def get_room(self, room_id: int) -> RoomDetail:
-        """Una stanza, con uscite ed extra description."""
-        async with self.session() as session:
-            room = await crud.get_or_404(session, models_of(session).Room, room_id, code="rooms.not_found")
-            return await _room_detail(session, room)
+        """Una stanza con uscite ed extra description."""
+        self.find_or_404("room", room_id, "rooms.not_found")
+        return self._detail(room_id)
 
     async def create_room(self, data: RoomIn) -> RoomDetail:
-        """Crea una stanza (il vnum deve essere libero)."""
+        """Crea una stanza nel file `rooms.yaml` della zona (o in quello dell'area `extra.area`)."""
         self.ensure_writable()
-        values = self.values(data)
-        async with self.session() as session:
-            await _ensure_room_vnum_free(session, data.vnum)
-            room = await crud.create(session, models_of(session).Room, values)
-            return await _room_detail(session, room)
+        values = data.model_dump(by_alias=False, exclude={"extra", "zone_id"})
+        check_extra(data.extra, ROOM_EXTRA)
+        async with self.writing():
+            self.sync()
+            if self.store.find("room", data.vnum) is not None:
+                raise conflict("rooms.vnum_taken", vnum=data.vnum)
+            zone = self.zone_or_404(data.zone_id)
+            file = self.store.file_for(zone, "room", norm_area(data.extra.get("area")))
+            raw = CommentedMap()
+            mapping.room_apply(
+                raw, {"vnum": values.pop("vnum"), "name": values.pop("name"), "description": values.pop("description"), **values}
+            )
+            if "enabled" in data.extra:
+                mapping.put(raw, "enabled", bool(data.extra["enabled"]), default=True)
+            LoaderRoom.model_validate(plain(raw))
+            file.list_of(create=True).append(raw)
+            self.store.save(file)
+            return self._detail(data.vnum)
 
     async def update_room(self, room_id: int, data: RoomPatch) -> RoomDetail:
-        """Aggiornamento parziale. Cambiare il vnum e' rifiutato (409 `rooms.vnum_in_use`) finche' un reset lo usa."""
+        """Aggiornamento parziale. Cambiare il vnum e' 409 `rooms.vnum_in_use` se un reset lo usa; le uscite di altre
+        stanze che portano qui seguono il nuovo vnum. `zoneId` (o `extra.area`) sposta la stanza in un altro file."""
         self.ensure_writable()
-        changes = self.values(data, exclude_unset=True)
-        async with self.session() as session:
-            Room = models_of(session).Room  # noqa: N806
-            current = await crud.get_or_404(session, Room, room_id, code="rooms.not_found")
-            if data.vnum is not None:
-                await _ensure_room_vnum_free(session, data.vnum, ignore_id=room_id)
-                if data.vnum != current.vnum:
-                    await ensure_not_used(session, "room", current.vnum, code="rooms.vnum_in_use")
-            room = await crud.update(session, Room, room_id, changes, code="rooms.not_found")
-            return await _room_detail(session, room)
+        changes = data.model_dump(by_alias=False, exclude_unset=True, exclude={"extra"})
+        async with self.writing():
+            room = self.find_or_404("room", room_id, "rooms.not_found")
+            old_vnum, touched = room.vnum, {room.file}
+            new_vnum = changes.get("vnum", old_vnum)
+            if new_vnum != old_vnum:
+                if self.store.find("room", new_vnum) is not None:
+                    raise conflict("rooms.vnum_taken", vnum=new_vnum)
+                self.ensure_unused("room", old_vnum, "rooms.vnum_in_use", include_exit_keys=False)
+                players = await self.players_in_room(old_vnum)
+                if players:
+                    raise conflict("rooms.has_instances", mobs=0, objects=0, players=players)
+            area = self._apply_extra(room, data.extra or {})
+            mapping.room_apply(room.raw, {k: v for k, v in changes.items() if k != "zone_id"})
+            target_zone = self.zone_or_404(changes["zone_id"]) if changes.get("zone_id", room.zone.vnum) != room.zone.vnum else room.zone
+            target_area = room.area if area is ... else area
+            room.revalidate()
+            if target_zone is not room.zone or target_area != room.area:
+                target_file = self.store.file_for(target_zone, "room", target_area)
+                if target_file is not room.file:
+                    move_raw(room, target_file)
+                    touched.add(target_file)
+            if new_vnum != old_vnum:
+                for other in self.store.all_items("room"):
+                    for key, x in other.model.exits.items():
+                        if x.target_vnum == old_vnum:
+                            other.raw["exits"][key]["target_vnum"] = new_vnum
+                            other.revalidate()
+                            touched.add(other.file)
+            self.store.save(*touched)
+            return self._detail(new_vnum)
 
     async def delete_room(self, room_id: int) -> None:
-        """Elimina stanza, uscite ed extra description (le uscite altrui verso di lei restano senza destinazione).
-        409 `rooms.in_reset_usage` se un reset la referenzia, `rooms.has_instances` se ha occupanti."""
+        """Elimina la stanza: 409 `rooms.in_reset_usage` se un reset la referenzia, `rooms.has_instances` se un
+        personaggio ci si trova. Le uscite di altre stanze verso di lei restano senza destinazione (segnalate)."""
         self.ensure_writable()
-        async with self.session() as session:
-            m = models_of(session)
-            room = await crud.get_or_404(session, m.Room, room_id, code="rooms.not_found")
-            await ensure_not_used_by_resets(session, "room", room.vnum, code="rooms.in_reset_usage")
-            await ensure_room_has_no_occupants(session, room_id)
-            # Il DB non ha ON DELETE: cascade e "SET NULL" sono espliciti. Stessa transazione di `crud.delete`:
-            # se questa fallisce, il rollback ripristina anche uscite/extra appena eliminate.
-            await session.execute(sa_update(m.Exit).where(m.Exit.target_room_id == room_id).values(target_room_id=None))
-            await session.execute(sa_delete(m.Exit).where(m.Exit.room_id == room_id))
-            if m.RoomExtraDescription is not None:
-                await session.execute(sa_delete(m.RoomExtraDescription).where(m.RoomExtraDescription.room_id == room_id))
-            await crud.delete(session, m.Room, room_id, code="rooms.not_found")
+        async with self.writing():
+            room = self.find_or_404("room", room_id, "rooms.not_found")
+            self.ensure_unused("room", room_id, "rooms.in_reset_usage", include_exit_keys=False)
+            players = await self.players_in_room(room_id)
+            if players:
+                raise conflict("rooms.has_instances", mobs=0, objects=0, players=players)
+            seq = room.file.list_of()
+            assert seq is not None
+            for index, candidate in enumerate(seq):
+                if candidate is room.raw:
+                    del seq[index]
+                    break
+            self.store.save(room.file)
 
     async def clone_room(self, room_id: int, data: RoomCloneIn) -> RoomDetail:
-        """Duplica una stanza (non le uscite) con un nuovo vnum; copia le extra description."""
+        """Duplica la stanza nello stesso file (senza uscite, con le extra description)."""
         self.ensure_writable()
-        async with self.session() as session:
-            m = models_of(session)
-            Room = m.Room  # noqa: N806
-            source = await crud.get_or_404(session, Room, room_id, code="rooms.not_found")
-            await _ensure_room_vnum_free(session, data.vnum)
-            clone = Room(
-                vnum=data.vnum,
-                zone_id=source.zone_id,
-                name=data.name or source.name,
-                description=source.description,
-                sector_type=source.sector_type,
-                flags=list(source.flags),
-                heal_rate=source.heal_rate,
-                mana_rate=source.mana_rate,
-                clan_id=source.clan_id,
-                owner=source.owner,
-            )
-            session.add(clone)
-            await session.flush()
-            for extra in await _extras(session, room_id):
-                session.add(m.RoomExtraDescription(room_id=clone.id, keywords=extra.keywords, text=extra.text))
-            await session.commit()
-            return await _room_detail(session, clone)
+        async with self.writing():
+            room = self.find_or_404("room", room_id, "rooms.not_found")
+            if self.store.find("room", data.vnum) is not None:
+                raise conflict("rooms.vnum_taken", vnum=data.vnum)
+            ordered = copy.deepcopy(room.raw)
+            ordered.pop("exits", None)
+            ordered["vnum"] = data.vnum
+            ordered["name"] = data.name or room.model.name
+            room.file.list_of(create=True).append(ordered)
+            self.store.save(room.file)
+            return self._detail(data.vnum)
 
     async def room_graph(self, zone_id: int) -> RoomGraph:
-        """Le stanze di una zona e le uscite tra loro, con layout a bussola calcolato dal server."""
-        async with self.session() as session:
-            m = models_of(session)
-            Room, Exit = m.Room, m.Exit  # noqa: N806
-            rooms = (await session.execute(select(Room).where(Room.zone_id == zone_id))).scalars().all()
-            room_ids = {room.id for room in rooms}
-            exits = (await session.execute(select(Exit).where(Exit.room_id.in_(room_ids)))).scalars().all() if room_ids else []
-            return rules.build_room_graph(
-                [rules.GraphRoom(r.id, r.vnum, r.name, SectorType(r.sector_type), list(r.flags)) for r in rooms],
-                [rules.GraphExit(e.id, e.room_id, Direction(e.direction), DoorFlag(e.door_flag), e.target_room_id) for e in exits],
+        """Stanze della zona e uscite tra loro, con layout a bussola calcolato dal server."""
+        zone = self.zone_or_404(zone_id)
+        rooms = zone.items["room"]
+        exits = [
+            rules.GraphExit(
+                r.vnum * mapping.EXIT_STRIDE + int(Direction[k.upper()]),
+                r.vnum,
+                Direction[k.upper()],
+                DoorFlag[x.door_flag],
+                x.target_vnum if self.store.find("room", x.target_vnum) is not None else None,  # type: ignore[arg-type]
             )
+            for r in rooms
+            for k, x in r.model.exits.items()
+        ]
+        return rules.build_room_graph(
+            [rules.GraphRoom(r.vnum, r.vnum, r.model.name, SectorType[r.model.sector_type], list(r.model.flags)) for r in rooms],
+            exits,
+        )
 
     async def room_usage(self, room_id: int) -> list[ResetUsage]:
-        """I comandi di reset (di qualsiasi zona) che referenziano questa stanza per vnum."""
-        async with self.session() as session:
-            room = await crud.get_or_404(session, models_of(session).Room, room_id, code="rooms.not_found")
-            return await find_reset_usage(session, "room", room.vnum)
+        """I reset che referenziano la stanza per vnum."""
+        self.find_or_404("room", room_id, "rooms.not_found")
+        return self.find_usage("room", room_id, include_exit_keys=False)
+
+    async def incoming_exits(self, room_id: int) -> list[IncomingExit]:
+        """Le uscite di altre stanze (di qualsiasi zona) che portano a `room_id`: una sola scansione dei file gia' in memoria."""
+        self.find_or_404("room", room_id, "rooms.not_found")
+        return [
+            IncomingExit(
+                exit_id=room.vnum * mapping.EXIT_STRIDE + int(Direction[key.upper()]),
+                room_id=room.vnum,
+                room_vnum=room.vnum,
+                room_name=room.model.name,
+                zone_id=room.zone.vnum,
+                direction=Direction[key.upper()],
+            )
+            for room in self.store.all_items("room")
+            if room.vnum != room_id
+            for key, x in room.model.exits.items()
+            if x.target_vnum == room_id
+        ]
+
+    # ------------------------------------------------------------------ uscite
+
+    def _exit_or_404(self, room_id: int, exit_id: int) -> tuple[Item, str]:
+        """`(stanza, chiave dell'uscita)` per `exit_id`: 404 `rooms.exit_not_found`, 409 `rooms.exit_not_in_room`."""
+        self.sync()
+        room = self.store.find("room", exit_id // mapping.EXIT_STRIDE) if exit_id >= 0 else None
+        direction = exit_id % mapping.EXIT_STRIDE
+        key = mapping.direction_key(room.model.exits, direction) if room is not None and direction <= 5 else None
+        if room is None or key is None:
+            raise api_error(404, "rooms.exit_not_found")
+        if room.vnum != room_id:
+            raise conflict("rooms.exit_not_in_room")
+        return room, key
+
+    @staticmethod
+    def _apply_exit_extra(node: Any, exit_extra: dict[str, Any]) -> None:
+        """Scrive nel nodo dell'uscita le chiavi di `extra` (`isMale`, `openCmd`, `climb`); `openCmd` vuoto toglie il campo."""
+        if "isMale" in exit_extra:
+            mapping.put(node, "is_male", bool(exit_extra["isMale"]), default=False)
+        if "openCmd" in exit_extra:
+            mapping.put(node, "open_cmd", exit_extra["openCmd"] or None)
+        if "climb" in exit_extra:
+            mapping.put(node, "climb", bool(exit_extra["climb"]), default=False)
+
+    def _key_exists(self):  # type: ignore[no-untyped-def]
+        """Callback `rules.check_exit`: la chiave deve esistere come oggetto."""
+
+        async def exists(vnum: int) -> bool:
+            """Esiste un oggetto con quel vnum?"""
+            return self.store.find("object", vnum) is not None
+
+        return exists
+
+    def _check_target(self, target_room_id: int | None) -> None:
+        """404 `rooms.not_found` se la destinazione non esiste."""
+        if target_room_id is not None and self.store.find("room", target_room_id) is None:
+            raise api_error(404, "rooms.not_found")
+
+    def _exit_by_id(self, exit_id: int) -> ExitOut:
+        """`ExitOut` da un id (letto dall'archivio aggiornato)."""
+        room = self.find_or_404("room", exit_id // mapping.EXIT_STRIDE, "rooms.not_found")
+        key = mapping.direction_key(room.model.exits, exit_id % mapping.EXIT_STRIDE)
+        assert key is not None
+        return mapping.exit_out(room, key, self.store.room_names())
 
     async def create_exit(self, room_id: int, data: ExitIn) -> ExitOut:
-        """Crea un'uscita dalla stanza (una per direzione)."""
+        """Crea un'uscita (una per direzione)."""
         self.ensure_writable()
-        async with self.session() as session:
-            m = models_of(session)
-            Exit = m.Exit  # noqa: N806
-            await crud.get_or_404(session, m.Room, room_id, code="rooms.not_found")
-            existing = (
-                (await session.execute(select(Exit).where(Exit.room_id == room_id, Exit.direction == int(data.direction))))
-                .scalars()
-                .first()
-            )
-            if existing is not None:
+        async with self.writing():
+            room = self.find_or_404("room", room_id, "rooms.not_found")
+            if mapping.direction_key(room.model.exits, int(data.direction)) is not None:
                 raise conflict("rooms.exit_direction_taken", direction=data.direction.name)
-            await _check_exit(session, room_id, data.model_dump(by_alias=False), set(ExitIn.model_fields))
-            exit_row = await crud.create(session, Exit, {**data.model_dump(by_alias=False), "room_id": room_id})
-            return await _exit_out_one(session, exit_row)
+            await rules.check_exit(room_id, data.model_dump(by_alias=False), set(ExitIn.model_fields), self._key_exists())
+            self._check_target(data.target_room_id)
+            exits = room.raw.get("exits")
+            if exits is None:
+                exits = room.raw["exits"] = CommentedMap()
+            node = CommentedMap()
+            for key, value, default in (
+                ("target_vnum", data.target_room_id, None),
+                ("description", data.description, None),
+                ("keywords", data.keywords, None),
+                ("door_flag", data.door_flag.name, "NONE"),
+                ("is_open", data.is_open, True),
+                ("is_locked", data.is_locked, False),
+                ("key_vnum", data.key_vnum, None),
+            ):
+                mapping.put(node, key, value, default=default)
+            exits[data.direction.name.lower()] = node
+            room.revalidate()
+            self.store.save(room.file)
+            return self._exit_by_id(room_id * mapping.EXIT_STRIDE + int(data.direction))
 
     async def update_exit(self, room_id: int, exit_id: int, data: ExitPatch) -> ExitOut:
-        """Aggiornamento parziale di un'uscita."""
+        """Aggiornamento parziale di un'uscita (cambiando direzione cambia anche l'`id`)."""
         self.ensure_writable()
-        async with self.session() as session:
-            Exit = models_of(session).Exit  # noqa: N806
-            exit_row = await crud.get_or_404(session, Exit, exit_id, code="rooms.exit_not_found")
-            if exit_row.room_id != room_id:
-                raise conflict("rooms.exit_not_in_room")
-            if data.direction is not None and data.direction != exit_row.direction:
-                clash = (
-                    (await session.execute(select(Exit).where(Exit.room_id == room_id, Exit.direction == int(data.direction))))
-                    .scalars()
-                    .first()
-                )
-                if clash is not None:
-                    raise conflict("rooms.exit_direction_taken", direction=data.direction.name)
-            if data.extra:
-                raise api_error(422, "world.extra_unsupported")
-            changes = data.model_dump(exclude_unset=True, by_alias=False, exclude={"extra"})
-            final = {name: changes.get(name, getattr(exit_row, name)) for name in ExitIn.model_fields}
-            await _check_exit(session, room_id, final, set(changes))
-            exit_row = await crud.update(session, Exit, exit_id, changes, code="rooms.exit_not_found")
-            return await _exit_out_one(session, exit_row)
+        changes = data.model_dump(by_alias=False, exclude_unset=True)
+        exit_extra = changes.pop("extra", None) or {}
+        if set(exit_extra) - EXIT_EXTRA:
+            raise api_error(422, "pachimud.extra_unknown", key=sorted(set(exit_extra) - EXIT_EXTRA)[0])
+        async with self.writing():
+            room, key = self._exit_or_404(room_id, exit_id)
+            current = self._exit_by_id(exit_id)
+            if "direction" in changes and changes["direction"] != current.direction:
+                if mapping.direction_key(room.model.exits, int(changes["direction"])) is not None:
+                    raise conflict("rooms.exit_direction_taken", direction=changes["direction"].name)
+            final = {name: changes.get(name, getattr(current, name)) for name in ExitIn.model_fields}
+            await rules.check_exit(room_id, final, set(changes), self._key_exists())
+            if "target_room_id" in changes:
+                self._check_target(changes["target_room_id"])
+            node = room.raw["exits"][key]
+            for field, name, default in (
+                ("target_room_id", "target_vnum", None),
+                ("description", "description", None),
+                ("keywords", "keywords", None),
+                ("door_flag", "door_flag", "NONE"),
+                ("is_open", "is_open", True),
+                ("is_locked", "is_locked", False),
+                ("key_vnum", "key_vnum", None),
+            ):
+                if field in changes:
+                    value = changes[field].name if field == "door_flag" else changes[field]
+                    if field == "target_room_id" and value is None and self.store.find("room", node.get("target_vnum")) is None:
+                        continue  # un'uscita verso una stanza inesistente appare senza destinazione: non si perde il vnum (si elimina l'uscita)
+                    mapping.put(node, name, value, default=default)
+            self._apply_exit_extra(node, exit_extra)
+            new_dir = int(changes.get("direction", current.direction))
+            if new_dir != int(current.direction):
+                exits = room.raw["exits"]
+                del exits[key]
+                exits[Direction(new_dir).name.lower()] = node
+            room.revalidate()
+            self.store.save(room.file)
+            return self._exit_by_id(room_id * mapping.EXIT_STRIDE + new_dir)
 
     async def delete_exit(self, room_id: int, exit_id: int) -> None:
         """Elimina un'uscita."""
         self.ensure_writable()
-        async with self.session() as session:
-            Exit = models_of(session).Exit  # noqa: N806
-            exit_row = await crud.get_or_404(session, Exit, exit_id, code="rooms.exit_not_found")
-            if exit_row.room_id != room_id:
-                raise conflict("rooms.exit_not_in_room")
-            await crud.delete(session, Exit, exit_id, code="rooms.exit_not_found")
+        async with self.writing():
+            room, key = self._exit_or_404(room_id, exit_id)
+            del room.raw["exits"][key]
+            if not room.raw["exits"]:
+                del room.raw["exits"]
+            room.revalidate()
+            self.store.save(room.file)
+
+    # ------------------------------------------------------------------ extra description
+
+    def _extra_or_404(self, room_id: int, extra_id: int) -> tuple[Item, int]:
+        """`(stanza, posizione)`: 404 `rooms.extra_not_found`, 409 `rooms.extra_not_in_room`."""
+        self.sync()
+        stride = mapping.EXTRA_DESC_STRIDE
+        room = self.store.find("room", extra_id // stride) if extra_id >= 0 else None
+        index = extra_id % stride
+        if room is None or index >= len(room.model.extra_descriptions):
+            raise api_error(404, "rooms.extra_not_found")
+        if room.vnum != room_id:
+            raise conflict("rooms.extra_not_in_room")
+        return room, index
+
+    def _extra_out(self, room_id: int, index: int) -> ExtraDescriptionOut:
+        """DTO dell'extra `index` della stanza (dall'archivio aggiornato)."""
+        room = self.find_or_404("room", room_id, "rooms.not_found")
+        return mapping.extra_desc_out(room_id, index, room.model.extra_descriptions[index])
 
     async def create_extra_description(self, room_id: int, data: ExtraDescriptionIn) -> ExtraDescriptionOut:
-        """Crea un'extra description."""
+        """Aggiunge un'extra description in coda."""
         self.ensure_writable()
-        async with self.session() as session:
-            m = models_of(session)
-            await crud.get_or_404(session, m.Room, room_id, code="rooms.not_found")
-            row = await crud.create(session, self._extra_model(session), {**data.model_dump(by_alias=False), "room_id": room_id})
-            return ExtraDescriptionOut.model_validate(row)
+        async with self.writing():
+            room = self.find_or_404("room", room_id, "rooms.not_found")
+            seq = room.raw.get("extra_descriptions")
+            if seq is None:
+                seq = room.raw["extra_descriptions"] = CommentedSeq()
+            seq.append(mapping.new_map({"keywords": data.keywords, "text": data.text}))
+            room.revalidate()
+            self.store.save(room.file)
+            return self._extra_out(room_id, len(seq) - 1)
 
     async def update_extra_description(self, room_id: int, extra_id: int, data: ExtraDescriptionPatch) -> ExtraDescriptionOut:
         """Aggiornamento parziale di un'extra description."""
         self.ensure_writable()
-        async with self.session() as session:
-            Extra = self._extra_model(session)  # noqa: N806
-            row = await crud.get_or_404(session, Extra, extra_id, code="rooms.extra_not_found")
-            if row.room_id != room_id:
-                raise conflict("rooms.extra_not_in_room")
-            row = await crud.update(session, Extra, extra_id, data, code="rooms.extra_not_found")
-            return ExtraDescriptionOut.model_validate(row)
+        changes: dict[str, Any] = data.model_dump(by_alias=False, exclude_unset=True)
+        async with self.writing():
+            room, index = self._extra_or_404(room_id, extra_id)
+            for key, value in changes.items():
+                mapping.put(room.raw["extra_descriptions"][index], key, value, required=True)
+            room.revalidate()
+            self.store.save(room.file)
+            return self._extra_out(room_id, index)
 
     async def delete_extra_description(self, room_id: int, extra_id: int) -> None:
-        """Elimina un'extra description."""
+        """Elimina un'extra description (le successive scalano di una posizione)."""
         self.ensure_writable()
-        async with self.session() as session:
-            Extra = self._extra_model(session)  # noqa: N806
-            row = await crud.get_or_404(session, Extra, extra_id, code="rooms.extra_not_found")
-            if row.room_id != room_id:
-                raise conflict("rooms.extra_not_in_room")
-            await crud.delete(session, Extra, extra_id, code="rooms.extra_not_found")
+        async with self.writing():
+            room, index = self._extra_or_404(room_id, extra_id)
+            del room.raw["extra_descriptions"][index]
+            if not room.raw["extra_descriptions"]:
+                del room.raw["extra_descriptions"]
+            room.revalidate()
+            self.store.save(room.file)

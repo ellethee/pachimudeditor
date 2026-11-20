@@ -1,0 +1,52 @@
+---
+race_id: half_elf
+name: Half-Elf
+description: Born of two worlds, comfortable among elves and men alike.
+mob_only: false
+who_name: Half-Elf
+form:
+  - HUMANOID
+parts:
+  - HUMANOID
+affected_by:
+  - INFRARED
+class_max_level:  # `RacialMax` di LeU (constants.c): livello massimo per classe, 0 = non ammessa
+  mage: 30
+  cleric: 35
+  warrior: 35
+  thief: 51
+  druid: 35
+  monk: 30
+  barbarian: 0
+  sorcerer: 30
+  paladin: 51
+  ranger: 51
+  psi: 40
+class_choices:  # `*_class_choice[]` di LeU (interpreter.c): le uniche combinazioni di classi selezionabili alla creazione
+  - [mage]
+  - [cleric]
+  - [warrior]
+  - [thief]
+  - [druid]
+  - [monk]
+  - [paladin]
+  - [ranger]
+  - [psi]
+  - [warrior, mage]
+  - [warrior, thief]
+  - [mage, thief]
+  - [mage, warrior, thief]
+move_modifier: 20  # `move_limit` di LeU
+body:  # altezza (cm) e peso (kg) alla creazione, `init_char` di LeU (db.c): un valore a caso fra minimo e massimo
+  male:
+    height: [140, 180]
+    weight: [110, 160]
+  female:
+    height: [140, 170]
+    weight: [90, 150]
+default_language: common  # `SetDefaultLang` di LeU (`player.speaks`)
+class_skills:  # percentuali di partenza delle competenze di una classe, `do_start` di LeU (il ladro)
+  thief:
+    hide: 5
+    steal: 10
+order: 8  # posizione in `race_choice[]` di LeU

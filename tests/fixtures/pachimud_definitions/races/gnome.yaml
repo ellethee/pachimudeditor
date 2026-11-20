@@ -1,0 +1,55 @@
+---
+race_id: gnome
+name: Gnome
+description: Small, clever tinkerers with a talent for magic.
+mob_only: false
+who_name: Gnome
+form:
+  - HUMANOID
+parts:
+  - HUMANOID
+affected_by:
+  - INFRARED
+size: SMALL
+class_max_level:  # `RacialMax` di LeU (constants.c): livello massimo per classe, 0 = non ammessa
+  mage: 51
+  cleric: 51
+  warrior: 30
+  thief: 40
+  druid: 20
+  monk: 20
+  barbarian: 0
+  sorcerer: 51
+  paladin: 0
+  ranger: 0
+  psi: 0
+class_choices:  # `*_class_choice[]` di LeU (interpreter.c): le uniche combinazioni di classi selezionabili alla creazione
+  - [mage]
+  - [cleric]
+  - [warrior]
+  - [thief]
+  - [druid]
+  - [monk]
+  - [warrior, mage]
+  - [mage, thief]
+  - [warrior, thief]
+stat_modifiers:  # `roll_abilities` di LeU: ritocchi ai punteggi alla creazione
+  intelligence: 1
+  wisdom: -1
+move_modifier: -35  # `move_limit` di LeU
+body:  # altezza (cm) e peso (kg) alla creazione, `init_char` di LeU (db.c): un valore a caso fra minimo e massimo
+  male:
+    height: [100, 150]
+    weight: [120, 180]
+  female:
+    height: [100, 150]
+    weight: [100, 160]
+default_language: gnomish  # `SetDefaultLang` di LeU (`player.speaks`)
+class_skills:  # percentuali di partenza delle competenze di una classe, `do_start` di LeU (il ladro)
+  thief:
+    sneak: 10
+    hide: 5
+    steal: 15
+    backstab: 10
+    pick_lock: 10
+order: 6  # posizione in `race_choice[]` di LeU

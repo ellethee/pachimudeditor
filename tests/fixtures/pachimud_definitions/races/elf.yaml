@@ -28,3 +28,49 @@ max_stats:
   intelligence: 20
   wisdom: 18
   charisma: 18
+class_max_level:  # `RacialMax` di LeU (constants.c): livello massimo per classe, 0 = non ammessa
+  mage: 51
+  cleric: 30
+  warrior: 20
+  thief: 51
+  druid: 51
+  monk: 20
+  barbarian: 0
+  sorcerer: 51
+  paladin: 40
+  ranger: 51
+  psi: 40
+class_choices:  # `*_class_choice[]` di LeU (interpreter.c): le uniche combinazioni di classi selezionabili alla creazione
+  - [mage]
+  - [cleric]
+  - [warrior]
+  - [thief]
+  - [druid]
+  - [monk]
+  - [paladin]
+  - [ranger]
+  - [psi]
+  - [warrior, mage]
+  - [warrior, thief]
+  - [mage, thief]
+  - [mage, warrior, thief]
+stat_modifiers:  # `roll_abilities` di LeU: ritocchi ai punteggi alla creazione
+  dexterity: 1
+  constitution: -1
+move_modifier: 20  # `move_limit` di LeU
+body:  # altezza (cm) e peso (kg) alla creazione, `init_char` di LeU (db.c): un valore a caso fra minimo e massimo
+  male:
+    height: [160, 200]
+    weight: [100, 150]
+  female:
+    height: [150, 180]
+    weight: [80, 230]
+default_language: elvish  # `SetDefaultLang` di LeU (`player.speaks`)
+class_skills:  # percentuali di partenza delle competenze di una classe, `do_start` di LeU (il ladro)
+  thief:
+    sneak: 10
+    hide: 5
+    steal: 15
+    backstab: 10
+    pick_lock: 10
+order: 2  # posizione in `race_choice[]` di LeU

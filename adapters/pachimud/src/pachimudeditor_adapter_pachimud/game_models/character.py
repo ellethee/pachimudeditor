@@ -5,19 +5,24 @@
 """The `PlayerCharacter` model: a player-controlled character owned by an `Account`."""
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
+import sqlalchemy as sa
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from pachimudeditor_adapter_pachimud.game_models.base import Base
-from pachimudeditor_adapter_pachimud.game_models.sa_helpers import int_enum_column, json_int_dict_column, json_str_list_column
+from pachimudeditor_adapter_pachimud.game_models.sa_helpers import (
+    int_enum_column,
+    json_dict_list_column,
+    json_int_dict_column,
+    json_str_list_column,
+)
 
 from pachimudeditor_adapter_pachimud.game_models.enums import Position, Sex
 
 if TYPE_CHECKING:
     from pachimudeditor_adapter_pachimud.game_models.account import Account
-    from pachimudeditor_adapter_pachimud.game_models.room import Room
 
 
 class PlayerCharacter(Base):
@@ -35,7 +40,7 @@ class PlayerCharacter(Base):
     checked at character-creation time against the loaded content
     registry, not by the database.
 
-    `current_room_id` is nullable because no starting-room logic exists
+    `current_room_vnum` is nullable because no starting-room logic exists
     at this persistence-only layer; a future game server decides where
     a freshly created character (or one whose room no longer exists)
     ends up.
@@ -51,19 +56,13 @@ class PlayerCharacter(Base):
     hit_points_current: Mapped[int] = mapped_column(nullable=False)
     hit_points_max: Mapped[int] = mapped_column(nullable=False)
     gold: Mapped[int] = mapped_column(default=0, nullable=False)
-    current_room_id: Mapped[int | None] = mapped_column(ForeignKey("room.id"), default=None, nullable=True, index=True)
+    current_room_vnum: Mapped[int | None] = mapped_column(default=None, nullable=True)
     sex: Mapped[Sex] = int_enum_column(Sex, nullable=False)
     class_id: Mapped[str] = mapped_column(nullable=False)
     race_id: Mapped[str] = mapped_column(nullable=False)
+    class_levels: Mapped[dict[str, int]] = json_int_dict_column(default=dict, nullable=False)
+    """Livelli per classe (multiclasse)."""
     strength: Mapped[int] = mapped_column(nullable=False)
-    strength_percentile: Mapped[int] = mapped_column(default=0, nullable=False)
-    """Percentile 0-100 di forza eccezionale ("18/xx"), significativo solo
-    quando `strength == 18`. In tbaMUD (`str_add`) solo il Guerriero lo
-    tira alla creazione, e solo se la Forza risultante dal tiro è
-    esattamente 18 (`roll_real_abils()`, `src/class.c:1417-1426`) — ogni
-    altra classe/situazione resta a 0, che `ability_tables.str_app`
-    interpreta come "non eccezionale", usando la riga normale della
-    tabella."""
     dexterity: Mapped[int] = mapped_column(nullable=False)
     constitution: Mapped[int] = mapped_column(nullable=False)
     intelligence: Mapped[int] = mapped_column(nullable=False)
@@ -71,6 +70,11 @@ class PlayerCharacter(Base):
     charisma: Mapped[int] = mapped_column(nullable=False)
     mana_current: Mapped[int] = mapped_column(nullable=False)
     mana_max: Mapped[int] = mapped_column(nullable=False)
+    move_current: Mapped[int] = mapped_column(default=0, nullable=False)
+    move_max: Mapped[int] = mapped_column(default=0, nullable=False)
+    height: Mapped[int] = mapped_column(default=0, nullable=False)
+    weight: Mapped[int] = mapped_column(default=0, nullable=False)
+    played_seconds: Mapped[int] = mapped_column(default=0, nullable=False)
     known_skill_ids: Mapped[list[str]] = json_str_list_column(default=list, nullable=False)
     """Ids of `etemud.content.models.Skill` entries this character has
     learned (via `learn`/`impara`), resolved against `ServerState.
@@ -111,6 +115,18 @@ class PlayerCharacter(Base):
     """`GET_COND(ch, HUNGER/THIRST/DRUNK)` (`src/structs.h:493-495`, `etemud.server.conditions`):
     `hunger`/`thirst` start full at 24 and fall one point per regen tick, `drunk` starts sober at 0.
     `-1` means the condition never changes."""
+    affects: Mapped[dict[str, int]] = json_int_dict_column(default=dict, nullable=False)
+    """Effetti temporanei: nome -> durata."""
+    affect_mods: Mapped[dict[str, dict[str, int]]] = mapped_column(sa.JSON, default=dict, nullable=False)
+    """Effetti con modificatori."""
+    spellbook: Mapped[dict[str, int]] = mapped_column(sa.JSON, default=dict, nullable=False)
+    """Libro degli incantesimi dello stregone: incantesimo -> copie memorizzate."""
+    aliases: Mapped[dict[str, str]] = mapped_column(sa.JSON, default=dict, nullable=False)
+    """Alias dei comandi (`alias`): numero -> testo."""
+    prompt: Mapped[str] = mapped_column(default="", nullable=False)
+    """Prompt scelto con `prompt` (vuoto: quello di serie)."""
+    speaks: Mapped[str] = mapped_column(default="common", nullable=False)
+    poison_strength: Mapped[int] = mapped_column(default=0, nullable=False)
     poison_ticks: Mapped[int] = mapped_column(default=0, nullable=False)
     """Remaining ticks of poison (`AFF_POISON` duration): 2 damage and quartered regen per tick."""
     wimpy_level: Mapped[int] = mapped_column(default=0, nullable=False)
@@ -134,6 +150,7 @@ class PlayerCharacter(Base):
     flag, set by stealing from a player) is not ported: etemud's
     `cmd_steal` only ever targets mobs, so nothing could set it."""
     title: Mapped[str] = mapped_column(default="", nullable=False)
+    description: Mapped[str] = mapped_column(default="", nullable=False)
     """`GET_TITLE` (`do_title`, `src/act.other.c`): a free-text suffix shown after the
     character's name in `who`/`score`, e.g. "Aldric the Brave". Empty string (not `None`,
     matching tbaMUD's own `""` default) means no title set. `PLR_NOTITLE`/the `(`/`)`-forbidding
@@ -156,8 +173,13 @@ class PlayerCharacter(Base):
     (`MobPrototype.is_banker`), separate from carried `gold`: safe from `spawn_player_corpse`'s
     on-death gold wipe, exactly like a real tbaMUD bank balance. See `etemud.server.commands.
     cmd_balance`/`cmd_deposit`/`cmd_withdraw`."""
+    rented_at: Mapped[datetime | None] = mapped_column(default=None, nullable=True)
+    """Quando il personaggio e' andato in pensione con `rent` (vuoto: non e' in pensione)."""
+    rent_cost: Mapped[int] = mapped_column(default=0, nullable=False)
+    """Costo giornaliero della pensione (`rent`)."""
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(UTC))
+    inventory: Mapped[list[dict]] = json_dict_list_column(default=list, nullable=False)
+    """Oggetti trasportati e indossati: lista di `{vnum, overrides, equipped_slot, state, contents}` (vedi il gioco)."""
     last_played_at: Mapped[datetime | None] = mapped_column(default=None, nullable=True)
 
     account: Mapped["Account"] = relationship(back_populates="characters")
-    current_room: Mapped[Optional["Room"]] = relationship(back_populates="characters_present")

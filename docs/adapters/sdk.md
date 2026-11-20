@@ -7,7 +7,7 @@ stesso monorepo (`adapters/<kind>/`, membri dell'uv workspace). Il core non li i
 
 | Kind | Pacchetto / extra | Cosa porta |
 |---|---|---|
-| `pachimud` | `pachimudeditor-adapter-pachimud` | database di gioco SQLAlchemy + pagine world/players/instances/transfer/content |
+| `pachimud` | `pachimudeditor-adapter-pachimud` | contenuti su file YAML + DB giocatori SQLAlchemy + pagine world/players/transfer/content |
 | `basedmud` | `pachimudeditor-adapter-basedmud` | file `.are` (ROM 2.4 / QuickMUD / basedmud) con la libreria `rom_lib` |
 | `dikumod` | `pachimudeditor-adapter-dikumod` | Diku Modificato (`dikumoddata.*`) con la libreria `dikumod_lib` |
 | `mapping` | `pachimudeditor-adapter-mapping` | MUD su file descritto da un YAML di mappatura (esempi `rom.yaml`, `diku_classic.yaml`) |
@@ -148,7 +148,7 @@ Riepilogo di `pachimudeditor.sdk.__all__`, per famiglia:
 | Regole | `rules` (reset, uscite, range, grafo, uso) |
 | Conversione | `Flavor`, `ComposedConverter`, `PairConverter`, `ConvertContext`, `Converted`, `loss`, `to_in`, `extra_dropped`, `convert_helpers`, `convert_tables` |
 | Giocatori su file (SDK 1.3, scrittura 1.4) | `PlayersAdapter` (mixin), `PlayersInfo`, `PlayerColumn`, `PlayerListInfo`, `PlayerListColumn`, `PlayerSummary`, `PlayerDetail`, `PlayerInventory`, `PlayerItem`, `PlayerPageParams`, `PlayersStatus`; 1.4: `PlayerWriteOptions`, `PlayerPatch`, `PlayerItemAdd`, `PlayerItemUpdate` |
-| Canale live (SDK 1.5) | `LiveAdapter` (mixin), `LiveClient`, `LiveSession`, `LiveError`, `LiveStatus`, `LiveWho`, `LiveWhoPlayer`, `LiveServerInfo`, `LiveZone`, `LiveZones`, `LivePlayerState`, `LivePlayerSetIn`, `LivePlayerSetOut`, `LiveZoneResetIn`, `LiveZoneResetOut`, `LiveLoadIn`, `LiveLoadOut` (con `warnings`), `LiveEchoIn`, `LiveEchoOut`, `LiveInventory`, `LiveItem`, `LiveItemAffect`, `LiveItemChanges`, `LiveItemExpect`, `LiveItemSetIn`, `LiveItemSetOut`, `LiveItemRemoveOut` |
+| Canale live (SDK 1.5) | `LiveAdapter` (mixin), `LiveClient`, `LiveSession`, `LiveError`, `LiveStatus`, `LiveWho`, `LiveWhoPlayer`, `LiveServerInfo`, `LiveZone`, `LiveZones`, `LivePlayerState`, `LivePlayerSetIn`, `LivePlayerSetOut`, `LiveZoneResetIn`, `LiveZoneResetOut`, `LiveZoneReloadIn`, `LiveZoneReloadOut`, `LiveContentIssue`, `LiveContentValidateOut`, `LiveContentReloadIn`, `LiveContentReloadOut`, `LiveLoadIn`, `LiveLoadOut` (con `warnings`), `LiveEchoIn`, `LiveEchoOut`, `LiveInventory`, `LiveItem`, `LiveItemAffect`, `LiveItemChanges`, `LiveItemExpect`, `LiveItemSetIn`, `LiveItemSetOut`, `LiveItemRemoveOut` |
 | File (SDK 1.2) | `atomic_write_bytes(path, data)`: scrittura atomica (temporaneo nella stessa cartella, `fsync`, `os.replace`); segue i symlink, preserva permessi e proprietario, pulisce il temporaneo in caso di errore |
 
 Per scrivere un file dell'adapter usa `atomic_write_bytes` invece di `open(..., "w")`: un crash a meta' non lascia file troncati.
@@ -194,6 +194,7 @@ sintetici (`tests/core/fake_adapter`), un buon modello per testare la scoperta n
   (capability `supports_transfer`); `aclose()` per rilasciare risorse.
 - Opzionale (default: niente): `check_texts(texts, *, zone_id)`, chiamato dall'anteprima/esecuzione di una conversione prima di
   scrivere; solleva 422 (con i codici dell'adapter) se un testo non e' scrivibile nel mondo (encoding, caratteri vietati).
+- Opzionale (default: nessuno): `unsupported_reset_types() -> frozenset[int]`: i tipi di comando di reset (`ZoneCommandType`) che il mondo non sa rappresentare (pachimud: `R`). Il ripiego generico della conversione li scarta con la perdita `reset_unsupported_command` invece di far fallire la scrittura; un sapore proprio li gestisce da se' (`reset_from_pivot`).
 
 ## Convenzioni
 
@@ -251,6 +252,9 @@ riconnessione pigra, limiti di `hello`, scritture mai ritentate, token mai in lo
 e' obbligatorio e un'impronta che non coincide e' `LiveError("stale_ref")` -> 409 `worldlive.stale_ref`. La capability e' statica (canale configurato); che il MUD abbia davvero la feature `inventory` lo dice `LiveStatus.features`
 (rilevata da `hello` al primo contatto: senza, il client non invia i comandi e la rotta risponde 409 `worldlive.command_disabled`). `LiveClient` ha `inventory`, `item_get`, `item_set`, `item_remove`; le scritture non si ritentano.
 
+**Estensioni pachimud** (additive, ancora SDK 1.5): `live_zone_reload(LiveZoneReloadIn, actor=)` -> `LiveZoneReloadOut` (comando `zone.reload`) e `live_instances(room_vnum=|mob_vnum=|obj_vnum=|zone_vnum=, limit=)` -> `LiveInstances` (comando `instances.list`),
+con `LiveClient.zone_reload` e `LiveClient.instances`; default 409 `world.capability_missing`, e `worldlive.command_disabled` se il MUD non dichiara il comando. `LiveWhoPlayer.race` accetta anche una stringa e `LiveZone` ha `bottom`.
+
 Un adapter tipico crea il client dalla propria configurazione (dikumod: `params.live`, `adapters/dikumod/.../live.py`) e lo chiude in `close()`.
 
 Per i giocatori su file, `PlayersAdapter` ottiene `player_connected(id) -> bool | None` (1.5, default `None`): se ritorna `True` la scrittura su file richiede `confirmServerRunning` anche se `players_status` non rileva nulla.
@@ -296,7 +300,7 @@ Modello completo: `adapters/dikumod/src/pachimudeditor_adapter_dikumod/players.p
 |---|---|---|
 | `read_only` | ogni scrittura rifiutata | 409 `world.read_only` |
 | `supports_world_overview` | panoramica/grafo zone/ricerca (`/api/world`) | senza: 409 `world.capability_missing` |
-| `supports_instances` | istanze vive (`/api/instances`) | idem |
+| `supports_instances` | istanze vive (`/api/instances`; nessun adapter ufficiale la dichiara piu') | idem |
 | `supports_players` | account/personaggi/inventario (`/api/players`) | idem |
 | `supports_player_records` | giocatori su file in sola lettura (`/api/world/players`: info, stato, elenco, dettaglio; SDK 1.3) | idem |
 | `supports_player_inventory` | inventario/equipaggiamento dei giocatori su file (`/api/world/players/{id}/inventory`; SDK 1.3) | idem |

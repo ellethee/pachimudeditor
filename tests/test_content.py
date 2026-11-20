@@ -8,14 +8,11 @@ from pathlib import Path
 import httpx
 import pytest
 import pytest_asyncio
-from pachimudeditor_adapter_pachimud.game_models.mob import MobPrototype
-from sqlalchemy import update
 
 from pachimudeditor.common.adapters.registry import get_registry
 from tests.helpers import data, error_code
-from tests.support import gamedb
 from tests.support.extra_apps import build_app, make_client
-from tests.support.stack import DEFINITIONS_FIXTURE
+from tests.support.stack import DEFINITIONS_FIXTURE, edit_world_file
 
 
 @pytest.fixture(autouse=True)
@@ -35,11 +32,13 @@ async def api(token: str) -> AsyncIterator[httpx.AsyncClient]:
         yield client
 
 
-async def _set_mob(**values: object) -> None:
-    """Aggiorna il mob 1000 del DB temporaneo."""
-    async with gamedb.get_session_factory()() as session:
-        await session.execute(update(MobPrototype).where(MobPrototype.vnum == 1000).values(**values))
-        await session.commit()
+def _set_mob(**values: object) -> None:
+    """Imposta nel file YAML del mondo di test campi del mob 1000 (`race_id`, `class_id`, `teaches_class_ids`)."""
+    lines = "".join(
+        f"    {key}:\n" + "".join(f"      - {v}\n" for v in value) if isinstance(value, list) else f"    {key}: {value}\n"
+        for key, value in values.items()
+    )
+    edit_world_file("ZonaAlfa/mobs.yaml", "    keywords: guardia\n", "    keywords: guardia\n" + lines)
 
 
 async def test_guard_not_real_definitions(definitions: Path) -> None:
@@ -57,7 +56,7 @@ async def test_list_and_get(api: httpx.AsyncClient) -> None:
     classes = data(await api.get("/api/content/classes"))
     assert {c["classId"] for c in classes} >= {"mage", "cleric", "thief", "warrior"}
     one = data(await api.get("/api/content/classes/mage"))
-    assert one["attrPrime"] == "intelligence" and one["attrsPriority"][0] == "intelligence"
+    assert one["attrsPriority"][0] == "intelligence" and one["classId"] == "mage"
     assert error_code(await api.get("/api/content/races/nope"), 404) == "content.not_found"
 
 
@@ -132,7 +131,7 @@ async def test_path_traversal_in_url(api: httpx.AsyncClient) -> None:
 
 async def test_delete_blocked_when_in_use(api: httpx.AsyncClient, definitions: Path) -> None:
     """Razza/classe usata da mob: 409 con count; libera: 204 e file rimosso."""
-    await _set_mob(race_id="bat", class_id="mage", teaches_class_ids=["thief"])
+    _set_mob(race_id="bat", class_id="mage", teaches_class_ids=["thief"])
     assert data(await api.get("/api/content/races/bat"))["mobCount"] == 1
     r = await api.delete("/api/content/races/bat")
     assert error_code(r, 409) == "content.race_in_use"

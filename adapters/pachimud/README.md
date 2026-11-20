@@ -2,7 +2,7 @@
 
 # pachimudeditor-adapter-pachimud
 
-Adapter `kind: pachimud` di **pachimudeditor** (editor web di zone, stanze, mob e oggetti per MUD): legge e scrive il database del gioco pachimud con SQLAlchemy (nessun import del pacchetto `pachimud`) e porta le pagine specifiche: panoramica del mondo, istanze, giocatori, trasferimento di zone (YAML) e contenuti (razze/classi).
+Adapter `kind: pachimud` di **pachimudeditor** (editor web di zone, stanze, mob e oggetti per MUD): legge e scrive i file YAML del gioco pachimud (zone, stanze, mob, oggetti, reset: `id == vnum`) e il suo database dei giocatori (account e personaggi) con SQLAlchemy (nessun import del pacchetto `pachimud`) e porta le pagine specifiche: panoramica del mondo, giocatori, trasferimento di zone (cartelle YAML) e contenuti (razze/classi). Il gioco non ricarica a caldo: le modifiche valgono al suo riavvio.
 
 Installazione (richiede Python 3.14+):
 
@@ -19,8 +19,8 @@ webeditor_worlds:
     kind: pachimud
     name: Pachimud
     params:
-      database_url: sqlite+aiosqlite:////percorso/pachimud.db
-      definitions_path: /percorso/definitions
+      definitions_path: /percorso/definitions                    # contenuti YAML (obbligatorio)
+      database_url: sqlite+aiosqlite:////percorso/pachimud.db   # giocatori (facoltativo)
 ```
 
 Parametri, capability, limiti e formati sono nella documentazione di pachimudeditor, sezione *Adapter > pachimud*.

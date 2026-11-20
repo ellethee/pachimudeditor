@@ -2,22 +2,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { Api } from '../support/api.ts'
-import {
-  addFlag,
-  closeDiscarding,
-  confirm,
-  dismissError,
-  dialog,
-  goto,
-  loginOk,
-  openSession,
-  pickOption,
-  rawI18nKey,
-  saveDialog,
-  tableRow,
-  waitDialogsClosed,
-  type Session,
-} from '../support/browser.ts'
+import { addFlag, closeDiscarding, confirm, dialog, dismissError, goto, loginOk, openDetail, openSession, pickOption, rawI18nKey, saveDialog, saveForm, tableRow, type Session, waitDialogsClosed } from '../support/browser.ts'
 
 /** Vnum creati dai test (puliti all'avvio e alla fine). */
 const VNUMS = [1010, 1011, 1012, 1070, 1071, 1072, 2070]
@@ -214,13 +199,15 @@ describe('stanze', () => {
   })
 
   it('riapre la stanza: chip, uscita ed extra description sono persistiti; la modifica si salva', async () => {
-    await tableRow(s.page, 'Sala Pw').locator('.pachi-t2-edit-item').click()
-    await dialog(s.page).locator('.q-chip', { hasText: 'DARK' }).waitFor()
-    assert.equal(await dialog(s.page).getByLabel('Parole chiave', { exact: true }).inputValue(), 'tavolo')
+    await openDetail(s.page, tableRow(s.page, 'Sala Pw'))
+    await s.page.locator('.q-chip', { hasText: 'DARK' }).waitFor()
+    assert.equal(await s.page.getByLabel('Parole chiave', { exact: true }).inputValue(), 'tavolo')
     await s.page.getByLabel('Nome *').fill('Sala Pw modificata')
     await addFlag(s.page, 'Flag (digita e invio)', 'NO_MOB')
-    await saveDialog(s.page)
-    await waitDialogsClosed(s.page)
+    await saveForm(s.page)
+    // `saveForm` puo' vedere la notifica positiva del test precedente (dura 5 s): si attende la fine vera del salvataggio (titolo ricaricato)
+    await s.page.getByRole('heading', { name: /Sala Pw modificata/ }).waitFor()
+    await s.page.getByLabel("Torna all'elenco").click()
     await tableRow(s.page, 'Sala Pw modificata').waitFor()
     const room = await api.byVnum('rooms', 1010)
     assert.equal(room.name, 'Sala Pw modificata')
@@ -259,12 +246,11 @@ describe('stanze', () => {
     assert.ok((await nodes.count()) >= 5)
     assert.ok((await s.page.locator('.vue-flow__edge').count()) >= 1)
     assert.equal(await rawI18nKey(s.page), null)
-    // un clic su un nodo apre l'editor della stanza
+    // un clic su un nodo apre il pannello della stanza, da cui si apre l'editor
     await s.page.locator('.pachi-room-node', { hasText: 'Vicolo' }).click()
-    await dialog(s.page).getByLabel('Nome *').waitFor()
-    assert.equal(await dialog(s.page).getByLabel('Nome *').inputValue(), 'Vicolo')
-    await s.page.getByLabel('Chiudi').first().click()
-    await waitDialogsClosed(s.page)
+    await s.page.getByTestId('map-open-room').click()
+    await s.page.getByLabel('Nome *').first().waitFor()
+    assert.equal(await s.page.getByLabel('Nome *').first().inputValue(), 'Vicolo')
   })
 
   it('elimina le stanze create dal test', async () => {

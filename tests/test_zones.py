@@ -3,6 +3,7 @@
 import httpx
 
 from tests.helpers import by_vnum, data, error_code
+from tests.support.stack import zones_dir
 
 NEW = {
     "vnum": 30,
@@ -70,16 +71,9 @@ async def test_delete_cascades_reset_script(client: httpx.AsyncClient) -> None:
         json={"commands": [{"commandType": 0, "arg1": 1001, "arg2": 1, "arg3": 1002, "arg4": 1}]},
     )
     assert len(data(put)) == 1
+    assert (zones_dir() / "ZonaVuota" / "resets.yaml").is_file()
     assert (await client.delete(f"/api/zones/{zone['id']}")).status_code == 204
-    from tests.support.gamedb import get_session_factory
-    from pachimudeditor_adapter_pachimud.game_models.zone import ZoneResetCommand
-    from sqlalchemy import func, select
-
-    async with get_session_factory()() as session:
-        left = (
-            await session.execute(select(func.count()).select_from(ZoneResetCommand).where(ZoneResetCommand.zone_id == zone["id"]))
-        ).scalar_one()
-    assert left == 0
+    assert not (zones_dir() / "ZonaVuota").exists()  # zone.yaml, reset e cartella
 
 
 async def test_summary(client: httpx.AsyncClient) -> None:
@@ -120,19 +114,21 @@ async def test_reset_commands_get_and_replace(client: httpx.AsyncClient) -> None
     """GET dello script seminato; PUT sostituisce tutto rinumerando orderIndex."""
     zone = await by_vnum(client, "zones", 10)
     current = data(await client.get(f"/api/zones/{zone['id']}/reset-commands"))
-    assert [c["orderIndex"] for c in current] == [0, 1] and current[0]["commandType"] == 0
+    assert [c["orderIndex"] for c in current] == [0, 1] and current[0]["commandType"] == 1  # oggetti prima dei mob
     new = {
         "commands": [
-            {"commandType": 1, "ifFlag": True, "arg1": 1001, "arg2": 2, "arg3": 1000},
-            {"commandType": 5, "arg1": 1000, "arg2": 0, "argStr": "closed"},
             {"commandType": 0, "arg1": 1001, "arg2": 1, "arg3": 1001, "arg4": 1},
+            {"commandType": 5, "arg1": 1000, "arg2": 0, "argStr": "closed"},
+            {"commandType": 1, "arg1": 1001, "arg2": 2, "arg3": 1000},
         ]
     }
     replaced = data(await client.put(f"/api/zones/{zone['id']}/reset-commands", json=new))
     assert [c["orderIndex"] for c in replaced] == [0, 1, 2]
-    assert [c["commandType"] for c in replaced] == [1, 5, 0]
-    assert replaced[0]["ifFlag"] is True and replaced[1]["argStr"] == "closed"
+    assert [c["commandType"] for c in replaced] == [1, 0, 5]  # il gioco esegue prima gli oggetti, poi i mob, poi le porte
+    assert replaced[0]["ifFlag"] is False and replaced[2]["argStr"] == "CLOSED"
     assert data(await client.get(f"/api/zones/{zone['id']}/reset-commands")) == replaced
+    text = (zones_dir() / "ZonaAlfa" / "resets.yaml").read_text()
+    assert "state: CLOSED" in text and "obj_vnum: 1001" in text
     assert data(await client.put(f"/api/zones/{zone['id']}/reset-commands", json={"commands": []})) == []
     assert error_code(await client.put("/api/zones/999999/reset-commands", json={"commands": []}), 404) == "zones.not_found"
     bad = await client.put(f"/api/zones/{zone['id']}/reset-commands", json={"commands": [{"commandType": 99}]})

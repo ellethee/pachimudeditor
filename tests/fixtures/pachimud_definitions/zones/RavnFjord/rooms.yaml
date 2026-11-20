@@ -1,32 +1,468 @@
----
 rooms:
+  - vnum: 400000
+    name: Piazza del Villaggio
+    description: |2
+         Ti trovi al centro di Ravnfjord, un piccolo villaggio vichingo stretto
+      tra i fiordi e la foresta. Il terreno è battuto e cosparso di paglia, e un
+      grande palo runico intagliato si erge al centro della piazza, testimone
+      silenzioso dei giuramenti prestati dai guerrieri prima di salpare. Il vento
+      porta con sé l'odore di legna bruciata e di sale marino.
+    sector_type: CITY
+    exits:
+      north:
+        target_vnum: 400001
+        description: |
+          La lunga casa del capo villaggio domina il lato nord della piazza.
+        keywords: casa lunga longhouse
+      east:
+        target_vnum: 400010
+      south:
+        target_vnum: 400006
+      west:
+        target_vnum: 400004
+        description: |
+          Verso ovest il sentiero si addentra nella foresta di abeti.
+        keywords: foresta sentiero
+    extra_descriptions:
+      - keywords: palo runico palo rune
+        text: |2
+             Antiche rune sono incise profondamente nel legno, annerite dal fumo dei
+          falò. Nessuno ricorda più con certezza cosa dicano, ma si dice portino
+          fortuna a chi le tocca prima di un viaggio.
   - vnum: 400001
     name: Piazza del Mercato
     description: |
       Una piazza acciottolata, bancarelle vuote ai lati. A nord si apre un vicolo buio.
     sector_type: CITY
-    flags: []
     exits:
       north:
         target_vnum: 400002
         description: Un vicolo buio si apre a nord.
         keywords: vicolo
+        is_male: true
         door_flag: CLOSABLE
         is_open: false
-        is_locked: false
+      south:
+        target_vnum: 400000
+      east:
+        target_vnum: 400032
+      west:
+        target_vnum: 400045
     extra_descriptions:
       - keywords: bancarella banco
         text: Una bancarella vuota, abbandonata da tempo.
-
   - vnum: 400002
     name: Vicolo Buio
     description: |
       Un vicolo stretto e buio, puzzolente di rifiuti.
     sector_type: CITY
-    flags: [INDOORS]
+    flags:
+      - INDOORS
     exits:
       south:
         target_vnum: 400001
         door_flag: CLOSABLE
         is_open: false
-        is_locked: false
+      north:
+        target_vnum: 400027
+  - vnum: 400003
+    name: Fucina di Ravnfjord
+    description: |2
+         Il calore della forgia riempie l'aria insieme al fumo e all'odore di
+      metallo rovente. Un'incudine annerita occupa il centro della stanza,
+      circondata da attrezzi da fabbro appesi con cura alle pareti di pietra
+      grezza. Scintille danzano nell'ombra ad ogni colpo di martello.
+    exits:
+      west:
+        target_vnum: 400006
+  - vnum: 400004
+    name: Sentiero nella Foresta
+    description: |-
+      Alti abeti si stringono attorno a un sentiero coperto di aghi di pino e
+      muschio. La luce filtra appena tra i rami, e il silenzio è rotto solo dal
+      canto lontano di qualche uccello e dallo scricchiolio del legno mosso dal
+      vento.
+    sector_type: FOREST
+    exits:
+      north:
+        target_vnum: 400005
+      east:
+        target_vnum: 400000
+  - vnum: 400005
+    name: Una Piccola Casa di Legno
+    description: Una piccola casa di legno costruita ai margini della foresta, poco distante dal sentiero. È vuota, in attesa di un proprietario.
+    exits:
+      east:
+        target_vnum: 400042
+      south:
+        target_vnum: 400004
+  - vnum: 400006
+    name: Viale del mercato
+    description: |2-
+         Ti trovi all'inizio della via del viale del mercato, subito a sud della piazza centrale di Ravnfjord.
+      Tutto intorno ci sono alcuni negozi e mercanti intenti a vendere le loro merci
+    sector_type: CITY
+    exits:
+      north:
+        target_vnum: 400000
+      east:
+        target_vnum: 400003
+      south:
+        target_vnum: 400007
+      west:
+        target_vnum: 400028
+    extra_descriptions:
+      - keywords: mercanti
+        text: Sono qui intenti a vendere le loro merci.
+      - keywords: negozi negozio
+        text: EH son negozi vendono cose
+  - vnum: 400007
+    name: Viale del mercato
+    description: |2-
+         Ti trovi alla fine della via del viale del mercato, subito a nord della piazzetta di Njord.
+      Tutto intorno ci sono alcuni negozi e mercanti intenti a vendere le loro merci
+    sector_type: CITY
+    exits:
+      north:
+        target_vnum: 400006
+      east:
+        target_vnum: 400009
+      south:
+        target_vnum: 400008
+      west:
+        target_vnum: 400029
+  - vnum: 400008
+    name: Piazzetta di Njord
+    description: "   Ti trovi in una piccola piazza di terra battuta e pietre. \nAl centro della piazza c'è una statua scolpita nel legno che rappresenta Njord, dio del mare calmo. Al quale gli abitanti del villaggio rivolgono preghiere per avere viaggi sicuri e pesche abbondanti prima di uscire in mare.\nVerso sud puoi scorgere la Banchina Nord, sul fiordo."
+    sector_type: CITY
+    exits:
+      north:
+        target_vnum: 400007
+      south:
+        target_vnum: 400020
+    extra_descriptions:
+      - keywords: njord statua
+        text: Ci assomiglia davvero.
+  - vnum: 400009
+    name: Negozio di Jørgen
+    description: |2
+         L'odore del pesce appeso ad affumicare nel retro penetra anche dentro al negozio.
+      Sparsi per il negozio, con ordine opinabile, ci sono barili che contengono alici sotto sale, altri che contengono armi. Qualche scudo appeso alle pareti e molte altre cose poggiate su scaffali o tavolini. Molte non sai a cosa servono.
+    exits:
+      west:
+        target_vnum: 400007
+    extra_descriptions:
+      - keywords: barili barile
+        text: c'è di tutto dentro
+      - keywords: armi
+        text: C'è un po' di tutto ma mi sa che vende solo quelle nella lista.
+      - keywords: alici
+        text: Non è il momento di pensare alla colazione
+  - vnum: 400010
+    name: Inizio del Viale degli Artigiani
+    description: |2-
+         Originariamente questa era semplicemente la strada che portava alle foreste ad Est del villaggio dove inizialmente c'era solo un campo di addestramento per guerrieri.
+      Ma dopo decenni di scambi culturali lungo la via sono sorte varie gilde che insegnano ora vaie arti e stili di combattimento
+    sector_type: CITY
+    exits:
+      north:
+        target_vnum: 400013
+      east:
+        target_vnum: 400011
+      south:
+        target_vnum: 400014
+      west:
+        target_vnum: 400000
+  - vnum: 400011
+    name: Viale degli Artigiani
+    description: |2-
+         Originariamente questa era semplicemente la strada che portava alle foreste ad Est del villaggio dove inizialmente c'era solo un campo di addestramento per guerrieri.
+      Ma dopo decenni di scambi culturali lungo la via sono sorte varie gilde che insegnano ora vaie arti e stili di combattimento
+    sector_type: CITY
+    exits:
+      east:
+        target_vnum: 400012
+      north:
+        target_vnum: 400030
+      south:
+        target_vnum: 400015
+      west:
+        target_vnum: 400010
+  - vnum: 400012
+    name: Fine del Viale degli Artigiani
+    description: |2-
+         Originariamente questa era semplicemente la strada che portava alle foreste ad Est del villaggio dove inizialmente c'era solo un campo di addestramento per guerrieri.
+      Ma dopo decenni di scambi culturali lungo la via sono sorte varie gilde che insegnano ora vaie arti e stili di combattimento
+    sector_type: CITY
+    exits:
+      north:
+        target_vnum: 400041
+      east:
+        target_vnum: 400016
+      west:
+        target_vnum: 400011
+  - vnum: 400013
+    name: Bottega del Vasaio
+    description: "   E' la gilda più vecchia a Ravnfjord. E' qui che la maggior parte dei giovani vichinghi viene ad imparare quello che davvero serve per affrontare il mondo la fuori."
+    exits:
+      south:
+        target_vnum: 400010
+  - vnum: 400014
+    name: Bottega della Tessitrice
+    description: "   Qui i giovani imparano ad usare le arti degne di Loki per affrontare i nemici, per per raggirarli"
+    exits:
+      north:
+        target_vnum: 400010
+  - vnum: 400015
+    name: Sala della Vecchia Gilda
+    description: Qui i monaci vengono ad imparare le arti marziali.
+    exits:
+      north:
+        target_vnum: 400011
+  - vnum: 400016
+    name: Porta est
+    description: ""
+    sector_type: CITY
+    exits:
+      east:
+        target_vnum: 400017
+      west:
+        target_vnum: 400012
+  - vnum: 400017
+    name: Fuori dalla porta est di Ravnfjord
+    description: ""
+    sector_type: FIELD
+    exits:
+      north:
+        target_vnum: 400035
+      east:
+        target_vnum: 400018
+      south:
+        target_vnum: 400034
+      west:
+        target_vnum: 400016
+  - vnum: 400018
+    name: sentiero verso la foresta
+    description: ""
+    sector_type: FIELD
+    exits:
+      east:
+        target_vnum: 400019
+      west:
+        target_vnum: 400017
+  - vnum: 400019
+    name: sentiero verso la foresta
+    description: ""
+    sector_type: FIELD
+    exits:
+      east:
+        target_vnum: 400036
+      south:
+        target_vnum: 400039
+      west:
+        target_vnum: 400018
+  - vnum: 400020
+    name: Banchina Nord
+    description: Una lunga banchina di legno si allunga sull'acqua scura del fiordo, corde e ceste ammucchiate lungo il bordo.
+    sector_type: CITY
+    exits:
+      east:
+        target_vnum: 400023
+      north:
+        target_vnum: 400008
+      south:
+        target_vnum: 400024
+  - vnum: 400021
+    name: Magazzini del Porto
+    description: Grandi magazzini di legno custodiscono casse e botti in attesa di essere caricate sulle navi.
+    sector_type: CITY
+    exits:
+      down:
+        target_vnum: 400026
+      south:
+        target_vnum: 400022
+  - vnum: 400022
+    name: Capitaneria di Porto
+    description: Un piccolo ufficio pieno di mappe e registri, dove il capitano del porto tiene traccia di ogni nave in arrivo.
+    exits:
+      west:
+        target_vnum: 400023
+      north:
+        target_vnum: 400021
+  - vnum: 400023
+    name: Faro di Ravnfjord
+    description: Un faro di pietra si erge all'imboccatura del fiordo, la sua luce guida da generazioni le navi verso il porto.
+    sector_type: CITY
+    exits:
+      east:
+        target_vnum: 400022
+      west:
+        target_vnum: 400020
+  - vnum: 400024
+    name: Nave "Corvo del Fiordo" — Ponte
+    description: Il ponte di una robusta nave mercantile ormeggiata al molo, le vele arrotolate e pronte per la prossima partenza.
+    sector_type: WATER_SWIM
+    exits:
+      down:
+        target_vnum: 400025
+      north:
+        target_vnum: 400020
+  - vnum: 400025
+    name: Nave "Corvo del Fiordo" — Stiva
+    description: Una stiva buia, piena di casse legate strette per il viaggio.
+    exits:
+      up:
+        target_vnum: 400024
+  - vnum: 400026
+    name: Passaggio Segreto
+    description: Uno stretto passaggio scavato dietro le assi di un magazzino, nascosto agli occhi distratti.
+    exits:
+      south:
+        target_vnum: 400027
+      up:
+        target_vnum: 400021
+  - vnum: 400027
+    name: Rifugio del Ladro
+    description: Una stanza nascosta, arredata con poche cose essenziali e molte vie di fuga.
+    exits:
+      north:
+        target_vnum: 400026
+      south:
+        target_vnum: 400002
+  - vnum: 400028
+    name: Erboristeria
+    description: Mazzi di erbe essiccate pendono dal soffitto, riempiendo l'aria di un profumo pungente.
+    exits:
+      east:
+        target_vnum: 400006
+  - vnum: 400029
+    name: Pescheria
+    description: Banchi di pesce fresco luccicano sotto un velo di ghiaccio, l'odore di mare è ovunque.
+    exits:
+      east:
+        target_vnum: 400007
+  - vnum: 400030
+    name: Conceria
+    description: Pelli tese su telai di legno riempiono la stanza, l'aria pesante di un odore acre.
+    exits:
+      north:
+        target_vnum: 400031
+      south:
+        target_vnum: 400011
+  - vnum: 400031
+    name: Armaiolo
+    description: Archi, frecce e lame in lavorazione sono appoggiati ordinatamente lungo le pareti.
+    exits:
+      south:
+        target_vnum: 400030
+  - vnum: 400032
+    name: Taverna
+    description: Una sala calda e rumorosa, tavoli di legno consumati dal tempo e un grande focolare acceso.
+    exits:
+      west:
+        target_vnum: 400001
+      up:
+        target_vnum: 400033
+  - vnum: 400033
+    name: Locanda
+    description: Un piccolo pianerottolo con alcune porte che conducono a camere semplici ma pulite.
+    exits:
+      down:
+        target_vnum: 400032
+  - vnum: 400034
+    name: Campo di Addestramento
+    description: Un campo battuto appena fuori dalle mura, segnato da pali d'allenamento e bersagli consumati.
+    sector_type: FIELD
+    exits:
+      north:
+        target_vnum: 400017
+  - vnum: 400035
+    name: Tempio di Njord
+    description: Un piccolo tempio di pietra dedicato a Njord, il mormorio delle onde percepibile anche qui dentro.
+    exits:
+      south:
+        target_vnum: 400017
+  - vnum: 400036
+    name: Sentiero verso la Torre
+    description: Un sentiero stretto si inoltra più a fondo nella foresta, l'aria si fa più fredda a ogni passo.
+    sector_type: FOREST
+    exits:
+      north:
+        target_vnum: 400037
+      west:
+        target_vnum: 400019
+  - vnum: 400037
+    name: Torre del Mago — Base
+    description: L'ingresso di una torre di pietra grigia, scaffali carichi di libri polverosi lungo le pareti.
+    exits:
+      south:
+        target_vnum: 400036
+      up:
+        target_vnum: 400038
+  - vnum: 400038
+    name: Torre del Mago — Sommità
+    description: In cima alla torre, finestre aperte sulla foresta e strumenti arcani sparsi su un tavolo di pietra.
+    exits:
+      down:
+        target_vnum: 400037
+  - vnum: 400039
+    name: Sentiero verso il Monastero
+    description: Il sentiero sale dolcemente tra le colline, verso un edificio appena visibile in lontananza.
+    sector_type: HILLS
+    exits:
+      north:
+        target_vnum: 400019
+      south:
+        target_vnum: 400040
+  - vnum: 400040
+    name: Monastero
+    description: Un monastero semplice e silenzioso, l'unico suono è quello del vento tra le travi di legno.
+    exits:
+      north:
+        target_vnum: 400039
+  - vnum: 400041
+    name: Banca di Ravnfjord
+    description: Un edificio solido con un bancone robusto e una porta di ferro che conduce a un piccolo caveau.
+    exits:
+      south:
+        target_vnum: 400012
+  - vnum: 400042
+    name: Vicolo delle Case
+    description: Un vicolo tranquillo fiancheggiato da case di legno, panni stesi ad asciugare tra una finestra e l'altra.
+    sector_type: CITY
+    exits:
+      north:
+        target_vnum: 400043
+      south:
+        target_vnum: 400044
+      west:
+        target_vnum: 400005
+  - vnum: 400043
+    name: Casa in Vendita
+    description: Una casa vuota, pulita e in ordine, in attesa di un nuovo proprietario.
+    exits:
+      south:
+        target_vnum: 400042
+  - vnum: 400044
+    name: Casa degli Artigiani
+    description: Una casa modesta ma accogliente, segno di una famiglia che vive di lavoro manuale.
+    exits:
+      north:
+        target_vnum: 400042
+  - vnum: 400045
+    name: L'Interno della Grande Hof
+    flags:
+      - NO_TAKE_ALL
+    description: |
+      Le massicce pareti di legno di quercia si innalzano imponenti, annerite dal fumo secolare dei focolari e intrise dell'odore aspro di idromele, grasso d'orso e resina. 
+      Sotto l'alto soffitto a capriate, sorretto da pilastri intagliati con le sembianze severe degli Asi, regna un silenzio solenne, rotto solo dal crepitio di un braciere sempre acceso al centro della sala.
+      Lungo i lati della stanza, lunghe panche di legno scuro corrono vuote, lasciando lo spazio centrale libero per i passi dei viandanti. 
+      In fondo alla sala, dove la luce delle fiamme fatica ad arrivare, si erge lo stallr: un maestoso altare di pietra squadrata, parzialmente ricoperto da rune protettive incise nel granito. Sopra di esso riposa un pesante anello d'oro, simbolo di giuramenti inviolabili, circondato da piccole effigi di legno raffiguranti Thor con il suo martello e Odino il Monocolo.
+      Una grande {bold}ciotola{!bold} di bronzo è posata al centro dell'{bold}altare{!bold}. 
+      È qui che gli avventurieri e i guerrieri di passaggio lasciano i propri tributi per guadagnarsi il favore degli dei e sostenere i nuovi arrivati nel Midgard.
+    exits:
+      east:
+        target_vnum: 400001
+    extra_descriptions:
+      - keywords: Altare Ciotola
+        text: 'Lo stallr di pietra è freddo al tatto, ma emana un''aura di antico potere. La grande ciotola di bronzo funge da raccoglitore per le offerte: oggetti, armi e armature lasciati dai veterani luccicano al suo interno, pronti a essere raccolti da chi ne ha più bisogno. Un''iscrizione runica sul bordo recita: "Un dono cerca sempre un altro dono".'

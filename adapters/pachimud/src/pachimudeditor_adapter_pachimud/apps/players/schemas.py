@@ -90,7 +90,7 @@ class CharacterSummary(AliasedBaseModel):
     gold: int
     hit_points_current: int
     hit_points_max: int
-    current_room_id: int | None
+    current_room_id: int | None = None
     current_room_vnum: int | None = None
     current_room_name: str | None = None
     created_at: datetime
@@ -104,7 +104,8 @@ class CharacterDetail(CharacterSummary):
     mana_current: int
     mana_max: int
     strength: int
-    strength_percentile: int
+    strength_percentile: int = 0
+    """Colonna rimossa dal gioco: vale sempre 0 (in scrittura e' ammesso solo 0)."""
     dexterity: int
     constitution: int
     intelligence: int
@@ -128,6 +129,18 @@ class CharacterDetail(CharacterSummary):
     completed_quest_ids: list[str]
     skill_percentages: dict[str, int]
     quest_progress: dict[str, int]
+    move_current: int = 0
+    move_max: int = 0
+    height: int = 0
+    weight: int = 0
+    played_seconds: int = 0
+    class_levels: dict[str, int] = {}
+    affects: dict[str, int] = {}
+    affect_mods: dict[str, dict[str, int]] = {}
+    """Effetti con modificatori (sola lettura)."""
+    speaks: str = "common"
+    poison_strength: int = 0
+    description: str = ""
     item_count: int = 0
 
     @field_validator("position", mode="before")
@@ -178,6 +191,16 @@ class CharacterPatch(PatchModel):
     preferences: list[str] | None = None
     active_quest_ids: list[str] | None = None
     completed_quest_ids: list[str] | None = None
+    move_current: int | None = Field(default=None, ge=0)
+    move_max: int | None = Field(default=None, ge=0)
+    height: int | None = Field(default=None, ge=0)
+    weight: int | None = Field(default=None, ge=0)
+    played_seconds: int | None = Field(default=None, ge=0)
+    class_levels: dict[str, int] | None = None
+    affects: dict[str, int] | None = None
+    speaks: str | None = Field(default=None, min_length=1, max_length=32)
+    poison_strength: int | None = Field(default=None, ge=0)
+    description: str | None = None
 
 
 class TeleportIn(AliasedBaseModel):

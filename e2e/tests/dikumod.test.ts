@@ -8,7 +8,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { Api } from '../support/api.ts'
 import { HAS_DIKUMOD } from '../support/stack.ts'
-import { dialog, goto, loginOk, openSession, rawI18nKey, saveDialog, tableRow, waitDialogsClosed, type Session } from '../support/browser.ts'
+import { dialog, goto, loginOk, openSession, rawI18nKey, saveDialog, saveForm, tableRow, type Session, waitDialogsClosed } from '../support/browser.ts'
 
 /** Sceglie un mondo dal selettore nella barra (ricarica la pagina). */
 async function pickWorld(s: Session, name: string): Promise<void> {
@@ -77,9 +77,12 @@ describe('dikumod', { skip: HAS_DIKUMOD ? false : 'dati Diku Modificato non trov
     assert.equal(res('zone').fields.find((f) => f.name === 'bottomVnum')!.readOnly, true)
     assert.equal(res('mob').fields.find((f) => f.name === 'classId')!.unsupported, true)
     assert.equal(res('reset_command').fields.find((f) => f.name === 'ifValue')!.unsupported, false)
-    // pachimud non dichiara nulla di tutto questo
+    // pachimud dichiara le sue chiavi (file YAML: area, statistiche dei mob, campi del tipo degli oggetti) ma non le regole di Diku Modificato
     const pachimud = worlds.find((w) => w.id === 'pachimud')!
-    assert.equal(pachimud.resources.every((r) => r.extraFields.length === 0 && !r.createAtEnd), true)
+    assert.equal(pachimud.resources.every((r) => !r.createAtEnd), true)
+    const pNames = (type: string) => pachimud.resources.find((r) => r.type === type)!.extraFields.map((f) => f.name)
+    assert.deepEqual(pNames('room'), ['enabled', 'area'])
+    assert.ok(pNames('object').includes('typeFields') && pNames('mob').includes('shop') && pachimud.capabilities.supportsInstances === false)
   })
 
   it('cambia mondo dal selettore: il menu mostra solo le funzioni supportate', async () => {
@@ -111,41 +114,35 @@ describe('dikumod', { skip: HAS_DIKUMOD ? false : 'dati Diku Modificato non trov
 
   it('zona: bottomVnum derivato, campi senza equivalente disabilitati, chiavi extra dal backend', async () => {
     await goto(s.page, '/zones?zoneId=2')
-    await dialog(s.page).getByLabel('Nome *').waitFor()
-    assert.equal(await dialog(s.page).getByLabel('Nome *').inputValue(), 'Temple Extensions')
-    assert.equal(await dialog(s.page).getByLabel('Vnum minimo').isDisabled(), true)
-    assert.equal(await dialog(s.page).getByLabel('Builder').isDisabled(), true)
-    assert.equal(await dialog(s.page).getByLabel('Livello minimo').isDisabled(), true)
-    await dialog(s.page).getByText('Campi specifici del mondo').click()
-    await dialog(s.page).getByLabel('Numero di zona (#N)').waitFor()
-    assert.equal(await dialog(s.page).getByLabel('Indice nel file').isDisabled(), true)
+    await s.page.getByLabel('Nome *').waitFor()
+    assert.equal(await s.page.getByLabel('Nome *').inputValue(), 'Temple Extensions')
+    assert.equal(await s.page.getByLabel('Vnum minimo').isDisabled(), true)
+    assert.equal(await s.page.getByLabel('Builder').isDisabled(), true)
+    assert.equal(await s.page.getByLabel('Livello minimo').isDisabled(), true)
+    await s.page.getByText('Campi specifici del mondo').click()
+    await s.page.getByLabel('Numero di zona (#N)').waitFor()
+    assert.equal(await s.page.getByLabel('Indice nel file').isDisabled(), true)
     assert.equal(await rawI18nKey(s.page), null)
-    await s.page.getByLabel('Chiudi').first().click()
-    await waitDialogsClosed(s.page)
   })
 
   it('stanza: apre la vista con gli extra di Diku Modificato (teleport) e l\'uscita', async () => {
     await goto(s.page, '/rooms?zoneId=1&roomId=5')
-    await dialog(s.page).getByLabel('Nome *').waitFor()
-    assert.equal(await dialog(s.page).getByLabel('Nome *').inputValue(), 'La carrozza di ALMA')
+    await s.page.getByLabel('Nome *').waitFor()
+    assert.equal(await s.page.getByLabel('Nome *').inputValue(), 'La carrozza di ALMA')
     // il settore proprio del mondo ha la precedenza sull'approssimazione
-    await dialog(s.page).getByText('Campi specifici del mondo').click()
-    await dialog(s.page).getByLabel('Teleport (time, target, mask, count)').waitFor()
-    assert.match(await dialog(s.page).getByLabel('Teleport (time, target, mask, count)').inputValue(), /"target": 6/)
-    await dialog(s.page).getByLabel('Settore del mondo').waitFor()
+    await s.page.getByText('Campi specifici del mondo').click()
+    await s.page.getByLabel('Teleport (time, target, mask, count)').waitFor()
+    assert.match(await s.page.getByLabel('Teleport (time, target, mask, count)').inputValue(), /"target": 6/)
+    await s.page.getByLabel('Settore del mondo').waitFor()
     assert.equal(await rawI18nKey(s.page), null)
-    await s.page.getByLabel('Chiudi').first().click()
-    await waitDialogsClosed(s.page)
   })
 
   it('mob corrotto: banner, form in sola lettura, nessun salvataggio ne\' eliminazione', async () => {
     await goto(s.page, `/mobs?zoneId=${corrupted.zoneId}&mobId=${corrupted.id}`)
-    await dialog(s.page).locator('[data-test="record-corrupted"]').waitFor()
-    assert.match(await dialog(s.page).locator('[data-test="record-corrupted"]').innerText(), /Record corrotto/)
-    assert.equal(await dialog(s.page).getByLabel('Descrizione breve *').isDisabled(), true)
-    assert.equal(await dialog(s.page).getByLabel('Salva modifiche').isVisible(), false)
-    await s.page.getByLabel('Chiudi').first().click()
-    await waitDialogsClosed(s.page)
+    await s.page.locator('[data-test="record-corrupted"]').waitFor()
+    assert.match(await s.page.locator('[data-test="record-corrupted"]').innerText(), /Record corrotto/)
+    assert.equal(await s.page.getByLabel('Descrizione breve *').isDisabled(), true)
+    assert.equal(await s.page.getByTestId('form-save').count(), 0)
     // niente pulsante di eliminazione sulla riga (in un mondo di sola lettura non c'e' per nessuna)
     assert.equal(await s.page.getByRole('button', { name: 'Nuovo mob' }).count(), 0)
     assert.equal((await ro.call('PUT', `/api/mobs/${corrupted.id}`, { level: 3 })).status, 409)
@@ -204,11 +201,10 @@ describe('dikumod', { skip: HAS_DIKUMOD ? false : 'dati Diku Modificato non trov
     const objects = await snapshot(rw, '/api/objects')
     await pickWorld(s, 'Diku Modificato (scrivibile)')
     await goto(s.page, '/rooms?zoneId=1&roomId=1')
-    await dialog(s.page).getByLabel('Nome *').waitFor()
-    assert.equal(await dialog(s.page).getByLabel('Nome *').inputValue(), 'Limbo')
-    await dialog(s.page).getByLabel('Nome *').fill('Limbo di prova')
-    await saveDialog(s.page)
-    await waitDialogsClosed(s.page)
+    await s.page.getByLabel('Nome *').waitFor()
+    assert.equal(await s.page.getByLabel('Nome *').inputValue(), 'Limbo')
+    await s.page.getByLabel('Nome *').fill('Limbo di prova')
+    await saveForm(s.page)
     assert.equal((await rw.get('/api/rooms/1')).data.name, 'Limbo di prova')
     assert.deepEqual(changedIds(rooms, await snapshot(rw, '/api/rooms')), [1])
     assert.deepEqual(changedIds(mobs, await snapshot(rw, '/api/mobs')), [])
@@ -221,15 +217,14 @@ describe('dikumod', { skip: HAS_DIKUMOD ? false : 'dati Diku Modificato non trov
     const rooms = await snapshot(rw, '/api/rooms')
     const mobs = await snapshot(rw, '/api/mobs')
     await goto(s.page, '/mobs?zoneId=1&mobId=1')
-    await dialog(s.page).getByLabel('Descrizione breve *').waitFor()
+    await s.page.getByLabel('Descrizione breve *').waitFor()
     // campi senza equivalente in Diku Modificato: disabilitati
-    await dialog(s.page).getByText('Ruoli e servizi').click()
-    assert.equal(await dialog(s.page).getByLabel('Classe', { exact: true }).isDisabled(), true)
-    await dialog(s.page).getByLabel('Descrizione breve *').fill('Puff il drago')
-    await dialog(s.page).getByText('Campi specifici del mondo').click()
-    await dialog(s.page).getByLabel('Esperienza grezza (negativa = fissa)').fill('123')
-    await saveDialog(s.page)
-    await waitDialogsClosed(s.page)
+    await s.page.getByText('Ruoli e servizi').click()
+    assert.equal(await s.page.getByLabel('Classe', { exact: true }).isDisabled(), true)
+    await s.page.getByLabel('Descrizione breve *').fill('Puff il drago')
+    await s.page.getByText('Campi specifici del mondo').click()
+    await s.page.getByLabel('Esperienza grezza (negativa = fissa)').fill('123')
+    await saveForm(s.page)
     const mob = (await rw.get('/api/mobs/1')).data
     assert.equal(mob.shortDescription, 'Puff il drago')
     assert.equal(mob.extra.expRaw, 123)

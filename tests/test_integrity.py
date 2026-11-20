@@ -4,10 +4,9 @@ import httpx
 from pachimudeditor.common.enums import Sex
 from pachimudeditor_adapter_pachimud.game_models.character import PlayerCharacter
 from pachimudeditor_adapter_pachimud.game_models.account import Account
-from pachimudeditor_adapter_pachimud.game_models.mob import MobInstance
-from pachimudeditor_adapter_pachimud.game_models.object import ObjectInstance
 
 from tests.support.gamedb import get_session_factory
+from tests.support.stack import edit_world_file
 from tests.helpers import by_vnum, data, error_code
 
 
@@ -56,9 +55,13 @@ async def test_reset_valid_script_accepted(client: httpx.AsyncClient) -> None:
         {"commandType": 1, "arg1": 1001, "arg2": 1, "arg3": 1001},
         {"commandType": 4, "arg1": 1000, "arg3": 1001},
         {"commandType": 5, "arg1": 1000, "arg2": 0, "argStr": "closed"},
-        {"commandType": 6, "arg1": 1001},
     ]
-    assert len(data(await _put(client, zid, script))) == 7
+    saved = data(await _put(client, zid, script))
+    assert [(c["commandType"], c["arg1"]) for c in saved] == [(1, 1001), (4, 1000), (0, 1000), (2, 1001), (3, 1000), (5, 1000)]
+    assert saved[1]["arg3"] == 1001 and saved[4]["argStr"] == "WIELD" and saved[5]["argStr"] == "CLOSED"  # ordine: oggetti, mob, porte
+    # `R` (rimescola le uscite) non esiste nel gioco: 422 e nulla cambia
+    assert error_code(await _put(client, zid, [{"commandType": 6, "arg1": 1001}]), 422) == "pachimud.reset_unsupported"
+    assert len(data(await client.get(f"/api/zones/{zid}/reset-commands"))) == 6
 
 
 async def test_reset_unknown_vnum_422(client: httpx.AsyncClient) -> None:
@@ -71,7 +74,7 @@ async def test_reset_unknown_vnum_422(client: httpx.AsyncClient) -> None:
         ({"commandType": 4, "arg1": 1000, "arg3": 6666}, "zones.reset_unknown_object", 6666),
         ({"commandType": 5, "arg1": 5555, "arg2": 0, "argStr": "OPEN"}, "zones.reset_unknown_room", 5555),
     ]
-    ok = {"commandType": 6, "arg1": 1000}
+    ok = {"commandType": 0, "arg1": 1000, "arg2": 1, "arg3": 1000}
     for bad, code, vnum in cases:
         response = await _put(client, zid, [ok, bad])
         assert error_code(response, 422) == code
@@ -174,49 +177,38 @@ async def test_exit_key_blocks_object_vnum_change_and_delete(client: httpx.Async
     assert (await client.delete(f"/api/objects/{obj['id']}")).status_code == 204
 
 
-async def test_delete_with_live_instances_409(client: httpx.AsyncClient) -> None:
-    """Istanze vive di mob/oggetto/personaggi: codici dedicati con i conteggi."""
-    mob = await by_vnum(client, "mobs", 1001)
-    obj = await by_vnum(client, "objects", 1001)
+async def test_delete_room_with_players_409(client: httpx.AsyncClient) -> None:
+    """Un personaggio che si trova nella stanza ne blocca delete e cambio vnum (le istanze vive non esistono piu': solo RAM del gioco)."""
     room = await by_vnum(client, "rooms", 1002)
     async with get_session_factory()() as session:
         account = Account(username="p", password_hash="x")
         session.add(account)
         await session.flush()
-        session.add_all(
-            [
-                MobInstance(prototype_id=mob["id"], room_id=room["id"], hit_points_current=5, hit_points_max=5),
-                ObjectInstance(prototype_id=obj["id"], room_id=room["id"]),
-                PlayerCharacter(
-                    account_id=account.id,
-                    name="Pg",
-                    hit_points_current=1,
-                    hit_points_max=1,
-                    current_room_id=room["id"],
-                    sex=Sex.NEUTRAL,
-                    class_id="c",
-                    race_id="r",
-                    strength=10,
-                    dexterity=10,
-                    constitution=10,
-                    intelligence=10,
-                    wisdom=10,
-                    charisma=10,
-                    mana_current=1,
-                    mana_max=1,
-                ),
-            ]
+        session.add(
+            PlayerCharacter(
+                account_id=account.id,
+                name="Pg",
+                hit_points_current=1,
+                hit_points_max=1,
+                current_room_vnum=room["vnum"],
+                sex=Sex.NEUTRAL,
+                class_id="c",
+                race_id="r",
+                strength=10,
+                dexterity=10,
+                constitution=10,
+                intelligence=10,
+                wisdom=10,
+                charisma=10,
+                mana_current=1,
+                mana_max=1,
+            )
         )
         await session.commit()
-    response = await client.delete(f"/api/mobs/{mob['id']}")
-    assert error_code(response, 409) == "mobs.has_instances"
-    assert response.json()["detail"][0]["params"] == {"count": 1}
-    response = await client.delete(f"/api/objects/{obj['id']}")
-    assert error_code(response, 409) == "objects.has_instances"
-    assert response.json()["detail"][0]["params"] == {"count": 1}
     response = await client.delete(f"/api/rooms/{room['id']}")
     assert error_code(response, 409) == "rooms.has_instances"
-    assert response.json()["detail"][0]["params"] == {"mobs": 1, "objects": 1, "players": 1}
+    assert response.json()["detail"][0]["params"] == {"mobs": 0, "objects": 0, "players": 1}
+    assert error_code(await client.put(f"/api/rooms/{room['id']}", json={"vnum": 1900}), 409) == "rooms.has_instances"
 
 
 async def test_room_delete_not_blocked_by_incoming_exits(client: httpx.AsyncClient) -> None:
@@ -329,14 +321,12 @@ async def test_exit_coherence(client: httpx.AsyncClient) -> None:
 
 async def test_exit_legacy_inconsistent_data_still_editable(client: httpx.AsyncClient) -> None:
     """Un'uscita preesistente incoerente resta modificabile finche' il patch non tocca i campi coinvolti."""
-    from pachimudeditor_adapter_pachimud.game_models.room import Exit
-    from sqlalchemy import select
-
     room = await by_vnum(client, "rooms", 1000)
-    async with get_session_factory()() as session:
-        row = (await session.execute(select(Exit).where(Exit.room_id == room["id"]))).scalars().one()
-        row.is_open = False  # doorFlag NONE ma chiusa: incoerente
-        await session.commit()
-        exit_id = row.id
+    edit_world_file(
+        "ZonaAlfa/rooms.yaml",
+        "      north:\n        target_vnum: 1001\n",
+        "      north:\n        target_vnum: 1001\n        is_open: false\n",
+    )
+    exit_id = room["vnum"] * 10  # nord
     done = await client.put(f"/api/rooms/{room['id']}/exits/{exit_id}", json={"description": "x"})
     assert data(done)["description"] == "x"

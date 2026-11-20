@@ -1,7 +1,9 @@
-"""Una cartella di zona "ricca" nel formato YAML del gioco, per i test di round-trip editor <-> importer.
+"""Una cartella di zona "ricca" nel formato YAML del gioco, per i test di round-trip editor <-> file.
 
-Copre ogni campo dei cinque file: uscite in tutte le direzioni con porte/chiavi/blocchi, extra description, rate/clan/
-owner, dadi con bonus negativo, razza/classe/insegnamenti dei mob, valori e `affects` degli oggetti, i sette tipi di reset.
+Copre ogni campo: uscite in tutte le direzioni con porte/chiavi/blocchi, extra description, rate/clan/owner, area su file
+(`rooms_cantine.yaml`) e su voce, dadi con bonus negativo, razza/classe/insegnamenti e statistiche dei mob, oggetti di piu'
+tipi (con i loro campi), `affects`, e reset con contenuti annidati, inventario con slot e porte. Contiene un commento YAML
+per verificare che le scritture lo conservino.
 """
 
 from pathlib import Path
@@ -12,6 +14,7 @@ zone_id: terra_di_prova
 vnum: 88
 name: Terra di Prova
 builder: Tester
+description: Una zona di prova.
 bottom_vnum: 8800
 top_vnum: 8899
 min_level: 3
@@ -24,13 +27,14 @@ enabled: false
 ROOMS = """\
 ---
 rooms:
+  # l'atrio: il cuore della zona
   - vnum: 8800
     name: Atrio
     description: |
       Un atrio con piu' righe.
       Seconda riga con accento: perche'.
     sector_type: CITY
-    flags: [dark, indoors]
+    flags: [DARK, INDOORS]
     heal_rate: 150
     mana_rate: 80
     clan_id: lupi
@@ -76,6 +80,18 @@ rooms:
         description: Un buco nel nulla.
 """
 
+ROOMS_CANTINE = """\
+rooms:
+  - vnum: 8803
+    name: Cantina
+    description: Una cantina umida.
+    sector_type: UNDERWATER
+    enabled: false
+    exits:
+      up:
+        target_vnum: 8800
+"""
+
 MOBS = """\
 ---
 mobs:
@@ -90,10 +106,12 @@ mobs:
     armor_class: -20
     hp_dice: 3d8+10
     damage_dice: 2d6+-1
+    strength: 16
+    dexterity: 12
     gold: 120
     experience: 450
     sex: MALE
-    flags: [sentinel, aggressive]
+    flags: [SENTINEL, AGGRESSIVE]
     alignment: -350
     race_id: human
     class_id: warrior
@@ -127,6 +145,7 @@ objects:
     weight: 1
     cost: 5
     rent: 1
+    key_type: 3
   - vnum: 8801
     keywords: spada lunga
     short_description: una spada lunga
@@ -135,15 +154,14 @@ objects:
     weight: 12
     cost: 300
     rent: 10
-    value_0: 2
-    value_1: 6
-    value_2: 1
-    value_3: 3
-    extra_flags: [magic, glow]
-    wear_flags: [take, wield]
+    dice_count: 2
+    die_size: 6
+    weapon_type: 11
+    extra_flags: [MAGIC, GLOW]
+    wear_flags: [TAKE, WIELD]
     affects:
-      strength: 2
-      armor_class: -5
+      STRENGTH: 2
+      ARMOR_CLASS: -5
   - vnum: 8802
     keywords: sacca
     short_description: una sacca
@@ -152,47 +170,67 @@ objects:
     weight: 2
     cost: 10
     rent: 1
-    value_0: 5
+    max_weight: 50
+    container_flags: [CLOSEABLE, LOCKED]
+    key_vnum: 8800
+  - vnum: 8803
+    keywords: fiasca
+    short_description: una fiasca
+    long_description: Una fiasca.
+    object_type: DRINKCON
+    capacity: 10
+    units: 4
+    liquid: wine
+    poisoned: true
+  - vnum: 8804
+    keywords: pozione
+    short_description: una pozione
+    long_description: Una pozione.
+    object_type: POTION
+    level: 5
+    spells: [armor, bless]
 """
 
 RESETS = """\
 ---
 resets:
-  - type: LOAD_MOB
-    mob_vnum: 8800
-    max_existing: 2
-    room_vnum: 8800
-    room_limit: 1
-  - type: GIVE_OBJECT
-    if_flag: true
-    obj_vnum: 8800
-    max_existing: 1
-  - type: EQUIP_OBJECT
-    if_flag: true
-    obj_vnum: 8801
-    max_existing: 1
-    wear_slot: wield
-  - type: LOAD_OBJECT
-    obj_vnum: 8802
-    max_existing: 1
-    room_vnum: 8802
-  - type: PUT_OBJECT
-    obj_vnum: 8800
-    max_existing: 1
-    container_vnum: 8802
-  - type: SET_DOOR_STATE
-    room_vnum: 8800
-    direction: NORTH
-    state: LOCKED
-  - type: RANDOMIZE_EXITS
-    room_vnum: 8802
+  objects:
+    - obj_vnum: 8802
+      max_existing: 1
+      room_vnum: 8802
+      room_limit: 1
+      contains:
+        - obj_vnum: 8800
+          max_existing: 1
+  mobs:
+    - mob_vnum: 8800
+      max_existing: 2
+      room_vnum: 8800
+      room_limit: 1
+      inventory:
+        - obj_vnum: 8800
+          max_existing: 1
+        - obj_vnum: 8801
+          max_existing: 1
+          wear_slot: WIELD
+  doors:
+    - room_vnum: 8800
+      direction: NORTH
+      state: LOCKED
 """
 
-FILES = {"zone.yaml": ZONE, "rooms.yaml": ROOMS, "mobs.yaml": MOBS, "objects.yaml": OBJECTS, "resets.yaml": RESETS}
+FILES = {
+    "zone.yaml": ZONE,
+    "rooms.yaml": ROOMS,
+    "rooms_cantine.yaml": ROOMS_CANTINE,
+    "mobs.yaml": MOBS,
+    "objects.yaml": OBJECTS,
+    "resets.yaml": RESETS,
+}
 
 
 def write_zone(directory: Path) -> Path:
-    """Scrive i cinque file in `directory` (creata) e la restituisce."""
+    """Scrive i file in `directory` (creata) e la restituisce."""
     directory.mkdir(parents=True, exist_ok=True)
     for name, text in FILES.items():
         (directory / name).write_text(text, encoding="utf-8")

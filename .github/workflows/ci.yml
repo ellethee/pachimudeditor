@@ -35,7 +35,7 @@ jobs:
       - run: uv sync --all-packages --frozen
       # I test su dati reali di MUD (fuori repo) e sul MUD pachimud sono saltati; i test di scrittura/conversione/contratto girano sui
       # mondi sintetici. Se i test saltati superano la soglia, qualcosa ha smesso di girare (aggiornare `MAX_SKIPPED` dopo aver
-      # aggiunto o spostato test: ultimo valore misurato su clone pulito 77).
+      # aggiunto o spostato test: ultimo valore misurato senza dati reali (BASEDMUD_AREA_DIR, DIKUMOD_LIB, DIKUMOD_SRC inesistenti) 78).
       - name: Test (fallisce se troppi test sono saltati)
         shell: bash
         env:

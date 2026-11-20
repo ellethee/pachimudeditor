@@ -266,11 +266,16 @@ class FakeLiveServer:
 
     # ---- comandi -----------------------------------------------------------------------------------------------------------
 
+    reads: tuple[str, ...] = READ_COMMANDS
+    writes: tuple[str, ...] = WRITE_COMMANDS
+    features: list[str] = ["inventory"]  # noqa: RUF012
+    mud: dict[str, str] = {"kind": "fake", "name": "FakeMUD", "version": "0"}  # noqa: RUF012
+
     def commands(self) -> dict[str, Any]:
         """Comandi attivi per `hello`."""
         out: dict[str, Any] = {}
-        for name in READ_COMMANDS + (WRITE_COMMANDS if self.write else ()):
-            entry: dict[str, Any] = {"class": "write" if name in WRITE_COMMANDS else "read"}
+        for name in self.reads + (self.writes if self.write else ()):
+            entry: dict[str, Any] = {"class": "write" if name in self.writes else "read"}
             if name in ("player.get", "player.set"):
                 fields = [*SCALARS, "conditions", "levels"]
                 entry["fields"] = fields if name == "player.set" else [*fields, *PROTECTED_FIELDS]
@@ -302,17 +307,17 @@ class FakeLiveServer:
         st["authed"], st["actor"] = True, actor
         return {
             "protocol": 1,
-            "mud": {"kind": "fake", "name": "FakeMUD", "version": "0", "module": "fake-livectl"},
+            "mud": {**self.mud, "module": "fake-livectl"},
             "limits": {"max_line": MAX_LINE, "max_response": 65536, "max_pending": 8, "request_timeout_ms": 2000, "max_text": MAX_TEXT},
-            "features": ["inventory"],
+            "features": list(self.features),
             "commands": self.commands(),
         }
 
     def _dispatch(self, cmd: str, params: dict[str, Any], st: dict[str, Any]) -> Any:
         """Instrada un comando (allowlist) e registra audit."""
-        if cmd not in READ_COMMANDS + WRITE_COMMANDS:
+        if cmd not in self.reads + self.writes:
             raise Err("unknown_command", "comando sconosciuto")
-        if cmd in WRITE_COMMANDS and not self.write:
+        if cmd in self.writes and not self.write:
             raise Err("command_disabled", "comando disattivato")
         self.calls.append((cmd, params))
         target: list[str] = []
@@ -335,7 +340,7 @@ class FakeLiveServer:
         _check_keys(p, ())
         counts = {s: sum(1 for x in self.players.values() if x["state"] == s) for s in ("playing", "linkdead")}
         now = int(time.time())
-        return {"mud": {"kind": "fake", "name": "FakeMUD", "version": "0"}, "started_at": self.started_at, "now": now,
+        return {"mud": dict(self.mud), "started_at": self.started_at, "now": now,
                 "uptime_s": now - self.started_at, "pulse": 0, "ticks": 0,
                 "players": {**counts, "connecting": 0}, "world": {"zones": len(ZONES), "mob_protos": 10, "obj_protos": 10}}  # fmt: skip
 
@@ -747,3 +752,146 @@ class FakeLiveServer:
             self.saves.append(x["name"])
         self.removed.append(ref)
         return {"name": x["name"], "removed": True, "destroyed": destroyed, "saved": save, "warnings": [], "_audit": f"ref={ref}"}
+
+
+# ------------------------------------------------------------------------------------------------------ profilo pachimud
+
+PACHIMUD_READ = ("ping", "info", "who", "player.get", "zone.list", "instances.list", "content.validate")
+PACHIMUD_WRITE = ("zone.reset", "zone.reload", "content.reload")
+PACHIMUD_ZONES = [
+    (10, "Zona Alfa", 1000, 1099),
+    (20, "Zona Vuota", 2000, 2099),
+]  # (vnum == index == num, nome, bottom, top): zone di `tests/support/stack.py`
+PACHIMUD_FIELDS = ("level", "gold", "bankGold", "exp", "hit", "maxHit", "mana", "maxMana", "alignment", "roomVnum", "position",
+                   "str", "dex", "con", "int", "wis", "chr", "hunger", "thirst")  # fmt: skip
+
+
+class FakePachimudServer(FakeLiveServer):
+    """Profilo pachimud del finto server (da `livectl-pachimud` del gioco): `who` con razza stringa e `levels` con la sola classe,
+    `player.get` di sola lettura senza `move`, `zone.list` con `index == num == vnum` e `bottom`/`top`, `zone.reload` e `instances.list`.
+    Niente `player.set`, `load.*`, `echo`, inventario."""
+
+    reads, writes, features = PACHIMUD_READ, PACHIMUD_WRITE, ["content.validate", "content.reload"]  # noqa: RUF012
+    mud = {"kind": "pachimud", "name": "Pachimud", "version": "0"}  # noqa: RUF012
+
+    def __init__(self, path: str | Path, token: str, **kwargs: Any) -> None:
+        """Due giocatori: Tester in gioco in stanza 1001, Ghost senza collegamento."""
+        super().__init__(path, token, **kwargs)
+        self.reloaded: list[int] = []
+        self.content_reloads: list[str] = []
+        self.content_errors: list[dict[str, Any]] = []
+        """Problemi restituiti da `content.validate` e che fanno fallire `content.reload` (`reload_failed`)."""
+        self.broken_zones: set[int] = set()
+        """Zone il cui `zone.reload` fallisce con `reload_failed` (file non validi)."""
+        self.players = {"tester": self._new_player("Tester", {"warrior": 5}, "playing"),
+                        "ghost": self._new_player("Ghost", {"cleric": 9}, "linkdead")}  # fmt: skip
+        for x in self.players.values():
+            x.update(race="human", room=1001, sex=1)
+        # istanze in RAM: (instanceId, kind, vnum, roomVnum)
+        self.instances = [(1, "mob", 5000, 1001), (2, "mob", 5000, 1002), (3, "obj", 6000, 1001), (4, "obj", 6000, 1001)]
+
+    def commands(self) -> dict[str, Any]:
+        """`player.get` ha i campi del profilo pachimud."""
+        out = super().commands()
+        out["player.get"]["fields"] = list(PACHIMUD_FIELDS)
+        return out
+
+    @staticmethod
+    def _zone_of(room: int) -> int | None:
+        """Vnum della zona che contiene la stanza."""
+        return next((v for v, _n, lo, hi in PACHIMUD_ZONES if lo <= room <= hi), None)
+
+    def c_info(self, p: dict[str, Any], t: list[str]) -> Any:
+        """`info` con `world` di pachimud."""
+        out = super().c_info(p, t)
+        out["world"] = {"zones": len(PACHIMUD_ZONES), "mob_protos": 10, "obj_protos": 10}
+        out.pop("lag_us", None)
+        return out
+
+    def c_who(self, p: dict[str, Any], t: list[str]) -> Any:
+        """`who`: razza stringa, `levels` con la sola classe, `sex`/`position` numerici, `idle`/`invisible` a zero."""
+        out = super().c_who(p, t)
+        for row, x in zip(out["players"], self.players.values(), strict=False):
+            row.update(race=x["race"], zone=self._zone_of(x["room"]), position=8, idle=0, invisible=0, immortal=False)
+        return out
+
+    def c_player_get(self, p: dict[str, Any], t: list[str]) -> Any:
+        """`player.get`: solo i campi dichiarati, `level` e `hunger`/`thirst` di pachimud."""
+        _check_keys(p, ("name",))
+        x = self._find(_str(p, "name"), t)
+        f = self._fields(x)
+        f.update(level=max(x["levels"].values(), default=0), position=8, hunger=5, thirst=5)
+        return {"name": x["name"], "state": "playing", "fields": {k: f[k] for k in PACHIMUD_FIELDS}}
+
+    def c_zone_list(self, p: dict[str, Any], _t: list[str]) -> Any:
+        """`zone.list`: `index == num == vnum`, `age` sempre 0."""
+        _check_keys(p, ())
+        return {"zones": [{"index": v, "num": v, "name": n, "bottom": lo, "top": hi, "lifespan": 20, "age": 0, "reset_mode": 2,
+                           "started": True} for v, n, lo, hi in PACHIMUD_ZONES]}  # fmt: skip
+
+    def c_zone_reset(self, p: dict[str, Any], t: list[str]) -> Any:
+        """`zone.reset` per vnum di zona o di stanza."""
+        _check_keys(p, ("zone", "room", "only_if_empty"))
+        zone, room = _int(p, "zone", False), _int(p, "room", False)
+        if (zone is None) == (room is None):
+            raise Err("bad_params", "serve esattamente uno tra zone e room")
+        vnum = zone if room is None else self._zone_of(room)
+        name = next((n for v, n, _lo, _hi in PACHIMUD_ZONES if v == vnum), None)
+        if name is None:
+            raise Err("not_found", "zona inesistente", what="zone")
+        t.append(f"zone:{vnum}")
+        self.resets.append(int(vnum or 0))
+        return {"zone": vnum, "name": name, "executed": True}
+
+    def c_zone_reload(self, p: dict[str, Any], t: list[str]) -> Any:
+        """`zone.reload` (estensione pachimud)."""
+        _check_keys(p, ("vnum",))
+        vnum = _int(p, "vnum")
+        name = next((n for v, n, _lo, _hi in PACHIMUD_ZONES if v == vnum), None)
+        if name is None:
+            raise Err("not_found", "zona inesistente", what="zone")
+        t.append(f"zone:{vnum}")
+        if vnum in self.broken_zones:
+            raise Err("reload_failed", "YAML non valido", zone=vnum)
+        self.reloaded.append(int(vnum or 0))
+        return {"zone": vnum, "name": name, "reloaded": True, "rooms": 3, "mobs": 2, "objects": 4}
+
+    def c_content_validate(self, p: dict[str, Any], _t: list[str]) -> Any:
+        """`content.validate` (estensione pachimud): `{ok, errors, warnings, issues[]}` con `severity` e `level`."""
+        _check_keys(p, ("strict",))
+        strict = _bool(p, "strict", False)
+        issues = [{"level": i["severity"], **i} for i in self.content_errors]
+        errors = sum(i["severity"] == "error" for i in issues)
+        warnings = len(issues) - errors
+        return {"ok": errors == 0 and not (strict and warnings), "errors": errors, "warnings": warnings, "issues": issues}
+
+    def c_content_reload(self, p: dict[str, Any], t: list[str]) -> Any:
+        """`content.reload` (estensione pachimud): tutto o niente."""
+        _check_keys(p, ("kind",))
+        kind = _str(p, "kind") or ""
+        if kind not in ("races", "classes", "skills", "tables", "socials", "locales", "all"):
+            raise Err("bad_params", "kind sconosciuto", field="kind")
+        t.append(f"content:{kind}")
+        errors = [i for i in self.content_errors if i["severity"] == "error"]
+        if errors:
+            raise Err("reload_failed", "contenuti non validi", kind=kind, errors=errors)
+        self.content_reloads.append(kind)
+        return {"ok": True, "kind": kind, "reloaded": {"skills": ["fireball"], "locales": ["en", "it"]}, "errors": []}
+
+    def c_instances_list(self, p: dict[str, Any], _t: list[str]) -> Any:
+        """`instances.list` (estensione pachimud): uno solo tra `roomVnum`, `mobVnum`, `objVnum`, `zoneVnum`."""
+        _check_keys(p, ("roomVnum", "mobVnum", "objVnum", "zoneVnum", "limit"))
+        keys = [k for k in ("roomVnum", "mobVnum", "objVnum", "zoneVnum") if k in p]
+        limit = _int(p, "limit", False)
+        limit = 100 if limit is None else limit
+        if len(keys) != 1:
+            raise Err("bad_params", "serve esattamente uno tra roomVnum, mobVnum, objVnum, zoneVnum")
+        if not 1 <= limit <= 200:
+            raise Err("value_out_of_range", "limit fuori intervallo", field="limit", min=1, max=200)
+        value = _int(p, keys[0])
+        if keys[0] == "zoneVnum" and not any(v == value for v, _n, _lo, _hi in PACHIMUD_ZONES):
+            raise Err("not_found", "zona inesistente", what="zone")
+        rows = [{"instanceId": i, "kind": k, "vnum": v, "roomVnum": r} for i, k, v, r in self.instances
+                if (keys[0] == "roomVnum" and r == value) or (keys[0] == "mobVnum" and k == "mob" and v == value)
+                or (keys[0] == "objVnum" and k == "obj" and v == value) or (keys[0] == "zoneVnum" and self._zone_of(r) == value)]  # fmt: skip
+        return {"instances": rows[:limit], "count": min(len(rows), limit), "truncated": len(rows) > limit}

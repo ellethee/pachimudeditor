@@ -72,7 +72,7 @@ describe('canale live (dikumod)', { skip: HAS_DIKUMOD ? false : 'dati Diku Modif
     const worlds = (await api.get('/api/worlds')).data as { id: string; capabilities: Record<string, boolean> }[]
     assert.deepEqual(
       worlds.filter((w) => w.capabilities.supportsLive).map((w) => w.id),
-      ['dikumod-live', 'dikumod-live-ro'],
+      ['pachimud-live', 'dikumod-live', 'dikumod-live-ro'],
     )
     const live = api.inWorld('dikumod-live')
     const status = (await live.get('/api/world/live/status')).data

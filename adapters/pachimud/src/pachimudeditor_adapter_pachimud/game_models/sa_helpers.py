@@ -91,3 +91,12 @@ def json_int_dict_column(**column_kwargs: Any) -> MappedColumn:
     to PostgreSQL later.
     """
     return mapped_column(sa.JSON, **column_kwargs)
+
+
+def json_dict_list_column(**column_kwargs: Any) -> MappedColumn:
+    """Build a `Column` for a `list[dict]` stored as JSON.
+
+    Used for `PlayerCharacter.inventory`, the character's carried and worn objects: saved and
+    loaded whole with the character (like ROM's player file), never queried in SQL.
+    """
+    return mapped_column(sa.JSON, **column_kwargs)

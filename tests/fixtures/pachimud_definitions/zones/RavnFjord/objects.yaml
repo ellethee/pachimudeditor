@@ -8,7 +8,450 @@ objects:
     weight: 5
     cost: 50
     rent: 5
-    value_0: 2
-    value_1: 6
-    value_2: 1
-    wear_flags: [WIELD]
+    dice_count: 2
+    die_size: 6
+    weapon_type: 3
+    wear_flags:
+      - TAKE
+      - WIELD
+    affects:
+      DAMROLL: 1
+  - vnum: 400001
+    keywords: spada corta acciaio
+    short_description: una spada corta d'acciaio
+    long_description: Una spada corta d'acciaio, appena forgiata, giace qui.
+    action_description: Una lama corta ma ben bilanciata, forgiata da Sigrid in persona.
+    object_type: WEAPON
+    weight: 4
+    cost: 40
+    rent: 4
+    dice_count: 2
+    die_size: 6
+    weapon_type: 3
+    wear_flags:
+      - TAKE
+      - WIELD
+  - vnum: 400002
+    keywords: scudo legno rinforzato
+    short_description: uno scudo di legno rinforzato
+    long_description: Uno scudo di legno rinforzato con borchie di ferro giace qui.
+    action_description: Un solido scudo rotondo, il legno rinforzato da borchie di ferro.
+    object_type: ARMOR
+    weight: 8
+    cost: 30
+    rent: 3
+    armor_class: 2
+    wear_flags:
+      - TAKE
+      - SHIELD
+  - vnum: 400003
+    keywords: bacheca annunci villaggio
+    short_description: una bacheca del villaggio
+    long_description: Una bacheca di legno è piantata al centro della piazza, coperta di annunci.
+    action_description: Assi di legno grezzo inchiodate insieme, tenute su da due pali robusti.
+    object_type: BOARD
+  - vnum: 400004
+    keywords: fontana abbeveratoio acqua
+    short_description: Una fontana di legno e pietra è qui al centro della piazza.
+    long_description: La fontana è cotituita da una larga vasca di pietra con vari inserti di legno lugno
+      il bordo.
+    action_description: ahh ci voleva
+    object_type: FOUNTAIN
+  - vnum: 400009
+    keywords: cadavere corpo anziano vichingo villico
+    short_description: il cadavere di un anziano vichingo
+    long_description: Il cadavere di un anziano vichingo giace qui.
+    object_type: CONTAINER
+    corpse: true
+    wear_flags:
+      - TAKE
+    weight: 50
+  - vnum: 400010
+    keywords: stoccafisso merluzzo
+    short_description: un pezzo di stoccafisso
+    long_description: del merluzzo essiccato è qui a terra
+    action_description: è un pezzo di pesce essiccato
+    object_type: FOOD
+    weight: 1
+    cost: 10
+    hours: 5
+    wear_flags:
+      - TAKE
+  - vnum: 400011
+    keywords: erbe medicinali fascio
+    short_description: un fascio di erbe medicinali
+    long_description: Un fascio di erbe medicinali essiccate è appoggiato qui.
+    object_type: OTHER
+    weight: 1
+    cost: 5
+    wear_flags:
+      - TAKE
+  - vnum: 400012
+    keywords: infuso curativo boccetta
+    short_description: una boccetta di infuso curativo
+    long_description: Una boccetta di vetro scuro contiene un infuso dall'odore intenso.
+    object_type: POTION
+    weight: 1
+    cost: 12
+    wear_flags:
+      - TAKE
+      - HOLD
+  - vnum: 400013
+    keywords: aringhe affumicate cesto
+    short_description: un cesto di aringhe affumicate
+    long_description: Un cesto pieno di aringhe affumicate è qui, pronto per la vendita.
+    object_type: FOOD
+    weight: 1
+    cost: 4
+    hours: 3
+    wear_flags:
+      - TAKE
+  - vnum: 400014
+    keywords: giubba cuoio rinforzato
+    short_description: una giubba di cuoio rinforzato
+    long_description: Una giubba di cuoio rinforzato, ben conciata, giace qui.
+    object_type: ARMOR
+    weight: 6
+    cost: 35
+    rent: 3
+    armor_class: 1
+    wear_flags:
+      - TAKE
+      - BODY
+  - vnum: 400015
+    keywords: arco corto frassino
+    short_description: un arco corto in frassino
+    long_description: Un arco corto in legno di frassino, ben curvato, è appoggiato qui.
+    object_type: WEAPON
+    weight: 3
+    cost: 45
+    rent: 4
+    dice_count: 1
+    die_size: 6
+    weapon_type: 3
+    wear_flags:
+      - TAKE
+      - WIELD
+  - vnum: 400016
+    keywords: idromele boccale
+    short_description: un boccale di idromele
+    long_description: Un boccale di idromele schiuma leggermente sul bancone.
+    object_type: DRINKCON
+    weight: 2
+    cost: 3
+    capacity: 1
+    units: 1
+    liquid: localspc
+    wear_flags:
+      - TAKE
+  - vnum: 400017
+    keywords: vino ravnfjord fiasco
+    short_description: un fiasco di vino di Ravnfjord
+    long_description: Un fiasco di vino locale, dal colore chiaro, è qui.
+    object_type: DRINKCON
+    weight: 3
+    cost: 6
+    capacity: 5
+    units: 5
+    liquid: wine
+    wear_flags:
+      - TAKE
+  - vnum: 400018
+    keywords: vaso terracotta dipinto
+    short_description: un vaso di terracotta dipinto
+    long_description: Un vaso di terracotta dipinto con motivi intrecciati è esposto qui.
+    object_type: TREASURE
+    weight: 3
+    cost: 20
+    rent: 1
+    wear_flags:
+      - TAKE
+  - vnum: 400019
+    keywords: tappeto lana tessuta
+    short_description: un tappeto di lana tessuta
+    long_description: Un tappeto di lana tessuta a mano, dai colori caldi, è piegato qui.
+    object_type: OTHER
+    weight: 4
+    cost: 25
+    rent: 1
+    wear_flags:
+      - TAKE
+  - vnum: 400020
+    keywords: mantello lana pesante
+    short_description: un mantello di lana pesante
+    long_description: Un mantello di lana pesante, perfetto per l'inverno del fiordo, è qui.
+    object_type: ARMOR
+    weight: 3
+    cost: 22
+    rent: 2
+    armor_class: 1
+    wear_flags:
+      - TAKE
+      - ABOUT
+  - vnum: 400021
+    keywords: ascia bipenne vichinga
+    short_description: un'ascia bipenne vichinga
+    long_description: Un'ascia bipenne vichinga, la lama incisa con motivi runici, è appoggiata qui.
+    object_type: WEAPON
+    weight: 12
+    cost: 55
+    rent: 5
+    dice_count: 2
+    die_size: 8
+    weapon_type: 3
+    wear_flags:
+      - TAKE
+      - WIELD
+    affects:
+      DAMROLL: 1
+  - vnum: 400022
+    keywords: pugnale runico
+    short_description: un pugnale runico
+    long_description: Un pugnale runico dalla lama sottile giace qui, quasi invisibile nell'ombra.
+    object_type: WEAPON
+    weight: 2
+    cost: 35
+    rent: 3
+    dice_count: 1
+    die_size: 4
+    weapon_type: 11
+    wear_flags:
+      - TAKE
+      - WIELD
+  - vnum: 400023
+    keywords: bastone runico mago
+    short_description: un bastone runico da mago
+    long_description: Un bastone di legno scuro, intagliato con rune che paiono muoversi, è qui.
+    object_type: WEAPON
+    weight: 4
+    cost: 45
+    rent: 4
+    dice_count: 1
+    die_size: 6
+    weapon_type: 3
+    wear_flags:
+      - TAKE
+      - WIELD
+  - vnum: 400024
+    keywords: martello guerra vichingo
+    short_description: un martello da guerra vichingo
+    long_description: Un pesante martello da guerra vichingo, la testa rinforzata di ferro, è qui.
+    object_type: WEAPON
+    weight: 10
+    cost: 50
+    rent: 5
+    dice_count: 2
+    die_size: 6
+    weapon_type: 3
+    wear_flags:
+      - TAKE
+      - WIELD
+    affects:
+      DAMROLL: 2
+  - vnum: 400025
+    keywords: spada lunga runica benedetta
+    short_description: una spada lunga runica benedetta
+    long_description: Una spada lunga, le rune lungo la lama che brillano di una luce tenue, è qui.
+    object_type: WEAPON
+    weight: 8
+    cost: 70
+    rent: 6
+    dice_count: 2
+    die_size: 8
+    weapon_type: 3
+    wear_flags:
+      - TAKE
+      - WIELD
+    extra_flags:
+      - BLESS
+    affects:
+      DAMROLL: 2
+  - vnum: 400026
+    keywords: corazza maglia vichinga
+    short_description: una corazza di maglia vichinga
+    long_description: Una corazza di maglia vichinga, pesante e robusta, è appoggiata qui.
+    object_type: ARMOR
+    weight: 16
+    cost: 90
+    rent: 8
+    armor_class: 4
+    wear_flags:
+      - TAKE
+      - BODY
+    extra_flags:
+      - ANTI_MAGE
+  - vnum: 400027
+    keywords: elmo cornuto vichingo
+    short_description: un elmo cornuto vichingo
+    long_description: Un elmo cornuto vichingo, il metallo segnato da vecchie battaglie, è qui.
+    object_type: ARMOR
+    weight: 3
+    cost: 25
+    rent: 2
+    armor_class: 1
+    wear_flags:
+      - TAKE
+      - HEAD
+  - vnum: 400028
+    keywords: gambali cuoio rinforzato
+    short_description: gambali di cuoio rinforzato
+    long_description: Un paio di gambali di cuoio rinforzato è qui.
+    object_type: ARMOR
+    weight: 5
+    cost: 20
+    rent: 2
+    armor_class: 1
+    wear_flags:
+      - TAKE
+      - LEGS
+  - vnum: 400029
+    keywords: stivali pelliccia
+    short_description: stivali di pelliccia
+    long_description: Un paio di robusti stivali foderati di pelliccia è qui.
+    object_type: ARMOR
+    weight: 2
+    cost: 15
+    rent: 1
+    armor_class: 1
+    wear_flags:
+      - TAKE
+      - FEET
+  - vnum: 400030
+    keywords: bracciali runici
+    short_description: bracciali runici
+    long_description: Un paio di bracciali di metallo, incisi con piccole rune, è qui.
+    object_type: ARMOR
+    weight: 1
+    cost: 18
+    rent: 1
+    armor_class: 1
+    wear_flags:
+      - TAKE
+      - WRIST
+  - vnum: 400031
+    keywords: tunica runica mago
+    short_description: una tunica runica del mago
+    long_description: Una tunica scura, orlata di simboli runici cuciti a mano, è qui.
+    object_type: ARMOR
+    weight: 2
+    cost: 30
+    rent: 2
+    armor_class: 1
+    wear_flags:
+      - TAKE
+      - BODY
+  - vnum: 400032
+    keywords: veste sacerdote njord
+    short_description: la veste del sacerdote di Njord
+    long_description: Una veste semplice color mare, benedetta nel nome di Njord, è qui.
+    object_type: ARMOR
+    weight: 2
+    cost: 30
+    rent: 2
+    armor_class: 1
+    wear_flags:
+      - TAKE
+      - BODY
+    extra_flags:
+      - BLESS
+  - vnum: 400033
+    keywords: fasce combattimento monaco
+    short_description: fasce da combattimento del monaco
+    long_description: Un paio di fasce di stoffa robusta, pronte per essere avvolte intorno alle mani,
+      è qui.
+    object_type: ARMOR
+    weight: 1
+    cost: 15
+    rent: 1
+    armor_class: 1
+    wear_flags:
+      - TAKE
+      - HANDS
+  - vnum: 400034
+    keywords: mantello ricamato nodi vichinghi
+    short_description: un mantello ricamato con nodi vichinghi
+    long_description: Un mantello scuro, ricamato con intricati nodi vichinghi lungo l'orlo, è qui.
+    object_type: ARMOR
+    weight: 2
+    cost: 25
+    rent: 2
+    armor_class: 1
+    wear_flags:
+      - TAKE
+      - ABOUT
+  - vnum: 400035
+    keywords: amuleto njord
+    short_description: un amuleto di Njord
+    long_description: Un piccolo amuleto a forma di onda, simbolo di Njord, è qui.
+    object_type: WORN
+    cost: 40
+    rent: 2
+    wear_flags:
+      - TAKE
+      - NECK
+  - vnum: 400036
+    keywords: borsa sacco
+    short_description: una borsa a sacco
+    long_description: Una robusta borsa a sacco è qui.
+    object_type: CONTAINER
+    weight: 1
+    cost: 10
+    rent: 1
+    wear_flags:
+      - TAKE
+      - ABOUT
+    max_weight: 10
+  - vnum: 400901
+    keywords: lastra pressione trappola
+    short_description: una lastra a pressione
+    long_description: Una lastra di pietra leggermente incassata nel pavimento attira lo sguardo.
+    object_type: TRAP
+    triggers: [MOVE, SOUTH]
+    damage: pierce
+    level: 2
+    charges: 3
+  - vnum: 400902
+    keywords: ago trappola avvelenato
+    short_description: un ago avvelenato
+    long_description: Un ago sottilissimo spunta da una fessura del tavolo.
+    object_type: TRAP
+    triggers: [OBJECT]
+    damage: poison
+    level: 3
+    charges: 2
+  - vnum: 400903
+    keywords: runa trappola lampeggiante
+    short_description: una runa lampeggiante
+    long_description: Una runa incisa nel legno lampeggia di una luce innaturale.
+    object_type: TRAP
+    triggers: [OBJECT, ROOM]
+    damage: energy
+    level: 3
+    charges: 1
+  - vnum: 400904
+    keywords: glifo trappola pavimento
+    short_description: un glifo sul pavimento
+    long_description: Un glifo arcano, appena visibile, e' tracciato sul pavimento.
+    object_type: TRAP
+    triggers: [MOVE, UP]
+    damage: teleport
+    level: 1
+    charges: 2
+  - vnum: 400905
+    keywords: braciere incenso trappola
+    short_description: un braciere d'incenso
+    long_description: Un braciere fumante riempie l'aria di un incenso dolciastro.
+    object_type: TRAP
+    triggers: [OBJECT, ROOM]
+    damage: sleep
+    level: 1
+    charges: 1
+  - vnum: 400906
+    keywords: botte olio trappola
+    short_description: una botte d'olio
+    long_description: Una botte d'olio e' appoggiata male, accanto a una lanterna accesa.
+    object_type: TRAP
+    triggers: [OBJECT, ROOM]
+    damage: fire
+    level: 2
+    charges: 1

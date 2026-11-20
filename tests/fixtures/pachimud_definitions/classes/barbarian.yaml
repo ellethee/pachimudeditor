@@ -1,0 +1,101 @@
+class_id: barbarian
+index: 6
+name: Barbarian
+abbreviation: Ba
+description: A class of fierce, hardy warriors who fight with raw strength.
+attrs_priority:  # default di pachimud: in LeU lo sceglie il giocatore alla creazione
+  - strength
+  - constitution
+  - dexterity
+  - wisdom
+  - intelligence
+  - charisma
+exp_per_level:  # `titles[classe][livello].exp` di LeU (constants.c): esperienza totale per raggiungere il livello
+  [0, 1, 6000, 12000, 24000, 48000, 80000, 150000, 275000, 500000, 1000000, 1500000, 2000000, 2750000, 3550000, 4000000, 4350000, 4750000, 5000000, 5350000, 5750000, 6000000, 6350000, 6750000, 7000000, 7350000, 7750000, 8250000, 9000000, 9750000, 10500000, 11250000, 12000000, 12750000, 13500000, 14250000, 15250000, 16250000, 17250000, 18500000, 20000000, 22000000, 24000000, 26500000, 29000000, 32000000, 35000000, 40000000, 45000000, 50000000, 60000000, 200555000, 231500000, 233000000, 234500000, 235500000, 236500000, 237500000, 238500000, 239500000, 241000000]
+titles:  # `titles` di LeU: titolo maschile e femminile per livello (indice = livello)
+  - {male: Man, female: Woman}
+  - {male: Grunt, female: Grunt}
+  - {male: Brawler, female: Brawler}
+  - {male: Smasher, female: Smasher}
+  - {male: Basher, female: Basher}
+  - {male: Horseman, female: Horsewoman}
+  - {male: Horsemaster, female: Horsemaster}
+  - {male: Competent, female: Competent}
+  - {male: Pillager, female: Pillager}
+  - {male: Raider, female: Raider}
+  - {male: Destroyer, female: Destroyer}
+  - {male: Berserker, female: Berserker}
+  - {male: Raging Berserker, female: Ragin Berserker}
+  - {male: Sacker Of Villages, female: Sacker Of Villages}
+  - {male: Sacker Of Towns, female: Sacker Of Towns}
+  - {male: Sacker Of Cities, female: Sacker Of Cities}
+  - {male: Chieftain, female: Chieftess}
+  - {male: Hordling, female: Hordling}
+  - {male: Hordesman, female: Hordeswoman}
+  - {male: Hordesmaster, female: Hordesmaster}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Barbarian, female: Barbarian}
+  - {male: Conan, female: Sonja}
+  - {male: Khan, female: Hun}
+  - {male: Immortal, female: Immortal}
+  - {male: Immortal, female: Immortal}
+  - {male: Immortal, female: Immortal}
+  - {male: Immortal, female: Immortal}
+  - {male: Immortal, female: Immortal}
+  - {male: Immortal, female: Immortal}
+  - {male: Extirpator, female: Queen}
+  - {male: God, female: Goddess}
+  - {male: Implementor, female: Implementrix}
+  - {male: Implementor, female: Implementrix}
+thac0:  # `thaco` di LeU (constants.c) per livello: piu' basso e' meglio
+  [100, 20, 20, 19, 19, 18, 18, 17, 17, 16, 16, 15, 15, 14, 14, 13, 13, 12, 12, 11, 11, 10, 10, 9, 9, 8, 8, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+hp_gain:  # `advance_level` di LeU (limits.c): number(n, m) sotto until_level, poi flat_after; + bonus Costituzione, diviso per le classi
+  dice: [3, 22]
+  until_level: 15
+  flat_after: 6
+saving_throws:  # `saving_throws` di LeU (spell_parser.c) per livello (indice = livello): piu' basso e' meglio
+  para: [15, 13, 13, 13, 13, 12, 12, 12, 12, 11, 11, 11, 11, 10, 10, 10, 10, 9, 9, 9, 9, 8, 7, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  rod: [16, 14, 14, 14, 14, 12, 12, 12, 12, 10, 10, 10, 10, 8, 8, 8, 8, 6, 6, 6, 6, 4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  petri: [14, 12, 12, 12, 12, 11, 11, 11, 11, 10, 10, 10, 10, 9, 9, 9, 9, 8, 8, 8, 8, 7, 5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  breath: [18, 16, 16, 16, 16, 15, 15, 15, 15, 14, 14, 14, 14, 13, 13, 13, 13, 12, 12, 12, 12, 11, 9, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  spell: [17, 15, 15, 15, 15, 13, 13, 13, 13, 11, 11, 11, 11, 9, 9, 9, 9, 7, 7, 7, 7, 5, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+start_hp:  # `roll_abilities` di LeU: 10 + un tiro di dice + bonus, diviso per le classi
+  dice: [1, 10]
+  bonus: 10
+  group: fighter
+mana:  # `mana_limit` di LeU (limits.c): base + per_level * (livello // level_divisor); + ((INT / 3) + 2) * 3
+  base: 0
+  per_level: 0
+  level_divisor: 1
+  only_class_cap: 100
+magic_order: 9  # posizione in `BestMagicClass` di LeU (multiclass.c)
+pure_move_bonus: 45  # `move_limit` di LeU: +45 al barbaro puro
+level_loss:  # `drop_level` di LeU (limits.c): punti ferita persi, in piu' al bonus di Costituzione, sotto il livello `below` (`low`) o da li' in su (`high`), almeno `minimum`
+  {below: 15, low: 22, high: 6, minimum: 8}

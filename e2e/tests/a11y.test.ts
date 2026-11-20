@@ -15,7 +15,7 @@ describe('accessibilita e responsive', () => {
   })
 
   it('nessun pulsante visibile senza nome accessibile', async () => {
-    for (const path of ['/zones', '/rooms', '/mobs', '/objects', '/instances', '/players', '/content/races', '/content/classes', '/world/graph', '/rooms/map']) {
+    for (const path of ['/zones', '/rooms', '/mobs', '/objects', '/players', '/content/races', '/content/classes', '/content/skills', '/content/socials', '/content/tables', '/content/catalogs', '/world/graph', '/rooms/map']) {
       await goto(s.page, path)
       await s.page.waitForTimeout(1200)
       const unnamed = await s.page.evaluate(() =>

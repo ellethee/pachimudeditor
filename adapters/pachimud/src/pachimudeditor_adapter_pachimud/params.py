@@ -1,27 +1,32 @@
-"""Parametri di un mondo `kind: pachimud`: database di gioco, cartella delle definizioni, config del game server.
+"""Parametri di un mondo `kind: pachimud`: cartella delle definizioni (contenuti YAML), database dei giocatori, config del game server.
 
 Il mondo si configura in `pachimudeditor.yaml` (o `WEBEDITOR_WORLDS`) cosi':
 
     - id: pachimud
       kind: pachimud
       params:
-        database_url: sqlite+aiosqlite:///pachimud.db   # URL SQLAlchemy async (path SQLite relativi: vedi sotto)
-        definitions_path: ./definitions                 # races/ classes/ (e zones/ per l'import)
+        definitions_path: ./definitions                 # zones/ classes/ races/ (OBBLIGATORIO, o config_path)
+        base_definitions_path: ./src/pachimud/definitions  # facoltativo: classi e razze di default del gioco (con config_path: ricavata)
+        database_url: sqlite+aiosqlite:///pachimud.db   # facoltativo: account e personaggi (senza, niente giocatori)
         config_path: /percorso/pachimud.yaml            # facoltativo: ne legge database_url/definition_path
 
 Regole:
 
-- i parametri espliciti (`database_url`, `definitions_path`) vincono sempre su quelli letti da `config_path`;
+- i contenuti del gioco (zone, stanze, mob, oggetti, reset, classi, razze) sono file YAML sotto `definitions_path`; nel
+  database SQLite restano solo `account` e `player_character`;
+- `definition_path` (come nel `pachimud.yaml` del gioco) e' accettato come sinonimo di `definitions_path`;
+- i parametri espliciti vincono sempre su quelli letti da `config_path`;
 - `config_path` (anche come chiave diretta del mondo, per compatibilita') e' il `pachimud.yaml` del game server,
   letto con un semplice parser YAML (nessun import di `pachimud`): si usano solo `database_url` e `definition_path`;
   i path relativi li' dentro si risolvono rispetto alla cartella di quel file (e' la cwd del game server);
 - i path relativi dei parametri espliciti si risolvono rispetto alla cartella di lavoro (la cartella del
   `pachimudeditor.yaml`, in mancanza la cwd);
-- ripiego (documentato, 3 righe): se non c'e' ne' `database_url` ne' `config_path`, si usa la variabile d'ambiente
+- ripiego (documentato, 3 righe): se non c'e' ne' `definitions_path` ne' `config_path`, si usa la variabile d'ambiente
   `PACHIMUD_CONFIG_PATH` come `config_path`. Senza nulla di tutto cio' il mondo non e' configurato (errore chiaro).
 """
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -30,6 +35,7 @@ import yaml
 from sqlalchemy.engine import make_url
 
 from pachimudeditor.sdk import WorldConfig
+from pachimudeditor_adapter_pachimud.live_config import parse_live_settings
 
 CONFIG_ENV_VAR = "PACHIMUD_CONFIG_PATH"
 """Ripiego per `config_path` (vedi docstring del modulo)."""
@@ -50,24 +56,35 @@ class PachimudConfigError(ValueError):
 class PachimudParams:
     """Parametri risolti di un mondo pachimud."""
 
-    database_url: str
-    """URL SQLAlchemy async, con il path SQLite gia' assoluto."""
-    definitions_path: Path | None
-    """Cartella `definitions/` (assoluta) o `None` se non configurata (razze/classi/contenuti non disponibili)."""
+    definitions_path: Path
+    """Cartella `definitions/` (assoluta): zone, classi e razze."""
+    database_url: str | None = None
+    """URL SQLAlchemy async dei giocatori, con il path SQLite gia' assoluto; `None` = giocatori non disponibili."""
     config_path: Path | None = None
     """Il `pachimud.yaml` da cui sono stati letti i valori mancanti, se c'e'."""
+    base_definitions_path: Path | None = None
+    """Contenuti di default del gioco (classi e razze nel pacchetto, `src/pachimud/definitions`): primo strato, sola lettura."""
+
+    @property
+    def layers(self) -> tuple[Path, ...]:
+        """Le cartelle di classi e razze in ordine di applicazione (la base del gioco, poi `definitions_path`)."""
+        return (*([self.base_definitions_path] if self.base_definitions_path else []), self.definitions_path)
 
     @property
     def sqlite_file(self) -> Path | None:
         """Il file del DB se l'URL e' SQLite su file, altrimenti `None`."""
+        if self.database_url is None:
+            return None
         url = make_url(self.database_url)
         if url.get_backend_name() != "sqlite" or url.database in (None, "", ":memory:"):
             return None
         return Path(url.database)
 
     def redacted_url(self) -> str:
-        """L'URL senza la password (per log e `worlds check`)."""
-        return make_url(self.database_url).render_as_string(hide_password=True)
+        """Dove vivono i dati del mondo, per log e `worlds check`: le definizioni e, se c'e', il DB dei giocatori senza password."""
+        if self.database_url is None:
+            return str(self.definitions_path)
+        return f"{self.definitions_path} + {make_url(self.database_url).render_as_string(hide_password=True)}"
 
 
 def base_dir() -> Path:
@@ -78,8 +95,22 @@ def base_dir() -> Path:
     return Path.cwd()
 
 
+def expand_env(url: str) -> str:
+    """Espande `${VARIABILE}` dall'ambiente come il gioco (la password non sta nel file) e porta `sslmode=` di libpq a `ssl=` di asyncpg.
+
+    Raises:
+        PachimudConfigError: se una variabile non e' impostata (meglio di una password vuota).
+    """
+    missing = [v for v in re.findall(r"\$\{(\w+)\}", url) if v not in os.environ]
+    if missing:
+        raise PachimudConfigError(f"variabili d'ambiente mancanti in database_url: {', '.join(missing)}")
+    url = re.sub(r"\$\{(\w+)\}", lambda m: os.environ[m.group(1)], url)
+    return re.sub(r"([?&])sslmode=", r"\1ssl=", url) if "+asyncpg" in url else url
+
+
 def normalize_url(url: str, root: Path) -> str:
     """Porta `url` al driver async e rende assoluto un path SQLite relativo (rispetto a `root`)."""
+    url = expand_env(url)
     try:
         parsed = make_url(url)
     except Exception as exc:  # noqa: BLE001 - qualunque URL malformato
@@ -115,14 +146,14 @@ def resolve_params(config: WorldConfig, root: Path | None = None) -> PachimudPar
     """Risolve i parametri del mondo pachimud (vedi docstring del modulo).
 
     Raises:
-        PachimudConfigError: nessuna sorgente per il database, URL non valido o `config_path` illeggibile.
+        PachimudConfigError: nessuna sorgente per le definizioni, URL non valido o `config_path` illeggibile.
     """
     root = root or base_dir()
     params = config.params or {}
     explicit_url = params.get("database_url")
-    explicit_defs = params.get("definitions_path")
+    explicit_defs = params.get("definitions_path") or params.get("definition_path")
     config_path = params.get("config_path") or config.config_path
-    if not explicit_url and not config_path and os.environ.get(CONFIG_ENV_VAR):
+    if not explicit_defs and not config_path and os.environ.get(CONFIG_ENV_VAR):
         config_path = os.environ[CONFIG_ENV_VAR]
 
     game_path: Path | None = None
@@ -134,30 +165,38 @@ def resolve_params(config: WorldConfig, root: Path | None = None) -> PachimudPar
         game_path = game_path.resolve()
         game = read_game_config(game_path)
 
+    database_url: str | None = None
     if explicit_url:
         database_url = normalize_url(str(explicit_url), root)
     elif game_path is not None:
         database_url = normalize_url(str(game.get("database_url") or DEFAULT_DATABASE_URL), game_path.parent)
-    else:
-        raise PachimudConfigError(
-            f"Mondo pachimud {config.id!r} senza database: impostare params.database_url "
-            f"(o params.config_path verso il pachimud.yaml del game server)."
-        )
 
-    definitions: Path | None = None
     if explicit_defs:
         definitions = Path(str(explicit_defs)).expanduser()
         definitions = definitions if definitions.is_absolute() else root / definitions
     elif game_path is not None:
         definitions = Path(str(game.get("definition_path") or DEFAULT_DEFINITIONS)).expanduser()
         definitions = definitions if definitions.is_absolute() else game_path.parent / definitions
+    else:
+        raise PachimudConfigError(
+            f"Mondo pachimud {config.id!r} senza definizioni: impostare params.definitions_path "
+            f"(o params.config_path verso il pachimud.yaml del game server)."
+        )
+    base = params.get("base_definitions_path")
+    base_path = Path(str(base)).expanduser() if base else (game_path.parent / "src" / "pachimud" / "definitions" if game_path else None)
+    if base_path is not None and not base_path.is_absolute():
+        base_path = root / base_path
+    if base_path is not None and not base_path.is_dir():
+        base_path = None
     return PachimudParams(
+        definitions_path=definitions.resolve(),
         database_url=database_url,
-        definitions_path=definitions.resolve() if definitions is not None else None,
         config_path=game_path,
+        base_definitions_path=base_path.resolve() if base_path else None,
     )
 
 
 def validate_world(config: WorldConfig) -> None:
-    """Hook `AdapterPlugin.validate`: alza `PachimudConfigError` (un `ValueError`) se i parametri non bastano ad aprire il database."""
+    """Hook `AdapterPlugin.validate`: alza `PachimudConfigError` (un `ValueError`) se i parametri non bastano a trovare le definizioni."""
     resolve_params(config)
+    parse_live_settings(config.params)

@@ -146,6 +146,39 @@ async def test_characters_list_edit_teleport_delete(pc: httpx.AsyncClient) -> No
     codes = ["players.invalid_account", "players.invalid_room", "players.invalid_class", "players.invalid_race"]
     for body, code in zip(bad, codes):
         assert error_code(await pc.put(f"/api/players/characters/{c1}", json=body), 422) == code
+    detail = data(await pc.get(f"/api/players/characters/{c1}"))
+    assert (detail["speaks"], detail["height"], detail["classLevels"], detail["affects"], detail["description"]) == (
+        "common",
+        0,
+        {},
+        {},
+        "",
+    )
+    new = data(
+        await pc.put(
+            f"/api/players/characters/{c1}",
+            json={
+                "height": 180,
+                "weight": 75,
+                "moveMax": 90,
+                "playedSeconds": 3600,
+                "speaks": "elvish",
+                "description": "Alto.",
+                "classLevels": {"warrior": 7},
+                "affects": {"bless": 5},
+                "poisonStrength": 2,
+            },
+        )
+    )
+    assert (new["height"], new["weight"], new["moveMax"], new["speaks"], new["classLevels"], new["affects"], new["poisonStrength"]) == (
+        180,
+        75,
+        90,
+        "elvish",
+        {"warrior": 7},
+        {"bless": 5},
+        2,
+    )
     assert error_code(await pc.put(f"/api/players/characters/{c1}", json={"name": "Frodo"}), 409) == "players.name_taken"
     assert (await pc.put(f"/api/players/characters/{c1}", json={"level": None})).status_code == 422
     assert data(await pc.put(f"/api/players/characters/{c1}", json={"accountId": a2["id"], "classId": "mage"}))["accountId"] == a2["id"]
@@ -159,7 +192,7 @@ async def test_lookups(pc: httpx.AsyncClient) -> None:
 
 
 async def test_inventory(pc: httpx.AsyncClient) -> None:
-    """Aggiunta per vnum/id, equip, rimozione; blocco delete personaggio e cascade."""
+    """Aggiunta per vnum/id (colonna JSON `inventory`), equip, rimozione; il personaggio si elimina con l'inventario."""
     acc = await _account(pc)
     cid = await _char(pc, acc["id"])
     base = f"/api/players/characters/{cid}/inventory"
@@ -174,30 +207,28 @@ async def test_inventory(pc: httpx.AsyncClient) -> None:
     assert data(await pc.put(f"{base}/{sword['id']}", json={"equippedSlot": None}))["equippedSlot"] is None
     assert len(data(await pc.get(base))) == 2
     assert data(await pc.get(f"/api/players/characters/{cid}"))["itemCount"] == 2
-    assert error_code(await pc.delete(f"/api/players/characters/{cid}"), 409) == "players.character_has_items"
     assert (await pc.delete(f"{base}/{rock['id']}")).status_code == 204
     assert error_code(await pc.delete(f"{base}/{rock['id']}"), 404) == "players.item_not_found"
-    assert (await pc.delete(f"/api/players/characters/{cid}", params={"cascade": True})).status_code == 204
+    assert (await pc.delete(f"/api/players/characters/{cid}")).status_code == 204  # l'inventario e' una colonna del personaggio
 
 
 async def test_inventory_container_contents(pc: httpx.AsyncClient) -> None:
-    """Gli oggetti dentro un contenitore del personaggio compaiono e non sono equipaggiabili."""
-    from pachimudeditor_adapter_pachimud.game_models.object import ObjectInstance
+    """Gli oggetti dentro un contenitore del personaggio compaiono (annidati nel JSON) e non sono equipaggiabili."""
+    from pachimudeditor_adapter_pachimud.game_models.character import PlayerCharacter
 
     from tests.support.gamedb import get_session_factory
 
     acc = await _account(pc)
     cid = await _char(pc, acc["id"])
     base = f"/api/players/characters/{cid}/inventory"
-    bag = data(await pc.post(base, json={"vnum": 1000}), 201)
-    proto = await by_vnum(pc, "objects", 1001)
     async with get_session_factory()() as s:
-        inner = ObjectInstance(prototype_id=proto["id"], container_instance_id=bag["id"])
-        s.add(inner)
+        row = await s.get(PlayerCharacter, cid)
+        row.inventory = [{"vnum": 1000, "overrides": {}, "equipped_slot": None, "state": {}, "contents": [{"vnum": 1001, "contents": []}]}]
         await s.commit()
-        inner_id = inner.id
     items = data(await pc.get(base))
-    assert {i["id"] for i in items} == {bag["id"], inner_id}
+    assert [(i["vnum"], i["containerInstanceId"]) for i in items] == [(1000, None), (1001, items[0]["id"])]
+    inner_id = items[1]["id"]
     assert error_code(await pc.put(f"{base}/{inner_id}", json={"equippedSlot": "held"}), 422) == "players.item_in_container"
-    assert (await pc.delete(f"{base}/{bag['id']}")).status_code == 204
+    assert data(await pc.get(f"/api/players/characters/{cid}"))["itemCount"] == 2
+    assert (await pc.delete(f"{base}/{items[0]['id']}")).status_code == 204
     assert data(await pc.get(base)) == []

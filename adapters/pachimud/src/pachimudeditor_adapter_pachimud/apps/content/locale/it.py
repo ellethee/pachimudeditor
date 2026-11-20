@@ -8,4 +8,6 @@ MESSAGES: dict[str, str] = {
     "content.invalid": "Contenuto non valido: {detail}",
     "content.race_in_use": "Impossibile eliminare la razza «{id}»: è usata da {count} prototipi di mob. Cambia prima la loro razza oppure disattivala.",
     "content.class_in_use": "Impossibile eliminare la classe «{id}»: è usata da {count} prototipi di mob. Cambia prima la loro classe oppure disattivala.",
+    "content.invalid_path": "Percorso «{path}» non ammesso: usa lettere, cifre, «_», «-», «.» e «/», senza «..», con l'estensione dell'area.",
+    "content.too_large": "File troppo grande (massimo {max} KB).",
 }

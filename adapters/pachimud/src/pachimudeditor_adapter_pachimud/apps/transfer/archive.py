@@ -4,13 +4,14 @@ Dai nomi dei file caricati si usa solo il *nome base*, e solo se e' uno dei cinq
 i path interni a uno zip non vengono mai usati per scrivere su disco (niente path traversal / zip slip).
 """
 
+import re
 import zipfile
 from pathlib import Path, PurePosixPath
 
 from fastapi import UploadFile
 from pachifast.i18n import api_error
 
-from pachimudeditor_adapter_pachimud.transfer.files import ZONE_FILES
+from pachimudeditor_adapter_pachimud.transfer.service import _kind_of
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 """Limite per il totale decompresso (e per ogni singolo file caricato)."""
@@ -48,9 +49,9 @@ def _too_large(filename: str) -> Exception:
 def canonical_name(name: str) -> str | None:
     """Il nome canonico (`zone.yaml`, ...) del file `name` (solo base name, case-insensitive; `.yml` accettato)."""
     base = PurePosixPath(name.replace("\\", "/")).name.lower()
-    if base.endswith(".yml"):
+    if base.lower().endswith(".yml"):
         base = base[:-4] + ".yaml"
-    return base if base in ZONE_FILES else None
+    return base if _kind_of(base) is not None and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,80}", base) else None
 
 
 async def _read_limited(upload: UploadFile) -> bytes:

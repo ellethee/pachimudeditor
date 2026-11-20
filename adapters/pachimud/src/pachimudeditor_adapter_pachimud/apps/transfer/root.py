@@ -11,7 +11,6 @@ from fastapi import Depends, File, Query, Response, UploadFile
 from pachifast.i18n import api_error
 from pachifast.router_factory import get_router
 
-from pachimudeditor_adapter_pachimud.transfer.files import ZONE_FILES
 from pachimudeditor_adapter_pachimud.apps.transfer.archive import stage_uploads
 from pachimudeditor.common.adapters.models import ImportPreview, ZoneBundle
 from pachimudeditor.sdk import AdapterDep, heavy_rate_limit, require_capability
@@ -21,12 +20,12 @@ router = get_router(deps=[Depends(require_capability("supports_transfer"))])
 
 @router.get("/zones/{zone_id}/export", response_model=None, skip_envelope=True)
 async def export_zone(zone_id: int, adapter: AdapterDep) -> Response:
-    """Zip `<cartella>/{zone,rooms,mobs,objects,resets}.yaml` nel formato dell'importer del gioco."""
+    """Zip `<cartella>/` con i file YAML della zona (zone, rooms*, mobs*, objects*, resets*) cosi' come sono su disco."""
     bundle = await adapter.export_zone_bundle(zone_id)
     buffer = BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
-        for name in ZONE_FILES:
-            archive.writestr(f"{bundle.folder}/{name}", bundle.files[name])
+        for name, text in bundle.files.items():
+            archive.writestr(f"{bundle.folder}/{name}", text)
     filename = re.sub(r"[^A-Za-z0-9_.-]", "_", f"{bundle.folder}-{bundle.zone_vnum}.zip")
     return Response(
         content=buffer.getvalue(),
@@ -37,7 +36,7 @@ async def export_zone(zone_id: int, adapter: AdapterDep) -> Response:
 
 @router.get("/zones/{zone_id}/export/bundle", response_model=ZoneBundle)
 async def export_zone_bundle(zone_id: int, adapter: AdapterDep) -> ZoneBundle:
-    """Gli stessi cinque file come JSON (`files`: nome -> testo YAML), per anteprima o integrazioni."""
+    """Gli stessi file come JSON (`files`: nome -> testo YAML), per anteprima o integrazioni."""
     return await adapter.export_zone_bundle(zone_id)
 
 

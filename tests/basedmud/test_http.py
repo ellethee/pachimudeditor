@@ -122,5 +122,5 @@ async def test_read_only_and_capabilities_over_http(client: httpx.AsyncClient) -
     assert data(await client.get(f"/api/mobs/{MOB}", headers=ro))["level"] == 23
     assert error_code(await client.put(f"/api/mobs/{MOB}", json={"level": 1}, headers=ro), 409) == "world.read_only"
     assert error_code(await client.post("/api/zones", json={"vnum": 1, "name": "X"}, headers=ro), 409) == "world.read_only"
-    for path in ("/api/players/accounts", "/api/world/overview", "/api/instances/mobs", "/api/content/races"):
+    for path in ("/api/players/accounts", "/api/world/overview", "/api/content/races"):
         assert error_code(await client.get(path, headers=H), 409) == "world.capability_missing", path

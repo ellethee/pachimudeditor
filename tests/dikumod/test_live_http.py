@@ -155,7 +155,17 @@ async def test_status_who_info_zones_player(client: httpx.AsyncClient, fake: Fak
     info = data(await client.get(f"{LIVE}/info", headers=H))
     assert info["world"]["zones"] == 5 and info["players"]["playing"] == 1 and info["uptimeS"] >= 0
     zones = data(await client.get(f"{LIVE}/zones", headers=H))["zones"]
-    assert zones[3] == {"index": 3, "num": 14, "name": "Midgaard", "top": 3999, "lifespan": 20, "age": 0, "resetMode": 2, "started": True}
+    assert zones[3] == {
+        "index": 3,
+        "num": 14,
+        "name": "Midgaard",
+        "bottom": None,
+        "top": 3999,
+        "lifespan": 20,
+        "age": 0,
+        "resetMode": 2,
+        "started": True,
+    }
     player = data(await client.get(f"{LIVE}/players/Tester", headers=H))
     assert player["fields"]["gold"] == 150 and player["fields"]["levels"] == {"cleric": 3} and "levels" in player["editableFields"]
 

@@ -2,7 +2,7 @@
 race_id: giant
 name: Giant
 description: Massive and powerful race, known for their strength and imposing presence.
-mob_only: false
+mob_only: true
 who_name: Giant
 form:
   - HUMANOID

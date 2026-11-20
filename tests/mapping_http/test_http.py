@@ -103,7 +103,7 @@ async def test_rom_writes_over_http(client: httpx.AsyncClient, rom_dir: Path) ->
     ro = {"X-World": "rom-ro"}
     assert data(await client.get(f"/api/mobs/{MOB}", headers=ro))["level"] == 31
     assert error_code(await client.put(f"/api/mobs/{MOB}", json={"level": 1}, headers=ro), 409) == "world.read_only"
-    for path in ("/api/players/accounts", "/api/world/overview", "/api/instances/mobs", "/api/content/races"):
+    for path in ("/api/players/accounts", "/api/world/overview", "/api/content/races"):
         assert error_code(await client.get(path, headers=ROM), 409) == "world.capability_missing", path
 
 
