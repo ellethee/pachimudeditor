@@ -7,7 +7,7 @@
  * Il processo viene fermato SOLO tramite il suo PID esatto.
  */
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process'
-import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -220,7 +220,12 @@ export async function startStack(port = Number(process.env.E2E_PORT ?? 8124), op
     }
     fakePachimud?.kill('SIGKILL')
     fakeLive?.kill('SIGKILL') // il PID puo' essere stato cambiato da un test che l'ha riavviato: vedi `E2E_LIVE_PID`
-    const restarted = Number(process.env.E2E_LIVE_PID)
+    let restarted = Number(process.env.E2E_LIVE_PID)
+    try {
+      restarted = Number(readFileSync(join(workdir, 'live.pid'), 'utf8')) // scritto da `live.test.ts` quando riavvia il finto server
+    } catch {
+      /* nessun riavvio */
+    }
     if (restarted && restarted !== fakeLive?.pid) {
       try {
         process.kill(restarted, 'SIGKILL')

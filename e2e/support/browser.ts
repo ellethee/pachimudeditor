@@ -150,6 +150,8 @@ export async function saveDialog(page: Page): Promise<void> {
  * @param page pagina
  */
 export async function saveForm(page: Page): Promise<void> {
+  // su dati reali la pagina di una stanza Diku Modificato carica tutte le stanze (opzioni delle uscite): l'overlay di caricamento copre il pulsante per oltre 15 s
+  await page.locator('.q-loading__backdrop').waitFor({ state: 'detached', timeout: 60_000 })
   await page.getByTestId('form-save').click()
   await page.locator('.q-notification.bg-positive').first().waitFor({ timeout: 60_000 }) // su dati reali Diku Modificato il salvataggio di una stanza con uscite richiede ~16 s
 }

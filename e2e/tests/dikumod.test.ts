@@ -81,7 +81,7 @@ describe('dikumod', { skip: HAS_DIKUMOD ? false : 'dati Diku Modificato non trov
     const pachimud = worlds.find((w) => w.id === 'pachimud')!
     assert.equal(pachimud.resources.every((r) => !r.createAtEnd), true)
     const pNames = (type: string) => pachimud.resources.find((r) => r.type === type)!.extraFields.map((f) => f.name)
-    assert.deepEqual(pNames('room'), ['enabled', 'area'])
+    assert.deepEqual(pNames('room'), ['enabled', 'area', 'climate'])
     assert.ok(pNames('object').includes('typeFields') && pNames('mob').includes('shop') && pachimud.capabilities.supportsInstances === false)
   })
 

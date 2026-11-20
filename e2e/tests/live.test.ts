@@ -5,6 +5,7 @@
  */
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
+import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import { Api } from '../support/api.ts'
@@ -41,13 +42,14 @@ async function startFake(): Promise<void> {
   await new Promise<void>((done, fail) => {
     const child = spawn(join(BACKEND, '.venv', 'bin', 'python'), ['-m', 'tests.support.live_fake_cli', LIVE_SOCKET(workdir), LIVE_TOKEN], {
       cwd: BACKEND,
-      stdio: ['ignore', 'pipe', 'inherit'],
+      stdio: ['ignore', 'pipe', 'ignore'], // senza stderr ereditato l'orfano non tiene aperto l'output del runner
       detached: true,
     })
     child.once('error', fail)
     child.stdout!.on('data', (chunk: Buffer) => {
       if (chunk.toString().includes('ready')) {
         process.env.E2E_LIVE_PID = String(child.pid)
+        writeFileSync(join(workdir, 'live.pid'), String(child.pid)) // il teardown e' in un altro processo: legge il PID da qui
         child.stdout!.destroy()
         child.unref()
         done()
