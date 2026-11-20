@@ -99,19 +99,14 @@ import { PachiEmptyState, PachiErrorState } from '@ilpachi/pachifastquasar'
 import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import type { PachiTable2Api, PachiTable2Exposed } from '@ilpachi/pachi-kit/table'
 import { PachiEditDialog } from '@ilpachi/pachi-kit/edit-dialog'
-import type { AwaitableData, ISectionDefinition } from '@ilpachi/pachi-kit/edit-dialog'
-import { FieldsSection } from '@ilpachi/pachi-kit/fields'
-import type { IFieldRow } from '@ilpachi/pachi-kit/fields'
+import type { AwaitableData } from '@ilpachi/pachi-kit/edit-dialog'
 import { describeError } from '../helpers/describe-error'
-import InstancesSection from '../../instances/components/InstancesSection.vue'
 import { applyDescriptors, enumNames } from '../../shared/helpers/descriptor-rows'
-import { createExtraEditor } from '../../shared/helpers/extra-fields'
-import { LOCKED_DIALOG_CLASS, guardOf, guardSection } from '../../shared/helpers/record-guard'
+import { LOCKED_DIALOG_CLASS, guardOf } from '../../shared/helpers/record-guard'
 import { useWorld } from '../../shared/helpers/world-state'
-import { whenReady } from '../../shared/helpers/when-ready'
 import { localizeEnums } from '../../shared/helpers/enum-labels'
-import { buildGeneralRows, buildStatsRows } from '../helpers/field-rows'
-import { OBJECTS_URL, getEnums, getObject, getObjectUsage, listZones, nextObjectVnum } from '../services/objects-api'
+import { useObjectForm, withBuffTargets } from '../composables/use-object-form'
+import { OBJECTS_URL, getEnums, getObjectUsage, listZones } from '../services/objects-api'
 import type { IObjectEnums, IObjects, IObjectsInput, IZoneRef } from '../types/objects'
 import TableError from '../../shared/components/TableError.vue'
 import ObjectFilters from '../components/ObjectFilters.vue'
@@ -134,7 +129,8 @@ const { t, te } = useI18n()
 const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
-const { readOnly, supports, fieldOf, extraFieldsOf, declaresExtra } = useWorld()
+const { readOnly, fieldOf } = useWorld()
+const { prepareObjectForm } = useObjectForm()
 
 /** Tutte le righe si aprono in modifica (in sola lettura il form è bloccato); serve anche a tipizzare la tabella su `IObjects`. */
 const allowRow = (_row: IObjects): boolean => true
@@ -306,179 +302,43 @@ watch(
   },
 )
 
-/**
- * Bersagli degli affects: se il backend non li espone ma il mondo ha una tabella di apply (ROM:
- * `romAffectApply`), si usano i suoi nomi come chiavi del dizionario `affects`.
- *
- * @param list - enum localizzati del backend
- */
-function withBuffTargets(list: IObjectEnums): IObjectEnums {
-  if (list.buffTarget?.length) return list
-  const apply = (list as unknown as Record<string, { label: string }[] | undefined>).romAffectApply
-  return apply?.length ? { ...list, buffTarget: apply.map((option) => ({ value: option.label, label: option.label })) } : list
-}
-
-/**
- * Deep-link `?objectId=`: seleziona la zona dell'oggetto e ne apre l'editor (poi toglie il parametro). Un id
- * inesistente lascia semplicemente l'elenco.
- */
+/** Deep-link `?objectId=`: apre il dettaglio dell'oggetto. Un id inesistente lascia semplicemente l'elenco. */
 async function openFromQuery(): Promise<void> {
   const id = Number(route.query.objectId)
   if (route.query.objectId === undefined || !Number.isFinite(id)) return
-  try {
-    const object = await getObject(id)
-    if (zones.value.some((zone) => zone.id === object.zoneId)) selectedZoneId.value = object.zoneId
-    const { objectId: _objectId, ...rest } = route.query
-    await router.replace({ path: route.path, query: { ...rest, zoneId: String(object.zoneId) } })
-    const api = await whenReady(() => table.value?.api)
-    await openDialog(api, object)
-  } catch {
-    // oggetto inesistente o non leggibile: resta l'elenco
-  }
+  await router.replace(`/objects/${id}`)
 }
 
 /**
- * Valori iniziali del form per un nuovo oggetto.
- *
- * @param zoneId - zona di destinazione
- */
-function emptyObject(zoneId: number): IObjectsInput {
-  return {
-    vnum: 0,
-    zoneId,
-    keywords: '',
-    shortDescription: '',
-    longDescription: '',
-    actionDescription: null,
-    objectType: enums.value?.objectType[0]?.value ?? 0,
-    weight: 0,
-    cost: 0,
-    rent: 0,
-    value0: null,
-    value1: null,
-    value2: null,
-    value3: null,
-    extraFlags: [],
-    wearFlags: [],
-    affects: {},
-  }
-}
-
-/**
- * Apre il dialog di creazione/modifica.
+ * Apre il dialog di creazione.
  *
  * @param api - API della tabella (per salvare e ricaricare)
- * @param record - oggetto da modificare; assente per la creazione
- * @param createZoneId - zona del nuovo oggetto (solo creazione)
+ * @param zoneId - zona del nuovo oggetto
  */
-async function openDialog(api: PachiTable2Api<IObjects>, record?: IObjects, createZoneId?: number): Promise<void> {
-  const zoneId = record?.zoneId ?? createZoneId
-  if (zoneId === undefined || zoneId === ALL_ZONES) return
-  const initial: Record<string, unknown> = record ? { ...record } : { ...emptyObject(zoneId) }
-  if (!record) {
-    // creazione: propone subito il prossimo vnum libero della zona (l'utente può cambiarlo)
-    try {
-      initial.vnum = await nextObjectVnum(zoneId)
-    } catch {
-      // resta 0: il pulsante del campo vnum permette di riprovare
-    }
-  }
-  const guard = guardOf(record?.extra)
-  const locked = readOnly.value || guard.corrupted
-  const rowsOf = (rows: IFieldRow[]): IFieldRow[] =>
-    guard.corrupted
-      ? applyDescriptors(rows, 'object', fieldOf, t).map((row) => row.map((def) => ({ ...def, disable: true, readonly: true })))
-      : applyDescriptors(rows, 'object', fieldOf, t)
-  const extraEditor = createExtraEditor({
-    t,
-    te,
-    descriptors: extraFieldsOf('object'),
-    declared: declaresExtra('object'),
-    readonly: locked,
-    extra: record?.extra,
-    enums: enumsRaw.value,
-    order: 30,
-  })
-  const sections: ISectionDefinition[] = [
-    {
-      key: 'general',
-      title: t('objects.sections.general'),
-      component: markRaw(FieldsSection),
-      props: { rows: rowsOf(buildGeneralRows(t, enums.value, zoneId, !!record)) },
-      initialValue: initial,
-      order: 10,
-      container: { type: 'card', flat: true, bordered: true, class: 'q-pa-md q-mb-md' },
-    },
-    {
-      key: 'stats',
-      title: t('objects.sections.stats'),
-      component: markRaw(FieldsSection),
-      props: {
-        rows: rowsOf(
-          buildStatsRows(
-            t,
-            enums.value,
-            enumNames(enumsRaw.value, fieldOf('object', 'extraFlags')),
-            enumNames(enumsRaw.value, fieldOf('object', 'wearFlags')),
-          ),
-        ),
-      },
-      initialValue: initial,
-      order: 20,
-      container: { type: 'expansion', title: t('objects.sections.stats'), defaultOpened: true },
-    },
-  ]
-  if (extraEditor) sections.push(extraEditor.section)
-  const banner = guardSection(guard)
-  if (banner) sections.unshift(banner)
-  if (record && supports('supportsInstances') && !guard.corrupted) {
-    sections.push({
-      key: 'instances',
-      title: t('worlds.instances'),
-      component: markRaw(InstancesSection),
-      props: { kind: 'object', prototypeId: record.id },
-      initialValue: {},
-      order: 40,
-      container: { type: 'expansion', title: t('worlds.instances'), defaultOpened: false },
-    })
-  }
+async function openDialog(api: PachiTable2Api<IObjects>, zoneId: number): Promise<void> {
+  if (zoneId === ALL_ZONES || !enums.value) return
+  const form = await prepareObjectForm(enums.value, undefined, zoneId)
   $q.dialog({
     component: PachiEditDialog,
     componentProps: {
-      title: record ? t('objects.editTitle') : t('objects.createTitle'),
-      icon: record ? mdiPencil : mdiPlus,
-      sections,
+      title: t('objects.createTitle'),
+      icon: mdiPlus,
+      sections: form.sections,
       avoidHideWithChanges: true,
-      commonProps: locked ? { readonly: true } : {},
-      cardClass: guard.corrupted ? LOCKED_DIALOG_CLASS : '',
+      commonProps: form.locked ? { readonly: true } : {},
+      cardClass: form.guard.corrupted ? LOCKED_DIALOG_CLASS : '',
       width: '720px',
       maxWidth: '95vw',
     },
   }).onOk(async ({ data, onSuccess, onError }: AwaitableData) => {
-    if (locked) {
+    if (form.locked) {
       onError(new Error(t('worlds.readOnlyHint')))
       return
     }
-    const body = {
-      ...(data.sections.general as Record<string, unknown>),
-      ...(data.sections.stats as Record<string, unknown>),
-    } as Partial<IObjectsInput>
-    // il campo opzionale vuoto si invia come null
-    if (body.actionDescription === '') body.actionDescription = null
-    // `extra` (campi specifici del mondo) solo con le chiavi cambiate
-    const extra = extraEditor?.collect(data.sections.extra)
-    if (extra) body.extra = extra
     try {
-      if (record) {
-        // PUT = patch parziale: il vnum e la zona non si cambiano
-        const { vnum: _vnum, ...patch } = body
-        await api.Put<IObjects>(`/${record.id}`, patch, { cacheFor: 0, meta: { autoError: false } })
-        await api.reload()
-      } else {
-        // POST senza slash finale (createRecord della tabella posterebbe su `{url}/`, che il backend non espone)
-        await api.Post<IObjects>('', { ...initial, ...body, zoneId }, { cacheFor: 0, meta: { autoError: false } })
-        await api.reload()
-      }
+      // POST senza slash finale (createRecord della tabella posterebbe su `{url}/`, che il backend non espone)
+      await api.Post<IObjects>('', { ...form.initial, ...form.collect(data.sections), zoneId }, { cacheFor: 0, meta: { autoError: false } })
+      await api.reload()
       onSuccess()
     } catch (error) {
       onError(new Error(await describeError(error)))
@@ -487,19 +347,18 @@ async function openDialog(api: PachiTable2Api<IObjects>, record?: IObjects, crea
 }
 
 /** Gestore dell'edit della tabella (pulsante riga o doppio click). */
-function openEdit(row: IObjects, api?: PachiTable2Api<IObjects>): void {
-  const tableApi = api ?? table.value?.api
-  if (tableApi) openDialog(tableApi, row)
+function openEdit(row: IObjects, _api?: PachiTable2Api<IObjects>): void {
+  void router.push(`/objects/${row.id}`)
 }
 
 /** Apre il dialog di creazione: con «Tutte le zone» chiede prima la zona di destinazione. */
 function openCreate(api: PachiTable2Api<IObjects>): void {
   if (selectedZoneId.value !== ALL_ZONES) {
-    void openDialog(api, undefined, selectedZoneId.value)
+    void openDialog(api, selectedZoneId.value)
     return
   }
   $q.dialog({ component: ZonePickDialog, componentProps: { zones: zones.value } }).onOk((zoneId: number) => {
-    void openDialog(api, undefined, zoneId)
+    void openDialog(api, zoneId)
   })
 }
 

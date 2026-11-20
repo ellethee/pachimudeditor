@@ -2,10 +2,9 @@ import type { RouteLocationRaw } from 'vue-router'
 import type { WorldEntityType } from '../types/world'
 
 /**
- * Destinazione nell'editor di un'entità. Convenzione query-param, letta da tutte le pagine:
- * `/rooms?zoneId=&roomId=`, `/mobs?zoneId=&mobId=` e `/objects?zoneId=&objectId=` selezionano la zona e
- * aprono l'editor dell'entità; `/zones?zoneId=` apre l'editor della zona; `/rooms/map?zoneId=` mostra la
- * mappa di quella zona.
+ * Destinazione nell'editor di un'entità: `/rooms/:id`, `/mobs/:id`, `/objects/:id` e `/zones/:id` sono le pagine di
+ * dettaglio (maschera di modifica inline). I vecchi deep-link `?roomId=`, `?mobId=` e `?objectId=` delle liste e
+ * `/zones?zoneId=` vi rimandano ancora.
  *
  * @param type - tipo di entità
  * @param id - id della riga
@@ -15,12 +14,12 @@ import type { WorldEntityType } from '../types/world'
 export function entityLocation(type: WorldEntityType, id: number, zoneId: number, resets = false): RouteLocationRaw {
   switch (type) {
     case 'room':
-      return { path: '/rooms', query: { zoneId: String(zoneId), roomId: String(id) } }
+      return { path: `/rooms/${id}` }
     case 'mob':
-      return { path: '/mobs', query: { zoneId: String(zoneId), mobId: String(id) } }
+      return { path: `/mobs/${id}` }
     case 'object':
-      return { path: '/objects', query: { zoneId: String(zoneId), objectId: String(id) } }
+      return { path: `/objects/${id}` }
     case 'zone':
-      return resets ? { path: `/zones/${id}/resets` } : { path: '/zones', query: { zoneId: String(id) } }
+      return resets ? { path: `/zones/${id}`, query: { tab: 'resets' } } : { path: `/zones/${id}` }
   }
 }

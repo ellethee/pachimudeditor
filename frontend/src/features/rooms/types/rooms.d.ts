@@ -96,6 +96,16 @@ export interface IResetUsage {
   commandType: number | string
 }
 
+/** Uscita di un'altra stanza che porta alla stanza cercata. */
+export interface IIncomingExit {
+  exitId: number
+  roomId: number
+  roomVnum: number
+  roomName: string
+  zoneId: number
+  direction: number
+}
+
 /** Nodo del grafo delle stanze. */
 export interface IGraphNode {
   id: number

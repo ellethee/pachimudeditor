@@ -28,7 +28,7 @@
     <template v-else-if="overview">
       <div class="row q-col-gutter-md q-mb-md">
         <div v-for="card in cards" :key="card.key" class="col-6 col-sm-4 col-md-3 col-lg-2">
-          <q-card flat bordered class="full-height">
+          <q-card flat bordered class="full-height" :class="card.key === 'danglingExits' && card.value > 0 ? 'bg-orange-1 text-dark' : ''">
             <q-card-section class="row items-center no-wrap">
               <q-icon :name="card.icon" size="32px" color="primary" class="q-mr-md" />
               <div>
@@ -89,6 +89,18 @@
         </q-markup-table>
       </q-card>
 
+      <q-card v-if="overview.fileProblems?.length" flat bordered class="q-mb-md">
+        <q-card-section class="text-h6 text-negative">{{ t('world.warnings.fileProblems') }}</q-card-section>
+        <q-list dense separator>
+          <q-item v-for="(p, i) in overview.fileProblems" :key="i">
+            <q-item-section>
+              <q-item-label>{{ p.path }}<template v-if="p.line">:{{ p.line }}</template></q-item-label>
+              <q-item-label caption>{{ p.message }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-card>
+
       <q-card flat bordered>
         <q-card-section class="text-h6">{{ t('world.warnings.title') }}</q-card-section>
         <q-card-section v-if="warningGroups.length === 0" class="text-grey">
@@ -136,6 +148,7 @@ import {
   mdiCube,
   mdiCubeOutline,
   mdiDoor,
+  mdiDoorOpen,
   mdiEarth,
   mdiMagnify,
   mdiOpenInNew,
@@ -180,10 +193,21 @@ const cards = computed<ICard[]>(() => {
       detail: t('world.counts.zonesDetail', { enabled: c.zonesEnabled, disabled: c.zonesDisabled }),
     },
     { key: 'rooms', label: t('world.counts.rooms'), value: c.rooms, icon: mdiDoor },
+    {
+      key: 'danglingExits',
+      label: t('world.counts.danglingExits'),
+      value: overview.value?.warningTotals.exit_without_target ?? 0,
+      icon: mdiDoorOpen,
+    },
     { key: 'mobs', label: t('world.counts.mobs'), value: c.mobs, icon: mdiSkull },
     { key: 'objects', label: t('world.counts.objects'), value: c.objects, icon: mdiCube },
-    { key: 'mobInstances', label: t('world.counts.mobInstances'), value: c.mobInstances, icon: mdiSkullOutline },
-    { key: 'objectInstances', label: t('world.counts.objectInstances'), value: c.objectInstances, icon: mdiCubeOutline },
+    // le istanze vive esistono solo nei mondi che le hanno (pachimud le tiene in RAM del gioco): senza, le schede sarebbero sempre a 0
+    ...(c.mobInstances || c.objectInstances
+      ? [
+          { key: 'mobInstances', label: t('world.counts.mobInstances'), value: c.mobInstances, icon: mdiSkullOutline },
+          { key: 'objectInstances', label: t('world.counts.objectInstances'), value: c.objectInstances, icon: mdiCubeOutline },
+        ]
+      : []),
     { key: 'accounts', label: t('world.counts.accounts'), value: c.accounts, icon: mdiAccount },
     { key: 'characters', label: t('world.counts.characters'), value: c.characters, icon: mdiAccountGroup },
   ]
@@ -231,6 +255,15 @@ function detail(w: IQualityWarning): string {
   }
   if (w.kind === 'vnum_out_of_range') {
     return t('world.warnings.item.vnum_out_of_range', { bottom: w.params.bottom ?? 0, top: w.params.top ?? 0 })
+  }
+  if (w.kind.startsWith('reset_unknown_')) {
+    return t('world.warnings.item.reset_unknown', { vnum: w.params.vnum ?? 0, index: w.params.index ?? 0 })
+  }
+  if (w.kind === 'exit_key_missing') {
+    return t('world.warnings.item.exit_key_missing', { direction: t(`world.dir.${w.params.direction ?? 0}`), vnum: w.params.vnum ?? 0 })
+  }
+  if (w.kind === 'container_key_missing') {
+    return t('world.warnings.item.container_key_missing', { vnum: w.params.vnum ?? 0 })
   }
   return ''
 }

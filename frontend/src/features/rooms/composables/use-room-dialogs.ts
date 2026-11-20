@@ -87,8 +87,12 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
     })
   }
 
-  /** Apre l'editor (creazione se `detail` è nullo). */
-  function openEditor(ctx: IEditorContext): void {
+  /**
+   * Prepara l'editor di una stanza (sezioni, blocco in sola lettura e salvataggio): lo usano il dialogo di creazione e
+   * la pagina di dettaglio. `save` scrive stanza, uscite ed extra description e rilancia gli errori; tiene traccia di
+   * quanto già scritto, così un nuovo tentativo dopo un salvataggio parziale non duplica nulla.
+   */
+  function prepareEditor(ctx: IEditorContext) {
     const { enums, detail, zoneId } = ctx
     const exitExtra = extraFieldsOf('exit').filter((field) => field.group !== 'diagnostic')
     const editing = detail !== null
@@ -168,6 +172,7 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
           doorOptions: enums.doorFlag,
           roomOptions: ctx.roomOptions,
           extraFields: exitExtra,
+          enums: rawEnums,
         },
         initialValue: { rows: buildExitRows(enums, detail) },
         order: 20,
@@ -187,26 +192,15 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
     const banner = guardSection(guard)
     if (banner) sections.unshift(banner)
 
-    $q.dialog({
-      component: PachiEditDialog,
-      componentProps: {
-        title: editing ? t('rooms.dialog.edit') : t('rooms.dialog.create'),
-        icon: mdiDoor,
-        sections,
-        avoidHideWithChanges: true,
-        commonProps: locked ? { readonly: true } : {},
-        cardClass: guard.corrupted ? LOCKED_DIALOG_CLASS : '',
-        width: '1000px',
-        maxWidth: '95vw',
-      },
-    }).onOk(async ({ data, onSuccess, onError }: AwaitableData) => {
-      if (locked) {
-        onError(new Error(t('worlds.readOnlyHint')))
-        return
-      }
-      const values = data.sections.general as IGeneralValues
-      const exits = (data.sections.exits as { rows: IExitRow[] }).rows
-      const extras = (data.sections.extras as { rows: IExtraRow[] } | undefined)?.rows ?? []
+    /**
+     * Salva i risultati delle sezioni (errori rilanciati a chi chiama).
+     * @param results `data.sections` del dialogo / `getResults()` del form
+     * @returns id della stanza (nuova o esistente)
+     */
+    async function save(results: Record<string, unknown>): Promise<number> {
+      const values = results.general as IGeneralValues
+      const exits = (results.exits as { rows: IExitRow[] }).rows
+      const extras = (results.extras as { rows: IExtraRow[] } | undefined)?.rows ?? []
       const quiet = { autoError: false }
       let written = false
       try {
@@ -223,7 +217,7 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
           owner: detail?.owner ?? null,
         }
         // `extra` (campi specifici del mondo) solo con le chiavi cambiate
-        const extra = extraEditor?.collect(data.sections.extra)
+        const extra = extraEditor?.collect(results.extra)
         if (extra) body.extra = extra
         if (roomId === null) {
           roomId = (await createRoom(body, quiet)).id
@@ -275,13 +269,41 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
             await updateExtra(id, serverId, payload, quiet)
           }
         }
+      return id
+    } finally {
+      if (written) await onSaved()
+    }
+    }
 
+    return { sections, locked, guard, editing, save }
+  }
+
+  /** Apre il dialogo di creazione (la modifica sta nella pagina di dettaglio). */
+  function openEditor(ctx: IEditorContext): void {
+    const { sections, locked, guard, editing, save } = prepareEditor(ctx)
+    $q.dialog({
+      component: PachiEditDialog,
+      componentProps: {
+        title: editing ? t('rooms.dialog.edit') : t('rooms.dialog.create'),
+        icon: mdiDoor,
+        sections,
+        avoidHideWithChanges: true,
+        commonProps: locked ? { readonly: true } : {},
+        cardClass: guard.corrupted ? LOCKED_DIALOG_CLASS : '',
+        width: '1000px',
+        maxWidth: '95vw',
+      },
+    }).onOk(async ({ data, onSuccess, onError }: AwaitableData) => {
+      if (locked) {
+        onError(new Error(t('worlds.readOnlyHint')))
+        return
+      }
+      try {
+        await save(data.sections)
         onSuccess()
         $q.notify({ type: 'positive', message: t('rooms.notify.saved') })
       } catch (error) {
         onError(new Error(await describeError(error, t, te)))
-      } finally {
-        if (written) await onSaved()
       }
     })
   }
@@ -307,13 +329,14 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
   }
 
   /**
-   * Apre l'editor su una stanza esistente.
+   * Prepara l'editor di una stanza esistente (per la pagina di dettaglio).
    *
    * @param roomId - id della stanza
+   * @returns la stanza e l'editor (`sections`, `locked`, `save`, ...)
    */
-  async function openEdit(roomId: number): Promise<void> {
+  async function prepareEdit(roomId: number) {
     const [enums, roomOptions, detail] = await Promise.all([store.ensureEnums(), loadRoomOptions(), getRoom(roomId)])
-    openEditor({ enums, roomOptions, zoneId: detail.zoneId, detail, suggestedVnum: detail.vnum })
+    return { detail, ...prepareEditor({ enums, roomOptions, zoneId: detail.zoneId, detail, suggestedVnum: detail.vnum }) }
   }
 
   /**
@@ -353,5 +376,5 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
     })
   }
 
-  return { openCreate, openEdit, openClone }
+  return { openCreate, prepareEdit, openClone }
 }

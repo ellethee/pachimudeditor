@@ -3,6 +3,7 @@ import type {
   IEnumOptions,
   IExtraDescription,
   IExtraDescriptionInput,
+  IIncomingExit,
   IPaginatedRooms,
   IResetUsage,
   IRoom,
@@ -87,6 +88,16 @@ export async function updateRoom(
 /** Elenca i comandi di reset che referenziano la stanza. */
 export async function getRoomUsage(id: number): Promise<IResetUsage[]> {
   return http().Get<IResetUsage[]>(`/rooms/${id}/usage`, { cacheFor: 0 })
+}
+
+/** Uscite di altre stanze (anche di altre zone) che portano alla stanza. */
+export async function getIncomingExits(id: number): Promise<IIncomingExit[]> {
+  return http().Get<IIncomingExit[]>(`/rooms/${id}/incoming-exits`, { cacheFor: 0 })
+}
+
+/** Elimina una stanza (409 se usata da reset o con istanze). */
+export async function deleteRoom(id: number, options: IRequestOptions = {}): Promise<void> {
+  await http().Delete(`/rooms/${id}`, { cacheFor: 0, ...options })
 }
 
 /** Clona una stanza (extra description copiate, uscite no). */

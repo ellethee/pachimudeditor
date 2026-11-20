@@ -13,4 +13,10 @@ export default [
     },
     component: () => import('./pages/ObjectsIndexPage.vue'),
   },
+  {
+    // Dettaglio oggetto (maschera di modifica inline): fuori da menu e dashboard.
+    path: '/objects/:id(\\d+)',
+    meta: { titleKey: 'objects.detail.title', icon: mdiShape, hidden: true, pageScroll: true },
+    component: () => import('./pages/ObjectDetailPage.vue'),
+  },
 ] as RouteRecordRaw[]

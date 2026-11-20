@@ -20,6 +20,16 @@ function http() {
 }
 
 /**
+ * Aggiorna una zona.
+ * @param id id della zona
+ * @param data campi da salvare
+ * @returns la zona salvata (in un mondo su file l'id può cambiare con `bottomVnum`)
+ */
+export async function updateZone(id: number, data: Partial<IZoneInput>): Promise<IZone> {
+  return http().Put<IZone>(`/${id}`, data, { meta: { autoError: false } })
+}
+
+/**
  * Elenco completo delle zone (senza paginazione: il backend restituisce tutte le righe se mancano `page` e `pageSize`).
  * @returns le zone ordinate per vnum
  */

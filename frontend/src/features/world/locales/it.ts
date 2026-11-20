@@ -26,6 +26,7 @@ export default {
     counts: {
       zones: 'Zone',
       zonesDetail: '{enabled} attive, {disabled} disattivate',
+      danglingExits: 'Uscite senza destinazione',
       rooms: 'Stanze',
       mobs: 'Mob',
       objects: 'Oggetti',
@@ -59,10 +60,20 @@ export default {
         vnum_out_of_range: 'Vnum fuori dal range della zona',
         mob_never_loaded: 'Mob mai caricati da un reset',
         object_never_loaded: 'Oggetti mai caricati da un reset',
+        duplicate_vnum: 'Vnum duplicati (il gioco usa l\'ultimo, l\'editor il primo)',
+        reset_unknown_room: 'Reset verso stanze inesistenti',
+        reset_unknown_mob: 'Reset con mob inesistenti',
+        reset_unknown_object: 'Reset con oggetti inesistenti',
+        exit_key_missing: 'Uscite con chiave inesistente',
+        container_key_missing: 'Contenitori con chiave inesistente',
       },
+      fileProblems: 'File YAML non leggibili',
       item: {
         exit_without_target: 'uscita {direction}',
         vnum_out_of_range: 'range zona {bottom}-{top}',
+        reset_unknown: 'vnum {vnum} (comando {index})',
+        exit_key_missing: 'uscita {direction}, chiave {vnum}',
+        container_key_missing: 'chiave {vnum}',
       },
     },
     graph: {

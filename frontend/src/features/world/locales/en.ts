@@ -29,6 +29,7 @@ const en: PachiMessages<typeof it> = {
     counts: {
       zones: 'Zones',
       zonesDetail: '{enabled} enabled, {disabled} disabled',
+      danglingExits: 'Exits without target',
       rooms: 'Rooms',
       mobs: 'Mobs',
       objects: 'Objects',
@@ -62,10 +63,20 @@ const en: PachiMessages<typeof it> = {
         vnum_out_of_range: 'Vnums outside the zone range',
         mob_never_loaded: 'Mobs never loaded by a reset',
         object_never_loaded: 'Objects never loaded by a reset',
+        duplicate_vnum: 'Duplicate vnums (the game keeps the last, the editor the first)',
+        reset_unknown_room: 'Resets pointing to missing rooms',
+        reset_unknown_mob: 'Resets with missing mobs',
+        reset_unknown_object: 'Resets with missing objects',
+        exit_key_missing: 'Exits with a missing key',
+        container_key_missing: 'Containers with a missing key',
       },
+      fileProblems: 'Unreadable YAML files',
       item: {
         exit_without_target: '{direction} exit',
         vnum_out_of_range: 'zone range {bottom}-{top}',
+        reset_unknown: 'vnum {vnum} (command {index})',
+        exit_key_missing: '{direction} exit, key {vnum}',
+        container_key_missing: 'key {vnum}',
       },
     },
     graph: {

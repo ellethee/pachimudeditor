@@ -13,6 +13,12 @@ export default [
     component: () => import('./pages/ZonesPage.vue'),
   },
   {
+    // Dettaglio zona a tab (info + script di reset): record separato, fuori da menu e dashboard.
+    path: '/zones/:id(-?\\d+)',
+    meta: { titleKey: 'zones.detail.title', icon: mdiMapMarkerRadius, hidden: true, pageScroll: true },
+    component: () => import('./pages/ZoneDetailPage.vue'),
+  },
+  {
     // Script di reset di una zona: figlia logica di /zones, ma record separato per non trasformare
     // /zones in una dashboard di card (hidden: fuori da menu e dashboard).
     path: '/zones/:id(-?\\d+)/resets',

@@ -57,6 +57,16 @@ const en: PachiMessages<typeof it> = {
       specProc: 'Special procedure',
       flags: 'Flags',
     },
+    detail: {
+      title: 'Mob',
+      back: 'Back to the list',
+      remove: 'Delete mob',
+      notFound: 'Mob not found.',
+      references: 'References to this mob',
+      resets: 'Reset commands using it ({count})',
+      none: 'None.',
+      saved: 'Mob saved.',
+    },
     sections: {
       identity: 'Identity',
       roles: "Roles and services",

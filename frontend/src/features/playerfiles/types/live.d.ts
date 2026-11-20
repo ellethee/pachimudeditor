@@ -26,7 +26,8 @@ export interface ILiveWhoPlayer {
   state: string
   level: number | null
   levels: Record<string, number>
-  race: number | null
+  /** Numero (dikumod) o id stringa (pachimud). */
+  race: number | string | null
   sex: number | null
   room: number | null
   zone: number | null
@@ -62,6 +63,7 @@ export interface ILiveZone {
   index: number
   num: number | null
   name: string
+  bottom?: number | null
   top: number | null
   lifespan: number | null
   age: number | null
@@ -196,4 +198,29 @@ export interface ILiveItemRemoveResult {
   destroyed: number
   saved: boolean
   warnings: string[]
+}
+
+/** Un'istanza in memoria (`GET /instances`, estensione pachimud). */
+export interface ILiveInstance {
+  instanceId: number | string
+  kind: 'mob' | 'obj'
+  vnum: number
+  roomVnum: number | null
+}
+
+/** `GET /instances`. */
+export interface ILiveInstances {
+  instances: ILiveInstance[]
+  count: number
+  truncated: boolean
+}
+
+/** Esito di `POST /zones/reload`: conteggi dei contenuti riletti dal gioco. */
+export interface ILiveZoneReload {
+  zone: number
+  name: string
+  reloaded: boolean
+  rooms: number
+  mobs: number
+  objects: number
 }

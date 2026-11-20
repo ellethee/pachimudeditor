@@ -4,6 +4,7 @@ import { MarkerType } from '@vue-flow/core'
 import type { Edge, Node } from '@vue-flow/core'
 import type { IGraphEdge, IGraphNode } from '../types/rooms'
 import { OPPOSITE, type DirectionValue } from './compass'
+import type { LayoutOverrides } from './layout-storage'
 
 /** Pixel per unità di griglia del layout calcolato dal server (un'unità = una stanza). */
 export const GRID_X = 250
@@ -11,6 +12,8 @@ export const GRID_Y = 170
 
 export interface RoomNodeData {
   room: IGraphNode
+  /** Stanza evidenziata (ricerca / centra). */
+  highlighted: boolean
 }
 
 export interface RoomEdgeData {
@@ -41,14 +44,32 @@ export function edgeId(exitId: number): string {
   return `e${exitId}`
 }
 
-/** Converte un nodo del grafo in nodo vue-flow (posizione = griglia * dimensione cella). */
-export function toFlowNode(room: IGraphNode): Node<RoomNodeData> {
+/**
+ * Converte un nodo del grafo in nodo vue-flow (posizione = griglia * dimensione cella, salvo posizione salvata).
+ *
+ * @param room - nodo del backend
+ * @param override - posizione trascinata a mano, se c'è
+ * @param highlighted - stanza evidenziata
+ */
+export function toFlowNode(room: IGraphNode, override?: { x: number; y: number }, highlighted = false): Node<RoomNodeData> {
   return {
     id: nodeId(room.id),
     type: 'room',
-    position: { x: room.x * GRID_X, y: room.y * GRID_Y },
-    data: { room },
+    position: override ?? { x: room.x * GRID_X, y: room.y * GRID_Y },
+    data: { room, highlighted },
   }
+}
+
+/** Id dell'uscita di un arco vue-flow (`e<id>`), `null` se l'id non ha quella forma. */
+export function exitIdOf(edge: { id: string }): number | null {
+  const id = Number(edge.id.slice(1))
+  return edge.id.startsWith('e') && Number.isInteger(id) ? id : null
+}
+
+/** Direzione codificata in un handle (`out-<dir>` / `in-<dir>`), `null` se assente o non valida. */
+export function directionOfHandle(handle: string | null | undefined): DirectionValue | null {
+  const value = Number(handle?.split('-')[1])
+  return Number.isInteger(value) && value >= 0 && value <= 5 ? (value as DirectionValue) : null
 }
 
 /** Converte un arco del grafo in arco vue-flow, con etichetta direzionale. */
@@ -80,11 +101,19 @@ export function toFlowEdge(edge: IGraphEdge, shortLabel: ShortLabelFn): Edge<Roo
  * @param nodes - nodi del backend
  * @param edges - archi del backend
  * @param shortLabel - etichette brevi delle direzioni
+ * @param overrides - posizioni trascinate a mano
+ * @param highlightedId - stanza da evidenziare
  */
-export function graphToFlow(nodes: IGraphNode[], edges: IGraphEdge[], shortLabel: ShortLabelFn) {
+export function graphToFlow(
+  nodes: IGraphNode[],
+  edges: IGraphEdge[],
+  shortLabel: ShortLabelFn,
+  overrides: LayoutOverrides = {},
+  highlightedId: number | null = null,
+) {
   const known = new Set(nodes.map((node) => node.id))
   return {
-    nodes: nodes.map(toFlowNode),
+    nodes: nodes.map((node) => toFlowNode(node, overrides[nodeId(node.id)], node.id === highlightedId)),
     edges: edges
       .filter((edge) => known.has(edge.fromRoomId) && known.has(edge.toRoomId))
       .map((edge) => toFlowEdge(edge, shortLabel)),

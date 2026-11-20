@@ -110,30 +110,23 @@ function canDeleteRow(row: IZone): boolean {
   return !readOnly.value && !guardOf(row.extra).corrupted
 }
 
-/** Deep-link `?zoneId=`: apre l'editor della zona (poi toglie il parametro, così un ricaricamento non lo riapre). */
+/** Deep-link `?zoneId=`: apre il dettaglio della zona. */
 async function openFromQuery(): Promise<void> {
   const id = Number(route.query.zoneId)
   if (route.query.zoneId === undefined || !Number.isFinite(id)) return
-  try {
-    const zone = await getZone(id)
-    await router.replace({ path: route.path })
-    const api = await whenReady(() => table.value?.api)
-    await openEdit(zone, api)
-  } catch {
-    // zona inesistente o non leggibile: resta l'elenco
-  }
+  await router.replace(`/zones/${id}`)
 }
 
 onMounted(openFromQuery)
 
 /** Apre l'editor dello script di reset della zona. */
 function openResets(zone: IZone): void {
-  void router.push(`/zones/${zone.id}/resets`)
+  void router.push({ path: `/zones/${zone.id}`, query: { tab: 'resets' } })
 }
 
-/** Modifica una zona dal pulsante di riga. */
-function onEdit(row: IZone, api: PachiTable2Api<IZone>): void {
-  void openEdit(row, api)
+/** Apre il dettaglio della zona dal pulsante di riga (la modifica è nel dettaglio). */
+function onEdit(row: IZone, _api: PachiTable2Api<IZone>): void {
+  void router.push(`/zones/${row.id}`)
 }
 
 /** Elimina una zona dopo conferma dal pulsante di riga. */

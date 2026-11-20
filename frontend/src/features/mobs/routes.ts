@@ -13,4 +13,10 @@ export default [
     },
     component: () => import('./pages/MobsIndexPage.vue'),
   },
+  {
+    // Dettaglio mob (maschera di modifica inline): fuori da menu e dashboard.
+    path: '/mobs/:id(\\d+)',
+    meta: { titleKey: 'mobs.detail.title', icon: mdiPaw, hidden: true, pageScroll: true },
+    component: () => import('./pages/MobDetailPage.vue'),
+  },
 ] as RouteRecordRaw[]

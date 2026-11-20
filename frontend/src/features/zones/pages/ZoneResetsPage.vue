@@ -1,11 +1,12 @@
 <template>
   <div class="q-pa-md">
     <div class="row items-center q-mb-md q-gutter-md">
-      <q-btn flat round :icon="mdiArrowLeft" to="/zones" :aria-label="t('zones.resets.back')">
+      <q-btn v-if="!embedded" flat round :icon="mdiArrowLeft" to="/zones" :aria-label="t('zones.resets.back')">
         <q-tooltip>{{ t('zones.resets.back') }}</q-tooltip>
       </q-btn>
-      <h1 class="text-h5 q-my-none">{{ t('zones.resets.title') }}</h1>
+      <h1 v-if="!embedded" class="text-h5 q-my-none">{{ t('zones.resets.title') }}</h1>
       <q-select
+        v-if="!embedded"
         :model-value="zoneId"
         :options="zones"
         option-value="id"
@@ -101,6 +102,9 @@ interface IEditableRow {
   uid: number
   cmd: IResetCommandInput
 }
+
+/** `embedded`: dentro il dettaglio zona (tab), che ha già titolo e selezione della zona e gestisce l'uscita con modifiche. */
+defineProps<{ embedded?: boolean }>()
 
 const { t } = useI18n()
 const $q = useQuasar()
@@ -278,6 +282,7 @@ function confirmLeave(): Promise<boolean> {
 
 onBeforeRouteLeave(confirmLeave)
 onBeforeRouteUpdate(confirmLeave)
+defineExpose({ confirmLeave })
 
 watch(zoneId, () => {
   issues.value = []

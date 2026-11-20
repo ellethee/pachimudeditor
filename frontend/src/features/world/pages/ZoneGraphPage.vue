@@ -59,7 +59,7 @@ import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
 import '@vue-flow/minimap/dist/style.css'
 
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { mdiFitToScreen, mdiRefresh } from '@quasar/extras/mdi-v7'
@@ -84,9 +84,9 @@ const router = useRouter()
 const { fitView } = useVueFlow()
 
 const graph = ref<IZoneGraph | null>(null)
-const nodes = ref<Node[]>([])
+const nodes = shallowRef<Node[]>([])
 useFlowControlLabels(nodes)
-const edges = ref<Edge[]>([])
+const edges = shallowRef<Edge[]>([])
 const loading = ref(false)
 const loadError = ref(false)
 

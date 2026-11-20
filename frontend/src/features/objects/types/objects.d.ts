@@ -28,9 +28,13 @@ export interface IZoneRef {
 export interface IResetUsage {
   zoneId: number
   zoneName: string
-  resetCommandId: number
-  orderIndex: number
-  commandType: number
+  /** `null` per le chiavi di uscita (`source === 'exit_key'`). */
+  resetCommandId: number | null
+  orderIndex: number | null
+  commandType: number | null
+  source?: 'reset' | 'exit_key'
+  roomId?: number | null
+  roomVnum?: number | null
 }
 
 /** Prototipo di oggetto (camelCase come da contratto backend). */

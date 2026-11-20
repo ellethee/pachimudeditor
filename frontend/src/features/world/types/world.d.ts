@@ -41,6 +41,12 @@ export type WarningKind =
   | 'vnum_out_of_range'
   | 'mob_never_loaded'
   | 'object_never_loaded'
+  | 'duplicate_vnum'
+  | 'reset_unknown_room'
+  | 'reset_unknown_mob'
+  | 'reset_unknown_object'
+  | 'exit_key_missing'
+  | 'container_key_missing'
 
 /** Un warning di qualità dei dati. */
 export interface IQualityWarning {
@@ -54,12 +60,22 @@ export interface IQualityWarning {
   params: Record<string, number>
 }
 
+/** File YAML (o voce) illeggibile del mondo pachimud: saltato, il resto si legge comunque. */
+export interface IFileProblem {
+  path: string
+  line: number | null
+  message: string
+  severity: 'error' | 'warning'
+}
+
 /** Risposta di `GET /world/overview`. */
 export interface IWorldOverview {
   counts: IWorldCounts
   zones: IZoneOverview[]
   warnings: IQualityWarning[]
   warningTotals: Partial<Record<WarningKind, number>>
+  /** Problemi di lettura dei file YAML (assenti per i mondi che non leggono file). */
+  fileProblems?: IFileProblem[]
 }
 
 /** Nodo del grafo tra zone. */

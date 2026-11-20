@@ -56,6 +56,17 @@ const en: PachiMessages<typeof it> = {
       wearFlags: 'Worn on',
       affects: 'Affects',
     },
+    detail: {
+      title: 'Object',
+      back: 'Back to the list',
+      remove: 'Delete object',
+      notFound: 'Object not found.',
+      references: 'References to this object',
+      resets: 'Reset commands and exits using it ({count})',
+      none: 'None.',
+      saved: 'Object saved.',
+      exitKey: 'Key of an exit of room #{vnum}',
+    },
     sections: {
       general: 'General',
       stats: 'Stats and flags',

@@ -54,6 +54,16 @@ export default {
       specProc: 'Procedura speciale',
       flags: 'Flag',
     },
+    detail: {
+      title: 'Mob',
+      back: 'Torna all\'elenco',
+      remove: 'Elimina mob',
+      notFound: 'Mob non trovato.',
+      references: 'Riferimenti a questo mob',
+      resets: 'Comandi di reset che lo usano ({count})',
+      none: 'Nessuno.',
+      saved: 'Mob salvato.',
+    },
     sections: {
       identity: 'Identità',
       roles: "Ruoli e servizi",

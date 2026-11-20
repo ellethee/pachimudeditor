@@ -77,27 +77,21 @@ import { PachiEmptyState, PachiErrorState } from '@ilpachi/pachifastquasar'
 import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import type { PachiTable2Api, PachiTable2Exposed } from '@ilpachi/pachi-kit/table'
 import { PachiEditDialog } from '@ilpachi/pachi-kit/edit-dialog'
-import type { AwaitableData, ISectionDefinition } from '@ilpachi/pachi-kit/edit-dialog'
-import { FieldsSection } from '@ilpachi/pachi-kit/fields'
-import type { IFieldRow } from '@ilpachi/pachi-kit/fields'
+import type { AwaitableData } from '@ilpachi/pachi-kit/edit-dialog'
 import { describeError } from '../helpers/describe-error'
-import InstancesSection from '../../instances/components/InstancesSection.vue'
-import { applyDescriptors, enumNames } from '../../shared/helpers/descriptor-rows'
-import { createExtraEditor } from '../../shared/helpers/extra-fields'
-import { LOCKED_DIALOG_CLASS, guardOf, guardSection } from '../../shared/helpers/record-guard'
+import { LOCKED_DIALOG_CLASS, guardOf } from '../../shared/helpers/record-guard'
 import { useWorld } from '../../shared/helpers/world-state'
 import { whenReady } from '../../shared/helpers/when-ready'
+import { enumNames } from '../../shared/helpers/descriptor-rows'
 import { localizeEnums } from '../../shared/helpers/enum-labels'
-import { buildCombatRows, buildIdentityRows, buildRoleRows } from '../helpers/field-rows'
+import { useMobForm } from '../composables/use-mob-form'
 import {
   MOBS_URL,
   getEnums,
-  getMob,
   getMobUsage,
   listClasses,
   listRaces,
   listZones,
-  nextMobVnum,
 } from '../services/mobs-api'
 import type { IContentRef, IMobEnums, IMobs, IMobsInput, IZoneRef } from '../types/mobs'
 import TableError from '../../shared/components/TableError.vue'
@@ -120,7 +114,8 @@ const { t, te } = useI18n()
 const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
-const { readOnly, supports, fieldOf, extraFieldsOf, declaresExtra } = useWorld()
+const { readOnly, fieldOf, extraFieldsOf } = useWorld()
+const { prepareMobForm } = useMobForm()
 
 /** Tutte le righe si aprono in modifica (in sola lettura il form è bloccato); serve anche a tipizzare la tabella su `IMobs`. */
 const allowRow = (_row: IMobs): boolean => true
@@ -167,7 +162,7 @@ function hasColumn(name: string): boolean {
 /** Controlli della barra dei filtri (testi, opzioni e campi non supportati nascosti). */
 const controls = computed<IFilterControl[]>(() =>
   FILTER_SPECS.map((spec): IFilterControl => {
-    const base = { ...spec, label: t(`mobs.filters.${spec.key}`), hidden: !hasField(spec.key) }
+    const base = { ...spec, label: spec.kind === 'range' ? columnLabel(spec.key) : t(`mobs.filters.${spec.key}`), hidden: !hasField(spec.key) }
     if (spec.key === 'sex') return { ...base, options: (enums.value?.sex ?? []).map((o) => ({ value: o.value, label: o.label })) }
     if (spec.key === 'flags') {
       return { ...base, free: true, options: enumNames(enumsRaw.value, fieldOf('mob', 'flags')).map((n) => ({ value: n, label: n })) }
@@ -175,7 +170,7 @@ const controls = computed<IFilterControl[]>(() =>
     if (spec.key === 'raceId') return { ...base, options: races.value.map((r) => ({ value: r.id, label: r.name })) }
     if (spec.key === 'classId') return { ...base, options: classes.value.map((r) => ({ value: r.id, label: r.name })) }
     if (spec.key === 'trainer') return { ...base, hidden: !hasField('isTrainer') }
-    return { ...base, label: columnLabel(spec.key) }
+    return base
   }),
 )
 
@@ -349,189 +344,43 @@ watch(
   },
 )
 
-/**
- * Deep-link `?mobId=`: seleziona la zona del mob e ne apre l'editor (poi toglie il parametro, così un
- * ricaricamento non riapre il dialog). Un id inesistente lascia semplicemente l'elenco.
- */
+/** Deep-link `?mobId=`: apre il dettaglio del mob. Un id inesistente lascia semplicemente l'elenco. */
 async function openFromQuery(): Promise<void> {
   const id = Number(route.query.mobId)
   if (route.query.mobId === undefined || !Number.isFinite(id)) return
-  try {
-    const mob = await getMob(id)
-    if (zones.value.some((zone) => zone.id === mob.zoneId)) selectedZoneId.value = mob.zoneId
-    const { mobId: _mobId, ...rest } = route.query
-    await router.replace({ path: route.path, query: { ...rest, zoneId: String(mob.zoneId) } })
-    const api = await whenReady(() => table.value?.api)
-    await openDialog(api, mob)
-  } catch {
-    // mob inesistente o non leggibile: resta l'elenco
-  }
+  await router.replace(`/mobs/${id}`)
 }
 
 /**
- * Valori iniziali del form per un nuovo mob.
- *
- * @param zoneId - zona di destinazione
- */
-function emptyMob(zoneId: number): IMobsInput {
-  return {
-    vnum: 0,
-    zoneId,
-    keywords: '',
-    shortDescription: '',
-    longDescription: '',
-    detailedDescription: '',
-    level: 1,
-    thac0: 20,
-    armorClass: 0,
-    hpDiceCount: 1,
-    hpDieSize: 8,
-    hpBonus: 0,
-    damageDiceCount: 1,
-    damageDieSize: 4,
-    damageBonus: 0,
-    gold: 0,
-    experience: 0,
-    sex: enums.value?.sex[0]?.value ?? 0,
-    flags: [],
-    raceId: null,
-    classId: null,
-    alignment: 0,
-    debuffSkillId: null,
-    shopId: null,
-    questIds: [],
-    isBanker: false,
-    teachesClassIds: null,
-    teachesSkillIds: null,
-  }
-}
-
-/**
- * Apre il dialog di creazione/modifica.
+ * Apre il dialog di creazione.
  *
  * @param api - API della tabella (per salvare e ricaricare)
- * @param record - mob da modificare; assente per la creazione
- * @param createZoneId - zona del nuovo mob (solo creazione)
+ * @param zoneId - zona del nuovo mob
  */
-async function openDialog(api: PachiTable2Api<IMobs>, record?: IMobs, createZoneId?: number): Promise<void> {
-  const zoneId = record?.zoneId ?? createZoneId
-  if (zoneId === undefined || zoneId === ALL_ZONES) return
-  const initial: Record<string, unknown> = record ? { ...record } : { ...emptyMob(zoneId) }
-  // le liste opzionali nulle si mostrano come vuote (chip/select multiplo)
-  initial.questIds = initial.questIds ?? []
-  initial.teachesClassIds = initial.teachesClassIds ?? []
-  initial.teachesSkillIds = initial.teachesSkillIds ?? []
-  if (!record) {
-    // creazione: propone subito il prossimo vnum libero della zona (l'utente può cambiarlo)
-    try {
-      initial.vnum = await nextMobVnum(zoneId)
-    } catch {
-      // resta 0: il pulsante del campo vnum permette di riprovare
-    }
-  }
-  const guard = guardOf(record?.extra)
-  const locked = readOnly.value || guard.corrupted
-  const lockRows = (rows: IFieldRow[]): IFieldRow[] =>
-    guard.corrupted ? rows.map((row) => row.map((def) => ({ ...def, disable: true, readonly: true }))) : rows
-  const rowsOf = (rows: IFieldRow[]): IFieldRow[] => lockRows(applyDescriptors(rows, 'mob', fieldOf, t))
-  const extraEditor = createExtraEditor({
-    t,
-    te,
-    descriptors: extraFieldsOf('mob'),
-    declared: declaresExtra('mob'),
-    readonly: locked,
-    extra: record?.extra,
-    enums: enumsRaw.value,
-    order: 40,
-  })
-  const sections: ISectionDefinition[] = [
-    {
-      key: 'identity',
-      title: t('mobs.sections.identity'),
-      component: markRaw(FieldsSection),
-      props: { rows: rowsOf(buildIdentityRows(t, zoneId, !!record)) },
-      initialValue: initial,
-      order: 10,
-      container: { type: 'card', flat: true, bordered: true, class: 'q-pa-md q-mb-md' },
-    },
-    {
-      key: 'combat',
-      title: t('mobs.sections.combat'),
-      component: markRaw(FieldsSection),
-      props: {
-        rows: rowsOf(
-          buildCombatRows(t, enums.value, races.value, classes.value, enumNames(enumsRaw.value, fieldOf('mob', 'flags'))),
-        ),
-      },
-      initialValue: initial,
-      order: 20,
-      container: { type: 'expansion', title: t('mobs.sections.combat'), defaultOpened: true },
-    },
-    {
-      key: 'roles',
-      title: t('mobs.sections.roles'),
-      component: markRaw(FieldsSection),
-      props: { rows: rowsOf(buildRoleRows(t, classes.value)) },
-      initialValue: initial,
-      order: 30,
-      container: { type: 'expansion', title: t('mobs.sections.roles'), defaultOpened: false },
-    },
-  ]
-  if (extraEditor) sections.push(extraEditor.section)
-  const banner = guardSection(guard)
-  if (banner) sections.unshift(banner)
-  if (record && supports('supportsInstances') && !guard.corrupted) {
-    sections.push({
-      key: 'instances',
-      title: t('worlds.instances'),
-      component: markRaw(InstancesSection),
-      props: { kind: 'mob', prototypeId: record.id },
-      initialValue: {},
-      order: 50,
-      container: { type: 'expansion', title: t('worlds.instances'), defaultOpened: false },
-    })
-  }
+async function openDialog(api: PachiTable2Api<IMobs>, zoneId: number): Promise<void> {
+  if (zoneId === ALL_ZONES || !enums.value) return
+  const form = await prepareMobForm({ enums: enums.value, races: races.value, classes: classes.value }, undefined, zoneId)
   $q.dialog({
     component: PachiEditDialog,
     componentProps: {
-      title: record ? t('mobs.editTitle') : t('mobs.createTitle'),
-      icon: record ? mdiPencil : mdiPlus,
-      sections,
+      title: t('mobs.createTitle'),
+      icon: mdiPlus,
+      sections: form.sections,
       avoidHideWithChanges: true,
-      commonProps: locked ? { readonly: true } : {},
-      cardClass: guard.corrupted ? LOCKED_DIALOG_CLASS : '',
+      commonProps: form.locked ? { readonly: true } : {},
+      cardClass: form.guard.corrupted ? LOCKED_DIALOG_CLASS : '',
       width: '720px',
       maxWidth: '95vw',
     },
   }).onOk(async ({ data, onSuccess, onError }: AwaitableData) => {
-    if (locked) {
+    if (form.locked) {
       onError(new Error(t('worlds.readOnlyHint')))
       return
     }
-    const body = {
-      ...(data.sections.identity as Record<string, unknown>),
-      ...(data.sections.combat as Record<string, unknown>),
-      ...(data.sections.roles as Record<string, unknown>),
-    } as Partial<IMobsInput>
-    // campi opzionali: stringa vuota -> null; liste di insegnamento vuote -> null
-    if (!body.shopId) body.shopId = null
-    if (!body.debuffSkillId) body.debuffSkillId = null
-    if (!body.teachesClassIds?.length) body.teachesClassIds = null
-    if (!body.teachesSkillIds?.length) body.teachesSkillIds = null
-    // `extra` (campi specifici del mondo) solo con le chiavi cambiate
-    const extra = extraEditor?.collect(data.sections.extra)
-    if (extra) body.extra = extra
     try {
-      if (record) {
-        // PUT = patch parziale: il vnum e la zona non si cambiano
-        const { vnum: _vnum, ...patch } = body
-        await api.Put<IMobs>(`/${record.id}`, patch, { cacheFor: 0, meta: { autoError: false } })
-        await api.reload()
-      } else {
-        // POST senza slash finale (createRecord della tabella posterebbe su `{url}/`, che il backend non espone)
-        await api.Post<IMobs>('', { ...initial, ...body, zoneId }, { cacheFor: 0, meta: { autoError: false } })
-        await api.reload()
-      }
+      // POST senza slash finale (createRecord della tabella posterebbe su `{url}/`, che il backend non espone)
+      await api.Post<IMobs>('', { ...form.initial, ...form.collect(data.sections), zoneId }, { cacheFor: 0, meta: { autoError: false } })
+      await api.reload()
       onSuccess()
     } catch (error) {
       onError(new Error(await describeError(error)))
@@ -540,19 +389,18 @@ async function openDialog(api: PachiTable2Api<IMobs>, record?: IMobs, createZone
 }
 
 /** Gestore dell'edit della tabella (pulsante riga o doppio click). */
-function openEdit(row: IMobs, api?: PachiTable2Api<IMobs>): void {
-  const tableApi = api ?? table.value?.api
-  if (tableApi) openDialog(tableApi, row)
+function openEdit(row: IMobs, _api?: PachiTable2Api<IMobs>): void {
+  void router.push(`/mobs/${row.id}`)
 }
 
 /** Apre il dialog di creazione: con «Tutte le zone» chiede prima la zona di destinazione. */
 function openCreate(api: PachiTable2Api<IMobs>): void {
   if (selectedZoneId.value !== ALL_ZONES) {
-    void openDialog(api, undefined, selectedZoneId.value)
+    void openDialog(api, selectedZoneId.value)
     return
   }
   $q.dialog({ component: ZonePickDialog, componentProps: { zones: zones.value, scope: 'mobs' } }).onOk((zoneId: number) => {
-    void openDialog(api, undefined, zoneId)
+    void openDialog(api, zoneId)
   })
 }
 

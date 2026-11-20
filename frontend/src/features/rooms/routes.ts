@@ -18,6 +18,12 @@ export default [
     component: () => import('./pages/RoomsPage.vue'),
   },
   {
+    // Dettaglio stanza (maschera di modifica inline): fuori da menu e dashboard.
+    path: '/rooms/:id(\\d+)',
+    meta: { titleKey: 'rooms.detail.title', icon: mdiDoor, hidden: true, pageScroll: true },
+    component: () => import('./pages/RoomDetailPage.vue'),
+  },
+  {
     path: '/rooms/map',
     meta: {
       title: 'Mappa stanze',

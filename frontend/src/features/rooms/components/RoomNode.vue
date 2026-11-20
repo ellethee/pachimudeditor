@@ -1,10 +1,14 @@
 <template>
-  <div class="pachi-room-node" :style="{ '--pachi-room-sector': color }">
+  <div class="pachi-room-node" :class="{ 'pachi-room-node--highlight': data.highlighted }" :style="{ '--pachi-room-sector': color }">
     <div class="pachi-room-node__band">
       <span>#{{ room.vnum }}</span>
     </div>
     <div class="pachi-room-node__body">
       <div class="pachi-room-node__name" :title="room.name">{{ room.name }}</div>
+      <div v-if="room.flags.length > 0" class="pachi-room-node__flags" :title="room.flags.join(', ')">
+        <span v-for="flag in room.flags.slice(0, 3)" :key="flag">{{ flag }}</span>
+        <span v-if="room.flags.length > 3">+{{ room.flags.length - 3 }}</span>
+      </div>
       <div v-if="room.danglingExits > 0" class="pachi-room-node__badge">
         {{ t('rooms.map.dangling', { count: room.danglingExits }) }}
       </div>
@@ -31,7 +35,7 @@
 
 <script setup lang="ts">
 /**
- * Nodo "stanza" della mappa: fascia colorata col terreno, vnum, nome, avviso per le
+ * Nodo "stanza" della mappa: fascia colorata col terreno, vnum, nome, flag, avviso per le
  * uscite senza destinazione. Due handle per direzione (uscita `out-<dir>`, ingresso
  * `in-<dir>`) sul lato della bussola corrispondente, così gli archi si attaccano dal
  * lato giusto; Su/Giù condividono il lato di Est/Ovest, spostati per non sovrapporsi.
@@ -103,6 +107,24 @@ function handleStyle(direction: DirectionValue, kind: 'in' | 'out'): Record<stri
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pachi-room-node--highlight {
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.8);
+}
+
+.pachi-room-node__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+
+  span {
+    padding: 0 4px;
+    border: 1px solid #b0bec5;
+    border-radius: 3px;
+    font-size: 9px;
+  }
 }
 
 .pachi-room-node__badge {

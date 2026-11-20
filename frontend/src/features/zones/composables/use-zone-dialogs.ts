@@ -42,11 +42,11 @@ export function useZoneDialogs() {
   }
 
   /**
-   * Apre il dialogo di creazione/modifica.
+   * Prepara il form di una zona (sezioni, blocco in sola lettura, raccolta dei dati): lo usano sia il dialogo di
+   * creazione sia la modifica inline del dettaglio.
    * @param initial valori iniziali (con `id` in modifica)
-   * @param api API della tabella usata per salvare
    */
-  async function openZoneDialog(initial: Partial<IZone>, api: PachiTable2Api<IZone>): Promise<void> {
+  async function prepareZoneForm(initial: Partial<IZone>) {
     const enums = await store.ensureEnums()
     const editing = initial.id !== undefined
     const guard = guardOf(initial.extra)
@@ -92,6 +92,26 @@ export function useZoneDialogs() {
     if (extraEditor) sections.push(extraEditor.section)
     const banner = guardSection(guard)
     if (banner) sections.unshift(banner)
+    /**
+     * Unisce i risultati delle sezioni nel corpo da inviare (di `extra` solo le chiavi cambiate).
+     * @param results `data.sections` del dialogo / `getResults()` del form
+     */
+    function collect(results: Record<string, unknown>): IZoneInput {
+      const body = { ...(results.general as object), ...(results.ranges as object) } as IZoneInput
+      const extra = extraEditor?.collect(results.extra)
+      if (extra) body.extra = extra
+      return body
+    }
+    return { sections, locked, guard, editing, collect }
+  }
+
+  /**
+   * Apre il dialogo di creazione.
+   * @param initial valori iniziali
+   * @param api API della tabella usata per salvare
+   */
+  async function openZoneDialog(initial: Partial<IZone>, api: PachiTable2Api<IZone>): Promise<void> {
+    const { sections, locked, guard, editing, collect } = await prepareZoneForm(initial)
     $q.dialog({
       component: PachiEditDialog,
       componentProps: {
@@ -109,10 +129,7 @@ export function useZoneDialogs() {
         onError(new Error(t('worlds.readOnlyHint')))
         return
       }
-      const body = { ...(data.sections.general as object), ...(data.sections.ranges as object) } as IZoneInput
-      // `extra` (campi specifici del mondo) solo con le chiavi cambiate
-      const extra = extraEditor?.collect(data.sections.extra)
-      if (extra) body.extra = extra
+      const body = collect(data.sections)
       const rangeError = validateRanges(body)
       if (rangeError) {
         onError(new Error(rangeError))
@@ -217,5 +234,5 @@ export function useZoneDialogs() {
     })
   }
 
-  return { openCreate, openEdit, openClone, deleteZone }
+  return { openCreate, openEdit, openClone, deleteZone, prepareZoneForm, validateRanges }
 }

@@ -265,14 +265,14 @@ function onCreate(): void {
   )
 }
 
-/** Modifica una stanza (pulsante di riga). */
+/** Apre il dettaglio della stanza (pulsante di riga). */
 async function onEdit(row: IRoom): Promise<void> {
-  await dialogs.openEdit(row.id)
+  await router.push(`/rooms/${row.id}`)
 }
 
-/** Doppio clic su una riga: apre l'editor. */
+/** Doppio clic su una riga: apre il dettaglio. */
 async function onRowDblClick(_event: Event, row: IRoom): Promise<void> {
-  await dialogs.openEdit(row.id)
+  await router.push(`/rooms/${row.id}`)
 }
 
 /**
@@ -311,10 +311,8 @@ async function init(): Promise<void> {
   ready.value = !loadError.value
   const queryRoomId = Number(route.query.roomId)
   if (!loadError.value && Number.isFinite(queryRoomId) && queryRoomId > 0) {
-    // evita di riaprire l'editor a ogni ricarica della pagina
-    const { roomId: _roomId, ...rest } = route.query
-    await router.replace({ path: '/rooms', query: rest as Record<string, string> })
-    await dialogs.openEdit(queryRoomId)
+    // deep-link `?roomId=`: apre il dettaglio della stanza
+    await router.replace(`/rooms/${queryRoomId}`)
   }
 }
 

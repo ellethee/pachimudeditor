@@ -16,6 +16,8 @@ import type {
   ILiveStatus,
   ILiveWho,
   ILiveZone,
+  ILiveInstances,
+  ILiveZoneReload,
 } from '../types/live'
 
 /** Client HTTP dell'app (auth, refresh e `X-World` già gestiti), risolto a ogni chiamata. */
@@ -75,6 +77,24 @@ export async function setLivePlayer(name: string, change: ILivePlayerSet): Promi
  */
 export async function resetLiveZone(zone: number, onlyIfEmpty: boolean): Promise<{ zone: number; name: string; executed: boolean }> {
   return http().Post('/zones/reset', { zone, onlyIfEmpty }, OPTS)
+}
+
+/**
+ * Il gioco rilegge dai file una zona e rifà il reset (estensione pachimud, comando `zone.reload`).
+ *
+ * @param vnum - vnum della zona
+ */
+export async function reloadLiveZone(vnum: number): Promise<ILiveZoneReload> {
+  return http().Post('/zones/reload', { vnum }, OPTS)
+}
+
+/**
+ * Istanze in memoria di una zona (mob della zona e oggetti a terra nelle sue stanze; estensione pachimud, comando `instances.list`).
+ *
+ * @param zoneVnum - vnum della zona
+ */
+export async function getLiveZoneInstances(zoneVnum: number): Promise<ILiveInstances> {
+  return http().Get<ILiveInstances>('/instances', { ...OPTS, params: { zoneVnum, limit: 200 } })
 }
 
 /**

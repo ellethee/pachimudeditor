@@ -53,6 +53,17 @@ export default {
       wearFlags: 'Indossabile in',
       affects: 'Effetti',
     },
+    detail: {
+      title: 'Oggetto',
+      back: 'Torna all\'elenco',
+      remove: 'Elimina oggetto',
+      notFound: 'Oggetto non trovato.',
+      references: 'Riferimenti a questo oggetto',
+      resets: 'Comandi di reset e uscite che lo usano ({count})',
+      none: 'Nessuno.',
+      saved: 'Oggetto salvato.',
+      exitKey: 'Chiave di un\'uscita della stanza #{vnum}',
+    },
     sections: {
       general: 'Generale',
       stats: 'Statistiche e flag',

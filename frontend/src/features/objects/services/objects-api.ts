@@ -1,5 +1,5 @@
 import { getUseAlovaInstance } from '@ilpachi/use-alova'
-import type { IObjectEnums, IObjects, IPaginatedObjects, IResetUsage, IZoneRef } from '../types/objects'
+import type { IObjectEnums, IObjects, IObjectsInput, IPaginatedObjects, IResetUsage, IZoneRef } from '../types/objects'
 
 /**
  * Client HTTP dell'app (@ilpachi/use-alova, cablato da createPachiApp): Authorization, refresh del
@@ -64,4 +64,23 @@ export async function getObjectUsage(id: number): Promise<IResetUsage[]> {
  */
 export async function getObject(id: number): Promise<IObjects> {
   return http(OBJECTS_URL).Get<IObjects>(`/${id}`, { cacheFor: 0, meta: { autoError: false } })
+}
+
+/**
+ * Aggiorna un oggetto (PUT = patch parziale: vnum e zona non si cambiano); l'errore lo gestisce il chiamante.
+ *
+ * @param id - id dell'oggetto
+ * @param patch - campi da salvare
+ */
+export async function updateObject(id: number, patch: Partial<IObjectsInput>): Promise<IObjects> {
+  return http(OBJECTS_URL).Put<IObjects>(`/${id}`, patch, { cacheFor: 0, meta: { autoError: false } })
+}
+
+/**
+ * Elimina un oggetto (409 se usato da reset, chiave di un'uscita o con istanze: lo mostra il dialogo globale).
+ *
+ * @param id - id dell'oggetto
+ */
+export async function deleteObject(id: number): Promise<void> {
+  await http(OBJECTS_URL).Delete(`/${id}`, { cacheFor: 0 })
 }
