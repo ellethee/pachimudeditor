@@ -178,7 +178,7 @@ def zone_apply(raw: Any, changes: dict[str, Any]) -> None:
 
 
 def room_out(item: Item, zone_vnum: int) -> RoomOut:
-    """DTO di una stanza; `enabled` e `area` del file stanno in `extra`."""
+    """DTO di una stanza; `enabled`, `area` e `climate` del file stanno in `extra`."""
     m = item.model
     return RoomOut(
         id=m.vnum,
@@ -192,7 +192,7 @@ def room_out(item: Item, zone_vnum: int) -> RoomOut:
         mana_rate=m.mana_rate,
         clan_id=m.clan_id,
         owner=m.owner,
-        extra={"enabled": m.enabled, "area": item.area or ""},
+        extra={"enabled": m.enabled, "area": item.area or "", "climate": m.climate},
     )
 
 

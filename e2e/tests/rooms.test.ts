@@ -214,6 +214,15 @@ describe('stanze', () => {
     assert.deepEqual(room.flags, ['DARK', 'NO_MOB'])
   })
 
+  it('clima della stanza: si imposta, vuoto = eredita dalla zona, un valore errato e rifiutato', async () => {
+    s.allow(/422/)
+    const room = await api.byVnum('rooms', 1010)
+    assert.equal((await api.get(`/api/rooms/${room.id}`)).data.extra.climate, null)
+    assert.equal((await api.call('PUT', `/api/rooms/${room.id}`, { extra: { climate: 'desert' } })).data.extra.climate, 'desert')
+    assert.equal((await api.call('PUT', `/api/rooms/${room.id}`, { extra: { climate: 'tropicale' } })).status, 422)
+    assert.equal((await api.call('PUT', `/api/rooms/${room.id}`, { extra: { climate: '' } })).data.extra.climate, null)
+  })
+
   it('clona la stanza (extra copiate, uscite no)', async () => {
     await tableRow(s.page, 'Sala Pw modificata').locator('td.q-td button').filter({ hasNot: s.page.locator('.pachi-t2-edit-item') }).first().click()
     await s.page.getByLabel('Nuovo vnum *').fill('1011')

@@ -36,7 +36,7 @@ from pachimudeditor_adapter_pachimud.base import PachimudSupport
 from pachimudeditor_adapter_pachimud.loaders import LoaderRoom
 from pachimudeditor_adapter_pachimud.store import Item, plain
 
-ROOM_EXTRA = frozenset({"enabled", "area"})
+ROOM_EXTRA = frozenset({"enabled", "area", "climate"})
 EXIT_EXTRA = frozenset({"isMale", "openCmd", "climb"})
 
 
@@ -81,10 +81,12 @@ class RoomsMixin(PachimudSupport):
         )
 
     def _apply_extra(self, item: Item, extra: dict[str, Any]) -> Any:
-        """Applica `extra` (`enabled`, `area`) alla voce; restituisce l'area richiesta (`...` se non indicata)."""
+        """Applica `extra` (`enabled`, `area`, `climate`) alla voce; restituisce l'area richiesta (`...` se non indicata)."""
         check_extra(extra, ROOM_EXTRA)
         if "enabled" in extra:
             mapping.put(item.raw, "enabled", bool(extra["enabled"]), default=True)
+        if "climate" in extra:
+            mapping.put(item.raw, "climate", extra["climate"] or None)
         return norm_area(extra["area"]) if "area" in extra else ...
 
     # ------------------------------------------------------------------ stanze
@@ -119,6 +121,8 @@ class RoomsMixin(PachimudSupport):
             )
             if "enabled" in data.extra:
                 mapping.put(raw, "enabled", bool(data.extra["enabled"]), default=True)
+            if "climate" in data.extra:
+                mapping.put(raw, "climate", data.extra["climate"] or None)
             LoaderRoom.model_validate(plain(raw))
             file.list_of(create=True).append(raw)
             self.store.save(file)

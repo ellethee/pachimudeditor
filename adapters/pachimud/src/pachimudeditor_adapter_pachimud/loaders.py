@@ -190,6 +190,8 @@ class LoaderRoom(BaseModel):
     clan_id: Optional[str] = None
     owner: Optional[str] = None
     area: Optional[AreaName] = None
+    climate: Optional[Literal["temperate", "desert", "arctic"]] = None
+    """Clima della stanza; vuoto = quello della zona."""
     exits: dict[str, LoaderExit] = {}
     extra_descriptions: list[LoaderExtraDescription] = []
 

@@ -36,7 +36,13 @@ async def test_new_entities_go_to_area_files(client: httpx.AsyncClient) -> None:
     assert "vnum: 1050" in (zones_dir() / ALFA / "rooms.yaml").read_text()
     # una nuova stanza senza area va nel file base
     plain = data(await client.post("/api/rooms", json={"vnum": 1051, "zoneId": zone["id"], "name": "Base"}), 201)
-    assert plain["extra"] == {"enabled": True, "area": ""}
+    assert plain["extra"] == {"enabled": True, "area": "", "climate": None}
+    # clima della stanza: scelta valida, valore errato 422, vuoto = eredita dalla zona (la chiave sparisce dal file)
+    assert data(await client.put(f"/api/rooms/{plain['id']}", json={"extra": {"climate": "desert"}}))["extra"]["climate"] == "desert"
+    assert "climate: desert" in (zones_dir() / ALFA / "rooms.yaml").read_text()
+    assert error_code(await client.put(f"/api/rooms/{plain['id']}", json={"extra": {"climate": "tropicale"}}), 422)
+    assert data(await client.put(f"/api/rooms/{plain['id']}", json={"extra": {"climate": ""}}))["extra"]["climate"] is None
+    assert "climate:" not in (zones_dir() / ALFA / "rooms.yaml").read_text()
     assert error_code(await client.put(f"/api/rooms/{plain['id']}", json={"extra": {"colore": "rosso"}}), 422) == "pachimud.extra_unknown"
     # il form svuota il campo: testo vuoto = nessuna area (non 422)
     assert data(await client.put(f"/api/rooms/{plain['id']}", json={"name": "Base 2", "extra": {"area": ""}}))["extra"]["area"] == ""

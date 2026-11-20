@@ -144,7 +144,7 @@ def test_describe_pachimud_fields() -> None:
     assert room["description"].type == "text" and room["clanId"].nullable
     assert "exits" not in room and room["extra"].type == "dict"  # `extra` e' il campo generico, descritto da `extraFields`
     extra_names = {f.name for r in info.resources if r.type == "room" for f in r.extra_fields}
-    assert extra_names == {"enabled", "area"}
+    assert extra_names == {"enabled", "area", "climate"}
 
 
 # --------------------------------------------------------------------------- HTTP

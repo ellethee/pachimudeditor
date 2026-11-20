@@ -84,7 +84,7 @@ Come il loader del gioco: `zone.yaml` si cerca ricorsivamente sotto `zones/` e i
 | Entita' | `extra` |
 |---|---|
 | zona | `zoneId` (slug di `zone.yaml`), `description`, `folder` (sola lettura), `climate` (`temperate`/`desert`/`arctic`, elenco a scelta: sceglie i messaggi del meteo), `prototypesOnly` (zona di soli prototipi: nessuna stanza ne' reset), `extendsZone` (vnum di una zona di un altro strato che questa estende) |
-| stanza | `enabled`, `area` |
+| stanza | `enabled`, `area`, `climate` (`temperate`/`desert`/`arctic`, elenco a scelta; vuoto = eredita quello della zona) |
 | mob | `area`, `name`, `attacks`, `persona` (dialogo LLM), `strength`, `dexterity`, `constitution`, `intelligence`, `wisdom`, `charisma` (0 = non impostata), `postmaster` (impiegato postale), `receptionist` (rent e offer), `weaponImmunity` (0 = armi non magiche, 1-4 = fino a +N; vuoto = nessuna), `breath` (soffi: nomi liberi, es. `fire`, `frost`, `acid`, `gas`, `lightning`), `breathCost` (mana per soffio), `shop` (negozio, descritto nella nota su `extra.shop` qui di seguito) |
 | uscita | `isMale` (genere grammaticale del nome dell'uscita), `openCmd` (`pull`, `push`, `lift`, `turn`, `twist`, `dig`, `cut`: il comando che apre la porta al posto di `open`/`close`; vuoto = porta normale), `climb` (uscita da scalare con `climb`) |
 | oggetto | `area`, `extraDescriptions` (lista di `{keywords, text}`), `typeFields` (dict con i campi specifici del tipo, nomi snake_case del file: anche `corpse`, `permanent`, TRAP `triggers`/`damage`/`level`/`charges`) |
