@@ -98,6 +98,7 @@ export default {
       resets: 'Comandi di reset che la usano ({count})',
       none: 'Nessuno.',
     },
+    climateInherit: 'Se vuoto, eredita il clima della zona: {climate}',
     notify: {
       saved: 'Stanza salvata.',
       cloned: 'Stanza clonata.',

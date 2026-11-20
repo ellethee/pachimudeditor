@@ -101,6 +101,7 @@ const en: PachiMessages<typeof it> = {
       resets: 'Reset commands using it ({count})',
       none: 'None.',
     },
+    climateInherit: 'If empty, inherits the zone climate: {climate}',
     notify: {
       saved: 'Room saved.',
       cloned: 'Room cloned.',

@@ -43,6 +43,8 @@ export interface IExtraEditorOptions extends IExtraI18n {
   order: number
   /** Chiavi di `extra` che il chiamante edita altrove (con una propria sezione): non diventano campi di questo editor. */
   exclude?: readonly string[]
+  /** Suggerimenti (hint) per chiave, mostrati sotto il campo (es. il valore ereditato quando il campo è vuoto). */
+  hints?: Record<string, string> | undefined
 }
 
 /** Editor di `extra` pronto per un dialog. */
@@ -148,7 +150,9 @@ export function createExtraEditor(options: IExtraEditorOptions): IExtraEditor | 
     const label = options.te(labelKey) ? options.t(labelKey) : key
     const desc = descriptors.get(key)!
     const locked = options.readonly ? { ...desc, readOnly: true } : desc
-    return [fieldFor(key, locked, label, options.enums, options)]
+    const field = fieldFor(key, locked, label, options.enums, options)
+    const hint = options.hints?.[key]
+    return [hint ? { ...field, hint: field.hint ?? hint } : field]
   })
   return {
     section: {

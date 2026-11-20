@@ -25,6 +25,7 @@ import {
   updateExtra,
   updateRoom,
 } from '../services/rooms-api'
+import { getZone } from '../../zones/services/zones-api'
 import { useRoomsStore } from '../stores/use-rooms-store'
 import type { IEnumOptions, IExitRow, IExtraRow, IRoom, IRoomDetail, IRoomInput, IRoomOption } from '../types/rooms'
 import { describeError } from '../utils/error-helper'
@@ -48,11 +49,41 @@ interface IEditorContext {
   zoneId: number
   detail: IRoomDetail | null
   suggestedVnum: number
+  /** `climate` della zona (nome originale; assente = temperato): è quello che la stanza eredita se il suo campo è vuoto. */
+  zoneClimate?: string | undefined
 }
 
 /** Converte il valore di un campo numerico opzionale (`''` dopo la cancellazione) in `number | null`. */
 function numberOrNull(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+/** Zona di una stanza: il suo `climate` (`extra.climate`, assente = temperato), `undefined` se la zona non si legge. */
+async function zoneClimateOf(zoneId: number): Promise<string | undefined> {
+  try {
+    const climate = (await getZone(zoneId)).extra?.climate
+    return typeof climate === 'string' ? climate : 'temperate'
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Hint del campo `climate` della stanza: quale clima eredita se è vuoto.
+ *
+ * @param t - traduzione
+ * @param enums - enum del backend (localizzati)
+ * @param zoneClimate - clima della zona, `undefined` se non noto
+ */
+function inheritHint(
+  t: (key: string, values: Record<string, unknown>) => string,
+  enums: Record<string, unknown>,
+  zoneClimate: string | undefined,
+): Record<string, string> | undefined {
+  if (!zoneClimate) return undefined
+  const options = (Array.isArray(enums.climate) ? enums.climate : []) as { label: string; rawLabel?: string }[]
+  const found = options.find((option) => (option.rawLabel ?? option.label) === zoneClimate)
+  return { climate: t('rooms.climateInherit', { climate: found?.label ?? zoneClimate }) }
 }
 
 /**
@@ -140,6 +171,7 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
       extra: detail?.extra,
       enums: rawEnums,
       order: 40,
+      hints: inheritHint(t, rawEnums, ctx.zoneClimate),
     })
     // se il mondo dichiara un settore proprio in `extra` (ROM, Diku Modificato), `sectorType` è solo un'approssimazione: sola lettura
     const romSector = extraFieldsOf('room').some((field) => field.name === 'sector')
@@ -320,12 +352,13 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
    * @param zoneId - zona della nuova stanza
    */
   async function openCreate(zoneId: number): Promise<void> {
-    const [enums, roomOptions, suggestedVnum] = await Promise.all([
+    const [enums, roomOptions, suggestedVnum, zoneClimate] = await Promise.all([
       store.ensureEnums(),
       loadRoomOptions(),
       nextRoomVnum(zoneId),
+      zoneClimateOf(zoneId),
     ])
-    openEditor({ enums, roomOptions, zoneId, detail: null, suggestedVnum })
+    openEditor({ enums, roomOptions, zoneId, detail: null, suggestedVnum, zoneClimate })
   }
 
   /**
@@ -336,7 +369,8 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
    */
   async function prepareEdit(roomId: number) {
     const [enums, roomOptions, detail] = await Promise.all([store.ensureEnums(), loadRoomOptions(), getRoom(roomId)])
-    return { detail, ...prepareEditor({ enums, roomOptions, zoneId: detail.zoneId, detail, suggestedVnum: detail.vnum }) }
+    const zoneClimate = await zoneClimateOf(detail.zoneId)
+    return { detail, ...prepareEditor({ enums, roomOptions, zoneId: detail.zoneId, detail, suggestedVnum: detail.vnum, zoneClimate }) }
   }
 
   /**

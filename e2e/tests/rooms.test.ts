@@ -223,6 +223,26 @@ describe('stanze', () => {
     assert.equal((await api.call('PUT', `/api/rooms/${room.id}`, { extra: { climate: '' } })).data.extra.climate, null)
   })
 
+  it('clima della stanza: il form mostra quale clima eredita dalla zona se il campo è vuoto', async () => {
+    await openDetail(s.page, tableRow(s.page, 'Sala Pw modificata'))
+    await s.page.getByText('Campi specifici del mondo').click()
+    await s.page.getByText('eredita il clima della zona: Temperato').waitFor()
+    await s.page.getByLabel("Torna all'elenco").click()
+    await tableRow(s.page, 'Sala Pw modificata').waitFor()
+    // con la zona nel deserto l'hint cambia
+    const zone = await api.byVnum('zones', 10)
+    await api.call('PUT', `/api/zones/${zone.id}`, { extra: { climate: 'desert' } })
+    try {
+      await openDetail(s.page, tableRow(s.page, 'Sala Pw modificata'))
+      await s.page.getByText('Campi specifici del mondo').click()
+      await s.page.getByText('eredita il clima della zona: Deserto').waitFor()
+    } finally {
+      await api.call('PUT', `/api/zones/${zone.id}`, { extra: { climate: 'temperate' } })
+    }
+    await s.page.getByLabel("Torna all'elenco").click()
+    await tableRow(s.page, 'Sala Pw modificata').waitFor()
+  })
+
   it('clona la stanza (extra copiate, uscite no)', async () => {
     await tableRow(s.page, 'Sala Pw modificata').locator('td.q-td button').filter({ hasNot: s.page.locator('.pachi-t2-edit-item') }).first().click()
     await s.page.getByLabel('Nuovo vnum *').fill('1011')
