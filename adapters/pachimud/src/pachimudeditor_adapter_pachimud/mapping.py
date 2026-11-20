@@ -130,11 +130,32 @@ def new_map(pairs: dict[str, Any]) -> Any:
     return out
 
 
+_INVALID_LIMITS = ("gt", "ge", "lt", "le", "min_length", "max_length", "multiple_of")
+"""Chiavi di `ctx` (pydantic) che descrivono un limite numerico o di lunghezza."""
+
+
 def invalid(error: ValidationError) -> Exception:
-    """422 `pachimud.invalid_entry` con il primo errore del loader."""
+    """422 sul primo errore del loader, con testo it/en per i casi comuni di pydantic (campo mancante, tipo, intervallo, lunghezza, scelta,
+    campo non ammesso): `pachimud.invalid_missing|type|range|length|choice|unknown` con `field` (e `limit`). Altrimenti
+    `pachimud.invalid_entry` con `detail` (i messaggi dei validatori del gioco sono gia' in italiano, senza il prefisso «Value error, »)."""
     first = error.errors()[0]
     where = ".".join(str(p) for p in first["loc"])
-    return api_error(422, "pachimud.invalid_entry", detail=f"{where}: {first['msg']}" if where else str(first["msg"]))
+    kind, ctx = str(first["type"]), first.get("ctx") or {}
+    limit = ", ".join(f"{k} {ctx[k]}" for k in _INVALID_LIMITS if k in ctx)
+    if kind == "missing":
+        return api_error(422, "pachimud.invalid_missing", field=where)
+    if kind == "extra_forbidden":
+        return api_error(422, "pachimud.invalid_unknown", field=where)
+    if kind in ("literal_error", "enum"):
+        return api_error(422, "pachimud.invalid_choice", field=where, limit=ctx.get("expected", ""))
+    if limit and kind.split("_")[0] in ("greater", "less", "multiple"):
+        return api_error(422, "pachimud.invalid_range", field=where, limit=limit)
+    if limit and kind in ("string_too_short", "string_too_long", "too_short", "too_long"):
+        return api_error(422, "pachimud.invalid_length", field=where, limit=limit)
+    if kind.endswith(("_type", "_parsing")) or kind in ("int_from_float", "bool_parsing"):
+        return api_error(422, "pachimud.invalid_type", field=where)
+    msg = str(first["msg"]).removeprefix("Value error, ")
+    return api_error(422, "pachimud.invalid_entry", detail=f"{where}: {msg}" if where else msg)
 
 
 # --------------------------------------------------------------------------- zona

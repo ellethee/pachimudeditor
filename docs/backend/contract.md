@@ -32,7 +32,8 @@ Base: `/api`. Docs interattive: `/docs`, schema completo `/api/v1/openapi.json`.
 | `objects.in_exit_key_usage` (delete di un oggetto che e' `keyVnum` di un'uscita) | 409 | `count`, `zones` |
 | `rooms.vnum_in_use` / `mobs.vnum_in_use` / `objects.vnum_in_use` (cambio di `vnum` di un elemento usato da reset o, per gli oggetti, da chiavi di uscita; a vnum invariato nessun controllo) | 409 | `count`, `zones` |
 | `rooms.has_instances` (delete o cambio di `vnum` con personaggi la cui ultima stanza e' questa; i mondi con istanze vive contano anche mob e oggetti) | 409 | `mobs`, `objects`, `players` |
-| `pachimud.invalid_entry` (la voce YAML risultante non e' valida per il loader del gioco) / `pachimud.extra_unknown` / `pachimud.extra_readonly` (chiavi di `extra` non ammesse) | 422 | `detail` / `key` |
+| `pachimud.invalid_entry` (la voce YAML risultante non e' valida per il loader del gioco; `detail` con il messaggio del validatore) / `pachimud.extra_unknown` / `pachimud.extra_readonly` (chiavi di `extra` non ammesse) | 422 | `detail` / `key` |
+| `pachimud.invalid_missing` / `invalid_unknown` / `invalid_type` / `invalid_choice` / `invalid_range` / `invalid_length` (casi comuni della stessa validazione, con testo it/en al posto dell'inglese di pydantic) | 422 | `field` (+ `limit` per `invalid_choice`, `invalid_range`, `invalid_length`) |
 | `pachimud.reset_orphan` (`G`/`E`/`P` senza il mob o il contenitore a cui appartengono) / `pachimud.reset_unsupported` (`R`) | 422 | `index` |
 | `pachimud.invalid_folder` / `pachimud.folder_exists` (cartella di una nuova zona) / `pachimud.file_broken` (file di reset illeggibile) | 422 / 409 | `name` / `name` / `file` |
 | `zones.range_overlap` (clone con `bottomVnum`/`topVnum` che si sovrappongono a un'altra zona) | 409 | `zone`, `zone_vnum` |

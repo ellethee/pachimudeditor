@@ -1,11 +1,15 @@
 """Adapter pachimud su file YAML: descrittori, file per area, oggetti per tipo, zone nuove, file rotti, vnum duplicate."""
 
 import httpx
+import pytest
 
 from pachimudeditor.common.adapters.registry import get_registry
 from tests.helpers import by_vnum, data, error_code
 from tests.support.describe_check import assert_describe_matches, emitted_extra_keys
 from tests.support.stack import edit_world_file, write_world_file, zones_dir
+
+INVALID = tuple(f"pachimud.invalid_{k}" for k in ("entry", "choice", "range", "type", "unknown", "missing", "length"))
+"""Codici 422 di una voce non valida (`pachimud.invalid_entry` o il caso comune localizzato)."""
 
 ALFA = "ZonaAlfa"
 
@@ -66,7 +70,7 @@ async def test_object_types_and_type_fields(client: httpx.AsyncClient) -> None:
     assert armor["extra"]["typeFields"] == {"armor_class": 4}
     # campo di un altro tipo: 422 e nulla scritto
     bad = await client.put(f"/api/objects/{armor['id']}", json={"extra": {"typeFields": {"dice_count": 1}}})
-    assert error_code(bad, 422) == "pachimud.invalid_entry"
+    assert error_code(bad, 422) in INVALID
     assert data(await client.get(f"/api/objects/{armor['id']}"))["extra"]["typeFields"] == {"armor_class": 4}
     # cambio di tipo: i campi del vecchio tipo spariscono dal file
     changed = data(await client.put(f"/api/objects/{weapon['id']}", json={"objectType": 8, "extra": {"typeFields": {"dice_count": 3}}}))
@@ -79,7 +83,7 @@ async def test_object_types_and_type_fields(client: httpx.AsyncClient) -> None:
     assert "object_type: DRINKCON" in (zones_dir() / ALFA / "objects.yaml").read_text() and drink["extra"]["typeFields"]["liquid"] == "wine"
     assert (
         error_code(await client.post("/api/objects", json={**base, "vnum": 1603, "extra": {"typeFields": {"liquid": "acido"}}}), 422)
-        == "pachimud.invalid_entry"
+        in INVALID
     )
 
 
@@ -202,7 +206,7 @@ async def test_new_game_fields_round_trip(client: httpx.AsyncClient) -> None:
     assert bag["extra"]["typeFields"]["corpse"] is True and bag["value3"] == 1
     assert (
         error_code(await client.post("/api/objects", json={**base, "vnum": 1802, "extra": {"typeFields": {"triggers": ["SIDEWAYS"]}}}), 422)
-        == "pachimud.invalid_entry"
+        in INVALID
     )
     ex = data(await client.get("/api/rooms/1000"))["exits"][0]
     assert ex["extra"] == {"isMale": False, "openCmd": None, "climb": False}
@@ -223,10 +227,7 @@ async def test_new_game_fields_of_recent_game_versions(client: httpx.AsyncClient
     assert out["extra"]["openCmd"] == "pull" and out["extra"]["climb"] is True
     text = (zones_dir() / ALFA / "rooms.yaml").read_text()
     assert "open_cmd: pull" in text and "climb: true" in text
-    assert (
-        error_code(await client.put(f"/api/rooms/1000/exits/{ex['id']}", json={"extra": {"openCmd": "kick"}}), 422)
-        == "pachimud.invalid_entry"
-    )
+    assert error_code(await client.put(f"/api/rooms/1000/exits/{ex['id']}", json={"extra": {"openCmd": "kick"}}), 422) in INVALID
     out = data(await client.put(f"/api/rooms/1000/exits/{ex['id']}", json={"extra": {"openCmd": None, "climb": False}}))
     assert out["extra"]["openCmd"] is None and "open_cmd" not in (zones_dir() / ALFA / "rooms.yaml").read_text()
     z = data(await client.put(f"/api/zones/{zone['id']}", json={"extra": {"prototypesOnly": True}}))
@@ -255,7 +256,7 @@ async def test_new_game_fields_of_recent_game_versions(client: httpx.AsyncClient
     text = (zones_dir() / ALFA / "mobs.yaml").read_text()
     assert "shop:" in text and "postmaster: true" in text and "weapon_immunity: 2" in text
     for bad in ({"shop": {"trades": ["NOPE"]}}, {"shop": {"messages": {"x": {}}}}, {"weaponImmunity": 9}):
-        assert error_code(await client.put("/api/mobs/1001", json={"extra": bad}), 422) in ("pachimud.invalid_entry", "validation_error")
+        assert error_code(await client.put("/api/mobs/1001", json={"extra": bad}), 422) in (*INVALID, "validation_error")
     cleared = data(await client.put("/api/mobs/1001", json={"extra": {"shop": None, "weaponImmunity": None, "postmaster": False}}))
     assert (
         cleared["extra"]["shop"] is None
@@ -306,3 +307,21 @@ def test_database_url_env_expansion(monkeypatch) -> None:  # type: ignore[no-unt
     monkeypatch.delenv("PG_PASSWORD")
     with pytest.raises(PachimudConfigError):
         expand_env("postgresql+asyncpg://u:${PG_PASSWORD}@h/db")
+
+
+def test_invalid_errors_are_localized_codes() -> None:
+    """I casi comuni di pydantic hanno un codice con messaggio it/en (`field`, `limit`), non il testo inglese del modello."""
+    from pydantic import ValidationError
+
+    from pachimudeditor_adapter_pachimud.loaders import LoaderShop
+    from pachimudeditor_adapter_pachimud.mapping import invalid
+
+    def code_of(raw: dict) -> tuple[str, dict]:
+        with pytest.raises(ValidationError) as caught:
+            LoaderShop.model_validate(raw)
+        detail = invalid(caught.value).detail[0]
+        return detail["code"], detail["params"]
+
+    assert code_of({"profit_buy": "x"}) == ("pachimud.invalid_type", {"field": "profit_buy"})
+    assert code_of({"trades": ["NOPE"]})[0] in INVALID
+    assert "Value error" not in code_of({"trades": ["NOPE"]})[1]["detail"]

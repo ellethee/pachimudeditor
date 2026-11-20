@@ -5,6 +5,9 @@ import httpx
 from tests.helpers import by_vnum, data, error_code
 from tests.support.stack import zones_dir
 
+INVALID = tuple(f"pachimud.invalid_{k}" for k in ("entry", "choice", "range", "type", "unknown", "missing", "length"))
+"""Codici 422 di una voce non valida (`pachimud.invalid_entry` o il caso comune localizzato)."""
+
 
 async def test_shops_list_options_and_edit(client: httpx.AsyncClient) -> None:
     """Un mob diventa negoziante con `extra.shop`: l'elenco risolve merci e stanza; un negozio non valido e' 422; `null` lo toglie."""
@@ -28,10 +31,7 @@ async def test_shops_list_options_and_edit(client: httpx.AsyncClient) -> None:
     assert len(rows) == len(before) + 1 and row["hasShop"] and row["profitBuy"] == 1.5 and row["close1"] == 20
     assert row["produces"] == [{"vnum": obj["vnum"], "name": obj["shortDescription"]}, {"vnum": 999999, "name": None}]
     # un negozio non valido non si salva
-    assert (
-        error_code(await client.put(f"/api/mobs/{mob['id']}", json={"extra": {"shop": {"trades": ["NOPE"]}}}), 422)
-        == "pachimud.invalid_entry"
-    )
+    assert error_code(await client.put(f"/api/mobs/{mob['id']}", json={"extra": {"shop": {"trades": ["NOPE"]}}}), 422) in INVALID
     # `null` toglie il negozio
     assert data(await client.put(f"/api/mobs/{mob['id']}", json={"extra": {"shop": None}}))["extra"]["shop"] is None
     assert all(r["vnum"] != mob["vnum"] for r in data(await client.get("/api/content/shops")))
