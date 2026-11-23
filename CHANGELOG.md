@@ -4,6 +4,7 @@ Un solo file per i cinque pacchetti. Le release sono sezioni `## <pacchetto> X.Y
 
 ## Non rilasciato
 
+- Stanze: nel dettaglio, modificando porta, stato (aperta, chiusa a chiave) o parole chiave di un'uscita, la spunta «Applica porta, stato e parole chiave anche all'uscita di ritorno» (attiva di default, come nella mappa) copia i valori sull'uscita opposta della stanza di destinazione, se torna alla stessa stanza.
 - Adapter basedmud: un `~` in un testo (nome, descrizioni, frasi dei programmi) non viene più tolto in silenzio al salvataggio: 422 `basedmud.unsafe_text` (come già in dikumod) e nessuna scrittura; vale anche per l'anteprima di conversione.
 - Prestazioni: `GET /api/rooms/{id}/incoming-exits` per dikumod e basedmud scorre le stanze già in memoria invece di ricostruire il dettaglio di ognuna (da ~8 s a ~1 ms sui dati reali di dikumod; risultato identico): la pagina di una stanza si apre in ~3 s invece di ~14 s. Il mondo `mapping` usa ancora il default generico. Conversione verso pachimud: misurato il costo (una riscrittura del file YAML per voce, ~250 ms) e documentato in `adapters/pachimud.md`.
 - Adapter pachimud: se il `pachimud.yaml` del gioco ha `extra_definition_paths` (che l'editor non legge) `worlds check` e il log segnalano l'avviso `extra_definition_paths_ignored`, così i contenuti mancanti hanno una spiegazione. Docs: `adapters/pachimud.md`.

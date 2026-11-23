@@ -68,6 +68,8 @@ const en: PachiMessages<typeof it> = {
       description: "Description (looking that way)",
       descriptionHint: "Text shown when looking in this direction",
       keyVnum: 'Key vnum',
+      mirror: 'Apply door, state and keywords to the return exit too',
+      mirrorHint: 'If the destination room has an exit leading back here, it gets the same door, open, locked and keyword values.',
     },
     extras: {
       title: 'Extra descriptions',

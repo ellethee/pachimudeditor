@@ -27,7 +27,8 @@ import {
 } from '../services/rooms-api'
 import { getZone } from '../../zones/services/zones-api'
 import { useRoomsStore } from '../stores/use-rooms-store'
-import type { IEnumOptions, IExitRow, IExtraRow, IRoom, IRoomDetail, IRoomInput, IRoomOption } from '../types/rooms'
+import type { IEnumOptions, IExitRow, IExtraRow, IRoom, IRoomDetail, IRoomExit, IRoomInput, IRoomOption } from '../types/rooms'
+import { OPPOSITE, type DirectionValue } from '../utils/compass'
 import { describeError } from '../utils/error-helper'
 import { buildCloneFieldRows, buildRoomFieldRows } from '../utils/room-fields'
 
@@ -118,6 +119,32 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
     })
   }
 
+  /** Se porta, stato o parole chiave dell'uscita sono cambiati rispetto a quelli salvati. */
+  function doorChanged(before: IRoomExit, row: IExitRow): boolean {
+    return (
+      before.doorFlag !== row.doorFlag ||
+      before.isOpen !== row.isOpen ||
+      before.isLocked !== row.isLocked ||
+      (before.keywords ?? null) !== (row.keywords ?? null)
+    )
+  }
+
+  /** Copia porta, stato e parole chiave sull'uscita di ritorno (se esiste e torna a questa stanza), come fa la mappa. */
+  async function mirrorDoor(roomId: number, row: IExitRow, quiet: { autoError: boolean }): Promise<void> {
+    if (row.targetRoomId === null) return
+    const target = await getRoom(row.targetRoomId)
+    const back = target.exits.find(
+      (candidate) => candidate.direction === OPPOSITE[row.direction as DirectionValue] && candidate.targetRoomId === roomId,
+    )
+    if (!back) return
+    await updateExit(
+      target.id,
+      back.id,
+      { doorFlag: row.doorFlag, isOpen: row.isOpen, isLocked: row.isLocked, keywords: row.keywords },
+      quiet,
+    )
+  }
+
   /**
    * Prepara l'editor di una stanza (sezioni, blocco in sola lettura e salvataggio): lo usano il dialogo di creazione e
    * la pagina di dettaglio. `save` scrive stanza, uscite ed extra description e rilancia gli errori; tiene traccia di
@@ -206,7 +233,7 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
           extraFields: exitExtra,
           enums: rawEnums,
         },
-        initialValue: { rows: buildExitRows(enums, detail) },
+        initialValue: { rows: buildExitRows(enums, detail), mirror: true },
         order: 20,
         container: { type: 'card', flat: true, bordered: true, class: 'q-pa-md q-mb-md' },
       },
@@ -231,7 +258,7 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
      */
     async function save(results: Record<string, unknown>): Promise<number> {
       const values = results.general as IGeneralValues
-      const exits = (results.exits as { rows: IExitRow[] }).rows
+      const { rows: exits, mirror } = results.exits as { rows: IExitRow[]; mirror?: boolean }
       const extras = (results.extras as { rows: IExtraRow[] } | undefined)?.rows ?? []
       const quiet = { autoError: false }
       let written = false
@@ -279,6 +306,8 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
             exitIds.set(row.direction, (await createExit(id, { direction: row.direction, ...payload }, quiet)).id)
           } else if (row.hasExit && serverId !== undefined) {
             await updateExit(id, serverId, payload, quiet)
+            const before = detail?.exits.find((candidate) => candidate.id === serverId)
+            if (mirror !== false && before && doorChanged(before, row)) await mirrorDoor(id, row, quiet)
           } else if (!row.hasExit && serverId !== undefined) {
             await removeExit(id, serverId, quiet)
             exitIds.delete(row.direction)

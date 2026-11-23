@@ -1,11 +1,12 @@
 /** Stanze: creazione con uscite ed extra description, modifica, clonazione, eliminazione e mappa. */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
+import type { Locator } from 'playwright-core'
 import { Api } from '../support/api.ts'
 import { addFlag, closeDiscarding, confirm, dialog, dismissError, goto, loginOk, openDetail, openSession, pickOption, rawI18nKey, saveDialog, saveForm, tableRow, type Session, waitDialogsClosed } from '../support/browser.ts'
 
 /** Vnum creati dai test (puliti all'avvio e alla fine). */
-const VNUMS = [1010, 1011, 1012, 1070, 1071, 1072, 2070]
+const VNUMS = [1010, 1011, 1012, 1070, 1071, 1072, 1073, 1074, 2070]
 
 /** Elimina via API le stanze di test rimaste (uscite/extra vanno con la stanza). */
 async function cleanup(api: Api): Promise<void> {
@@ -241,6 +242,38 @@ describe('stanze', () => {
     }
     await s.page.getByLabel("Torna all'elenco").click()
     await tableRow(s.page, 'Sala Pw modificata').waitFor()
+  })
+
+  it('porta modificata dal dettaglio: «applica anche al ritorno» la copia sull\'uscita opposta (e senza spunta no)', async () => {
+    const zone = await api.byVnum('zones', 10)
+    const [a, b] = [1073, 1074].map((vnum) => ({ vnum, zoneId: zone.id, name: `Porta ${vnum}`, description: 'x', sectorType: 1 }))
+    const idA = (await api.call('POST', '/api/rooms', a)).data.id
+    const idB = (await api.call('POST', '/api/rooms', b)).data.id
+    await api.call('POST', `/api/rooms/${idA}/exits`, { direction: 0, targetRoomId: idB })
+    await api.call('POST', `/api/rooms/${idB}/exits`, { direction: 2, targetRoomId: idA })
+    const exitOf = async (id: number): Promise<any> => (await api.get(`/api/rooms/${id}`)).data.exits[0]
+    const north = (): Locator => s.page.locator('tr', { hasText: 'Nord' }).first()
+    const setMirror = async (on: boolean): Promise<void> => {
+      const box = s.page.getByTestId('exits-mirror')
+      if ((await box.getAttribute('aria-checked')) !== String(on)) await box.click()
+    }
+    await goto(s.page, `/rooms/${idA}`)
+    // senza spunta: cambia solo l'andata
+    await north().locator('.q-select').nth(1).click()
+    await s.page.locator('.q-menu .q-item', { hasText: /chiudibile|closable/i }).first().click()
+    await setMirror(false)
+    await saveForm(s.page)
+    assert.equal((await exitOf(idA)).doorFlag, 1)
+    assert.equal((await exitOf(idB)).doorFlag, 0)
+    // con la spunta (default): porta, stato e parole chiave arrivano anche al ritorno
+    await s.page.getByRole('heading', { name: /Porta 1073/ }).waitFor()
+    await s.page.getByLabel('Parole chiave porta').first().fill('porta')
+    await setMirror(true)
+    await saveForm(s.page)
+    await s.page.waitForTimeout(500)
+    assert.equal((await exitOf(idB)).doorFlag, 1)
+    assert.equal((await exitOf(idB)).keywords, 'porta')
+    await goto(s.page, '/rooms') // i test seguenti partono dall'elenco
   })
 
   it('clona la stanza (extra copiate, uscite no)', async () => {

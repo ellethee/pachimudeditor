@@ -128,6 +128,16 @@
         </template>
       </tbody>
     </q-markup-table>
+    <q-checkbox
+      v-if="state.rows.some((row) => row.hasExit)"
+      v-model="state.mirror"
+      dense
+      class="q-mt-sm"
+      :label="t('rooms.exits.mirror')"
+      data-testid="exits-mirror"
+    >
+      <q-tooltip>{{ t('rooms.exits.mirrorHint') }}</q-tooltip>
+    </q-checkbox>
   </div>
 </template>
 
@@ -145,6 +155,8 @@ import type { IEnumOption, IExitRow, IRoomOption } from '../types/rooms'
 
 interface IExitsState {
   rows: IExitRow[]
+  /** Applica porta, stato e parole chiave anche all'uscita di ritorno (come la mappa). */
+  mirror?: boolean
 }
 
 const props = withDefaults(defineProps<{
@@ -160,7 +172,7 @@ const props = withDefaults(defineProps<{
 
 const { t, te } = useI18n()
 const { state, reset, commit, getResults, hasChanges } = useSection<IExitsState>(
-  { rows: [] },
+  { rows: [], mirror: true },
   { initialValue: () => props.initialValue },
 )
 
