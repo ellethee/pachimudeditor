@@ -1,6 +1,9 @@
 """Metadati (enum, razze, classi) del mondo pachimud (mixin di `PachimudAdapter`)."""
 
+import json
 from enum import Enum
+from functools import cache
+from pathlib import Path
 
 from pachimudeditor_adapter_pachimud.base import PachimudSupport
 from pachimudeditor_adapter_pachimud.definitions import read_classes, read_races
@@ -16,6 +19,39 @@ def _humanize(value: str) -> str:
 
 CLIMATES = ("temperate", "desert", "arctic")
 """Clima di una zona (`climate` di `zone.yaml`): sceglie i messaggi del meteo (pioggia, neve, tempesta di sabbia)."""
+
+
+FLAGS_CATALOG = Path(__file__).with_name("flags.json")
+"""Copia versionata di `json-schema/flags.json` del gioco (`pachimud json-schema`); `tests/test_pachimud_files.py` la confronta col gioco."""
+
+FLAG_ENUMS: dict[str, str] = {
+    "room": "pachimudRoomFlags",
+    "mob": "pachimudMobFlags",
+    "object_extra": "pachimudObjectExtraFlags",
+    "object_wear": "pachimudObjectWearFlags",
+}
+"""Sezione del catalogo -> nome della lista in `enums()` (l'uscita `exit` e' `doorFlag`)."""
+
+
+@cache
+def flag_catalog() -> dict[str, list[dict[str, object]]]:
+    """Il catalogo dei flag del gioco: `{sezione: [{name, aliases, description: {it, en}, origin, implemented}]}`."""
+    return json.loads(FLAGS_CATALOG.read_text(encoding="utf-8"))
+
+
+def flag_options(section: str) -> list[Option]:
+    """Le opzioni di una sezione del catalogo: il nome canonico e' l'etichetta (e il valore scritto nel file), il valore intero la posizione."""
+    return [
+        Option(
+            value=i,
+            label=str(f["name"]),
+            description=f["description"],  # type: ignore[arg-type]
+            aliases=f["aliases"] or None,  # type: ignore[arg-type]
+            origin=str(f["origin"]),
+            implemented=bool(f["implemented"]),
+        )
+        for i, f in enumerate(flag_catalog()[section])
+    ]
 
 
 def name_options(names: tuple[str, ...]) -> list[Option]:
@@ -42,6 +78,7 @@ class MetaMixin(PachimudSupport):
             "climate": name_options(CLIMATES),
             "openCmd": name_options(OPEN_COMMANDS),
             "objectType": enum_options(ObjectType),
+            **{enum: flag_options(section) for section, enum in FLAG_ENUMS.items()},
             "zoneCommandType": [o for o in enum_options(ZoneCommandType) if o.value != ZoneCommandType.RANDOMIZE_EXITS],
         }
 

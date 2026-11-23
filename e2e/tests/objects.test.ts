@@ -148,6 +148,21 @@ describe('oggetti', () => {
     await waitDialogsClosed(s.page)
   })
 
+  it('pachimud: i flag vengono dal catalogo del gioco, con descrizione e «non ancora attivo»', async () => {
+    await goto(s.page, '/objects')
+    await openCreate(s.page, 'Zona Alfa')
+    const input = s.page.getByLabel('Extra flag (digita e invio)')
+    await input.click()
+    await input.fill('ANTI_S')
+    const option = s.page.getByTestId('flag-option-ANTI_SUN')
+    await option.waitFor()
+    await option.getByText('non ancora attivo').waitFor()
+    await option.getByText('Soffre la luce del sole.').waitFor()
+    await s.page.keyboard.press('Escape')
+    await s.page.keyboard.press('Escape')
+    await waitDialogsClosed(s.page)
+  })
+
   it('crea un oggetto con extra e wear flag (chip con Invio)', async () => {
     await goto(s.page, '/objects')
     await openCreate(s.page, 'Zona Alfa')

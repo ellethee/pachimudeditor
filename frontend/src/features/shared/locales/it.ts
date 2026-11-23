@@ -59,6 +59,8 @@ export default {
     jsonInvalid: 'JSON non valido',
     jsonHint: 'Valore in formato JSON',
     flagsHint: 'Scegli dall’elenco (o digita un valore e premi Invio)',
+    flagInactive: 'non ancora attivo',
+    flagAliases: 'alias',
     readOnly: 'sola lettura',
     labels: {
       numRaw: 'Numero di zona (#N)',

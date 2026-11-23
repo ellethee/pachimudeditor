@@ -771,6 +771,14 @@ class Option(AliasedBaseModel):
 
     value: int
     label: str
+    description: dict[str, str] | None = None
+    """Facoltativa: spiegazione per lingua (`{"it": ..., "en": ...}`), per le liste di flag con un catalogo (pachimud)."""
+    aliases: list[str] | None = None
+    """Facoltativa: altri nomi accettati per lo stesso valore."""
+    origin: str | None = None
+    """Facoltativa: da dove viene il valore (`leu`, `clessidra`, `pachimud`)."""
+    implemented: bool | None = None
+    """Facoltativa: `False` se il gioco accetta il valore ma non lo usa (flag inerte)."""
 
 
 class ContentRef(AliasedBaseModel):

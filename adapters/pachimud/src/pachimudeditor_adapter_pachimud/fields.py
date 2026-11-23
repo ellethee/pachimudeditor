@@ -7,8 +7,13 @@ from __future__ import annotations
 
 from pachimudeditor.sdk import ExtraFieldDescriptor, ResourceType, xf
 
-FLAG_LISTS: dict[tuple[str, str], str] = {}
-"""(risorsa, campo) -> lista in `enums()` da cui prendere i nomi dei flag (nel gioco sono stringhe libere MAIUSCOLE)."""
+FLAG_LISTS: dict[tuple[str, str], str] = {
+    ("room", "flags"): "pachimudRoomFlags",
+    ("mob", "flags"): "pachimudMobFlags",
+    ("object", "extraFlags"): "pachimudObjectExtraFlags",
+    ("object", "wearFlags"): "pachimudObjectWearFlags",
+}
+"""(risorsa, campo) -> lista in `enums()` (dal catalogo `flags.json`) da cui prendere i nomi dei flag; nel file restano stringhe, anche sconosciute."""
 
 UNSUPPORTED: dict[str, frozenset[str]] = {"zone": frozenset({"minLevel"})}
 """Risorsa -> campi del DTO che il gioco non ha (valore neutro in lettura, solo il neutro in scrittura): `Zone.min_level` e' stato tolto."""

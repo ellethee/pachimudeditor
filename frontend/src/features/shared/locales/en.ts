@@ -59,6 +59,8 @@ export default {
     jsonInvalid: 'Invalid JSON',
     jsonHint: 'Value in JSON format',
     flagsHint: 'Pick from the list (or type a value and press Enter)',
+    flagInactive: 'not active yet',
+    flagAliases: 'aliases',
     readOnly: 'read only',
     labels: {
       numRaw: 'Zone number (#N)',

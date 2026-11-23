@@ -1,5 +1,7 @@
 """Adapter pachimud su file YAML: descrittori, file per area, oggetti per tipo, zone nuove, file rotti, vnum duplicate."""
 
+import json
+import os
 from pathlib import Path
 
 import httpx
@@ -352,3 +354,26 @@ async def test_extra_definition_paths_are_reported_not_read(tmp_path: Path) -> N
     adapter = PachimudAdapter(WorldConfig(id="p", kind="pachimud", name="p", params={"config_path": str(game)}))
     report = adapter.schema_report()
     assert report is not None and "extra_definition_paths_ignored" in [i.code for i in report.problems]
+
+
+def test_flag_lists_come_from_the_game_catalog() -> None:
+    """Le liste dei flag di stanze, mob e oggetti sono il catalogo del gioco (`flags.json`); i nomi canonici sono unici e hanno it/en."""
+    from pachimudeditor_adapter_pachimud.fields import FLAG_LISTS
+    from pachimudeditor_adapter_pachimud.meta import FLAG_ENUMS, flag_catalog, flag_options
+
+    assert set(FLAG_LISTS.values()) == set(FLAG_ENUMS.values())
+    for section in FLAG_ENUMS:
+        options = flag_options(section)
+        names = [o.label for o in options]
+        assert options and len(names) == len(set(names))
+        assert all(o.description and o.description["it"] and o.description["en"] and o.implemented is not None for o in options)
+    assert any(o.implemented is False for o in flag_options("room")) and {f["origin"] for f in flag_catalog()["mob"]} >= {"leu"}
+
+
+@pytest.mark.skipif(not os.environ.get("PACHIMUD_GAME_ROOT"), reason="PACHIMUD_GAME_ROOT non impostata: confronto col MUD saltato")
+def test_flag_catalog_matches_the_game() -> None:
+    """La copia `flags.json` dell'adapter coincide con quella generata dal gioco (`pachimud json-schema`): se differisce, va ricopiata."""
+    from pachimudeditor_adapter_pachimud.meta import FLAGS_CATALOG
+
+    game = Path(os.environ["PACHIMUD_GAME_ROOT"]) / "src/pachimud/config/schema/json-schema/flags.json"
+    assert json.loads(game.read_text(encoding="utf-8")) == json.loads(FLAGS_CATALOG.read_text(encoding="utf-8"))

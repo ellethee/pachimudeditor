@@ -4,6 +4,26 @@ import EnumFlagsField from '../components/EnumFlagsField.vue'
 import FlagsField from '../components/FlagsField.vue'
 import type { IFieldDescriptor } from '../types/worlds'
 
+/** Spiegazione di un flag del catalogo del mondo (`Option` di `GET /api/meta/enums`, campi facoltativi). */
+export interface IFlagDetail {
+  /** Testo per lingua (`it`, `en`). */
+  description?: Record<string, string> | null
+  /** Altri nomi accettati dal gioco. */
+  aliases?: string[] | null
+  /** `leu`, `clessidra` o `pachimud`. */
+  origin?: string | null
+  /** `false`: il gioco accetta il flag ma non lo usa. */
+  implemented?: boolean | null
+}
+
+/** Opzione di una lista di flag come arriva dal backend. */
+interface IFlagOption extends IFlagDetail {
+  label: string
+}
+
+/** Nomi dei flag ammessi; `details` (se il mondo ha un catalogo) spiega ciascuno. Resta un `string[]` per chi usa solo i nomi. */
+export type FlagNames = string[] & { details?: Record<string, IFlagDetail> }
+
 /** Cerca il descrittore di un campo di una risorsa (`useWorld().fieldOf`). */
 export type FieldLookup = (resource: string, name: string) => IFieldDescriptor | undefined
 
@@ -46,9 +66,15 @@ export function applyDescriptors(
  * @param descriptor - descrittore del campo
  * @returns i nomi (etichette) delle opzioni, vuoto se il campo non ha un elenco noto
  */
-export function enumNames(enums: Record<string, unknown> | undefined, descriptor: IFieldDescriptor | undefined): string[] {
+export function enumNames(enums: Record<string, unknown> | undefined, descriptor: IFieldDescriptor | undefined): FlagNames {
   const list = descriptor?.enum ? enums?.[descriptor.enum] : undefined
-  return Array.isArray(list) ? (list as { label: string }[]).map((option) => option.label) : []
+  const options = Array.isArray(list) ? (list as IFlagOption[]) : []
+  const names: FlagNames = options.map((option) => option.label)
+  // un catalogo (pachimud) spiega i flag: descrizione per lingua, alias, origine e se il gioco li usa davvero
+  if (options.some((option) => option.description)) {
+    names.details = Object.fromEntries(options.map((o) => [o.label, o as IFlagDetail]))
+  }
+  return names
 }
 
 /**
@@ -58,8 +84,8 @@ export function enumNames(enums: Record<string, unknown> | undefined, descriptor
  * @param base - campo, etichetta ed eventuale suggerimento
  * @param names - nomi ammessi (da {@link enumNames})
  */
-export function flagsFieldDef(base: { field: string; label: string; hint?: string }, names: string[]): IFieldDef {
+export function flagsFieldDef(base: { field: string; label: string; hint?: string }, names: FlagNames): IFieldDef {
   return names.length
-    ? { ...base, component: markRaw(EnumFlagsField), options: names }
+    ? { ...base, component: markRaw(EnumFlagsField), options: names, details: names.details }
     : { ...base, component: markRaw(FlagsField) }
 }

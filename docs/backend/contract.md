@@ -46,7 +46,7 @@ Base: `/api`. Docs interattive: `/docs`, schema completo `/api/v1/openapi.json`.
 | `api.invalid_order_by` | 422 | `field` |
 
 ## Meta — `/meta`
-- `GET /meta/enums` -> `{ sectorType, direction, doorFlag, zoneResetMode, sex, objectType, zoneCommandType: [{value,label}] }`
+- `GET /meta/enums` -> `{ sectorType, direction, doorFlag, zoneResetMode, sex, objectType, zoneCommandType: [{value,label}] }`; una lista può avere un catalogo e allora ogni voce ha anche `description` (`{it,en}`), `aliases`, `origin` (`leu|clessidra|pachimud`) e `implemented` (`false` = il gioco accetta il valore ma non lo usa); sono facoltativi e `null` negli altri mondi
 - `GET /meta/races`, `GET /meta/classes` -> `[{id, name}]` (rilette dagli YAML a ogni chiamata)
 - (il vecchio `/ping` e' sostituito da `GET /api/health/`; i vecchi `/enums`, `/races`, `/classes` ora sono sotto `/meta`)
 

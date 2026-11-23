@@ -18,11 +18,15 @@ async def test_enums(client: httpx.AsyncClient) -> None:
         "openCmd",
         "objectType",
         "zoneCommandType",
+        "pachimudRoomFlags",
+        "pachimudMobFlags",
+        "pachimudObjectExtraFlags",
+        "pachimudObjectWearFlags",
     }
     for options in enums.values():
         assert options and all(isinstance(o["value"], int) and o["label"] for o in options)
     assert [o["value"] for o in enums["direction"]] == [0, 1, 2, 3, 4, 5]
-    assert enums["zoneCommandType"][0] == {"value": 0, "label": "Load mob"}
+    assert (enums["zoneCommandType"][0]["value"], enums["zoneCommandType"][0]["label"]) == (0, "Load mob")
 
 
 async def test_races_and_classes(client: httpx.AsyncClient) -> None:

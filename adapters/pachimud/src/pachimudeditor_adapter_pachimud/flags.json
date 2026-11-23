@@ -1,0 +1,1154 @@
+{
+  "room": [
+    {
+      "name": "DARK",
+      "aliases": [],
+      "description": {
+        "it": "Buia: servono sorgenti di luce.",
+        "en": "Dark: a light source is needed."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "DEATH",
+      "aliases": [],
+      "description": {
+        "it": "Mortale: chi entra muore.",
+        "en": "Deadly: whoever enters dies."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NO_MOB",
+      "aliases": [],
+      "description": {
+        "it": "Vietata ai mob che vagano.",
+        "en": "Closed to wandering mobs."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "INDOORS",
+      "aliases": [],
+      "description": {
+        "it": "Al chiuso: niente meteo, costo di movimento maggiore.",
+        "en": "Indoors: no weather, higher movement cost."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "PEACEFUL",
+      "aliases": [],
+      "description": {
+        "it": "Pacifica: non si combatte.",
+        "en": "Peaceful: no fighting."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NO_STEAL",
+      "aliases": [],
+      "description": {
+        "it": "Non si ruba.",
+        "en": "No stealing."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NO_SUMMON",
+      "aliases": [],
+      "description": {
+        "it": "Niente evocazioni, portali o teletrasporti da e verso la stanza.",
+        "en": "No summoning, portals or teleports to or from the room."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NO_MAGIC",
+      "aliases": [],
+      "description": {
+        "it": "Niente magia (restano abilita' e poteri mentali).",
+        "en": "No magic (skills and mind powers still work)."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "TUNNEL",
+      "aliases": [],
+      "description": {
+        "it": "Tunnel: ci stanno pochi personaggi e non ci si evoca.",
+        "en": "Tunnel: few characters fit and nobody can be summoned in."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "PRIVATE",
+      "aliases": [],
+      "description": {
+        "it": "Privata: al massimo due personaggi.",
+        "en": "Private: at most two characters."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "SILENCE",
+      "aliases": [],
+      "description": {
+        "it": "Silenziata: nessun suono.",
+        "en": "Silent: no sound."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "LARGE",
+      "aliases": [],
+      "description": {
+        "it": "Stanza grande (nessun effetto in LeU).",
+        "en": "Large room (no effect in LeU)."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "NO_DEATH",
+      "aliases": [],
+      "description": {
+        "it": "Non si muore: si torna a meta' dei PF e si fugge.",
+        "en": "No dying: back to half hit points, then flee."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "SAVE_ROOM",
+      "aliases": [],
+      "description": {
+        "it": "Gli oggetti a terra restano dopo il riavvio.",
+        "en": "Objects on the floor survive a reboot."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "NO_TRACK",
+      "aliases": [],
+      "description": {
+        "it": "Il tracciamento si interrompe qui.",
+        "en": "Tracking stops here."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NO_MIND",
+      "aliases": [],
+      "description": {
+        "it": "Niente poteri mentali (restano magia e abilita').",
+        "en": "No mind powers (magic and skills still work)."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "DESERTIC",
+      "aliases": [],
+      "description": {
+        "it": "Deserto (usa `climate: desert`).",
+        "en": "Desert (use `climate: desert`)."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "ARTIC",
+      "aliases": [],
+      "description": {
+        "it": "Artica (usa `climate: arctic`).",
+        "en": "Arctic (use `climate: arctic`)."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "UNDERGROUND",
+      "aliases": [],
+      "description": {
+        "it": "Sotterranea.",
+        "en": "Underground."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "HOT",
+      "aliases": [],
+      "description": {
+        "it": "Caldo significativo.",
+        "en": "Significant heat."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "WET",
+      "aliases": [],
+      "description": {
+        "it": "Umida.",
+        "en": "Wet."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "COLD",
+      "aliases": [],
+      "description": {
+        "it": "Freddo significativo.",
+        "en": "Significant cold."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "DRY",
+      "aliases": [],
+      "description": {
+        "it": "Secca: la sete arriva prima.",
+        "en": "Dry: thirst comes sooner."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "BRIGHT",
+      "aliases": [],
+      "description": {
+        "it": "Illuminata: si vede anche senza luce.",
+        "en": "Bright: visible without a light."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NO_ASTRAL",
+      "aliases": [],
+      "description": {
+        "it": "Niente viaggio astrale.",
+        "en": "No astral travel."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NO_REGAIN",
+      "aliases": [],
+      "description": {
+        "it": "Non si recuperano PF, mana e movimento.",
+        "en": "No regeneration."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "NO_TAKE_ALL",
+      "aliases": [],
+      "description": {
+        "it": "`get all` non funziona (stanza delle donazioni).",
+        "en": "`get all` does not work (donation room)."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "BANK",
+      "aliases": [],
+      "description": {
+        "it": "La stanza e' una banca.",
+        "en": "The room is a bank."
+      },
+      "origin": "pachimud",
+      "implemented": true
+    }
+  ],
+  "mob": [
+    {
+      "name": "SENTINEL",
+      "aliases": [],
+      "description": {
+        "it": "Sentinella: non vaga.",
+        "en": "Sentinel: does not wander."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NOCHASE",
+      "aliases": [],
+      "description": {
+        "it": "Non insegue chi fugge.",
+        "en": "Does not chase."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "SCAVENGER",
+      "aliases": [],
+      "description": {
+        "it": "Spazzino: raccoglie gli oggetti a terra.",
+        "en": "Scavenger: picks up items on the floor."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NICE_THIEF",
+      "aliases": [],
+      "description": {
+        "it": "Tollera i ladri: non attacca chi lo deruba.",
+        "en": "Tolerates thieves."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "AGGRESSIVE",
+      "aliases": [],
+      "description": {
+        "it": "Aggressivo: attacca i giocatori.",
+        "en": "Aggressive: attacks players."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "STAY_ZONE",
+      "aliases": [
+        "STAY_AREA"
+      ],
+      "description": {
+        "it": "Resta nella sua zona.",
+        "en": "Stays in its zone."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "WIMPY",
+      "aliases": [],
+      "description": {
+        "it": "Vigliacco: fugge quando e' ferito.",
+        "en": "Wimpy: flees when hurt."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANNOYING",
+      "aliases": [],
+      "description": {
+        "it": "Irritante: lo attaccano anche altri mob.",
+        "en": "Annoying: other mobs attack it."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "HATEFUL",
+      "aliases": [],
+      "description": {
+        "it": "Odia chi gli somiglia.",
+        "en": "Hateful."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "AFRAID",
+      "aliases": [],
+      "description": {
+        "it": "Teme chi gli somiglia.",
+        "en": "Afraid."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "IMMORTAL",
+      "aliases": [],
+      "description": {
+        "it": "Immortale: non si uccide.",
+        "en": "Immortal: cannot be killed."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "HUNTING",
+      "aliases": [],
+      "description": {
+        "it": "Sta cacciando qualcuno.",
+        "en": "Hunting someone."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "DEADLY",
+      "aliases": [],
+      "description": {
+        "it": "Veleno mortale.",
+        "en": "Deadly poison."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "POLYMORPHED",
+      "aliases": [],
+      "description": {
+        "it": "E' una persona trasformata.",
+        "en": "A polymorphed person."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "META_AGG",
+      "aliases": [
+        "META_AGGRESSIVE"
+      ],
+      "description": {
+        "it": "Molto aggressivo: attacca anche altri mob.",
+        "en": "Very aggressive: attacks mobs too."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "GUARDIAN",
+      "aliases": [
+        "GUARDING"
+      ],
+      "description": {
+        "it": "Fa la guardia al suo padrone.",
+        "en": "Guards its master."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ILLUSION",
+      "aliases": [],
+      "description": {
+        "it": "E' un'illusione.",
+        "en": "An illusion."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "HUGE",
+      "aliases": [],
+      "description": {
+        "it": "Enorme: solo i giganti lo pugnalano o lo buttano a terra; non si sposta con la mente.",
+        "en": "Huge: only giants can backstab or bash it; it cannot be moved with the mind."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "GREET",
+      "aliases": [],
+      "description": {
+        "it": "Saluta chi arriva.",
+        "en": "Greets arrivals."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "MAGIC_USER",
+      "aliases": [
+        "MAGE"
+      ],
+      "description": {
+        "it": "Si comporta da mago.",
+        "en": "Behaves as a mage."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "WARRIOR",
+      "aliases": [],
+      "description": {
+        "it": "Si comporta da guerriero.",
+        "en": "Behaves as a warrior."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "CLERIC",
+      "aliases": [],
+      "description": {
+        "it": "Si comporta da chierico.",
+        "en": "Behaves as a cleric."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "THIEF",
+      "aliases": [],
+      "description": {
+        "it": "Si comporta da ladro.",
+        "en": "Behaves as a thief."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "DRUID",
+      "aliases": [],
+      "description": {
+        "it": "Si comporta da druido.",
+        "en": "Behaves as a druid."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "MONK",
+      "aliases": [],
+      "description": {
+        "it": "Si comporta da monaco.",
+        "en": "Behaves as a monk."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "BARBARIAN",
+      "aliases": [],
+      "description": {
+        "it": "Si comporta da barbaro.",
+        "en": "Behaves as a barbarian."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "PALADIN",
+      "aliases": [],
+      "description": {
+        "it": "Si comporta da paladino.",
+        "en": "Behaves as a paladin."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "RANGER",
+      "aliases": [],
+      "description": {
+        "it": "Si comporta da ranger.",
+        "en": "Behaves as a ranger."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "PSIONIST",
+      "aliases": [
+        "PSI"
+      ],
+      "description": {
+        "it": "Si comporta da psionico.",
+        "en": "Behaves as a psionist."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "ARCHER",
+      "aliases": [],
+      "description": {
+        "it": "Si comporta da arciere.",
+        "en": "Behaves as an archer."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "GUILDMASTER",
+      "aliases": [],
+      "description": {
+        "it": "Segnaposto: un maestro e' chi ha `teaches_class_ids` o `teaches_skill_ids`.",
+        "en": "Placeholder: a guildmaster has `teaches_class_ids` or `teaches_skill_ids`."
+      },
+      "origin": "pachimud",
+      "implemented": false
+    }
+  ],
+  "object_extra": [
+    {
+      "name": "GLOW",
+      "aliases": [],
+      "description": {
+        "it": "Splende (luce e segnalazione).",
+        "en": "Glows."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "HUM",
+      "aliases": [],
+      "description": {
+        "it": "Ronza (non per i ladri).",
+        "en": "Hums."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "METAL",
+      "aliases": [],
+      "description": {
+        "it": "Di metallo.",
+        "en": "Metal."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "MINERAL",
+      "aliases": [],
+      "description": {
+        "it": "Minerale.",
+        "en": "Mineral."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "ORGANIC",
+      "aliases": [],
+      "description": {
+        "it": "Organico.",
+        "en": "Organic."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "INVISIBLE",
+      "aliases": [],
+      "description": {
+        "it": "Invisibile.",
+        "en": "Invisible."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "MAGIC",
+      "aliases": [],
+      "description": {
+        "it": "Magico.",
+        "en": "Magic."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NODROP",
+      "aliases": [
+        "NO_DROP"
+      ],
+      "description": {
+        "it": "Maledetto: non si lascia.",
+        "en": "Cursed: cannot be dropped."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "BLESS",
+      "aliases": [],
+      "description": {
+        "it": "Benedetto.",
+        "en": "Blessed."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_GOOD",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano i buoni.",
+        "en": "Not for good characters."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_EVIL",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano i malvagi.",
+        "en": "Not for evil characters."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_NEUTRAL",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano i neutrali.",
+        "en": "Not for neutral characters."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_CLERIC",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano i chierici.",
+        "en": "Not for clerics."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_MAGE",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano i maghi.",
+        "en": "Not for mages."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_THIEF",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano i ladri.",
+        "en": "Not for thieves."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_WARRIOR",
+      "aliases": [
+        "ANTI_FIGHTER"
+      ],
+      "description": {
+        "it": "Non lo usano i guerrieri.",
+        "en": "Not for warriors."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "BRITTLE",
+      "aliases": [],
+      "description": {
+        "it": "Fragile: si rovina di piu'.",
+        "en": "Brittle."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "RESISTANT",
+      "aliases": [],
+      "description": {
+        "it": "Resistente.",
+        "en": "Resistant."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "IMMUNE",
+      "aliases": [],
+      "description": {
+        "it": "Indistruttibile.",
+        "en": "Indestructible."
+      },
+      "origin": "pachimud",
+      "implemented": true
+    },
+    {
+      "name": "ARTIFACT",
+      "aliases": [],
+      "description": {
+        "it": "Artefatto.",
+        "en": "Artifact."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "ANTI_MEN",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano gli uomini.",
+        "en": "Not for men."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_WOMEN",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano le donne.",
+        "en": "Not for women."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_SUN",
+      "aliases": [],
+      "description": {
+        "it": "Soffre la luce del sole.",
+        "en": "Hurt by sunlight."
+      },
+      "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "ANTI_BARBARIAN",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano i barbari.",
+        "en": "Not for barbarians."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_RANGER",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano i ranger.",
+        "en": "Not for rangers."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_PALADIN",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano i paladini.",
+        "en": "Not for paladins."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_PSIONIST",
+      "aliases": [
+        "ANTI_PSI"
+      ],
+      "description": {
+        "it": "Non lo usano gli psionici.",
+        "en": "Not for psionists."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_MONK",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano i monaci.",
+        "en": "Not for monks."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ANTI_DRUID",
+      "aliases": [],
+      "description": {
+        "it": "Non lo usano i druidi.",
+        "en": "Not for druids."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ONLY_CLASS",
+      "aliases": [],
+      "description": {
+        "it": "Solo per le classi nominate.",
+        "en": "Only for the named classes."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "DIG",
+      "aliases": [],
+      "description": {
+        "it": "Si apre scavando.",
+        "en": "Opens by digging."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "SCYTHE",
+      "aliases": [],
+      "description": {
+        "it": "Si taglia con la falce.",
+        "en": "Cut with a scythe."
+      },
+      "origin": "leu",
+      "implemented": true
+    }
+  ],
+  "object_wear": [
+    {
+      "name": "TAKE",
+      "aliases": [],
+      "description": {
+        "it": "Si raccoglie.",
+        "en": "Can be picked up."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "FINGER",
+      "aliases": [],
+      "description": {
+        "it": "Al dito.",
+        "en": "On a finger."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NECK",
+      "aliases": [],
+      "description": {
+        "it": "Al collo.",
+        "en": "Around the neck."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "BODY",
+      "aliases": [],
+      "description": {
+        "it": "Sul corpo.",
+        "en": "On the body."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "HEAD",
+      "aliases": [],
+      "description": {
+        "it": "Sulla testa.",
+        "en": "On the head."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "LEGS",
+      "aliases": [],
+      "description": {
+        "it": "Sulle gambe.",
+        "en": "On the legs."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "FEET",
+      "aliases": [],
+      "description": {
+        "it": "Ai piedi.",
+        "en": "On the feet."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "HANDS",
+      "aliases": [],
+      "description": {
+        "it": "Alle mani.",
+        "en": "On the hands."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ARMS",
+      "aliases": [],
+      "description": {
+        "it": "Alle braccia.",
+        "en": "On the arms."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "SHIELD",
+      "aliases": [],
+      "description": {
+        "it": "Come scudo.",
+        "en": "As a shield."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "ABOUT",
+      "aliases": [],
+      "description": {
+        "it": "Attorno al corpo.",
+        "en": "About the body."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "WAIST",
+      "aliases": [
+        "WAISTE"
+      ],
+      "description": {
+        "it": "Alla vita.",
+        "en": "Around the waist."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "WRIST",
+      "aliases": [],
+      "description": {
+        "it": "Al polso.",
+        "en": "On a wrist."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "WIELD",
+      "aliases": [],
+      "description": {
+        "it": "Si impugna.",
+        "en": "Wielded."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "HOLD",
+      "aliases": [],
+      "description": {
+        "it": "Si tiene in mano.",
+        "en": "Held."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "BACK",
+      "aliases": [],
+      "description": {
+        "it": "Sulla schiena.",
+        "en": "On the back."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "EAR",
+      "aliases": [
+        "EARS"
+      ],
+      "description": {
+        "it": "All'orecchio.",
+        "en": "On an ear."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "EYE",
+      "aliases": [
+        "EYES"
+      ],
+      "description": {
+        "it": "Sugli occhi.",
+        "en": "On the eyes."
+      },
+      "origin": "leu",
+      "implemented": true
+    }
+  ],
+  "exit": [
+    {
+      "name": "NONE",
+      "aliases": [],
+      "description": {
+        "it": "Senza porta.",
+        "en": "No door."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "CLOSABLE",
+      "aliases": [],
+      "description": {
+        "it": "Con porta che si apre e chiude.",
+        "en": "A door that opens and closes."
+      },
+      "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "PICKPROOF",
+      "aliases": [],
+      "description": {
+        "it": "Con porta che non si scassina.",
+        "en": "A door that cannot be picked."
+      },
+      "origin": "leu",
+      "implemented": true
+    }
+  ]
+}
