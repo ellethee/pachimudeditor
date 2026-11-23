@@ -39,7 +39,7 @@ class Scripted:
             while line := await reader.readline():
                 req = json.loads(line)
                 if req["cmd"] == "hello":
-                    result = {"protocol": 1, "mud": {"kind": "t"}, "features": [], "commands": {c: {"class": "read"} for c in ("ping", "who")}
+                    result = {"protocol": 1, "mud": {"kind": "t"}, "features": [], "commands": {c: {"class": "read"} for c in ("ping", "who", "content.validate")}
                               | {c: {"class": "write"} for c in ("echo", "player.set")}, "limits": self.limits}  # fmt: skip
                     writer.write(json.dumps({"id": req["id"], "ok": True, "result": result}).encode() + b"\n")
                     await writer.drain()

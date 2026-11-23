@@ -18,7 +18,7 @@ livectl:
 Il token e' la variabile d'ambiente `LIVECTL_TOKEN` del gioco (almeno 32 caratteri; letta all'avvio e rimossa dall'ambiente). Senza token il canale non parte e il gioco si avvia lo stesso.
 
 Lato editor (`params.live` del mondo, stessa forma di [dikumod](dikumod-live.md)): `socket` (percorso assoluto), `token_env` (il **nome** della variabile, il cui valore sta nel `.env` della cartella di lavoro
-o nell'ambiente: mai il token nel yaml), `timeout_ms` (200-60000, default 3000), `enabled: false` per spegnere il canale senza toglierlo. Parametri incoerenti sono un errore all'avvio; un socket assente o un token non impostato no
+o nell'ambiente: mai il token nel yaml), `timeout_ms` (200-60000, default 3000; `content.validate`, `content.reload` e `zone.reload` aspettano comunque fino a 90 s, perché il gioco rilegge tutti i file), `enabled: false` per spegnere il canale senza toglierlo. Parametri incoerenti sono un errore all'avvio; un socket assente o un token non impostato no
 (stato `unreachable` / `token_missing`). Con `params.live` il mondo dichiara la capability `supports_live`; `supports_live_inventory` resta falsa (il gioco non ha la feature `inventory`).
 
 ## Cosa offre

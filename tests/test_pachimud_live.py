@@ -209,6 +209,26 @@ async def test_content_issues_and_reload_failed(client: httpx.AsyncClient, fake:
     assert data(await client.post(f"{LIVE}/content/reload", json={"kind": "all"}, headers=H))["ok"]
 
 
+async def test_new_game_warning_codes_pass_through_validate(client: httpx.AsyncClient, fake: FakePachimudServer) -> None:
+    """Gli avvisi dei contenuti del gioco (flag, valori fuori scala, negozi) arrivano com'e': codice, messaggio, file e riga (anche nulla);
+    senza `strict` il controllo e' ok, con `strict` no."""
+    codes = ("flag-unknown", "flag-inert", "value-range", "shop-limit", "shop-hours", "shop-arbitrage", "shop-keeper-room")
+    fake.content_errors = [
+        {
+            "severity": "warning",
+            "code": code,
+            "message": f"mob 400090: {code}",
+            "file": "zones/RavnFjord/mobs.yaml",
+            "line": 470 + i if i else None,
+        }
+        for i, code in enumerate(codes)
+    ]
+    out = data(await client.get(f"{LIVE}/content/validate", headers=H))
+    assert (out["ok"], out["errors"], out["warnings"]) == (True, 0, len(codes))
+    assert [i["code"] for i in out["issues"]] == list(codes) and out["issues"][0]["line"] is None and out["issues"][1]["line"] == 471
+    assert data(await client.get(f"{LIVE}/content/validate", params={"strict": "true"}, headers=H))["ok"] is False
+
+
 async def test_content_commands_disabled_without_allow_write(client: httpx.AsyncClient, fake: FakePachimudServer) -> None:
     """Gioco con `allow_write: false`: `content.reload` non c'e' (409 `command_disabled`), `content.validate` si'."""
     fake.write = False

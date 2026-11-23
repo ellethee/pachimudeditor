@@ -186,6 +186,27 @@ async def test_read_retried_once_write_never(sock: str, tmp_path: Path) -> None:
         await stop(server)
 
 
+async def test_content_commands_wait_longer_than_the_normal_timeout(sock: str) -> None:
+    """`content.validate` rilegge i file del gioco (decine di secondi): aspetta `LONG_WAIT_S`, mentre una lettura normale va in timeout."""
+
+    async def behavior(_n: int, req: dict[str, Any], writer: asyncio.StreamWriter) -> bool:
+        """Risponde dopo 0,6 s, oltre il timeout del client (0,3 s)."""
+        await asyncio.sleep(0.6)
+        await answer(writer, req, {"ok": True, "errors": 0, "warnings": 0, "issues": []})
+        return False
+
+    server = Scripted(Path(sock), behavior)
+    await server.start()
+    try:
+        client = make(sock, timeout=0.3)
+        assert (await client.content_validate()).ok
+        with pytest.raises(LiveError) as slow:
+            await client.who()
+        assert slow.value.code == "timeout"
+    finally:
+        await stop(server)
+
+
 async def test_timeout_drops_connection(sock: str) -> None:
     """Nessuna risposta: lettura = `timeout`, scrittura = `outcome_unknown`; la connessione non si riusa (una risposta tardiva la sfaserebbe)."""
     silent = True

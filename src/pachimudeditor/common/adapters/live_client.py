@@ -61,6 +61,12 @@ DEFAULT_MAX_LINE = 4096
 DEFAULT_MAX_RESPONSE = 65536
 READ_LIMIT = 1 << 20
 """Tetto assoluto di una riga letta (protezione da un server che non manda mai `\\n`), oltre il `max_response` dichiarato."""
+LONG_WAIT_S = 90.0
+"""Attesa della risposta di `content.validate`, `content.reload` e `zone.reload`: rileggono i file del gioco e possono superare di molto il timeout normale (~25 s con tutti i contenuti)."""
+
+LONG_COMMANDS = frozenset({"content.validate", "content.reload", "zone.reload"})
+"""I comandi che aspettano `LONG_WAIT_S`."""
+
 IDLE_RECONNECT_S = 240.0
 """Oltre questo tempo senza richieste si riapre la connessione prima di una scrittura (il MUD chiude dopo 300 s di inattivita')."""
 CLIENT_NAME = "pachimudeditor"
@@ -145,10 +151,10 @@ class LiveClient:
             except OSError, TimeoutError:
                 pass
 
-    async def _read_line(self, reader: asyncio.StreamReader, limit: int) -> dict[str, Any]:
+    async def _read_line(self, reader: asyncio.StreamReader, limit: int, wait: float | None = None) -> dict[str, Any]:
         """Una risposta: riga JSON entro `limit` byte. Alza `_Lost` (EOF/timeout) o `LiveError` (riga troppo grande, JSON non valido)."""
         try:
-            raw = await asyncio.wait_for(reader.readline(), self.timeout)
+            raw = await asyncio.wait_for(reader.readline(), wait or self.timeout)
         except TimeoutError:
             raise _Lost(True, True) from None
         except ValueError, asyncio.LimitOverrunError:
@@ -231,7 +237,7 @@ class LiveClient:
 
     # ------------------------------------------------------------------ richieste
 
-    async def _exchange(self, conn: _Conn, cmd: str, params: dict[str, Any] | None) -> Any:
+    async def _exchange(self, conn: _Conn, cmd: str, params: dict[str, Any] | None, wait: float | None = None) -> Any:
         """Una richiesta e la sua risposta sulla connessione `conn`."""
         rid = conn.next_id
         conn.next_id += 1
@@ -246,7 +252,7 @@ class LiveClient:
             await asyncio.wait_for(conn.writer.drain(), self.timeout)
         except OSError, TimeoutError:
             raise _Lost(False, False) from None
-        reply = await self._read_line(conn.reader, conn.session.max_response)
+        reply = await self._read_line(conn.reader, conn.session.max_response, wait)
         conn.last_used = time.monotonic()
         if reply.get("id") != rid:
             raise LiveError("protocol_error", "risposta con id inatteso")
@@ -256,10 +262,13 @@ class LiveClient:
         params_in = error.get("params") if isinstance(error.get("params"), dict) else {}
         raise LiveError(str(error.get("code", "protocol_error")), str(error.get("message", ""))[:200], **params_in)
 
-    async def call(self, cmd: str, params: dict[str, Any] | None = None, *, actor: str | None = None, write: bool = False) -> Any:
+    async def call(
+        self, cmd: str, params: dict[str, Any] | None = None, *, actor: str | None = None, write: bool = False, wait: float | None = None
+    ) -> Any:
         """Esegue un comando e restituisce `result`. Alza `LiveError`.
 
         `write=True` per i comandi di classe `write` (mai ritentati dopo l'invio, `actor` registrato nell'audit del MUD).
+        `wait`: secondi di attesa della risposta se piu' dei normali (i comandi che rileggono i file del gioco: `LONG_WAIT_S`).
         """
         async with self._lock:
             for attempt in (0, 1):
@@ -267,7 +276,7 @@ class LiveClient:
                 if cmd not in conn.session.commands:
                     raise LiveError("command_disabled", "comando non dichiarato dal MUD")
                 try:
-                    return await self._exchange(conn, cmd, params)
+                    return await self._exchange(conn, cmd, params, wait)
                 except _Lost as lost:
                     await self._drop()
                     if lost.sent and write:
@@ -351,7 +360,9 @@ class LiveClient:
 
     async def zone_reload(self, reload: LiveZoneReloadIn, *, actor: str | None = None) -> LiveZoneReloadOut:
         """`zone.reload` (scrittura, estensione pachimud)."""
-        return LiveZoneReloadOut.model_validate(await self.call("zone.reload", {"vnum": reload.vnum}, actor=actor, write=True) or {})
+        return LiveZoneReloadOut.model_validate(
+            await self.call("zone.reload", {"vnum": reload.vnum}, actor=actor, write=True, wait=LONG_WAIT_S) or {}
+        )
 
     async def instances(
         self,
@@ -369,11 +380,13 @@ class LiveClient:
 
     async def content_validate(self, *, strict: bool = False) -> LiveContentValidateOut:
         """`content.validate` (lettura, estensione pachimud)."""
-        return LiveContentValidateOut.model_validate(await self.call("content.validate", {"strict": strict}) or {})
+        return LiveContentValidateOut.model_validate(await self.call("content.validate", {"strict": strict}, wait=LONG_WAIT_S) or {})
 
     async def content_reload(self, reload: LiveContentReloadIn, *, actor: str | None = None) -> LiveContentReloadOut:
         """`content.reload` (scrittura, estensione pachimud): `reload_failed` porta in `params.errors` i problemi (file e riga)."""
-        return LiveContentReloadOut.model_validate(await self.call("content.reload", {"kind": reload.kind}, actor=actor, write=True) or {})
+        return LiveContentReloadOut.model_validate(
+            await self.call("content.reload", {"kind": reload.kind}, actor=actor, write=True, wait=LONG_WAIT_S) or {}
+        )
 
     async def board_delete(self, board_id: str, message_id: int, *, actor: str | None = None) -> LiveBoardDeleteOut:
         """`board.delete` (scrittura, estensione pachimud): `message_id` e' l'id riga di `board_message`, non la posizione."""

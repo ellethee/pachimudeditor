@@ -19,7 +19,7 @@ import typer
 
 from pachimudeditor.cli.helpers.workdir import WorkdirOption, resolve_workdir, use_workdir
 from pachimudeditor.common.adapters.live import LiveError
-from pachimudeditor.common.adapters.live_client import LiveClient
+from pachimudeditor.common.adapters.live_client import LONG_COMMANDS, LONG_WAIT_S, LiveClient
 
 app = typer.Typer(help="Client da riga di comando del canale live verso un MUD acceso (output JSON).", no_args_is_help=True)
 player_app = typer.Typer(help="Giocatori connessi.", no_args_is_help=True)
@@ -171,7 +171,8 @@ async def _execute(target: _Target, socket: str, timeout: float, cmd: str | None
             if cmd is None:
                 await client.call("ping")
                 return {"connected": True, "protocol": session.protocol, "mud": session.mud, "commands": sorted(session.commands)}
-            return await client.call(cmd, params, write=write)
+            wait = LONG_WAIT_S if cmd in LONG_COMMANDS else None
+            return await client.call(cmd, params, write=write, wait=wait)
         except LiveError as error:
             raise _classify(error, handshake=False, write=write) from None
     finally:
