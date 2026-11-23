@@ -64,7 +64,7 @@ class StyleLimits(AliasedBaseModel):
 
 def locate(store: YamlStore, file: str | None, line: int | None) -> Located:
     """La voce di `file` che contiene `line` (vedi docstring del modulo). Il percorso si cerca prima uguale, poi dal ramo `zones/...`."""
-    if not file:
+    if not file or "\x00" in file:  # il testo arriva dal client: un percorso con NUL non e' un file (e `resolve()` darebbe 500)
         return Located()
     wanted = Path(file)
     tail = wanted.parts[-3:]
@@ -72,7 +72,7 @@ def locate(store: YamlStore, file: str | None, line: int | None) -> Located:
     for zone in store.zones:
         for yaml_file in (zone.file, *zone.files):
             path = yaml_file.path
-            same = path == wanted or path.resolve() == wanted.resolve() or (len(tail) == 3 and path.parts[-3:] == tail and best is None)
+            same = path == wanted or (len(tail) == 3 and path.parts[-3:] == tail and best is None)
             if not same:
                 continue
             if yaml_file.kind == "zone":

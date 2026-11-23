@@ -20,13 +20,15 @@ async def test_locate_resolves_entries_by_line(client: httpx.AsyncClient) -> Non
         {"file": str(zones_dir() / ALFA / "resets.yaml"), "line": 2},
         {"file": "/altrove/zones/ZonaAlfa/rooms.yaml", "line": first + 1},  # stesso ramo `zones/<zona>/<file>`: percorso del gioco diverso
         {"file": "/nulla/di/noto.yaml", "line": 1},
+        {"file": "/x/\u0000/rooms.yaml", "line": 1},  # testo ostile: NUL nel percorso
+        {"file": None, "line": 1},  # problema senza file
     ]
     out = data(await client.post("/api/content/checks/locate", json={"items": asked}))
     assert out[0]["kind"] == "room" and out[0]["vnum"] == 1000 and out[0]["zoneId"] == 10
     assert out[1] == {"kind": "file", "vnum": None, "zoneId": 10}
     assert out[2]["kind"] == "zone" and out[3]["kind"] == "resets"
     assert out[4]["kind"] == "room" and out[4]["vnum"] == 1000
-    assert out[5] == {"kind": "none", "vnum": None, "zoneId": None}
+    assert out[5] == out[6] == out[7] == {"kind": "none", "vnum": None, "zoneId": None}
 
 
 async def test_style_limits_default_to_the_manual(client: httpx.AsyncClient) -> None:
