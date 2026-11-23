@@ -71,7 +71,11 @@ Come il loader del gioco: `zone.yaml` si cerca ricorsivamente sotto `zones/` e i
   `worlds check`, nel log all'avvio e in `GET /api/world/overview` (`fileProblems`). Una voce non valida resta nel file (non si
   cancella mai cio' che non si e' capito).
 - **Scrittura**: solo le chiavi modificate (commenti, ordine e stile del file restano), scritte in modo atomico (file temporaneo
-  nella stessa cartella + `os.replace`). Un valore uguale al default non viene aggiunto al file.
+  nella stessa cartella + `os.replace`). Un valore uguale al default non viene aggiunto al file. Nei file di stanze, mob e oggetti la
+  scrittura e' **selettiva**: cambiano nel testo solo le righe delle voci modificate, aggiunte o tolte (con i commenti attaccati sopra
+  ciascuna), mentre le altre voci, i commenti fra le voci e il resto del file restano byte per byte come erano, anche i testi a capo
+  su piu' righe. Il testo ottenuto e' riletto e confrontato con il documento; se non coincide (file con una forma insolita, come un
+  trattino su una riga a parte) si ripiega sulla scrittura completa. `zone.yaml` e i file dei reset si scrivono sempre per intero.
 - **Dove va una nuova entita'**: nel file base della zona (`rooms.yaml`, `mobs.yaml`, `objects.yaml`) o, con `extra.area`, nel file
   di quell'area (`rooms_<area>.yaml`); il file si crea se manca. Cambiare `zoneId` o `extra.area` sposta la voce nel file di
   destinazione. Una **zona nuova** e' una cartella `zones/<Nome>/` con il solo `zone.yaml` (`extra.folder` sceglie il nome, altrimenti
@@ -171,7 +175,7 @@ e `EXPECTED` le colonne attese. Una colonna non essenziale assente (`language`, 
 - Un campo nuovo dei YAML del gioco non compare nei DTO finche' non lo si aggiunge a `loaders.py`, a `mapping.py` (e a `fields.py`): un campo
   sconosciuto in un file resta intatto ma non e' visibile; negli oggetti, `extra="forbid"` rende non valida la voce (segnalata).
 - L'indice delle voci si ricostruisce a ogni scrittura (nessun problema per mondi di qualche migliaio di voci).
-- Ogni scrittura riscrive per intero il file YAML (con i commenti conservati): circa 250 ms per un `rooms.yaml` di 46 stanze (misurato). Una conversione da un altro mondo fa una scrittura per voce, quindi ~600 voci richiedono ~17 s: la pagina Converti mostra l'avanzamento e il test e2e attende fino a 90 s. Scrivere i file una volta sola a fine conversione richiederebbe un'API di scrittura a lotti nel motore di conversione, non ancora fatta.
+- Ogni scrittura rilegge il file per verificarlo (vedi «Scrittura selettiva»): circa 250 ms per un `rooms.yaml` di 46 stanze (misurato prima della scrittura selettiva, non rimisurato). Una conversione da un altro mondo fa una scrittura per voce, quindi ~600 voci richiedono ~17 s: la pagina Converti mostra l'avanzamento e il test e2e attende fino a 90 s. Scrivere i file una volta sola a fine conversione richiederebbe un'API di scrittura a lotti nel motore di conversione, non ancora fatta.
 
 # Mondi opzionali e pacchetto `pachimud`
 

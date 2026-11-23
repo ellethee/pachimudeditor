@@ -12,8 +12,13 @@ sottocartelle, come fa il loader del gioco), `room*.yaml`, `mob*.yaml`, `obj*.ya
   voce (in ordine di percorso) e le altre sono segnalate; il gioco invece le sovrascrive in silenzio.
 - **Scrittura**: le funzioni dell'adapter modificano i mapping ruamel (solo le chiavi cambiate, commenti e formato
   salvi) e chiamano `save`, che scrive in modo atomico (file temporaneo + `os.replace`) e aggiorna la cache.
+- **Riscrittura selettiva**: nei file di stanze, mob e oggetti `save` cambia nel testo SOLO le righe delle voci modificate, aggiunte
+  o tolte: le altre voci, i commenti fra le voci e il resto del file restano byte per byte come erano (niente reflow dei testi
+  a capo, niente diff rumorosi). Il risultato e' sempre riletto e confrontato con il documento: se non coincide (file con una
+  forma insolita) si ripiega sulla scrittura completa, che e' quella di prima.
 """
 
+import io
 import logging
 import os
 import re
@@ -112,6 +117,12 @@ class YamlFile:
     error: str | None = None
     explicit_start: bool = False
     resets: LoaderResetFile | None = None
+    text: str | None = None
+    """Il testo del file come e' su disco (letto o scritto da noi); `None` = non noto (file nuovo): scrittura completa."""
+    loaded: list[tuple[CommentedMap, Any]] = field(default_factory=list)
+    """Le voci della lista come erano in `text`: (nodo, copia semplice), per riconoscere quelle cambiate."""
+    rest: Any = None
+    """Le altre chiavi del documento come erano in `text` (copia semplice): se cambiano si riscrive tutto."""
 
     def list_of(self, create: bool = False) -> CommentedSeq | None:
         """La sequenza `rooms`/`mobs`/`objects` del documento (creata se manca e `create`)."""
@@ -243,6 +254,7 @@ class YamlStore:
             if not isinstance(doc, CommentedMap):
                 raise ValueError("il file non contiene una mappa YAML")
             file.doc = doc
+            _snapshot(file, text)
         except Exception as error:  # noqa: BLE001 - YAML malformato / non leggibile: il file e' segnalato, non fatale
             file.error = str(error).splitlines()[0][:300] if str(error) else type(error).__name__
             mark = getattr(error, "problem_mark", None)
@@ -399,11 +411,13 @@ class YamlStore:
         return f"{base}{'' if n == 1 else n}"
 
     def save(self, *files: YamlFile) -> None:
-        """Scrive i file (atomici) e ne aggiorna l'impronta in cache; se una scrittura fallisce la cache e' invalidata."""
+        """Scrive i file (atomici, solo le righe cambiate nei file di voci) e ne aggiorna l'impronta in cache; se una scrittura fallisce la cache e' invalidata."""
         try:
             for file in files:
                 assert file.doc is not None
-                write_atomic(file.path, file.doc, explicit_start=file.explicit_start)
+                text = render_text(file)
+                write_text_atomic(file.path, text)
+                _reanchor(file, text)
         except BaseException:
             self.invalidate()
             raise
@@ -438,18 +452,144 @@ class YamlStore:
         return self.new_file(zone, file_kind, area)
 
 
-def write_atomic(path: Path, document: Any, *, explicit_start: bool = False) -> None:
-    """Scrive il documento in modo atomico (temporaneo nella stessa cartella + `os.replace`), con i permessi del file."""
+def write_text_atomic(path: Path, text: str) -> None:
+    """Scrive il testo in modo atomico (temporaneo nella stessa cartella + `os.replace`), con i permessi del file."""
     path.parent.mkdir(parents=True, exist_ok=True)
     handle, temp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
     try:
-        with os.fdopen(handle, "w", encoding="utf-8") as stream:
-            new_yaml(explicit_start=explicit_start).dump(document, stream)
+        with os.fdopen(handle, "w", encoding="utf-8", newline="") as stream:
+            stream.write(text)
         os.chmod(temp_name, path.stat().st_mode & 0o777 if path.exists() else 0o644)
         os.replace(temp_name, path)
     except BaseException:
         Path(temp_name).unlink(missing_ok=True)
         raise
+
+
+def dump_text(document: Any, *, explicit_start: bool = False) -> str:
+    """Il documento ruamel come testo YAML (scrittura completa, nello stile dei file del gioco)."""
+    buffer = io.StringIO()
+    new_yaml(explicit_start=explicit_start).dump(document, buffer)
+    return buffer.getvalue()
+
+
+def write_atomic(path: Path, document: Any, *, explicit_start: bool = False) -> None:
+    """Scrive il documento in modo atomico (scrittura completa, senza riscrittura selettiva)."""
+    write_text_atomic(path, dump_text(document, explicit_start=explicit_start))
+
+
+def _snapshot(file: YamlFile, text: str) -> None:
+    """Ricorda testo e voci come sono ora (base della riscrittura selettiva del prossimo `save`)."""
+    file.text = text
+    file.loaded, file.rest = [], None
+    if file.kind not in LIST_KEY or file.doc is None:
+        return
+    key = LIST_KEY[file.kind]
+    seq = file.doc.get(key)
+    if isinstance(seq, CommentedSeq):
+        file.loaded = [(n, plain(n)) for n in seq if isinstance(n, CommentedMap)]
+    file.rest = {k: plain(v) for k, v in file.doc.items() if k != key}
+
+
+def _reanchor(file: YamlFile, text: str) -> None:
+    """Dopo una scrittura: il testo scritto diventa la base e le righe dei nodi vivi si riallineano a quel testo (i nodi restano gli stessi)."""
+    file.text = None  # se qualcosa va storto la prossima scrittura sara' completa
+    try:
+        parsed = new_yaml().load(text)
+        if file.kind in LIST_KEY and isinstance(parsed, CommentedMap) and file.doc is not None:
+            key = LIST_KEY[file.kind]
+            mine, theirs = file.doc.get(key), parsed.get(key)
+            if isinstance(mine, CommentedSeq) and isinstance(theirs, CommentedSeq) and len(mine) == len(theirs):
+                for node, fresh in zip(mine, theirs, strict=True):
+                    if isinstance(node, CommentedMap) and isinstance(fresh, CommentedMap):
+                        node.lc.line, node.lc.col = fresh.lc.line, fresh.lc.col
+                file.doc.lc.data = parsed.lc.data
+                _snapshot(file, text)
+            elif not isinstance(mine, CommentedSeq) and theirs is None:
+                _snapshot(file, text)
+        else:
+            file.text = text
+    except Exception:  # noqa: BLE001 - testo non rileggibile: resta la scrittura completa
+        file.text = None
+
+
+def _is_comment(line: str) -> bool:
+    """Riga fatta solo di un commento."""
+    return line.lstrip().startswith("#")
+
+
+def _indent(line: str) -> int:
+    """Spazi iniziali di una riga."""
+    return len(line) - len(line.lstrip(" "))
+
+
+def _header_start(lines: list[str], start: int, lower: int) -> int:
+    """La prima riga del blocco di commenti attaccato (senza righe vuote) sopra la riga `start`, senza scendere sotto `lower`."""
+    j = start
+    while j - 1 >= lower and _is_comment(lines[j - 1]):
+        j -= 1
+    return j
+
+
+def _selective(file: YamlFile) -> str | None:
+    """Il testo con SOLO le voci cambiate, aggiunte o tolte riscritte; il resto identico a `file.text`. `None` se non e' possibile o non e' verificato."""
+    if file.kind not in LIST_KEY or file.text is None or not file.loaded or file.doc is None:
+        return None
+    key = LIST_KEY[file.kind]
+    seq = file.doc.get(key)
+    if not isinstance(seq, CommentedSeq) or {k: plain(v) for k, v in file.doc.items() if k != key} != file.rest:
+        return None
+    lines = file.text.splitlines(keepends=True)
+    starts = [getattr(node.lc, "line", None) for node, _ in file.loaded]
+    key_line = (file.doc.lc.data.get(key) or [None])[0]
+    if (
+        key_line is None
+        or any(s is None for s in starts)
+        or starts != sorted(set(starts))
+        or starts[0] <= key_line
+        or starts[-1] >= len(lines)
+    ):
+        return None
+    after = [k for k in file.doc if list(file.doc).index(k) > list(file.doc).index(key)]
+    next_line = (file.doc.lc.data.get(after[0]) or [None])[0] if after else len(lines)
+    if next_line is None or next_line <= starts[-1]:
+        return None
+    heads = [_header_start(lines, s, (starts[i - 1] if i else key_line) + 1) for i, s in enumerate(starts)]
+    end = len(lines) if not after else _header_start(lines, next_line, starts[-1] + 1)
+    bounds = [*heads[1:], end]
+    parts: dict[int, tuple[str, str, str]] = {}  # id(nodo) -> (testata, corpo, coda)
+    for i, (node, _snap) in enumerate(file.loaded):
+        dash = _indent(lines[starts[i]])
+        body_end = bounds[i]
+        while body_end - 1 > starts[i] and (
+            not lines[body_end - 1].strip() or (_is_comment(lines[body_end - 1]) and _indent(lines[body_end - 1]) <= dash)
+        ):
+            body_end -= 1
+        parts[id(node)] = ("".join(lines[heads[i] : starts[i]]), "".join(lines[starts[i] : body_end]), "".join(lines[body_end : bounds[i]]))
+    snaps = {id(node): snap for node, snap in file.loaded}
+    out = ["".join(lines[: heads[0]])]
+    for node in seq:
+        before = parts.get(id(node))
+        if before is not None and snaps[id(node)] == plain(node):
+            head, body, tail = before
+        else:
+            head, tail = (before[0], before[2]) if before is not None else ("", "")
+            body = dump_text(CommentedSeq([node]))
+        out.append(head + body + ("\n" if body and not body.endswith("\n") else "") + tail)
+    out.append("".join(lines[end:]))
+    text = "".join(out)
+    try:
+        check = new_yaml().load(text)
+    except Exception:  # noqa: BLE001 - la forma insolita del file: scrittura completa
+        return None
+    return text if plain(check) == plain(file.doc) else None
+
+
+def render_text(file: YamlFile) -> str:
+    """Il testo da scrivere per il file: riscrittura selettiva se possibile e verificata, altrimenti scrittura completa."""
+    assert file.doc is not None
+    selective = _selective(file)
+    return selective if selective is not None else dump_text(file.doc, explicit_start=file.explicit_start)
 
 
 def _first_error(error: ValidationError) -> str:
@@ -464,4 +604,18 @@ def model_error(error: ValidationError) -> str:
     return _first_error(error)
 
 
-__all__ = ["FileIssue", "Item", "Kind", "YamlFile", "YamlStore", "ZoneEntry", "model_error", "new_yaml", "plain", "write_atomic"]
+__all__ = [
+    "FileIssue",
+    "Item",
+    "Kind",
+    "YamlFile",
+    "YamlStore",
+    "ZoneEntry",
+    "dump_text",
+    "model_error",
+    "new_yaml",
+    "plain",
+    "render_text",
+    "write_atomic",
+    "write_text_atomic",
+]
