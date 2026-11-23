@@ -16,6 +16,7 @@
 
     <div v-else-if="room && editor" class="row q-col-gutter-lg">
       <div class="col-12 col-lg-8">
+        <style-hints kind="room" :record="room" />
         <sections-form
           :key="formKey"
           ref="formRef"
@@ -77,6 +78,7 @@ import { useRoomsStore } from '../stores/use-rooms-store'
 import { describeError } from '../utils/error-helper'
 import type { IIncomingExit, IResetUsage, IRoomDetail } from '../types/rooms'
 import SectionsForm from '../../shared/components/SectionsForm.vue'
+import StyleHints from '../../shared/components/StyleHints.vue'
 import { useWorld } from '../../shared/helpers/world-state'
 
 const { t, te } = useI18n()

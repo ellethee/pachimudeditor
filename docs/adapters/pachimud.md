@@ -239,6 +239,16 @@ mostra il flag con la spiegazione. La pagina **Locande** (`/inns`) elenca tutti 
 ha «Controlla i file» (`content.validate`), «Ricarica la zona nel gioco» (`zone.reload`, solo con il canale live connesso, la scrittura consentita e il comando dichiarato) e «Nuovo locandiere» (mob receptionist da
 template nella zona scelta; con la stanza facoltativa aggiunge anche il reset `M` che lo carica, nello script della zona della stanza: se e' diversa da quella del mob lo si segnala). Contratto: `backend/contract-content.md`.
 
+## Controllo dei contenuti e consigli di stile
+
+La pagina **Controllo** (`/content/check`, capability `supports_content_races`) chiede al gioco `content.validate` (anche in versione **severa**, con il pulsante «Controllo severo») e
+mostra i problemi **raggruppati per codice**, ognuno con la sua spiegazione (it/en): controlli di zona (`exit-one-way`, `room-unreachable`, `door-state-mismatch`, `door-no-keywords`,
+`mob-never-loaded`, `object-never-loaded`, `reset-max-low`, `exit-target-out-of-zone`), lint di stile (`style-*`), flag, valori, negozi. Un problema il cui file e' dell'editor e' cliccabile e apre la
+stanza, il mob, l'oggetto, i reset o la zona: l'adapter risolve `file:riga` sulla voce che comincia alla riga piu' vicina prima (`POST /api/content/checks/locate`; il percorso si cerca prima uguale,
+poi dal ramo `zones/<zona>/<file>`, quindi funziona anche se il gioco gira da un'altra copia). Il menu «Zona» limita l'elenco a una zona.
+Nelle schede di stanza, mob e oggetto un riquadro **Consigli di stile** (non blocca il salvataggio) e il contatore dei caratteri nei campi titolo, corta e lunga ripetono le regole di stile con le soglie
+del mondo: `GET /api/content/checks/style` legge la sezione `validate.style` del `pachimud.yaml` (`config_path`) sui default del manuale di Clessidra. La fonte della verita' resta `content.validate`.
+
 ## Bacheche e posta
 
 La pagina **Bacheche** (`/boards`, capability `supports_boards`, sola lettura) elenca gli oggetti BOARD dei YAML (`board_id`, o il vnum se manca, come fa il gioco) e i `board_id` che hanno

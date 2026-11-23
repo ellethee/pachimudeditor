@@ -1,18 +1,41 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import { useLive } from '../../playerfiles/helpers/live-state'
 import { describeError } from '../helpers/describe-error'
 import { reloadIssues } from '../helpers/content-issues'
 import { reloadLiveZone } from '../../playerfiles/services/live-api'
-import { reloadContent, validateContent } from '../services/content-files-api'
-import type { IContentIssue, ReloadKind } from '../types/content-files'
+import { locateIssues, reloadContent, validateContent } from '../services/content-files-api'
+import type { IContentIssue, ILocated, ReloadKind } from '../types/content-files'
 
 /** Problemi dell'ultimo controllo (condivisi fra le pagine dei contenuti). */
 const issues = ref<IContentIssue[]>([])
 /** `true` dopo almeno un controllo riuscito. */
 const checked = ref(false)
 const busy = ref(false)
+/** Controllo severo: anche i controlli solo informativi (`exit-target-out-of-zone`, `flag-inert`) e gli avvisi fanno `ok = false`. */
+const strict = ref(false)
+/** Per ogni problema (stesso indice) la voce che lo contiene, risolta dall'editor (`null` finché non arriva o se il file non è suo). */
+const targets = ref<(ILocated | null)[]>([])
+
+watch(
+  issues,
+  async (list) => {
+    const withFile = list.map((issue, index) => ({ issue, index })).filter((x) => x.issue.file)
+    targets.value = list.map(() => null)
+    if (withFile.length === 0) return
+    try {
+      const found = await locateIssues(withFile.map((x) => ({ file: x.issue.file as string, line: x.issue.line })))
+      if (issues.value !== list) return // un controllo più recente ha sostituito l'elenco
+      const next: (ILocated | null)[] = list.map(() => null)
+      withFile.forEach((x, i) => (next[x.index] = found[i] ?? null))
+      targets.value = next
+    } catch {
+      // senza la risoluzione i problemi restano leggibili (file e riga), solo non cliccabili
+    }
+  },
+  { flush: 'post' }
+)
 
 /**
  * Controllo e ricarica a caldo dei contenuti tramite il canale live del gioco (`content.validate`, `content.reload`).
@@ -35,7 +58,7 @@ export function useContentLive() {
     if (!canValidate.value) return
     busy.value = true
     try {
-      issues.value = (await validateContent()).issues
+      issues.value = (await validateContent(strict.value)).issues
       checked.value = true
     } catch (error) {
       $q.notify({ type: 'negative', message: await describeError(error) })
@@ -90,5 +113,5 @@ export function useContentLive() {
     }
   }
 
-  return { issues, checked, busy, errors, warnings, canValidate, canReload, validate, reload, reloadZone, refreshStatus: live.refresh }
+  return { issues, targets, strict, checked, busy, errors, warnings, canValidate, canReload, validate, reload, reloadZone, refreshStatus: live.refresh }
 }

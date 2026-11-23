@@ -68,3 +68,11 @@ Una locanda e' il flag `receptionist` del mob (`extra.receptionist` di `/api/mob
 - `GET /content/inns` -> `InnItem[]` per i mob con `receptionist`, in ordine di vnum: `{vnum, name, zoneId, zoneName, rooms[{vnum, name|null}]}`. `rooms` e' l'elenco delle stanze in cui un reset
   (di qualunque zona) carica il mob: vuoto = nessun reset lo carica; `name: null` = la stanza non esiste.
 
+## Controllo dei contenuti (pachimud)
+
+- `POST /content/checks/locate` con `{items: [{file, line}]}` (fino a 2000) -> `Located[]` nello stesso ordine: `{kind, vnum, zoneId}`. `kind`: `room|mob|object` (la voce che comincia alla riga piu'
+  vicina prima di `line`, `vnum` valorizzato), `zone` (`zone.yaml`), `resets` (file dei reset), `file` (file di contenuto senza una voce precisa, riga assente) o `none` (file sconosciuto all'editor o `file`
+  assente). Il percorso del gioco si confronta uguale e poi dal ramo `zones/<zona>/<file>`.
+- `GET /content/checks/style` -> `{enabled, roomNameMax, descriptionMinLines, descriptionMaxLines, descriptionWidth, shortMax, longMax, timeWords[]}`: `validate.style` del `pachimud.yaml` del mondo
+  (`config_path`) sui default del manuale (80, 3-8 righe da 80 colonne, 40, 80, parole `giorno notte pioggia neve`). Soglie illeggibili o non valide: default.
+

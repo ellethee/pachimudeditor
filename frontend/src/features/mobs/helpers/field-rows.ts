@@ -31,8 +31,8 @@ export function buildIdentityRows(t: Translate, zoneId: number, editing: boolean
       },
       { field: 'keywords', label: t('mobs.fields.keywords'), required: true },
     ],
-    [{ field: 'shortDescription', label: t('mobs.fields.shortDescription'), required: true }],
-    [{ field: 'longDescription', label: t('mobs.fields.longDescription') }],
+    [{ field: 'shortDescription', label: t('mobs.fields.shortDescription'), required: true, counter: true }],
+    [{ field: 'longDescription', label: t('mobs.fields.longDescription'), counter: true }],
     [
       {
         field: 'detailedDescription',

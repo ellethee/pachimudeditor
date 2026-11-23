@@ -1,6 +1,24 @@
 /** English labels of the backend enums (`enumLabels.<enum>.<value>`). */
 export default {
   forms: { save: 'Save', revert: 'Discard changes' },
+  style: {
+    title: 'Style advice (does not block saving)',
+    roomNameLong: 'The title has {n} characters, the advised maximum is {max}.',
+    roomNamePeriod: 'The title should not end with a period.',
+    roomNameLower: 'The title should start with a capital letter.',
+    roomLines: 'The description is {n} lines of {width} columns, {min}-{max} are advised.',
+    roomWidth: 'A line of the description is over {width} columns.',
+    timeWords: 'The room does not change over time: avoid {words}.',
+    shortLong: 'The short description has {n} characters, the advised maximum is {max}.',
+    shortPeriod: 'The short description should not end with a period.',
+    shortUpper: 'The short description should start in lower case (a proper name goes in the keywords too).',
+    longLong: 'has {n} characters, the advised maximum is {max}',
+    longLower: 'should start with a capital letter',
+    longNoPeriod: 'should end with a period',
+    longNoKeyword: 'should contain at least one keyword',
+    longProblems: 'The long description {problems}.',
+    mobKeywords: 'The proper name should be the first keyword.',
+  },
   common: { retry: 'Retry' },
   flow: { zoomIn: 'Zoom in', zoomOut: 'Zoom out', fitView: 'Fit view', interactive: 'Toggle interactivity' },
   errors: {

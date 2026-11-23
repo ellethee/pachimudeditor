@@ -1,7 +1,18 @@
 import type { RouteRecordRaw } from 'vue-router'
-import { mdiAccountGroup, mdiBookOpenPageVariant, mdiEmoticonOutline, mdiMagicStaff, mdiSwordCross, mdiTable } from '@quasar/extras/mdi-v7'
+import { mdiAccountGroup, mdiBookOpenPageVariant, mdiClipboardCheckOutline, mdiEmoticonOutline, mdiMagicStaff, mdiSwordCross, mdiTable } from '@quasar/extras/mdi-v7'
 
 export default [
+  {
+    path: '/content/check',
+    meta: {
+      capability: 'supportsContentRaces',
+      titleKey: 'content.check.title',
+      descriptionKey: 'content.check.description',
+      icon: mdiClipboardCheckOutline,
+      order: 79,
+    },
+    component: () => import('./pages/CheckPage.vue'),
+  },
   {
     path: '/content/races',
     meta: {

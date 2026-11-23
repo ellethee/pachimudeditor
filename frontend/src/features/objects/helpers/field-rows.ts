@@ -38,8 +38,8 @@ export function buildGeneralRows(
       { field: 'objectType', label: t('objects.fields.objectType'), type: 'select', options: enums?.objectType ?? [], style: SIDE_BY_SIDE },
     ],
     [{ field: 'keywords', label: t('objects.fields.keywords'), required: true }],
-    [{ field: 'shortDescription', label: t('objects.fields.shortDescription'), required: true }],
-    [{ field: 'longDescription', label: t('objects.fields.longDescription') }],
+    [{ field: 'shortDescription', label: t('objects.fields.shortDescription'), required: true, counter: true }],
+    [{ field: 'longDescription', label: t('objects.fields.longDescription'), counter: true }],
     [{ field: 'actionDescription', label: t('objects.fields.actionDescription') }],
   ]
 }

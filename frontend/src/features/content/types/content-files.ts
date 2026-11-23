@@ -80,3 +80,23 @@ export interface IContentReload {
   kind: string
   reloaded: Record<string, string[]>
 }
+
+/** Dove cade un `file:riga` di un problema (`POST /api/content/checks/locate`). */
+export interface ILocated {
+  /** `zone` = `zone.yaml`; `resets` = file dei reset; `file` = file senza una voce precisa; `none` = file sconosciuto all'editor. */
+  kind: 'zone' | 'room' | 'mob' | 'object' | 'resets' | 'file' | 'none'
+  vnum: number | null
+  zoneId: number | null
+}
+
+/** Soglie del lint di stile (`GET /api/content/checks/style`). */
+export interface IStyleLimits {
+  enabled: boolean
+  roomNameMax: number
+  descriptionMinLines: number
+  descriptionMaxLines: number
+  descriptionWidth: number
+  shortMax: number
+  longMax: number
+  timeWords: string[]
+}

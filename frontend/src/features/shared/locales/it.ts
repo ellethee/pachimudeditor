@@ -1,6 +1,24 @@
 /** Etichette italiane degli enum del backend (`enumLabels.<enum>.<valore>`). */
 export default {
   forms: { save: 'Salva', revert: 'Annulla modifiche' },
+  style: {
+    title: 'Consigli di stile (non bloccano il salvataggio)',
+    roomNameLong: 'Il titolo ha {n} caratteri, il massimo consigliato è {max}.',
+    roomNamePeriod: 'Il titolo non dovrebbe finire con un punto.',
+    roomNameLower: 'Il titolo dovrebbe iniziare con la maiuscola.',
+    roomLines: 'La descrizione è di {n} righe da {width} colonne, ne sono consigliate {min}-{max}.',
+    roomWidth: 'Una riga della descrizione supera le {width} colonne.',
+    timeWords: 'La stanza non cambia col tempo: evita {words}.',
+    shortLong: 'La descrizione corta ha {n} caratteri, il massimo consigliato è {max}.',
+    shortPeriod: 'La descrizione corta non dovrebbe finire con un punto.',
+    shortUpper: 'La descrizione corta dovrebbe iniziare in minuscolo (un nome proprio va anche nelle parole chiave).',
+    longLong: 'ha {n} caratteri, il massimo consigliato è {max}',
+    longLower: 'dovrebbe iniziare in maiuscolo',
+    longNoPeriod: 'dovrebbe finire con il punto',
+    longNoKeyword: 'dovrebbe contenere almeno una parola chiave',
+    longProblems: 'La descrizione lunga {problems}.',
+    mobKeywords: 'Il nome proprio dovrebbe essere la prima parola chiave.',
+  },
   common: { retry: 'Riprova' },
   flow: { zoomIn: 'Ingrandisci', zoomOut: 'Riduci', fitView: 'Adatta alla vista', interactive: 'Blocca/sblocca interazione' },
   errors: {

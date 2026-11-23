@@ -8,6 +8,7 @@ module = AppModule(
         "pachimudeditor_adapter_pachimud.apps.content.shops",
         "pachimudeditor_adapter_pachimud.apps.content.boards",
         "pachimudeditor_adapter_pachimud.apps.content.inns",
+        "pachimudeditor_adapter_pachimud.apps.content.checks",
     ),
     locale_package="pachimudeditor_adapter_pachimud.apps.content.locale",
 )

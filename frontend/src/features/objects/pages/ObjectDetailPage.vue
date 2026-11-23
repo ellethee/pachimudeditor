@@ -13,6 +13,7 @@
 
     <div v-else-if="object && form" class="row q-col-gutter-lg">
       <div class="col-12 col-lg-8">
+        <style-hints kind="object" :record="object" />
         <sections-form
           :key="formKey"
           ref="formRef"
@@ -59,6 +60,7 @@ import { describeError } from '../helpers/describe-error'
 import { deleteObject, getObject, getObjectUsage, updateObject } from '../services/objects-api'
 import type { IObjectEnums, IObjects, IResetUsage } from '../types/objects'
 import SectionsForm from '../../shared/components/SectionsForm.vue'
+import StyleHints from '../../shared/components/StyleHints.vue'
 import { guardOf } from '../../shared/helpers/record-guard'
 import { useWorld } from '../../shared/helpers/world-state'
 

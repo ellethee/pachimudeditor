@@ -882,7 +882,9 @@ class FakePachimudServer(FakeLiveServer):
         """`content.validate` (estensione pachimud): `{ok, errors, warnings, issues[]}` con `severity` e `level`."""
         _check_keys(p, ("strict",))
         strict = _bool(p, "strict", False)
-        issues = [{"level": i["severity"], **i} for i in self.content_errors]
+        extra = Path(self.path + ".issues.json")  # problemi aggiunti da un test e2e (file scritto prima del controllo)
+        extra_issues = json.loads(extra.read_text()) if extra.is_file() else []
+        issues = [{"level": i["severity"], **i} for i in [*self.content_errors, *extra_issues]]
         errors = sum(i["severity"] == "error" for i in issues)
         warnings = len(issues) - errors
         return {"ok": errors == 0 and not (strict and warnings), "errors": errors, "warnings": warnings, "issues": issues}

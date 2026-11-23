@@ -5,6 +5,8 @@ import type {
   IContentValidate,
   IFileContent,
   IFileEntry,
+  ILocated,
+  IStyleLimits,
   ISkill,
   ISocial,
   ReloadKind,
@@ -146,4 +148,17 @@ export async function validateContent(strict = false): Promise<IContentValidate>
  */
 export async function reloadContent(kind: ReloadKind): Promise<IContentReload> {
   return http('/api/world/live').Post<IContentReload>('/content/reload', { kind }, SILENT)
+}
+
+/**
+ * Per ogni `file:riga` di un controllo, la voce che lo contiene (stanza, mob, oggetto) o la zona.
+ * @param items punti dei file, come li riporta `content.validate`
+ */
+export async function locateIssues(items: { file: string; line: number | null }[]): Promise<ILocated[]> {
+  return http().Post<ILocated[]>('/checks/locate', { items }, { ...SILENT, meta: { autoError: false, spinner: false } })
+}
+
+/** Soglie del lint di stile del mondo (`validate.style` del gioco, altrimenti i default del manuale). */
+export async function getStyleLimits(): Promise<IStyleLimits> {
+  return http().Get<IStyleLimits>('/checks/style', { ...SILENT, meta: { autoError: false, spinner: false } })
 }

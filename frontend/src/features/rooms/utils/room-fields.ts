@@ -39,7 +39,7 @@ export function buildRoomFieldRows(
         required: true,
       },
     ],
-    [{ field: 'name', label: t('rooms.fields.name'), required: true }],
+    [{ field: 'name', label: t('rooms.fields.name'), required: true, counter: true }],
     [{ field: 'description', label: t('rooms.fields.description'), type: 'textarea', autogrow: true }],
     [
       { field: 'healRate', label: t('rooms.fields.healRate'), type: 'number' },
