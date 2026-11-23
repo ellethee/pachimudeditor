@@ -159,7 +159,8 @@ export function useZoneDialogs() {
       bottomVnum: 0,
       topVnum: 0,
       minLevel: 1,
-      maxLevel: 1,
+      // senza livello minimo (pachimud) il massimo e' il livello di accesso: parte da 50 come nel gioco
+      maxLevel: fieldOf('zone', 'minLevel')?.unsupported ? 50 : 1,
       lifespanMinutes: 30,
       resetMode: enums.zoneResetMode[1]?.value ?? enums.zoneResetMode[0]?.value ?? 0,
       enabled: true,

@@ -40,7 +40,7 @@ from pachimudeditor.common.adapters.models import (
 from pachimudeditor.common.enums import ZoneCommandType
 from pachimudeditor.sdk import AdapterCapabilities, AdapterInfo, ResourceInfo, WorldAdapter, describe_resource, finish_resource
 from pachimudeditor_adapter_pachimud import integrity
-from pachimudeditor_adapter_pachimud.fields import EXTRA, FLAG_LISTS, READ_ONLY
+from pachimudeditor_adapter_pachimud.fields import EXTRA, FLAG_LISTS, READ_ONLY, UNSUPPORTED
 from pachimudeditor_adapter_pachimud.live import LiveMixin
 from pachimudeditor_adapter_pachimud.meta import MetaMixin
 from pachimudeditor_adapter_pachimud.prototypes import PrototypesMixin
@@ -152,7 +152,13 @@ class PachimudAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, LiveMi
         def finish(info: ResourceInfo) -> ResourceInfo:
             """Completa la risorsa con le chiavi di `extra` e i campi derivati."""
             enums = {name: key for (res, name), key in FLAG_LISTS.items() if res == info.type}
-            return finish_resource(info, EXTRA.get(info.type, []), enums=enums, read_only=READ_ONLY.get(info.type, frozenset()))
+            return finish_resource(
+                info,
+                EXTRA.get(info.type, []),
+                enums=enums,
+                unsupported=UNSUPPORTED.get(info.type, frozenset()),
+                read_only=READ_ONLY.get(info.type, frozenset()),
+            )
 
         resources = [
             describe_resource("zone", ZoneOut, ZoneIn),

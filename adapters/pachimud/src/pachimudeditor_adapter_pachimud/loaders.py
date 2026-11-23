@@ -63,8 +63,8 @@ class LoaderZone(BaseModel):
     description: str = ""
     bottom_vnum: int
     top_vnum: int
-    min_level: int = 1
-    max_level: int = 1
+    max_level: int = 50
+    """Livello massimo di accesso (default 50, il gioco non lo applica ancora); `min_level` dei vecchi file e' ignorato."""
     lifespan_minutes: int = 30
     reset_mode: str = "ALWAYS"
     climate: Literal["temperate", "desert", "arctic"] = "temperate"

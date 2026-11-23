@@ -10,6 +10,9 @@ from pachimudeditor.sdk import ExtraFieldDescriptor, ResourceType, xf
 FLAG_LISTS: dict[tuple[str, str], str] = {}
 """(risorsa, campo) -> lista in `enums()` da cui prendere i nomi dei flag (nel gioco sono stringhe libere MAIUSCOLE)."""
 
+UNSUPPORTED: dict[str, frozenset[str]] = {"zone": frozenset({"minLevel"})}
+"""Risorsa -> campi del DTO che il gioco non ha (valore neutro in lettura, solo il neutro in scrittura): `Zone.min_level` e' stato tolto."""
+
 READ_ONLY: dict[str, frozenset[str]] = {"object": frozenset({"value0", "value1", "value2", "value3"})}
 """Campi del DTO derivati da altri (i `value_N` degli oggetti: si modifica `extra.typeFields`)."""
 

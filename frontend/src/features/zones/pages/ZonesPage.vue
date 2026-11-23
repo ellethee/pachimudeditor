@@ -81,7 +81,7 @@ const columns = computed<QTableColumn<IZone>[]>(() => [
   {
     name: 'levels',
     label: t('zones.columns.levels'),
-    field: (row: IZone) => `${row.minLevel}-${row.maxLevel}`,
+    field: (row: IZone) => (fieldOf('zone', 'minLevel')?.unsupported ? `${row.maxLevel}` : `${row.minLevel}-${row.maxLevel}`),
     align: 'left',
   },
   { name: 'lifespanMinutes', label: t('zones.columns.lifespan'), field: 'lifespanMinutes', align: 'left', sortable: true },

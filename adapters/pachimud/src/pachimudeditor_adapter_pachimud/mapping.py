@@ -171,7 +171,7 @@ def zone_out(zone: ZoneEntry) -> ZoneOut:
         builder=m.builder,
         bottom_vnum=m.bottom_vnum,
         top_vnum=m.top_vnum,
-        min_level=m.min_level,
+        min_level=1,  # il gioco non ha il livello minimo di zona: valore neutro (campo `unsupported`)
         max_level=m.max_level,
         lifespan_minutes=m.lifespan_minutes,
         reset_mode=ZoneResetMode[m.reset_mode],

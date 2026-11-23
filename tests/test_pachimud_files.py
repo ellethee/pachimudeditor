@@ -130,6 +130,19 @@ async def test_new_zone_is_a_folder_and_delete_removes_it(client: httpx.AsyncCli
     assert not (zones_dir() / "ForestaNera").exists()
 
 
+async def test_zone_has_no_min_level(client: httpx.AsyncClient) -> None:
+    """Il gioco non ha `min_level` di zona: campo `unsupported` (neutro 1), mai scritto; `max_level` parte da 50 nei file senza."""
+    info = get_registry().get("pachimud").describe()
+    fields = {f.name: f for f in next(r for r in info.resources if r.type == "zone").fields}
+    assert fields["minLevel"].unsupported and not fields["maxLevel"].unsupported
+    zone = data(await client.post("/api/zones", json={"vnum": 58, "name": "Senza Minimo", "minLevel": 7, "maxLevel": 9}), 201)
+    assert zone["minLevel"] == 1 and zone["maxLevel"] == 9
+    assert "min_level" not in (zones_dir() / "SenzaMinimo" / "zone.yaml").read_text()
+    data(await client.put("/api/zones/58", json={"minLevel": 5, "name": "Senza Minimo 2"}))  # ignorato come in dikumod
+    assert "min_level" not in (zones_dir() / "SenzaMinimo" / "zone.yaml").read_text()
+    assert error_code(await client.put("/api/zones/58", json={"minLevel": 20}), 422) == "zones.invalid_level_range"
+
+
 async def test_broken_files_do_not_stop_the_world(client: httpx.AsyncClient) -> None:
     """Un YAML rotto e una voce non valida sono segnalati con file e riga; il resto del mondo si legge."""
     write_world_file("ZonaRotta/zone.yaml", "zone_id: [non chiuso\nvnum: 77\n")

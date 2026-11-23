@@ -50,7 +50,8 @@ webeditor_worlds:
 
 ```
 definitions/zones/<Zona>/zone.yaml            zone_id (slug), vnum, name, builder, description, bottom_vnum, top_vnum,
-                                              min_level, max_level, lifespan_minutes, reset_mode, enabled
+                                              max_level (livello massimo di accesso, default 50, non applicato),
+                                              lifespan_minutes, reset_mode, enabled   (`min_level` non esiste piu': e' ignorato)
                          rooms*.yaml          rooms: [{vnum, name, description, sector_type, flags, heal_rate, mana_rate,
                                               clan_id, owner, enabled, area, exits: {north: {...}}, extra_descriptions: [...]}]
                          mobs*.yaml           mobs: [{vnum, keywords, ..., hp_dice "3d8+10", damage_dice, ...}]

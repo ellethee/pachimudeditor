@@ -93,7 +93,6 @@ class ZonesMixin(PachimudSupport):
                 **({"extends_zone": extra["extendsZone"]} if extra.get("extendsZone") else {}),
                 "bottom_vnum": values["bottom_vnum"],
                 "top_vnum": values["top_vnum"],
-                "min_level": values["min_level"],
                 "max_level": values["max_level"],
                 "lifespan_minutes": values["lifespan_minutes"],
                 "reset_mode": ZoneResetMode(values["reset_mode"]).name,
@@ -127,6 +126,7 @@ class ZonesMixin(PachimudSupport):
         """Crea la cartella della zona con il suo `zone.yaml` (il vnum deve essere libero)."""
         self.ensure_writable()
         values = data.model_dump(by_alias=False, exclude={"extra"})
+        values.pop("min_level")  # il gioco non ha il livello minimo di zona: neutro, ignorato
         self._check_zone_extra(data.extra, current=None)
         async with self.writing():
             self._check_new_zone(data.vnum, 0, 0)
@@ -138,14 +138,17 @@ class ZonesMixin(PachimudSupport):
         self.ensure_writable()
         changes = data.model_dump(by_alias=False, exclude_unset=True, exclude={"extra"})
         extra = data.extra or {}
+        low = changes.pop(
+            "min_level", 1
+        )  # come in dikumod: il patch di un campo che il gioco non ha e' ignorato, ma il range resta coerente
         async with self.writing():
             zone = self.zone_or_404(zone_id)
             self._check_zone_extra(extra, current=zone)
             m = zone.model
             if "vnum" in changes and changes["vnum"] != zone.vnum and self.store.zone(changes["vnum"]) is not None:
                 raise conflict("zones.vnum_taken", vnum=changes["vnum"])
-            final = {n: changes.get(n, getattr(m, n)) for n in ("bottom_vnum", "top_vnum", "min_level", "max_level")}
-            rules.check_zone_ranges(final["bottom_vnum"], final["top_vnum"], final["min_level"], final["max_level"])
+            final = {n: changes.get(n, getattr(m, n)) for n in ("bottom_vnum", "top_vnum", "max_level")}
+            rules.check_zone_ranges(final["bottom_vnum"], final["top_vnum"], low, final["max_level"])
             mapping.zone_apply(zone.file.doc, changes)
             for key in ("zoneId", "description", "climate"):
                 if key in extra:
@@ -217,7 +220,7 @@ class ZonesMixin(PachimudSupport):
             m = source.model
             values = {
                 "vnum": data.vnum, "name": data.name, "builder": m.builder, "bottom_vnum": bottom, "top_vnum": top,
-                "min_level": m.min_level, "max_level": m.max_level, "lifespan_minutes": m.lifespan_minutes,
+                "max_level": m.max_level, "lifespan_minutes": m.lifespan_minutes,
                 "reset_mode": ZoneResetMode[m.reset_mode], "enabled": m.enabled,
             }  # fmt: skip
             clone = self._create_zone_file(values, {"description": m.description, "climate": m.climate})

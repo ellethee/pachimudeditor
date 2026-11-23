@@ -87,6 +87,14 @@ describe('zone', () => {
     await closeDiscarding(s.page)
   })
 
+  it('pachimud: il livello minimo non esiste (campo disabilitato), il massimo parte da 50', async () => {
+    await s.page.getByRole('button', { name: 'Nuova zona' }).click()
+    assert.equal(await s.page.getByLabel('Livello minimo').isDisabled(), true)
+    assert.equal(await s.page.getByLabel('Livello massimo').inputValue(), '50')
+    await s.page.keyboard.press('Escape') // form non modificato: si chiude senza conferma
+    await waitDialogsClosed(s.page)
+  })
+
   it('modifica una zona', async () => {
     await tableRow(s.page, 'Zona Pw').locator('.pachi-t2-edit-item').click()
     await s.page.getByRole('heading', { name: /70 — Zona Pw/ }).waitFor()
