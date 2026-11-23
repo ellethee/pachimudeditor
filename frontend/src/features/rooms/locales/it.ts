@@ -65,7 +65,7 @@ export default {
       description: "Descrizione (guardando in quella direzione)",
       descriptionHint: "Testo mostrato con look verso questa direzione",
       keyVnum: 'Vnum chiave',
-      keywordsMissing: 'Una porta senza parole chiave non si può aprire né chiudere: es. «porta»',
+      keywordsMissing: 'Consigliato: parole chiave per la porta, es. «porta»',
       mirror: "Applica porta, stato e parole chiave anche all'uscita di ritorno",
       mirrorHint: "Se la stanza di destinazione ha un'uscita che torna qui, riceve gli stessi valori di porta, aperta, chiusa a chiave e parole chiave.",
     },

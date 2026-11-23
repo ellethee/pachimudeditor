@@ -220,7 +220,7 @@ function setExtra(row: IExitRow, field: IExtraFieldDescriptor, value: string | n
 }
 
 /**
- * Una porta senza parole chiave non si può aprire né chiudere dai giocatori (avviso non bloccante).
+ * Una porta senza parole chiave funziona ma è meglio nominarla (avviso non bloccante: il motore non le richiede).
  *
  * @param row - riga dell'uscita
  */
