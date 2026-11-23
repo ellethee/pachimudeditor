@@ -5,7 +5,7 @@ import { Api } from '../support/api.ts'
 import { addFlag, closeDiscarding, confirm, dialog, dismissError, goto, loginOk, openDetail, openSession, pickOption, rawI18nKey, saveDialog, saveForm, tableRow, type Session, waitDialogsClosed } from '../support/browser.ts'
 
 /** Vnum creati dai test. */
-const VNUMS = [1050, 1051, 1062, 1063, 1064, 2062, 1065, 1066]
+const VNUMS = [1050, 1051, 1062, 1063, 1064, 2062, 1065, 1066, 1067]
 
 /** Elimina via API i mob di test rimasti. */
 async function cleanup(api: Api): Promise<void> {
@@ -242,6 +242,23 @@ describe('mob', () => {
     const mob = await api.byVnum('mobs', 1050)
     assert.deepEqual(mob.flags, ['SENTINEL', 'AGGRESSIVE', 'SCAVENGER'])
     assert.equal(mob.shortDescription, 'un goblin rosso')
+  })
+
+  it('salvare senza toccare il campo opzionale non lo cancella; svuotarlo lo toglie', async () => {
+    const zone = await api.byVnum('zones', 10)
+    const res = await api.call('POST', '/api/mobs', { vnum: 1067, zoneId: zone.id, keywords: 'cieco', shortDescription: 'un mob cieco', debuffSkillId: 'curse' })
+    assert.equal(res.status, 201)
+    await goto(s.page, '/mobs')
+    await openDetail(s.page, tableRow(s.page, 'un mob cieco'))
+    await s.page.getByLabel('Descrizione breve *').fill('un mob ancora cieco')
+    await saveForm(s.page)
+    assert.equal((await api.byVnum('mobs', 1067)).debuffSkillId, 'curse')
+    await s.page.getByText('Ruoli e servizi', { exact: true }).click()
+    await s.page.getByLabel('Skill di debuff (opzionale)').fill('')
+    await saveForm(s.page)
+    assert.equal((await api.byVnum('mobs', 1067)).debuffSkillId ?? null, null)
+    await s.page.getByLabel("Torna all'elenco").click()
+    await tableRow(s.page, 'un mob ancora cieco').waitFor()
   })
 
   it('un mob usato da un reset non si elimina (409 tradotto)', async () => {

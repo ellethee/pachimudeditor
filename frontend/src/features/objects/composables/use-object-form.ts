@@ -7,6 +7,7 @@ import InstancesSection from '../../instances/components/InstancesSection.vue'
 import { applyDescriptors, enumNames } from '../../shared/helpers/descriptor-rows'
 import { localizeEnums } from '../../shared/helpers/enum-labels'
 import { createExtraEditor } from '../../shared/helpers/extra-fields'
+import { settleClearedFields } from '../../shared/helpers/optional-fields'
 import { guardOf, guardSection } from '../../shared/helpers/record-guard'
 import { useWorld } from '../../shared/helpers/world-state'
 import { buildGeneralRows, buildStatsRows } from '../helpers/field-rows'
@@ -154,8 +155,8 @@ export function useObjectForm() {
         ...(results.general as Record<string, unknown>),
         ...(results.stats as Record<string, unknown>),
       } as Partial<IObjectsInput>
-      // il campo opzionale vuoto si invia come null
-      if (body.actionDescription === '') body.actionDescription = null
+      // il campo opzionale vuoto si invia come null solo se l'oggetto salvato ne aveva uno
+      settleClearedFields(body, record, ['actionDescription'])
       // `extra` (campi specifici del mondo) solo con le chiavi cambiate
       const extra = extraEditor?.collect(results.extra)
       if (extra) body.extra = extra

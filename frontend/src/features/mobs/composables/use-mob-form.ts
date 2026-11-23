@@ -8,6 +8,7 @@ import { applyDescriptors, enumNames } from '../../shared/helpers/descriptor-row
 import { localizeEnums } from '../../shared/helpers/enum-labels'
 import { createExtraEditor } from '../../shared/helpers/extra-fields'
 import { guardOf, guardSection } from '../../shared/helpers/record-guard'
+import { settleClearedFields } from '../../shared/helpers/optional-fields'
 import { useWorld } from '../../shared/helpers/world-state'
 import InnField from '../../inns/components/InnField.vue'
 import ShopField from '../../shops/components/ShopField.vue'
@@ -215,11 +216,8 @@ export function useMobForm() {
         ...(results.combat as Record<string, unknown>),
         ...(results.roles as Record<string, unknown>),
       } as Partial<IMobsInput>
-      // campi opzionali: stringa vuota -> null; liste di insegnamento vuote -> null
-      if (!body.shopId) body.shopId = null
-      if (!body.debuffSkillId) body.debuffSkillId = null
-      if (!body.teachesClassIds?.length) body.teachesClassIds = null
-      if (!body.teachesSkillIds?.length) body.teachesSkillIds = null
+      // campi opzionali vuoti: null solo se il mob salvato ne aveva uno (svuotato davvero), altrimenti non si inviano
+      settleClearedFields(body, record, ['shopId', 'debuffSkillId', 'teachesClassIds', 'teachesSkillIds'])
       // `extra` (campi specifici del mondo) solo con le chiavi cambiate
       const extra = extraEditor?.collect(results.extra)
       if (extra) body.extra = extra
