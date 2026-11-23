@@ -7,6 +7,8 @@ const SIDE = 'flex: 1 1 0; min-width: 130px'
 /** Tipi, tiri salvezza ed elementi ammessi dal gioco (`docs/contenuti.md`). */
 const KINDS = ['spell', 'skill']
 const SAVINGS = ['para', 'rod', 'petri', 'breath', 'spell']
+/** Oggetti in cui può stare un incantesimo (`item_types`). */
+export const ITEM_TYPES = ['potion', 'scroll', 'wand', 'staff', 'ointment']
 const ELEMENTS = ['fire', 'elec', 'cold', 'energy', 'acid', 'poison', 'blunt', 'pierce', 'slash']
 /** Chiavi dei testi di un social. */
 export const SOCIAL_KEYS = ['no_arg', 'others_no_arg', 'found', 'others_found', 'victim_found', 'not_found', 'auto', 'others_auto'] as const
@@ -50,6 +52,18 @@ export function buildSkillRows(t: Translate, editing: boolean): { general: IFiel
       ],
       [{ field: 'targets', label: t('content.skills.fields.targets'), hint: t('content.skills.fields.targetsHint') }],
       [
+        {
+          field: 'itemTypes',
+          label: t('content.skills.fields.itemTypes'),
+          hint: t('content.skills.fields.itemTypesHint'),
+          type: 'select',
+          multiple: true,
+          useChips: true,
+          clearable: true,
+          options: ITEM_TYPES.map((value) => ({ value, label: t(`content.skills.itemTypes.${value}`) })),
+        },
+      ],
+      [
         { field: 'violent', label: t('content.skills.fields.violent'), type: 'boolean' },
         { field: 'disabled', label: t('content.skills.fields.disabled'), type: 'boolean' },
       ],
@@ -73,8 +87,9 @@ export function buildSkillRows(t: Translate, editing: boolean): { general: IFiel
  * Dal form al corpo della richiesta: booleani falsi e campi vuoti tolgono la chiave dal file; `targets` è una lista.
  * @param values valori delle sezioni unite
  * @param editing `true` in modifica (senza `skillId`: sta nel percorso)
+ * @param original la skill com'era (`item_types` si invia solo se è cambiato: assente e lista vuota non sono la stessa cosa)
  */
-export function formToSkill(values: Record<string, unknown>, editing: boolean): Record<string, unknown> {
+export function formToSkill(values: Record<string, unknown>, editing: boolean, original: ISkill | null = null): Record<string, unknown> {
   const text = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v.trim() : null)
   const num = (v: unknown): number | null => (v === null || v === undefined || v === '' ? null : Number(v))
   const body: Record<string, unknown> = {
@@ -97,6 +112,11 @@ export function formToSkill(values: Record<string, unknown>, editing: boolean): 
     advanced: String(values.advanced ?? ''),
   }
   if ((body.targets as string[]).length === 0) body.targets = null
+  const types = Array.isArray(values.itemTypes) ? (values.itemTypes as string[]) : []
+  const before = original?.itemTypes ?? undefined // l'API manda `null` se la chiave manca
+  const same = before !== undefined && before.length === types.length && before.every((x) => types.includes(x))
+  if (original && (same || (before === undefined && types.length === 0))) delete body.itemTypes
+  else body.itemTypes = types.length > 0 ? types : null
   if (!editing) body.skillId = String(values.skillId ?? '').trim()
   return body
 }
@@ -119,6 +139,7 @@ export function skillToForm(skill: ISkill | null): Record<string, unknown> {
     saving: skill?.saving ?? null,
     element: skill?.element ?? null,
     targets: (skill?.targets ?? []).join(', '),
+    itemTypes: skill?.itemTypes ?? [],
     violent: skill?.violent ?? false,
     disabled: skill?.disabled ?? false,
     advanced: skill?.advanced ?? '',

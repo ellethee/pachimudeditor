@@ -102,6 +102,7 @@ const en: PachiMessages<typeof it> = {
       createTitle: 'New skill',
       pick: 'Pick a skill from the list or create a new one.',
       deleteConfirm: 'Delete skill «{id}» from your layer? If it exists among the built-in content, that one is used again.',
+      itemTypes: { potion: 'Potion', scroll: 'Scroll', wand: 'Wand', staff: 'Staff', ointment: 'Ointment' },
       sections: { general: 'General', advanced: 'Advanced fields (YAML)' },
       fields: {
         skillId: 'Id',
@@ -118,6 +119,8 @@ const en: PachiMessages<typeof it> = {
         element: 'Element',
         targets: 'Targets',
         targetsHint: 'Comma separated, e.g. CHAR_ROOM, FIGHT_VICT',
+        itemTypes: 'Where it can be',
+        itemTypesHint: 'Potion, scroll, wand, staff, ointment. Empty = no restriction (an empty list written by hand in the file stays as it is).',
         violent: 'Violent',
         disabled: 'Disabled',
         advanced: 'Levels, effects, handlers, messages',

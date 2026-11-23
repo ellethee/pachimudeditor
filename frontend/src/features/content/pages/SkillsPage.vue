@@ -17,6 +17,7 @@
         <q-card v-if="form" flat bordered class="q-pa-md" data-testid="skill-form">
           <div class="row items-center q-mb-sm">
             <div class="text-h6">{{ creating ? t('content.skills.createTitle') : selectedId }}</div>
+            <span v-if="!creating && displayNames" class="q-ml-md text-grey-8" data-testid="skill-names">{{ displayNames }}</span>
             <q-badge v-if="!creating && layer === 'base'" class="q-ml-md" color="grey" outline :label="t('content.layer.baseHint')" />
             <q-space />
             <q-btn
@@ -76,11 +77,21 @@ const formRef = ref<{ commit: () => void; hasChanges: () => boolean } | null>(nu
 const bar = ref<InstanceType<typeof ContentLiveBar> | null>(null)
 const saving = ref(false)
 const saveError = ref('')
+/** La skill aperta com'era (serve a distinguere i campi cambiati da quelli solo mostrati). */
+let loadedSkill: ISkill | null = null
+
+/** I nomi mostrati ai giocatori (`messages.name`) della skill aperta, es. «it: Getto acido · en: acid blast». */
+const displayNames = computed(() => {
+  const skill = skills.value.find((s) => s.skillId === selectedId.value)
+  return Object.entries(skill?.names ?? {})
+    .map(([lang, name]) => `${lang}: ${name}`)
+    .join(' · ')
+})
 
 const listRows = computed(() =>
   skills.value.map((s) => ({
     id: s.skillId,
-    info: [s.kind, s.name && s.name !== s.skillId ? s.name : '', Object.keys(s.levels ?? {}).length ? `${Object.keys(s.levels ?? {}).length} cl.` : '']
+    info: [s.kind, s.names?.it ?? (s.name && s.name !== s.skillId ? s.name : ''), Object.keys(s.levels ?? {}).length ? `${Object.keys(s.levels ?? {}).length} cl.` : '']
       .filter(Boolean)
       .join(' · '),
     layer: s.layer,
@@ -102,6 +113,7 @@ async function load(): Promise<void> {
 
 /** Costruisce le sezioni del form con i valori iniziali. */
 function buildForm(skill: ISkill | null): void {
+  loadedSkill = skill
   const rows = buildSkillRows(t, !!skill)
   const initial = skillToForm(skill)
   const section = (key: string, title: string, sectionRows: IFieldRow[], order: number): ISectionDefinition => ({
@@ -164,7 +176,7 @@ async function startCreate(): Promise<void> {
 /** Salva (crea o aggiorna) e fa controllare i file al gioco. */
 async function save(results: Record<string, unknown>): Promise<void> {
   const values = Object.assign({}, ...Object.values(results)) as Record<string, unknown>
-  const body = formToSkill(values, !creating.value)
+  const body = formToSkill(values, !creating.value, loadedSkill)
   saving.value = true
   saveError.value = ''
   try {

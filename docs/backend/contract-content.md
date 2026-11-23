@@ -76,3 +76,9 @@ Una locanda e' il flag `receptionist` del mob (`extra.receptionist` di `/api/mob
 - `GET /content/checks/style` -> `{enabled, roomNameMax, descriptionMinLines, descriptionMaxLines, descriptionWidth, shortMax, longMax, timeWords[]}`: `validate.style` del `pachimud.yaml` del mondo
   (`config_path`) sui default del manuale (80, 3-8 righe da 80 colonne, 40, 80, parole `giorno notte pioggia neve`). Soglie illeggibili o non valide: default.
 
+## Skill: `itemTypes` e `names`
+
+- `SkillBody.itemTypes: string[] | null`: dove puo' stare l'incantesimo (`potion|scroll|wand|staff|ointment`); chiave assente = nessun vincolo, lista vuota = in nessun oggetto. `null` nel PUT toglie la chiave;
+  valori diversi da quelli elencati: 422 `content.invalid`.
+- `SkillItem.names: {lingua: nome}`: `messages.name` della skill (a sola lettura: si modifica in `advanced`).
+

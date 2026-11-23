@@ -37,6 +37,10 @@ export interface ISkill {
   saving?: string
   element?: string
   targets?: string[]
+  /** Dove può stare l'incantesimo; assente = nessun vincolo, lista vuota = in nessun oggetto. */
+  itemTypes?: string[] | null
+  /** Nome mostrato ai giocatori per lingua (`messages.name`), a sola lettura. */
+  names?: Record<string, string>
   levels?: Record<string, number>
   advanced?: string
   /** Il file non si legge: solo id e messaggio. */

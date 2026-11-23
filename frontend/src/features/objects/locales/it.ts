@@ -1,6 +1,12 @@
 /** Messaggi italiani della feature (lingua di riferimento). */
 export default {
   objects: {
+    spellHints: {
+      title: 'Incantesimi: controlla',
+      unknown: 'L’incantesimo «{name}» non esiste fra le skill.',
+      notAllowed: '«{name}» non può stare in un oggetto {type} (ammesso in: {allowed}).',
+      nowhere: 'nessun oggetto',
+    },
     title: 'Oggetti',
     description: 'Oggetti prototipo: tipo, flag e valori',
     zone: 'Zona',

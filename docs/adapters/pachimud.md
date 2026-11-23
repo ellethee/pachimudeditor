@@ -243,6 +243,14 @@ mostra il flag con la spiegazione. La pagina **Locande** (`/inns`) elenca tutti 
 ha «Controlla i file» (`content.validate`), «Ricarica la zona nel gioco» (`zone.reload`, solo con il canale live connesso, la scrittura consentita e il comando dichiarato) e «Nuovo locandiere» (mob receptionist da
 template nella zona scelta; con la stanza facoltativa aggiunge anche il reset `M` che lo carica, nello script della zona della stanza: se e' diversa da quella del mob lo si segnala). Contratto: `backend/contract-content.md`.
 
+## Skill: nome italiano e dove può stare
+
+Nel form della skill il campo **Dove può stare** (`item_types`: pozione, pergamena, bacchetta, bastone, unguento) dice in quali oggetti l'incantesimo può stare; vuoto = nessun vincolo. Un salvataggio che non lo tocca
+lo lascia com'è (anche una lista vuota scritta a mano nel file, che nel gioco vuol dire «in nessun oggetto»); valori diversi da quelli elencati danno 422 `content.invalid`. Il nome mostrato ai giocatori (`messages.name`,
+per lingua) e' a sola lettura (in elenco e accanto al titolo della scheda): si modifica fra i campi avanzati (YAML). Nel dettaglio di una pozione, pergamena, bacchetta o bastone un riquadro avvisa se un incantesimo
+citato (`extra.typeFields.spells`, `extra.typeFields.spell`) non esiste fra le skill o se la sua `item_types` non ammette quel tipo: sono gli stessi controlli di `skill-unknown` e `item-spell-not-allowed` del gioco, ma senza il canale live.
+Le traduzioni a parte (`skills/<id>.<lingua>.yaml`) non entrano in `names`.
+
 ## Controllo dei contenuti e consigli di stile
 
 La pagina **Controllo** (`/content/check`, capability `supports_content_races`) chiede al gioco `content.validate` (anche in versione **severa**, con il pulsante «Controllo severo») e

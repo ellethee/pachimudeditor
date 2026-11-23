@@ -4,6 +4,12 @@ import type it from './it'
 /** English messages of the feature: same keys as `it.ts`. */
 const en: PachiMessages<typeof it> = {
   objects: {
+    spellHints: {
+      title: 'Spells: check',
+      unknown: 'The spell «{name}» is not among the skills.',
+      notAllowed: '«{name}» cannot be in a {type} object (allowed in: {allowed}).',
+      nowhere: 'no object',
+    },
     title: 'Objects',
     description: 'Prototype objects: type, flags and values',
     zone: 'Zone',

@@ -14,6 +14,7 @@
     <div v-else-if="object && form" class="row q-col-gutter-lg">
       <div class="col-12 col-lg-8">
         <style-hints kind="object" :record="object" />
+        <item-spell-hints :object="object" :type-name="typeName" />
         <sections-form
           :key="formKey"
           ref="formRef"
@@ -61,6 +62,7 @@ import { deleteObject, getObject, getObjectUsage, updateObject } from '../servic
 import type { IObjectEnums, IObjects, IResetUsage } from '../types/objects'
 import SectionsForm from '../../shared/components/SectionsForm.vue'
 import StyleHints from '../../shared/components/StyleHints.vue'
+import ItemSpellHints from '../components/ItemSpellHints.vue'
 import { guardOf } from '../../shared/helpers/record-guard'
 import { useWorld } from '../../shared/helpers/world-state'
 
@@ -81,6 +83,8 @@ const formRef = ref<{ commit: () => void; hasChanges: () => boolean } | null>(nu
 const saving = ref(false)
 const saveError = ref('')
 let enums: IObjectEnums | null = null
+/** Nome del tipo dell'oggetto aperto (per gli avvisi sugli incantesimi). */
+const typeName = ref('')
 
 const backTo = computed(() => ({ path: '/objects', query: object.value ? { zoneId: String(object.value.zoneId) } : {} }))
 
@@ -104,6 +108,8 @@ async function load(): Promise<void> {
     failed.value = true
     return
   }
+  const type = enums.objectType.find((o) => o.value === object.value?.objectType) as { label: string; rawLabel?: string } | undefined
+  typeName.value = type?.rawLabel ?? type?.label ?? '' // il nome del backend (POTION), non la traduzione
   form.value = await prepareObjectForm(enums, object.value)
   formKey.value++
   usage.value = await getObjectUsage(objectId.value).catch(() => [])

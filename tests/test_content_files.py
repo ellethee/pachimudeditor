@@ -156,3 +156,31 @@ def test_safe_path_rejects_traversal(layers: tuple[Path, Path]) -> None:
     for rel in ("../skills/fireball.yaml", "it/../../x.yaml", "/etc/passwd.yaml", "it//x.yaml"):
         with pytest.raises(HTTPException):
             files_store._safe(layers[1], "locales", rel)  # noqa: SLF001
+
+
+async def test_skill_item_types_and_display_names(api: httpx.AsyncClient, layers: tuple[Path, Path]) -> None:
+    """`itemTypes` si scrive come lista (null la toglie, valori sconosciuti 422); `names` e' `messages.name` per lingua, a sola lettura."""
+    made = data(
+        await api.post(
+            "/api/content/skills",
+            json={
+                "skillId": "zip",
+                "kind": "spell",
+                "name": "zip",
+                "itemTypes": ["scroll", "wand"],
+                "advanced": "messages:\n  name:\n    it: Zip\n    en: zap\n",
+            },
+        ),
+        201,
+    )
+    assert made["itemTypes"] == ["scroll", "wand"] and made["names"] == {"it": "Zip", "en": "zap"}
+    assert data(await api.get("/api/content/skills"))[-1]["names"] == {"it": "Zip", "en": "zap"}
+    assert data(await api.put("/api/content/skills/zip", json={"mana": 4}))["itemTypes"] == ["scroll", "wand"]  # non toccato: resta
+    assert (
+        data(await api.put("/api/content/skills/zip", json={"itemTypes": []}))["itemTypes"] == []
+    )  # lista vuota esplicita: in nessun oggetto
+    assert (
+        data(await api.put("/api/content/skills/zip", json={"itemTypes": None}))["itemTypes"] is None
+    )  # null: toglie la chiave, nessun vincolo
+    assert error_code(await api.put("/api/content/skills/zip", json={"itemTypes": ["barile"]}), 422) == "content.invalid"
+    assert data(await api.get("/api/content/skills/fireball"))["names"] == {}  # senza `messages.name` nessun nome

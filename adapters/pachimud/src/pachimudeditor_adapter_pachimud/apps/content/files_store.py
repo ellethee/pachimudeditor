@@ -35,9 +35,11 @@ SOCIAL_KEYS: tuple[str, ...] = (
 """Chiavi dei testi di un social (docs/contenuti.md del gioco)."""
 
 SKILL_SCALARS: tuple[str, ...] = (
-    "kind", "name", "description", "disabled", "mana", "beats", "fail", "min_position", "violent", "max_learn", "saving", "element", "targets",
+    "kind", "name", "description", "disabled", "mana", "beats", "fail", "min_position", "violent", "max_learn", "saving", "element", "targets", "item_types",
 )  # fmt: skip
 """Campi semplici di una skill (form); gli altri (`levels`, `effects`, `messages`, ...) si modificano come YAML."""
+ITEM_TYPES: tuple[str, ...] = ("potion", "scroll", "wand", "staff", "ointment")
+"""Oggetti in cui puo' stare un incantesimo (valori di `item_types`)."""
 
 
 @dataclass(frozen=True)
@@ -177,6 +179,8 @@ def _skill_view(skill_id: str, file: Path, layer: str, *, detail: bool) -> dict[
         return {"skill_id": skill_id, "layer": layer, "error": str(message[0].get("params", {}).get("detail")) if message else str(error)}
     view: dict[str, Any] = {"skill_id": skill_id, "layer": layer, "levels": data.get("levels") or {}}
     view |= {key: data[key] for key in SKILL_SCALARS if key in data}
+    names = (data.get("messages") or {}).get("name") if isinstance(data.get("messages"), dict) else None
+    view["names"] = {str(lang): str(text) for lang, text in names.items()} if isinstance(names, dict) else {}
     if detail:
         rest = {k: v for k, v in data.items() if k not in SKILL_SCALARS and k != "skill_id"}
         view["advanced"] = dump_yaml(rest) if rest else ""
@@ -222,6 +226,9 @@ def save_skill(layers: Layers, skill_id: str, fields: Mapping[str, Any], advance
             document.pop(key, None)
         else:
             document[key] = value
+    unknown = [str(v) for v in (document.get("item_types") or []) if v not in ITEM_TYPES]
+    if unknown:
+        raise api_error(422, "content.invalid", detail=f"item_types: valori non ammessi {unknown} (ammessi: {', '.join(ITEM_TYPES)})")
     if advanced is not None:
         extra = load_yaml(advanced) if advanced.strip() else {}
         if not isinstance(extra, Mapping):

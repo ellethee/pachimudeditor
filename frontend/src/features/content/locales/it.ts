@@ -99,6 +99,7 @@ export default {
       createTitle: 'Nuova skill',
       pick: 'Scegli una skill dall’elenco o creane una nuova.',
       deleteConfirm: 'Eliminare la skill «{id}» dal tuo strato? Se esiste tra i contenuti di serie tornerà quella.',
+      itemTypes: { potion: 'Pozione', scroll: 'Pergamena', wand: 'Bacchetta', staff: 'Bastone', ointment: 'Unguento' },
       sections: { general: 'Dati generali', advanced: 'Campi avanzati (YAML)' },
       fields: {
         skillId: 'Id',
@@ -115,6 +116,8 @@ export default {
         element: 'Elemento',
         targets: 'Bersagli',
         targetsHint: 'Separati da virgola, es. CHAR_ROOM, FIGHT_VICT',
+        itemTypes: 'Dove può stare',
+        itemTypesHint: 'Pozione, pergamena, bacchetta, bastone, unguento. Vuoto = nessun vincolo (una lista vuota scritta a mano nel file resta com’è).',
         violent: 'Violenta',
         disabled: 'Disattivata',
         advanced: 'Livelli, effetti, gestori, messaggi',

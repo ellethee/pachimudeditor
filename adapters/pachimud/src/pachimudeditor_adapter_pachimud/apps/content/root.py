@@ -417,6 +417,8 @@ class SkillBody(AliasedBaseModel):
     saving: str | None = None
     element: str | None = None
     targets: list[str] | None = None
+    item_types: list[str] | None = None
+    """Dove puo' stare l'incantesimo (`potion|scroll|wand|staff|ointment`); assente = nessun vincolo, lista vuota = in nessun oggetto."""
     advanced: str | None = None
 
 
@@ -426,6 +428,8 @@ class SkillItem(SkillBody):
     skill_id: str
     layer: str = "base"
     levels: dict[str, int] = {}
+    names: dict[str, str] = {}
+    """Nome mostrato ai giocatori per lingua (`messages.name`), a sola lettura: si modifica fra i campi avanzati."""
     error: str | None = None
     """Il file non si legge (YAML o forma errati): solo id e messaggio."""
 
