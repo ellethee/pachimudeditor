@@ -378,7 +378,7 @@ def test_build_frontend_runs_pnpm_and_copies(workdir: Path, monkeypatch: pytest.
     monkeypatch.setattr(frontend.shutil, "which", lambda _name: "/usr/bin/pnpm")
     commands: list[list[str]] = []
 
-    def fake_run(cmd: list[str], cwd: Path, check: bool) -> None:
+    def fake_run(cmd: list[str], cwd: Path, check: bool, env: dict[str, str] | None = None) -> None:
         """Registra il comando e, per `build`, produce la SPA."""
         commands.append(cmd)
         if cmd[1] == "build":
@@ -393,6 +393,18 @@ def test_build_frontend_runs_pnpm_and_copies(workdir: Path, monkeypatch: pytest.
     commands.clear()
     assert runner.invoke(app, ["build-frontend", "--frontend-dir", str(fe), "--skip-install"]).exit_code == 0
     assert commands == [["/usr/bin/pnpm", "build"]]
+
+
+def test_read_build_env_priority(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Variabili di build: sezione `frontend_env` del YAML < `.env` < shell; solo `QCLI_*`/`VITE_*`."""
+    (tmp_path / "pachimudeditor.yaml").write_text(
+        "frontend_env:\n  QCLI_APP_NAVIGATION: dashboard\n  QCLI_APP_THEMES: true\n  QCLI_APP_TITLE: Yaml\n  ALTRO: x\n",
+        encoding="utf-8",
+    )
+    (tmp_path / ".env").write_text('QCLI_APP_NAVIGATION=sidebar\nPACHIFAST_PORT=1\nQCLI_APP_TITLE="Env"\n', encoding="utf-8")
+    monkeypatch.delenv("PACHIFAST_CONFIG_FILE", raising=False)
+    monkeypatch.setenv("QCLI_APP_TITLE", "Shell")
+    assert frontend.read_build_env(tmp_path) == {"QCLI_APP_NAVIGATION": "sidebar", "QCLI_APP_THEMES": "true"}
 
 
 def test_build_frontend_pnpm_failure_is_reported(workdir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
