@@ -25,10 +25,13 @@ from .model import (
 
 
 def fix_string(s: str) -> str:
-    """Come `fix_string` di olc_save.c: toglie `\\r` e `~` (che chiuderebbe la stringa). Rifiuta `\\0` (RomWriteError)."""
+    """Come `fix_string` di olc_save.c: toglie `\\r`. Rifiuta `\\0` e `~` (che chiuderebbe la stringa: toglierlo in silenzio
+    perderebbe testo) con `RomWriteError`."""
     if "\0" in s:
         raise RomWriteError(f"testo non ammesso: contiene il carattere NUL ({s[:30]!r})")
-    return s.replace("\r", "").replace("~", "")
+    if "~" in s:
+        raise RomWriteError(f"testo non ammesso: contiene il carattere ~ ({s[:30]!r})")
+    return s.replace("\r", "")
 
 
 _WORD = re.compile(r"[^\s\0]+")

@@ -66,7 +66,7 @@ crescenti A-Z, a-z), `flags_to_letters`, `letters_to_flags`, `has_flag`, `set_fl
 - Gli elementi sono scritti nell'ordine della lista (il C itera per vnum/hash); uscite, extra desc, H/M di
   stanza e F/M di mob mantengono l'ordine del modello.
 - I commenti dei reset/shop/special sono un campo (`comment`) e non vengono rigenerati dai nomi.
-- `fix_string` come in C: `~` e `\r` sono rimossi dalle stringhe scritte.
+- `fix_string`: `\r` è rimosso; `~` e NUL sono rifiutati (`RomWriteError`) invece di essere tolti in silenzio.
 
 ## Lacune note
 

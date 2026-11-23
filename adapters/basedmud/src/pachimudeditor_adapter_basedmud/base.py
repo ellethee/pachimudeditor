@@ -50,6 +50,8 @@ class BasedMudSupport:
         for text in texts:
             if "\0" in text:
                 raise api_error(422, "basedmud.unsafe_text", reason="il carattere NUL non e' ammesso")
+            if "~" in text:
+                raise api_error(422, "basedmud.unsafe_text", reason="il carattere ~ non e' ammesso")
             try:
                 text.encode(encoding)
             except UnicodeEncodeError as error:

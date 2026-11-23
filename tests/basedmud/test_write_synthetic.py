@@ -346,6 +346,15 @@ async def test_free_text_never_changes_record_count(
     assert await _vnums(make()) == before_vnums
 
 
+async def test_tilde_in_text_is_422_and_leaves_disk_untouched(make: Callable[..., BasedMudAdapter], area: Path) -> None:
+    """Un `~` in un testo chiuderebbe la stringa: 422 `basedmud.unsafe_text` (non tolto in silenzio), nessuna scrittura."""
+    adapter, raw = make(), (area / "prato.are").read_bytes()
+    with expect_error(422, "basedmud.unsafe_text"):
+        await adapter.update_room(ROOM, RoomPatch(name="Pra~to"))
+    assert (area / "prato.are").read_bytes() == raw
+    assert (await adapter.get_room(ROOM)).name != "Pra~to"
+
+
 async def test_unencodable_text_is_422_and_leaves_disk_untouched(make: Callable[..., BasedMudAdapter], area: Path) -> None:
     """Un'emoji in un `.are` latin-1: 422 `basedmud.unencodable_text` (non 500), nessuna scrittura."""
     path = area / "prato.are"

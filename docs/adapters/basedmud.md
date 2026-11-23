@@ -58,7 +58,7 @@ scrive `<slug>.are` (o `extra.file`) + riga in `area.lst`; eliminarla (solo se v
   `*` si perdono solo se lo script cambia.
 - Un patch applica solo i campi **diversi** dal valore corrente: rimandare il DTO letto (`extra` compreso) non cambia i byte.
   Token liberi (size, material, startPos, defaultPos, damType, special, itemType, condition, values, trigger e word dei flagRemovals)
-  con spazi, a capo o NUL, e il file generato che, riletto, non coincide con i dati: 422 `basedmud.unsafe_text`; caratteri fuori dall'encoding
+  con spazi, a capo o NUL, i testi con `~` (che chiuderebbe la stringa: non vengono più tolti in silenzio), e il file generato che, riletto, non coincide con i dati: 422 `basedmud.unsafe_text`; caratteri fuori dall'encoding
   del file (emoji in un `.are` latin-1): 422 `basedmud.unencodable_text`; mai scritture parziali.
   Chiavi di `extra` sconosciute: 422 `basedmud.extra_unknown`; flag sconosciuti: 422 `basedmud.unknown_flag`.
 
