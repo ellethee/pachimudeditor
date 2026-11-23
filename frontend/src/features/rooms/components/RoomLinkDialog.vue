@@ -86,7 +86,9 @@ const returnFree = computed(() => direction.value !== null && !props.takenTo.inc
 
 /** Payload di un'uscita verso `targetRoomId`. */
 function exitPayload(dir: DirectionValue, targetRoomId: number): IRoomExitInput {
-  return { direction: dir, description: null, keywords: null, doorFlag: doorFlag.value, isOpen: true, isLocked: false, keyVnum: null, targetRoomId }
+  const hasDoor = doorFlag.value !== (enums.value?.doorFlag[0]?.value ?? 0)
+  // senza parole chiave i giocatori non possono aprire o chiudere la porta: si propone «porta»
+  return { direction: dir, description: null, keywords: hasDoor ? 'porta' : null, doorFlag: doorFlag.value, isOpen: true, isLocked: false, keyVnum: null, targetRoomId }
 }
 
 /** Crea l'uscita (e il ritorno, se richiesto e libero). */

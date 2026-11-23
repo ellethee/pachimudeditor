@@ -118,6 +118,19 @@ describe('mappa stanze', () => {
     assert.equal((await exitsOf(1081)).length, 0)
   })
 
+  it('un collegamento con porta propone le parole chiave «porta» su andata e ritorno', async () => {
+    await goto(s.page, `/rooms/map?zoneId=${zoneId}`)
+    await s.page.locator('.pachi-room-node', { hasText: 'Mappa nord' }).waitFor()
+    await drag('Mappa nord', 'out-2', 'Mappa sud', 'in-0')
+    await s.page.getByTestId('room-link-dialog').waitFor()
+    await pickOption(s.page, 'Porta', DOOR_CLOSABLE)
+    await s.page.getByTestId('room-link-save').click()
+    await s.page.getByTestId('room-link-dialog').waitFor({ state: 'detached' })
+    assert.equal((await exitsOf(1080))[0].keywords, 'porta')
+    assert.equal((await exitsOf(1081))[0].keywords, 'porta')
+    for (const vnum of [1080, 1081]) await api.call('DELETE', `/api/rooms/${ids[vnum]}/exits/${(await exitsOf(vnum))[0].id}`)
+  })
+
   it('nuova stanza collegata dal pannello', async () => {
     await goto(s.page, `/rooms/map?zoneId=${zoneId}`)
     await s.page.locator('.pachi-room-node', { hasText: 'Mappa nord' }).click()

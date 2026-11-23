@@ -72,6 +72,8 @@
                   stack-label
                   :label="t('rooms.exits.keywords')"
                   :hint="t('rooms.exits.keywordsHint')"
+                  :error="doorWithoutKeywords(row)"
+                  :error-message="t('rooms.exits.keywordsMissing')"
                   @update:model-value="row.keywords = emptyToNull($event)"
                 />
               </div>
@@ -215,6 +217,15 @@ function setExtra(row: IExitRow, field: IExtraFieldDescriptor, value: string | n
   if (field.type === 'boolean') row.extra[field.name] = Boolean(value)
   else if (value === '' || value === null) row.extra[field.name] = field.nullable ? null : undefined
   else row.extra[field.name] = field.type === 'number' ? Number(value) : value
+}
+
+/**
+ * Una porta senza parole chiave non si può aprire né chiudere dai giocatori (avviso non bloccante).
+ *
+ * @param row - riga dell'uscita
+ */
+function doorWithoutKeywords(row: IExitRow): boolean {
+  return row.doorFlag !== (props.doorOptions[0]?.value ?? 0) && !row.keywords
 }
 
 /**

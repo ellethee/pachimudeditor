@@ -261,6 +261,7 @@ describe('stanze', () => {
     // senza spunta: cambia solo l'andata
     await north().locator('.q-select').nth(1).click()
     await s.page.locator('.q-menu .q-item', { hasText: /chiudibile|closable/i }).first().click()
+    await s.page.getByText('Una porta senza parole chiave').waitFor() // avviso non bloccante
     await setMirror(false)
     await saveForm(s.page)
     assert.equal((await exitOf(idA)).doorFlag, 1)
