@@ -2,7 +2,7 @@
 export default {
   triggers: {
     hint: {
-      mob: 'Il mob esegue le azioni (comandi, come se li scrivesse lui) quando succede l\'evento. Variabili: $n chi causa l\'evento, $i il mob, $t il testo detto (o le monete), $o l\'oggetto ricevuto, $$ un dollaro. Un blocco «Se» sceglie tra due gruppi di azioni (al massimo 3 uno dentro l\'altro).',
+      mob: 'Il mob esegue le azioni (comandi, come se li scrivesse lui) quando succede l\'evento. Variabili: $n chi causa l\'evento, $i il mob, $t il testo detto (o le monete), $o l\'oggetto ricevuto, $$ un dollaro. Un blocco «Se» sceglie tra due gruppi di azioni (al massimo 3 uno dentro l\'altro). Solo i mob hanno anche i comandi MP: mptransfer, mpgoto, mpat, mpload, mppurge, mpkill, mpforce (mpforce mai sui giocatori).',
       object: 'Quando succede l\'evento l\'oggetto esegue le azioni. Gli oggetti ammettono solo mpecho (a tutta la stanza), mpechoat (solo a $n) e mpechoaround (a tutti tranne $n). Variabili: $n chi causa l\'evento, $i l\'oggetto, $t il testo, $o l\'oggetto, $$ un dollaro.',
       room: 'Quando succede l\'evento la stanza esegue le azioni. Le stanze ammettono solo mpecho (a tutta la stanza), mpechoat (solo a $n) e mpechoaround (a tutti tranne $n). Variabili: $n chi causa l\'evento, $i la stanza, $t il testo detto, $$ un dollaro.',
     },
@@ -19,7 +19,7 @@ export default {
       hitprcnt: 'Percentuale di PF (1-100) sotto cui scatta, una volta per combattimento.',
       bribe: 'Monete minime (maggiori di 0); scatta il primo trigger che si verifica: metti prima i più alti.',
       greet: 'Ignorato.',
-      random: 'Ignorato (la probabilità è per giro).',
+      random: 'Ignorato (la probabilità è per giro; per oggetti e stanze vale la stanza di chi li ha).',
       death: 'Ignorato.',
       fight: 'Ignorato (la probabilità è per round).',
       get: 'Ignorato.',
@@ -34,6 +34,7 @@ export default {
     actions: 'Azioni (in ordine)',
     noActions: 'Serve almeno un\'azione.',
     emptyAction: 'Azione vuota.',
+    mpUsage: 'Uso: {usage}',
     verbHint: 'Oggetti e stanze ammettono solo mpecho, mpechoat e mpechoaround.',
     addAction: 'Aggiungi azione',
     addIf: 'Aggiungi «Se»',
@@ -50,6 +51,12 @@ export default {
       chance: 'Probabilità (1-100)',
       level: 'Livello',
       hp: 'PF (%)',
+      time: 'Ora (0-23)',
+      vnum: 'Vnum del mob',
+      is_night: 'È notte',
+      is_fighting: 'Sta combattendo',
+      has_effect: 'Ha l\'effetto (es. SANCTUARY)',
+      badTime: 'Un\'ora da 0 a 23, numero o confronto: 20, >= 20.',
       sex: 'Sesso',
       sexes: { male: 'maschio', female: 'femmina', other: 'altro' },
       isPlayer: 'Chi è',

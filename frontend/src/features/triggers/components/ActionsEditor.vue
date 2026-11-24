@@ -10,7 +10,7 @@
           :readonly="readonly"
           :error="action.trim() === ''"
           :error-message="t('triggers.emptyAction')"
-          :hint="owner !== 'mob' && action.trim() !== '' && !isRoomVerb(action) ? t('triggers.verbHint') : undefined"
+          :hint="actionHint(action)"
           input-style="font-family: monospace"
           data-testid="action-text"
           @update:model-value="setText(i, String($event ?? ''))"
@@ -41,7 +41,7 @@
             @update:model-value="setCond(i, 'chance', $event === '' || $event === null ? undefined : Number($event))"
           />
           <q-input
-            v-for="key in ['level', 'hp'] as const"
+            v-for="key in ['level', 'hp', 'time', 'vnum'] as const"
             :key="key"
             :model-value="action.if[key] ?? ''"
             class="col-6 col-sm-2"
@@ -49,10 +49,10 @@
             dense
             stack-label
             :label="t(`triggers.cond.${key}`)"
-            :placeholder="'>= 10'"
+            :placeholder="key === 'time' ? '>= 20' : '>= 10'"
             :readonly="readonly"
-            :error="action.if[key] !== undefined && !validCompare(action.if[key])"
-            :error-message="t('triggers.cond.badCompare')"
+            :error="action.if[key] !== undefined && !(key === 'time' ? validTime(action.if[key]) : validCompare(action.if[key]))"
+            :error-message="t(key === 'time' ? 'triggers.cond.badTime' : 'triggers.cond.badCompare')"
             :data-testid="`cond-${key}`"
             @update:model-value="setCond(i, key, compareOf($event))"
           />
@@ -124,6 +124,29 @@
             @filter="(text: string, update: (fn: () => void) => void) => filterOptions(key, text, update)"
             @new-value="(text: string, done: (v?: string) => void) => done(text.trim())"
             @update:model-value="setCond(i, key, $event || undefined)"
+          />
+          <q-toggle
+            v-for="key in ['is_night', 'is_fighting'] as const"
+            :key="key"
+            :model-value="action.if[key] ?? null"
+            class="col-6 col-sm-2"
+            toggle-indeterminate
+            dense
+            :label="t(`triggers.cond.${key}`)"
+            :disable="readonly"
+            :data-testid="`cond-${key.replace('_', '-')}`"
+            @update:model-value="setCond(i, key, $event ?? undefined)"
+          />
+          <q-input
+            :model-value="action.if.has_effect ?? ''"
+            class="col-12 col-sm-3"
+            outlined
+            dense
+            stack-label
+            :label="t('triggers.cond.has_effect')"
+            :readonly="readonly"
+            data-testid="cond-has-effect"
+            @update:model-value="setCond(i, 'has_effect', String($event ?? '').trim() || undefined)"
           />
           <q-input
             :model-value="action.if.carries ?? ''"
@@ -197,7 +220,7 @@
 import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { mdiDelete, mdiPlus, mdiSourceBranch } from '@quasar/extras/mdi-v7'
-import { isRoomVerb, MAX_IF_DEPTH, validCompare } from '../helpers/triggers'
+import { isRoomVerb, MAX_IF_DEPTH, mpUsage, validCompare, validTime } from '../helpers/triggers'
 import type { ICondition, IIfBlock, TAction, TriggerOwner } from '../types/triggers'
 
 const props = withDefaults(
@@ -216,7 +239,15 @@ const props = withDefaults(
 const emit = defineEmits<{ 'update:modelValue': [value: TAction[]] }>()
 const { t } = useI18n()
 
-const KNOWN = ['chance', 'level', 'hp', 'sex', 'race', 'class', 'carries', 'is_player', 'who']
+const KNOWN = ['chance', 'level', 'hp', 'sex', 'race', 'class', 'carries', 'is_player', 'who', 'time', 'is_night', 'is_fighting', 'has_effect', 'vnum']
+
+/** Suggerimento sotto una riga di azione: la sintassi di un comando MP (mob) o l'avviso che oggetti e stanze non lo ammettono. */
+function actionHint(action: string): string | undefined {
+  if (action.trim() === '') return undefined
+  if (props.owner !== 'mob') return isRoomVerb(action) ? undefined : t('triggers.verbHint')
+  const usage = mpUsage(action)
+  return usage ? t('triggers.mpUsage', { usage }) : undefined
+}
 const sexOptions = computed(() => ['male', 'female', 'other'].map((value) => ({ value, label: t(`triggers.cond.sexes.${value}`) })))
 const playerOptions = computed(() => [
   { value: true, label: t('triggers.cond.player') },

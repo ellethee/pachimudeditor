@@ -5,7 +5,7 @@ import type it from './it'
 const en: PachiMessages<typeof it> = {
   triggers: {
     hint: {
-      mob: 'The mob runs the actions (commands, as if it typed them) when the event happens. Variables: $n who caused the event, $i the mob, $t the spoken text (or the coins), $o the received object, $$ a dollar sign. An "If" block picks between two groups of actions (up to 3 nested).',
+      mob: 'The mob runs the actions (commands, as if it typed them) when the event happens. Variables: $n who caused the event, $i the mob, $t the spoken text (or the coins), $o the received object, $$ a dollar sign. An "If" block picks between two groups of actions (up to 3 nested). Only mobs also have the real MP commands: mptransfer, mpgoto, mpat, mpload, mppurge, mpkill, mpforce (mpforce never on players).',
       object: 'The object runs the actions when the event happens. Objects only accept mpecho (to the whole room), mpechoat (to $n only) and mpechoaround (to everyone but $n). Variables: $n who caused the event, $i the object, $t the text, $o the object, $$ a dollar sign.',
       room: 'The room runs the actions when the event happens. Rooms only accept mpecho (to the whole room), mpechoat (to $n only) and mpechoaround (to everyone but $n). Variables: $n who caused the event, $i the room, $t the spoken text, $$ a dollar sign.',
     },
@@ -22,7 +22,7 @@ const en: PachiMessages<typeof it> = {
       hitprcnt: 'HP percentage (1-100) it fires under, once per fight.',
       bribe: 'Minimum coins (above 0); only the first matching trigger fires: put the highest first.',
       greet: 'Ignored.',
-      random: 'Ignored (the chance is per round).',
+      random: 'Ignored (the chance is per round; for objects and rooms the room of whoever has them is used).',
       death: 'Ignored.',
       fight: 'Ignored (the chance is per combat round).',
       get: 'Ignored.',
@@ -37,6 +37,7 @@ const en: PachiMessages<typeof it> = {
     actions: 'Actions (in order)',
     noActions: 'At least one action is required.',
     emptyAction: 'Empty action.',
+    mpUsage: 'Usage: {usage}',
     verbHint: 'Objects and rooms only accept mpecho, mpechoat and mpechoaround.',
     addAction: 'Add action',
     addIf: 'Add "If"',
@@ -53,6 +54,12 @@ const en: PachiMessages<typeof it> = {
       chance: 'Chance (1-100)',
       level: 'Level',
       hp: 'HP (%)',
+      time: 'Hour (0-23)',
+      vnum: 'Mob vnum',
+      is_night: 'Is night',
+      is_fighting: 'Is fighting',
+      has_effect: 'Has effect (e.g. SANCTUARY)',
+      badTime: 'An hour from 0 to 23, number or comparison: 20, >= 20.',
       sex: 'Sex',
       sexes: { male: 'male', female: 'female', other: 'other' },
       isPlayer: 'Who',

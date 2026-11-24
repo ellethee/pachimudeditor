@@ -3,12 +3,31 @@ import type { ICondition, ITrigger, TAction, TriggerOwner } from '../types/trigg
 /** Gli eventi ammessi per chi possiede il trigger (come `OWNER_TYPES` del gioco). */
 export const TRIGGER_TYPES: Record<TriggerOwner, readonly string[]> = {
   mob: ['speech', 'greet', 'give', 'random', 'death', 'fight', 'hitprcnt', 'act', 'tell', 'bribe'],
-  object: ['get', 'drop', 'wear', 'give'],
-  room: ['enter', 'exit', 'speech'],
+  object: ['get', 'drop', 'wear', 'give', 'random'],
+  room: ['enter', 'exit', 'speech', 'random'],
 }
 
 /** Le uniche azioni di oggetti e stanze. */
 export const ROOM_VERBS = ['mpecho', 'mpechoat', 'mpechoaround'] as const
+
+/** I comandi MP veri: solo per i mob, con la sintassi (suggerimento nell'editor). */
+export const MP_USAGE: Record<string, string> = {
+  mptransfer: 'mptransfer <chi> <vnum stanza>',
+  mpgoto: 'mpgoto <vnum stanza>',
+  mpat: 'mpat <vnum stanza> <comando>',
+  mpload: 'mpload mob <vnum> | mpload obj <vnum> [inv]',
+  mppurge: 'mppurge [self|nome]',
+  mpkill: 'mpkill <chi>',
+  mpforce: 'mpforce <mob> <comando>',
+}
+
+/**
+ * La sintassi del comando MP con cui inizia l'azione (`undefined` se non lo è).
+ * @param text la riga di azione
+ */
+export function mpUsage(text: string): string | undefined {
+  return MP_USAGE[text.trim().split(/\s+/)[0] ?? '']
+}
 
 /** Quanti `if` possono stare uno dentro l'altro. */
 export const MAX_IF_DEPTH = 3
@@ -22,6 +41,15 @@ const CMP = /^\s*(==|!=|<=|>=|<|>)?\s*(-?\d+)\s*$/
  */
 export function validCompare(value: unknown): boolean {
   return CMP.test(String(value ?? ''))
+}
+
+/**
+ * `true` se `time` è un'ora (0-23), numero o confronto.
+ * @param value testo o numero della condizione
+ */
+export function validTime(value: unknown): boolean {
+  const m = CMP.exec(String(value ?? ''))
+  return m !== null && Number(m[2]) >= 0 && Number(m[2]) <= 23
 }
 
 /**
@@ -55,7 +83,7 @@ export function triggerComplete(trigger: ITrigger): boolean {
 
 /** `true` se le verifiche numeriche di una condizione sono valide. */
 function condOk(c: ICondition): boolean {
-  return [c.level, c.hp].every((v) => v === undefined || validCompare(v)) && (c.chance === undefined || (Number.isInteger(c.chance) && c.chance >= 1 && c.chance <= 100))
+  return [c.level, c.hp, c.vnum].every((v) => v === undefined || validCompare(v)) && (c.time === undefined || validTime(c.time)) && (c.chance === undefined || (Number.isInteger(c.chance) && c.chance >= 1 && c.chance <= 100))
 }
 
 /** Copia canonica di un'azione: niente `else` vuoto. */
