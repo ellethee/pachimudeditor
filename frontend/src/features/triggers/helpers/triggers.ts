@@ -1,0 +1,92 @@
+import type { ICondition, ITrigger, TAction, TriggerOwner } from '../types/triggers'
+
+/** Gli eventi ammessi per chi possiede il trigger (come `OWNER_TYPES` del gioco). */
+export const TRIGGER_TYPES: Record<TriggerOwner, readonly string[]> = {
+  mob: ['speech', 'greet', 'give', 'random', 'death', 'fight', 'hitprcnt', 'act', 'tell', 'bribe'],
+  object: ['get', 'drop', 'wear', 'give'],
+  room: ['enter', 'exit', 'speech'],
+}
+
+/** Le uniche azioni di oggetti e stanze. */
+export const ROOM_VERBS = ['mpecho', 'mpechoat', 'mpechoaround'] as const
+
+/** Quanti `if` possono stare uno dentro l'altro. */
+export const MAX_IF_DEPTH = 3
+
+/** Un confronto numerico di una condizione (`10`, `>= 10`): come `CMP` del gioco. */
+const CMP = /^\s*(==|!=|<=|>=|<|>)?\s*(-?\d+)\s*$/
+
+/**
+ * `true` se `level`/`hp` è un numero o un confronto valido.
+ * @param value testo o numero della condizione
+ */
+export function validCompare(value: unknown): boolean {
+  return CMP.test(String(value ?? ''))
+}
+
+/**
+ * `true` se il comando è tra quelli ammessi a oggetti e stanze.
+ * @param text la riga di azione
+ */
+export function isRoomVerb(text: string): boolean {
+  return (ROOM_VERBS as readonly string[]).includes(text.trim().split(/\s+/)[0] ?? '')
+}
+
+/**
+ * Quanti `if` stanno uno dentro l'altro, al massimo.
+ * @param actions le azioni
+ */
+export function ifDepth(actions: TAction[]): number {
+  return Math.max(0, ...actions.map((a) => (typeof a === 'string' ? 0 : 1 + ifDepth([...a.then, ...(a.else ?? [])]))))
+}
+
+/**
+ * `true` se il trigger è completo: probabilità 1-100, argomento numerico per `hitprcnt`/`bribe`, azioni non vuote (anche nei blocchi)
+ * e condizioni `level`/`hp` valide.
+ * @param trigger il trigger
+ */
+export function triggerComplete(trigger: ITrigger): boolean {
+  const number = trigger.argument.trim()
+  const argOk = !['hitprcnt', 'bribe'].includes(trigger.type) || (/^\d+$/.test(number) && Number(number) >= 1 && (trigger.type !== 'hitprcnt' || Number(number) <= 100))
+  const listOk = (list: TAction[]): boolean =>
+    list.length > 0 && list.every((a) => (typeof a === 'string' ? a.trim() !== '' : condOk(a.if) && listOk(a.then) && (a.else ?? []).every((x) => listOk([x]))))
+  return Number.isInteger(trigger.chance) && trigger.chance >= 1 && trigger.chance <= 100 && argOk && listOk(trigger.actions) && ifDepth(trigger.actions) <= MAX_IF_DEPTH
+}
+
+/** `true` se le verifiche numeriche di una condizione sono valide. */
+function condOk(c: ICondition): boolean {
+  return [c.level, c.hp].every((v) => v === undefined || validCompare(v)) && (c.chance === undefined || (Number.isInteger(c.chance) && c.chance >= 1 && c.chance <= 100))
+}
+
+/** Copia canonica di un'azione: niente `else` vuoto. */
+function settledAction(action: TAction): TAction {
+  if (typeof action === 'string') return action
+  const out: TAction = { if: { ...action.if }, then: action.then.map(settledAction) }
+  if (action.else?.length) out.else = action.else.map(settledAction)
+  return out
+}
+
+/**
+ * Normalizza il valore di `extra.triggers` / `extra.scripts` (lista di trigger, `[]` se assente o non valido).
+ * @param value valore grezzo
+ * @returns i trigger con tutti i campi
+ */
+export function settledTriggers(value: unknown): ITrigger[] {
+  if (!Array.isArray(value)) return []
+  return (value as ITrigger[]).map((x) => ({
+    type: x.type,
+    argument: x.argument ?? '',
+    chance: x.chance ?? 100,
+    actions: (x.actions ?? []).map(settledAction),
+  }))
+}
+
+/**
+ * L'indice (0-based) del trigger a cui si riferisce un problema di `content.validate` («..., trigger 2: il comando ...»).
+ * @param message messaggio del problema
+ * @returns l'indice, `-1` se il messaggio non lo riporta
+ */
+export function triggerIndexOf(message: string): number {
+  const found = /trigger (\d+)/.exec(message)
+  return found ? Number(found[1]) : -1
+}
