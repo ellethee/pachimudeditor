@@ -77,7 +77,11 @@ class PrototypesMixin(PachimudSupport):
         if "shop" in extra:
             mapping.put(raw, "shop", mapping.shop_value(extra["shop"]))
         if "triggers" in extra:
-            mapping.put(raw, "triggers", mapping.triggers_value(extra["triggers"], raw.get("triggers")), default=[])
+            value = mapping.triggers_value(extra["triggers"], raw.get("triggers"))
+            if not value and raw.get("triggers"):  # svuotati davvero: la chiave sparisce dal file
+                del raw["triggers"]
+            else:
+                mapping.put(raw, "triggers", value, default=[])
         return norm_area(extra["area"]) if "area" in extra else ...
 
     async def list_mobs(self, params: MobPageParams) -> PaginatedResponse[MobOut]:

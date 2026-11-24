@@ -29,6 +29,7 @@ async def test_triggers_roundtrip_and_untouched(client: httpx.AsyncClient) -> No
     assert _text() == written
     cleared = data(await client.put(f"/api/mobs/{mob['id']}", json={"extra": {"triggers": []}}))
     assert cleared["extra"]["triggers"] == []
+    assert "triggers:" not in _text()
 
 
 async def test_triggers_invalid(client: httpx.AsyncClient) -> None:
