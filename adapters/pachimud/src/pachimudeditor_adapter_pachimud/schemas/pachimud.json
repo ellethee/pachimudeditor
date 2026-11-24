@@ -1,0 +1,528 @@
+{
+  "$defs": {
+    "LivectlConfig": {
+      "description": "Canale di controllo live (`livectl` v1), per l'editor. Il token sta in `LIVECTL_TOKEN`.",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "socket_path": {
+          "default": "",
+          "title": "Socket Path",
+          "type": "string"
+        },
+        "allow_write": {
+          "default": false,
+          "title": "Allow Write",
+          "type": "boolean"
+        },
+        "audit_path": {
+          "default": "",
+          "title": "Audit Path",
+          "type": "string"
+        },
+        "max_connections": {
+          "default": 4,
+          "title": "Max Connections",
+          "type": "integer"
+        }
+      },
+      "title": "LivectlConfig",
+      "type": "object"
+    },
+    "LlmConfig": {
+      "description": "Dialogo degli NPC con un LLM locale (Ollama). Spento per impostazione predefinita.",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "api": {
+          "default": "ollama",
+          "enum": [
+            "ollama",
+            "openai"
+          ],
+          "title": "Api",
+          "type": "string"
+        },
+        "url": {
+          "default": "http://localhost:11434",
+          "title": "Url",
+          "type": "string"
+        },
+        "model": {
+          "default": "llama3.2",
+          "title": "Model",
+          "type": "string"
+        },
+        "timeout": {
+          "default": 20,
+          "exclusiveMinimum": 0,
+          "title": "Timeout",
+          "type": "number"
+        },
+        "max_concurrent": {
+          "default": 2,
+          "minimum": 1,
+          "title": "Max Concurrent",
+          "type": "integer"
+        },
+        "history": {
+          "default": 6,
+          "minimum": 0,
+          "title": "History",
+          "type": "integer"
+        },
+        "max_tokens": {
+          "default": 120,
+          "exclusiveMinimum": 0,
+          "title": "Max Tokens",
+          "type": "integer"
+        },
+        "temperature": {
+          "default": 0.7,
+          "minimum": 0,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "max_chars": {
+          "default": 400,
+          "exclusiveMinimum": 0,
+          "title": "Max Chars",
+          "type": "integer"
+        }
+      },
+      "title": "LlmConfig",
+      "type": "object"
+    },
+    "MobSavingThrowsConfig": {
+      "description": "Tiri salvezza dei mob per classe. In LeU i mob hanno solo il bonus degli oggetti (`saves_spell` usa la tabella\ndi classe solo per i giocatori): qui e' un'estensione, spenta per impostazione predefinita.",
+      "properties": {
+        "enable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "default": false,
+          "title": "Enable"
+        }
+      },
+      "title": "MobSavingThrowsConfig",
+      "type": "object"
+    },
+    "MobsConfig": {
+      "description": "Comportamento dei mob che vivono nel mondo (`mobact.c` di LeU, manuale di Clessidra): vagano, tornano a casa, raccolgono\noggetti, aiutano gli amici e cercano un'arma migliore. `alive: false` li spegne tutti con un solo interruttore (restano\nfermi dove li mette il reset; aggressivita' e odio non dipendono da qui).",
+      "properties": {
+        "alive": {
+          "default": true,
+          "title": "Alive",
+          "type": "boolean"
+        },
+        "wander": {
+          "default": true,
+          "title": "Wander",
+          "type": "boolean"
+        },
+        "home_return": {
+          "default": true,
+          "title": "Home Return",
+          "type": "boolean"
+        },
+        "scavenge": {
+          "default": true,
+          "title": "Scavenge",
+          "type": "boolean"
+        },
+        "assist": {
+          "default": true,
+          "title": "Assist",
+          "type": "boolean"
+        },
+        "better_weapon": {
+          "default": true,
+          "title": "Better Weapon",
+          "type": "boolean"
+        }
+      },
+      "title": "MobsConfig",
+      "type": "object"
+    },
+    "MsspConfig": {
+      "description": "MSSP (MUD Server Status Protocol): i dati che i siti di elenco dei MUD chiedono al server. `NAME`, `PLAYERS`,\n`UPTIME`, `PORT` e `CODEBASE` si ricavano da soli; il resto sta qui.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "hostname": {
+          "default": "",
+          "title": "Hostname",
+          "type": "string"
+        },
+        "website": {
+          "default": "",
+          "title": "Website",
+          "type": "string"
+        },
+        "contact": {
+          "default": "",
+          "title": "Contact",
+          "type": "string"
+        },
+        "language": {
+          "default": "Italian",
+          "title": "Language",
+          "type": "string"
+        },
+        "created": {
+          "default": 0,
+          "title": "Created",
+          "type": "integer"
+        },
+        "variables": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "default": {},
+          "title": "Variables",
+          "type": "object"
+        }
+      },
+      "title": "MsspConfig",
+      "type": "object"
+    },
+    "ProtocolsConfig": {
+      "description": "Protocolli telnet opzionali (GMCP e' sempre offerto).",
+      "properties": {
+        "mssp": {
+          "$ref": "#/$defs/MsspConfig"
+        },
+        "mccp": {
+          "default": true,
+          "title": "Mccp",
+          "type": "boolean"
+        }
+      },
+      "title": "ProtocolsConfig",
+      "type": "object"
+    },
+    "SecurityConfig": {
+      "description": "Difese contro gli abusi (`server/security.py`): tentativi di login, connessioni, creazione di account e raffiche di\ncomandi. Tutto in memoria. `enabled: false` spegne ogni controllo. L'indirizzo e' quello del socket: dietro un proxy o\nla rete di Docker tutti i client possono sembrare lo stesso IP (vedi docs/sicurezza.md).",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "login_max_failures": {
+          "default": 5,
+          "minimum": 1,
+          "title": "Login Max Failures",
+          "type": "integer"
+        },
+        "account_max_failures": {
+          "default": 10,
+          "minimum": 1,
+          "title": "Account Max Failures",
+          "type": "integer"
+        },
+        "login_window": {
+          "default": 600,
+          "exclusiveMinimum": 0,
+          "title": "Login Window",
+          "type": "integer"
+        },
+        "login_lockout": {
+          "default": 300,
+          "exclusiveMinimum": 0,
+          "title": "Login Lockout",
+          "type": "integer"
+        },
+        "login_lockout_max": {
+          "default": 3600,
+          "exclusiveMinimum": 0,
+          "title": "Login Lockout Max",
+          "type": "integer"
+        },
+        "max_connections_per_ip": {
+          "default": 10,
+          "minimum": 0,
+          "title": "Max Connections Per Ip",
+          "type": "integer"
+        },
+        "max_accounts_per_ip_hour": {
+          "default": 5,
+          "minimum": 0,
+          "title": "Max Accounts Per Ip Hour",
+          "type": "integer"
+        },
+        "commands_per_second": {
+          "default": 10,
+          "minimum": 0,
+          "title": "Commands Per Second",
+          "type": "number"
+        },
+        "command_burst": {
+          "default": 30,
+          "minimum": 1,
+          "title": "Command Burst",
+          "type": "integer"
+        },
+        "flood_disconnect": {
+          "default": 100,
+          "minimum": 0,
+          "title": "Flood Disconnect",
+          "type": "integer"
+        },
+        "max_line_length": {
+          "default": 1024,
+          "minimum": 64,
+          "title": "Max Line Length",
+          "type": "integer"
+        },
+        "exempt_ips": {
+          "default": [
+            "127.0.0.1",
+            "::1"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Exempt Ips",
+          "type": "array"
+        }
+      },
+      "title": "SecurityConfig",
+      "type": "object"
+    },
+    "TriggersConfig": {
+      "description": "Trigger dei mob (`triggers:` nei YAML, `docs/trigger.md`): `enabled: false` li spegne tutti; i due limiti fermano i loop.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "max_depth": {
+          "default": 3,
+          "minimum": 1,
+          "title": "Max Depth",
+          "type": "integer"
+        },
+        "max_actions_per_pulse": {
+          "default": 30,
+          "minimum": 1,
+          "title": "Max Actions Per Pulse",
+          "type": "integer"
+        },
+        "max_spawned": {
+          "default": 20,
+          "minimum": 1,
+          "title": "Max Spawned",
+          "type": "integer"
+        }
+      },
+      "title": "TriggersConfig",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "port": {
+      "default": 6000,
+      "title": "Port",
+      "type": "integer"
+    },
+    "idle_timeout": {
+      "default": 1800,
+      "minimum": 0,
+      "title": "Idle Timeout",
+      "type": "integer"
+    },
+    "linkdead_timeout": {
+      "default": 900,
+      "minimum": 0,
+      "title": "Linkdead Timeout",
+      "type": "integer"
+    },
+    "definition_path": {
+      "default": "./definitions",
+      "title": "Definition Path",
+      "type": "string"
+    },
+    "extra_definition_paths": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Extra Definition Paths",
+      "type": "array"
+    },
+    "extensions": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Extensions",
+      "type": "array"
+    },
+    "server_name": {
+      "default": "PachiMud Demo",
+      "title": "Server Name",
+      "type": "string"
+    },
+    "welcome_message": {
+      "default": "Welcome to PachiMud!",
+      "title": "Welcome Message",
+      "type": "string"
+    },
+    "default_language": {
+      "default": "en",
+      "title": "Default Language",
+      "type": "string"
+    },
+    "database_url": {
+      "default": "sqlite+aiosqlite:///pachimud.db",
+      "title": "Database Url",
+      "type": "string"
+    },
+    "reports_dir": {
+      "default": "reports",
+      "title": "Reports Dir",
+      "type": "string"
+    },
+    "start_room": {
+      "default": 400001,
+      "title": "Start Room",
+      "type": "integer"
+    },
+    "room_name_color": {
+      "default": "C",
+      "title": "Room Name Color",
+      "type": "string"
+    },
+    "room_description_color": {
+      "default": "snow",
+      "title": "Room Description Color",
+      "type": "string"
+    },
+    "pulse_ms": {
+      "default": 250,
+      "exclusiveMinimum": 0,
+      "title": "Pulse Ms",
+      "type": "integer"
+    },
+    "pulse_tick": {
+      "default": 240,
+      "exclusiveMinimum": 0,
+      "title": "Pulse Tick",
+      "type": "integer"
+    },
+    "pulse_save": {
+      "default": 1200,
+      "exclusiveMinimum": 0,
+      "title": "Pulse Save",
+      "type": "integer"
+    },
+    "secs_per_mud_hour": {
+      "default": 75,
+      "exclusiveMinimum": 0,
+      "title": "Secs Per Mud Hour",
+      "type": "integer"
+    },
+    "time_epoch": {
+      "default": 650336715,
+      "title": "Time Epoch",
+      "type": "integer"
+    },
+    "pvp": {
+      "default": false,
+      "title": "Pvp",
+      "type": "boolean"
+    },
+    "pulse_violence": {
+      "default": 16,
+      "exclusiveMinimum": 0,
+      "title": "Pulse Violence",
+      "type": "integer"
+    },
+    "pulse_mobile": {
+      "default": 30,
+      "exclusiveMinimum": 0,
+      "title": "Pulse Mobile",
+      "type": "integer"
+    },
+    "pulse_zone": {
+      "default": 240,
+      "exclusiveMinimum": 0,
+      "title": "Pulse Zone",
+      "type": "integer"
+    },
+    "choose_attrs_priority": {
+      "default": false,
+      "title": "Choose Attrs Priority",
+      "type": "boolean"
+    },
+    "mob_saving_throws": {
+      "$ref": "#/$defs/MobSavingThrowsConfig"
+    },
+    "mobs": {
+      "$ref": "#/$defs/MobsConfig"
+    },
+    "triggers": {
+      "$ref": "#/$defs/TriggersConfig"
+    },
+    "validate": {
+      "additionalProperties": true,
+      "title": "Validate",
+      "type": "object"
+    },
+    "livectl": {
+      "$ref": "#/$defs/LivectlConfig"
+    },
+    "security": {
+      "$ref": "#/$defs/SecurityConfig"
+    },
+    "protocols": {
+      "$ref": "#/$defs/ProtocolsConfig"
+    },
+    "llm": {
+      "$ref": "#/$defs/LlmConfig"
+    },
+    "exits_colors": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Exits Colors",
+      "type": "object"
+    },
+    "logging": {
+      "additionalProperties": true,
+      "title": "Logging",
+      "type": "object"
+    }
+  },
+  "title": "PachimudConfig",
+  "type": "object"
+}

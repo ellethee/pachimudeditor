@@ -1,0 +1,466 @@
+{
+  "$defs": {
+    "BodyRange": {
+      "description": "Altezza (cm) e peso (kg) di un personaggio nuovo: un valore a caso fra minimo e massimo (`init_char` di LeU).",
+      "properties": {
+        "height": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Height",
+          "type": "array"
+        },
+        "weight": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Weight",
+          "type": "array"
+        }
+      },
+      "required": [
+        "height",
+        "weight"
+      ],
+      "title": "BodyRange",
+      "type": "object"
+    },
+    "RaceBody": {
+      "properties": {
+        "male": {
+          "$ref": "#/$defs/BodyRange"
+        },
+        "female": {
+          "$ref": "#/$defs/BodyRange"
+        }
+      },
+      "required": [
+        "male",
+        "female"
+      ],
+      "title": "RaceBody",
+      "type": "object"
+    },
+    "Stats": {
+      "properties": {
+        "strength": {
+          "default": 0,
+          "title": "Strength",
+          "type": "integer"
+        },
+        "dexterity": {
+          "default": 0,
+          "title": "Dexterity",
+          "type": "integer"
+        },
+        "constitution": {
+          "default": 0,
+          "title": "Constitution",
+          "type": "integer"
+        },
+        "intelligence": {
+          "default": 0,
+          "title": "Intelligence",
+          "type": "integer"
+        },
+        "wisdom": {
+          "default": 0,
+          "title": "Wisdom",
+          "type": "integer"
+        },
+        "charisma": {
+          "default": 0,
+          "title": "Charisma",
+          "type": "integer"
+        }
+      },
+      "title": "Stats",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "race_id": {
+      "title": "Race Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "mob_only": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": false,
+      "title": "Mob Only"
+    },
+    "mob_flags": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Mob Flags"
+    },
+    "offensive_flags": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Offensive Flags"
+    },
+    "immunity": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Immunity"
+    },
+    "resistance": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Resistance"
+    },
+    "vulnerability": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Vulnerability"
+    },
+    "form": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Form"
+    },
+    "actual_form": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Actual Form"
+    },
+    "parts": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Parts"
+    },
+    "affected_by": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Affected By"
+    },
+    "class_mult": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Class Mult"
+    },
+    "skills": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Skills"
+    },
+    "stats": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Stats"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "max_stats": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Stats"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "extra_training_cap": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": 0,
+      "title": "Extra Training Cap"
+    },
+    "size": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "MEDIUM",
+      "title": "Size"
+    },
+    "who_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "",
+      "title": "Who Name"
+    },
+    "points": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": 0,
+      "title": "Points"
+    },
+    "class_multiplier": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": [],
+      "title": "Class Multiplier"
+    },
+    "start_room": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Start Room"
+    },
+    "class_max_level": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "default": {},
+      "title": "Class Max Level",
+      "type": "object"
+    },
+    "body": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RaceBody"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "default_language": {
+      "default": "common",
+      "title": "Default Language",
+      "type": "string"
+    },
+    "class_skills": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "type": "object"
+      },
+      "default": {},
+      "title": "Class Skills",
+      "type": "object"
+    },
+    "order": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Order"
+    },
+    "class_choices": {
+      "default": [],
+      "items": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "title": "Class Choices",
+      "type": "array"
+    },
+    "stat_modifiers": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "default": {},
+      "title": "Stat Modifiers",
+      "type": "object"
+    },
+    "start_hp_bonus": {
+      "default": 0,
+      "title": "Start Hp Bonus",
+      "type": "integer"
+    },
+    "move_modifier": {
+      "default": 0,
+      "title": "Move Modifier",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "race_id",
+    "name",
+    "description"
+  ],
+  "title": "LoaderRace",
+  "type": "object"
+}

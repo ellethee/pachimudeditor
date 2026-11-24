@@ -1,0 +1,2567 @@
+{
+  "$defs": {
+    "ArmorProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "ARMOR",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "armor_class": {
+          "default": 0,
+          "title": "Armor Class",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "ArmorProto",
+      "type": "object"
+    },
+    "AudioProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "AUDIO",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "frequency": {
+          "default": 0,
+          "title": "Frequency",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "AudioProto",
+      "type": "object"
+    },
+    "BoardProto": {
+      "additionalProperties": false,
+      "description": "Bacheca (`ITEM_BOARD`, `board.c` di LeU): i messaggi stanno nel DB, uno stesso `board_id` e' la stessa bacheca ovunque.",
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "BOARD",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "board_id": {
+          "default": "",
+          "title": "Board Id",
+          "type": "string"
+        },
+        "min_read_level": {
+          "default": 0,
+          "title": "Min Read Level",
+          "type": "integer"
+        },
+        "min_write_level": {
+          "default": 1,
+          "title": "Min Write Level",
+          "type": "integer"
+        },
+        "min_remove_level": {
+          "default": 51,
+          "title": "Min Remove Level",
+          "type": "integer"
+        },
+        "max_messages": {
+          "default": 99,
+          "exclusiveMinimum": 0,
+          "title": "Max Messages",
+          "type": "integer"
+        },
+        "max_length": {
+          "default": 2048,
+          "exclusiveMinimum": 0,
+          "title": "Max Length",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "BoardProto",
+      "type": "object"
+    },
+    "Condition": {
+      "additionalProperties": true,
+      "description": "Le verifiche di un `if`: valgono tutte insieme (e). Quelle su una creatura guardano `$n` (o il mob con `who: i`).",
+      "properties": {
+        "chance": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chance"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Level"
+        },
+        "hp": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hp"
+        },
+        "sex": {
+          "anyOf": [
+            {
+              "enum": [
+                "male",
+                "female",
+                "other"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sex"
+        },
+        "race": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Race"
+        },
+        "class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Class"
+        },
+        "carries": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Carries"
+        },
+        "is_player": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Player"
+        },
+        "time": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time"
+        },
+        "is_night": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Night"
+        },
+        "is_fighting": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Fighting"
+        },
+        "has_effect": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Effect"
+        },
+        "vnum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vnum"
+        },
+        "who": {
+          "default": "n",
+          "enum": [
+            "n",
+            "i"
+          ],
+          "title": "Who",
+          "type": "string"
+        }
+      },
+      "title": "Condition",
+      "type": "object"
+    },
+    "ContainerProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "CONTAINER",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "max_weight": {
+          "default": 0,
+          "title": "Max Weight",
+          "type": "integer"
+        },
+        "container_flags": {
+          "default": [],
+          "items": {
+            "enum": [
+              "CLOSEABLE",
+              "PICKPROOF",
+              "CLOSED",
+              "LOCKED",
+              "NO_WEIGHT"
+            ],
+            "type": "string"
+          },
+          "title": "Container Flags",
+          "type": "array"
+        },
+        "key_vnum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Key Vnum"
+        },
+        "corpse": {
+          "default": false,
+          "title": "Corpse",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "ContainerProto",
+      "type": "object"
+    },
+    "DrinkConProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "DRINKCON",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "capacity": {
+          "default": 0,
+          "title": "Capacity",
+          "type": "integer"
+        },
+        "units": {
+          "default": 0,
+          "title": "Units",
+          "type": "integer"
+        },
+        "liquid": {
+          "default": "water",
+          "enum": [
+            "water",
+            "beer",
+            "wine",
+            "ale",
+            "darkale",
+            "whisky",
+            "lemonade",
+            "firebrt",
+            "localspc",
+            "slime",
+            "milk",
+            "tea",
+            "coffee",
+            "blood",
+            "saltwater",
+            "coke"
+          ],
+          "title": "Liquid",
+          "type": "string"
+        },
+        "poisoned": {
+          "default": false,
+          "title": "Poisoned",
+          "type": "boolean"
+        },
+        "permanent": {
+          "default": false,
+          "title": "Permanent",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "DrinkConProto",
+      "type": "object"
+    },
+    "ExtraDescriptionProto": {
+      "properties": {
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "keywords",
+        "text"
+      ],
+      "title": "ExtraDescriptionProto",
+      "type": "object"
+    },
+    "FireWeaponProto": {
+      "additionalProperties": false,
+      "description": "Arco o balestra (`ITEM_FIREWEAPON`): si impugna, si carica con `load` e si usa con `fire`/`shoot`.",
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "FIREWEAPON",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "strength": {
+          "default": 0,
+          "title": "Strength",
+          "type": "integer"
+        },
+        "range_bonus": {
+          "default": 0,
+          "title": "Range Bonus",
+          "type": "integer"
+        },
+        "ammo_type": {
+          "default": 0,
+          "title": "Ammo Type",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "FireWeaponProto",
+      "type": "object"
+    },
+    "FoodProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "FOOD",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "hours": {
+          "default": 0,
+          "title": "Hours",
+          "type": "integer"
+        },
+        "poisoned": {
+          "default": false,
+          "title": "Poisoned",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "FoodProto",
+      "type": "object"
+    },
+    "GenericProto": {
+      "additionalProperties": false,
+      "description": "Tipi senza valori, o il cui comportamento non e' ancora implementato (es. `BOARD`).",
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "enum": [
+            "TREASURE",
+            "WORN",
+            "OTHER",
+            "TRASH",
+            "NOTE",
+            "PEN",
+            "BOAT",
+            "TREE",
+            "ROCK",
+            "FOUNTAIN"
+          ],
+          "title": "Object Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "GenericProto",
+      "type": "object"
+    },
+    "IfBlock": {
+      "description": "`if`/`else`: se la condizione e' vera le azioni di `then`, altrimenti quelle di `else`.",
+      "properties": {
+        "if": {
+          "$ref": "#/$defs/Condition"
+        },
+        "then": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/IfBlock"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Then",
+          "type": "array"
+        },
+        "else": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/IfBlock"
+              }
+            ]
+          },
+          "title": "Else",
+          "type": "array"
+        }
+      },
+      "required": [
+        "if",
+        "then"
+      ],
+      "title": "IfBlock",
+      "type": "object"
+    },
+    "KeyProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "KEY",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "key_type": {
+          "default": 0,
+          "title": "Key Type",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "KeyProto",
+      "type": "object"
+    },
+    "LightProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "LIGHT",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "hours": {
+          "default": -1,
+          "title": "Hours",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "LightProto",
+      "type": "object"
+    },
+    "MissileProto": {
+      "additionalProperties": false,
+      "description": "Freccia o dardo (`ITEM_MISSILE`): si carica nell'arma da lancio con `load`.",
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "MISSILE",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "break_chance": {
+          "default": 0,
+          "title": "Break Chance",
+          "type": "integer"
+        },
+        "dice_count": {
+          "default": 1,
+          "title": "Dice Count",
+          "type": "integer"
+        },
+        "die_size": {
+          "default": 4,
+          "title": "Die Size",
+          "type": "integer"
+        },
+        "ammo_type": {
+          "default": 0,
+          "title": "Ammo Type",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "MissileProto",
+      "type": "object"
+    },
+    "MoneyProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "MONEY",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "gold": {
+          "default": 0,
+          "title": "Gold",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "MoneyProto",
+      "type": "object"
+    },
+    "ScrollProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "enum": [
+            "SCROLL",
+            "POTION"
+          ],
+          "title": "Object Type",
+          "type": "string"
+        },
+        "level": {
+          "default": 1,
+          "title": "Level",
+          "type": "integer"
+        },
+        "spells": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 3,
+          "title": "Spells",
+          "type": "array"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "ScrollProto",
+      "type": "object"
+    },
+    "TrapProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "TRAP",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "triggers": {
+          "default": [],
+          "items": {
+            "enum": [
+              "MOVE",
+              "OBJECT",
+              "ROOM",
+              "NORTH",
+              "EAST",
+              "SOUTH",
+              "WEST",
+              "UP",
+              "DOWN"
+            ],
+            "type": "string"
+          },
+          "title": "Triggers",
+          "type": "array"
+        },
+        "damage": {
+          "default": "pierce",
+          "enum": [
+            "sleep",
+            "teleport",
+            "poison",
+            "fire",
+            "cold",
+            "acid",
+            "energy",
+            "blunt",
+            "pierce",
+            "slash"
+          ],
+          "title": "Damage",
+          "type": "string"
+        },
+        "level": {
+          "default": 1,
+          "title": "Level",
+          "type": "integer"
+        },
+        "charges": {
+          "default": 1,
+          "title": "Charges",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "TrapProto",
+      "type": "object"
+    },
+    "Trigger": {
+      "description": "Un trigger: quando succede `type` (e `argument` e `chance` lo permettono) chi lo possiede esegue le `actions`.",
+      "properties": {
+        "type": {
+          "enum": [
+            "speech",
+            "greet",
+            "give",
+            "random",
+            "death",
+            "fight",
+            "hitprcnt",
+            "act",
+            "tell",
+            "bribe",
+            "get",
+            "drop",
+            "wear",
+            "enter",
+            "exit"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "argument": {
+          "default": "",
+          "title": "Argument",
+          "type": "string"
+        },
+        "chance": {
+          "default": 100,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Chance",
+          "type": "integer"
+        },
+        "actions": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/IfBlock"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Actions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "actions"
+      ],
+      "title": "Trigger",
+      "type": "object"
+    },
+    "WandProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "enum": [
+            "WAND",
+            "STAFF"
+          ],
+          "title": "Object Type",
+          "type": "string"
+        },
+        "level": {
+          "default": 1,
+          "title": "Level",
+          "type": "integer"
+        },
+        "max_charges": {
+          "default": 1,
+          "title": "Max Charges",
+          "type": "integer"
+        },
+        "charges": {
+          "default": 1,
+          "title": "Charges",
+          "type": "integer"
+        },
+        "spell": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Spell"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "WandProto",
+      "type": "object"
+    },
+    "WeaponProto": {
+      "additionalProperties": false,
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "action_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Description"
+        },
+        "weight": {
+          "default": 0,
+          "title": "Weight",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "integer"
+        },
+        "rent": {
+          "default": 0,
+          "title": "Rent",
+          "type": "integer"
+        },
+        "extra_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Flags",
+          "type": "array"
+        },
+        "wear_flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wear Flags",
+          "type": "array"
+        },
+        "affects": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "default": {},
+          "title": "Affects",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "scripts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Scripts",
+          "type": "array"
+        },
+        "object_type": {
+          "const": "WEAPON",
+          "title": "Object Type",
+          "type": "string"
+        },
+        "dice_count": {
+          "default": 1,
+          "title": "Dice Count",
+          "type": "integer"
+        },
+        "die_size": {
+          "default": 4,
+          "title": "Die Size",
+          "type": "integer"
+        },
+        "weapon_type": {
+          "default": 3,
+          "title": "Weapon Type",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "object_type"
+      ],
+      "title": "WeaponProto",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "area": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Area"
+    },
+    "objects": {
+      "default": [],
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "ARMOR": "#/$defs/ArmorProto",
+            "AUDIO": "#/$defs/AudioProto",
+            "BOARD": "#/$defs/BoardProto",
+            "BOAT": "#/$defs/GenericProto",
+            "CONTAINER": "#/$defs/ContainerProto",
+            "DRINKCON": "#/$defs/DrinkConProto",
+            "FIREWEAPON": "#/$defs/FireWeaponProto",
+            "FOOD": "#/$defs/FoodProto",
+            "FOUNTAIN": "#/$defs/GenericProto",
+            "KEY": "#/$defs/KeyProto",
+            "LIGHT": "#/$defs/LightProto",
+            "MISSILE": "#/$defs/MissileProto",
+            "MONEY": "#/$defs/MoneyProto",
+            "NOTE": "#/$defs/GenericProto",
+            "OTHER": "#/$defs/GenericProto",
+            "PEN": "#/$defs/GenericProto",
+            "POTION": "#/$defs/ScrollProto",
+            "ROCK": "#/$defs/GenericProto",
+            "SCROLL": "#/$defs/ScrollProto",
+            "STAFF": "#/$defs/WandProto",
+            "TRAP": "#/$defs/TrapProto",
+            "TRASH": "#/$defs/GenericProto",
+            "TREASURE": "#/$defs/GenericProto",
+            "TREE": "#/$defs/GenericProto",
+            "WAND": "#/$defs/WandProto",
+            "WEAPON": "#/$defs/WeaponProto",
+            "WORN": "#/$defs/GenericProto"
+          },
+          "propertyName": "object_type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/LightProto"
+          },
+          {
+            "$ref": "#/$defs/ScrollProto"
+          },
+          {
+            "$ref": "#/$defs/WandProto"
+          },
+          {
+            "$ref": "#/$defs/WeaponProto"
+          },
+          {
+            "$ref": "#/$defs/FireWeaponProto"
+          },
+          {
+            "$ref": "#/$defs/MissileProto"
+          },
+          {
+            "$ref": "#/$defs/ArmorProto"
+          },
+          {
+            "$ref": "#/$defs/ContainerProto"
+          },
+          {
+            "$ref": "#/$defs/DrinkConProto"
+          },
+          {
+            "$ref": "#/$defs/FoodProto"
+          },
+          {
+            "$ref": "#/$defs/MoneyProto"
+          },
+          {
+            "$ref": "#/$defs/KeyProto"
+          },
+          {
+            "$ref": "#/$defs/AudioProto"
+          },
+          {
+            "$ref": "#/$defs/TrapProto"
+          },
+          {
+            "$ref": "#/$defs/BoardProto"
+          },
+          {
+            "$ref": "#/$defs/GenericProto"
+          }
+        ]
+      },
+      "title": "Objects",
+      "type": "array"
+    }
+  },
+  "title": "LoaderObjectsFile",
+  "type": "object"
+}

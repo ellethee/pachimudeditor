@@ -5,6 +5,7 @@ Il game server legge questi file all'avvio: ogni modifica ha effetto al riavvio,
 (`POST /api/world/live/content/reload`), se il canale live e' configurato.
 """
 
+import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Annotated, Any
@@ -449,6 +450,18 @@ class SocialItem(SocialBody):
 
     name: str
     layer: str = "base"
+
+
+SCHEMAS_DIR = Path(__file__).parents[2] / "schemas"
+"""Copia versionata dei JSON Schema del gioco (`pachimud json-schema`); `tests/test_pachimud_files.py` la confronta col gioco."""
+
+SchemaName = Annotated[str, PathParam(pattern=r"^(pachimud|character-class|race|zone|rooms|mobs|objects|resets)$")]
+
+
+@router.get("/schemas/{name}", response_model=dict[str, Any])
+async def get_content_schema(name: SchemaName) -> dict[str, Any]:
+    """Il JSON Schema di un file YAML del gioco (`zone`, `rooms`, `mobs`, `objects`, `resets`, `race`, `character-class`, `pachimud`), per l'editor YAML."""
+    return json.loads((SCHEMAS_DIR / f"{name}.json").read_text(encoding="utf-8"))
 
 
 @router.get("/files/{area}", response_model=list[FileEntry])

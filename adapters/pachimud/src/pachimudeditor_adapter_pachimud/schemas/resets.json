@@ -1,0 +1,239 @@
+{
+  "$defs": {
+    "LoaderReset": {
+      "properties": {
+        "mobs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/LoaderResetMob"
+          },
+          "title": "Mobs",
+          "type": "array"
+        },
+        "objects": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/LoaderResetObject"
+          },
+          "title": "Objects",
+          "type": "array"
+        },
+        "doors": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/LoaderResetDoor"
+          },
+          "title": "Doors",
+          "type": "array"
+        }
+      },
+      "title": "LoaderReset",
+      "type": "object"
+    },
+    "LoaderResetContent": {
+      "description": "Un oggetto senza stanza: dentro un contenitore o nell'inventario di un mob.",
+      "properties": {
+        "obj_vnum": {
+          "title": "Obj Vnum",
+          "type": "integer"
+        },
+        "max_existing": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Existing"
+        },
+        "contains": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/LoaderResetContent"
+          },
+          "title": "Contains",
+          "type": "array"
+        }
+      },
+      "required": [
+        "obj_vnum"
+      ],
+      "title": "LoaderResetContent",
+      "type": "object"
+    },
+    "LoaderResetDoor": {
+      "properties": {
+        "room_vnum": {
+          "title": "Room Vnum",
+          "type": "integer"
+        },
+        "state": {
+          "default": "OPEN",
+          "title": "State",
+          "type": "string"
+        },
+        "direction": {
+          "default": "NORTH",
+          "title": "Direction",
+          "type": "string"
+        }
+      },
+      "required": [
+        "room_vnum"
+      ],
+      "title": "LoaderResetDoor",
+      "type": "object"
+    },
+    "LoaderResetMob": {
+      "properties": {
+        "mob_vnum": {
+          "title": "Mob Vnum",
+          "type": "integer"
+        },
+        "max_existing": {
+          "title": "Max Existing",
+          "type": "integer"
+        },
+        "room_vnum": {
+          "title": "Room Vnum",
+          "type": "integer"
+        },
+        "room_limit": {
+          "title": "Room Limit",
+          "type": "integer"
+        },
+        "inventory": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/LoaderResetObjectInventory"
+          },
+          "title": "Inventory",
+          "type": "array"
+        }
+      },
+      "required": [
+        "mob_vnum",
+        "max_existing",
+        "room_vnum",
+        "room_limit"
+      ],
+      "title": "LoaderResetMob",
+      "type": "object"
+    },
+    "LoaderResetObject": {
+      "description": "Un oggetto a terra in una stanza.",
+      "properties": {
+        "obj_vnum": {
+          "title": "Obj Vnum",
+          "type": "integer"
+        },
+        "max_existing": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Existing"
+        },
+        "contains": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/LoaderResetContent"
+          },
+          "title": "Contains",
+          "type": "array"
+        },
+        "room_vnum": {
+          "title": "Room Vnum",
+          "type": "integer"
+        },
+        "room_limit": {
+          "title": "Room Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "obj_vnum",
+        "room_vnum",
+        "room_limit"
+      ],
+      "title": "LoaderResetObject",
+      "type": "object"
+    },
+    "LoaderResetObjectInventory": {
+      "properties": {
+        "obj_vnum": {
+          "title": "Obj Vnum",
+          "type": "integer"
+        },
+        "max_existing": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Existing"
+        },
+        "contains": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/LoaderResetContent"
+          },
+          "title": "Contains",
+          "type": "array"
+        },
+        "wear_slot": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wear Slot"
+        }
+      },
+      "required": [
+        "obj_vnum"
+      ],
+      "title": "LoaderResetObjectInventory",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "area": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Area"
+    },
+    "resets": {
+      "$ref": "#/$defs/LoaderReset"
+    }
+  },
+  "required": [
+    "resets"
+  ],
+  "title": "LoaderResetFile",
+  "type": "object"
+}

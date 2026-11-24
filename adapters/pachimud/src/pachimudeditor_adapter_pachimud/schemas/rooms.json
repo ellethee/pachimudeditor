@@ -1,0 +1,561 @@
+{
+  "$defs": {
+    "Condition": {
+      "additionalProperties": true,
+      "description": "Le verifiche di un `if`: valgono tutte insieme (e). Quelle su una creatura guardano `$n` (o il mob con `who: i`).",
+      "properties": {
+        "chance": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chance"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Level"
+        },
+        "hp": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hp"
+        },
+        "sex": {
+          "anyOf": [
+            {
+              "enum": [
+                "male",
+                "female",
+                "other"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sex"
+        },
+        "race": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Race"
+        },
+        "class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Class"
+        },
+        "carries": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Carries"
+        },
+        "is_player": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Player"
+        },
+        "time": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time"
+        },
+        "is_night": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Night"
+        },
+        "is_fighting": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Fighting"
+        },
+        "has_effect": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Effect"
+        },
+        "vnum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vnum"
+        },
+        "who": {
+          "default": "n",
+          "enum": [
+            "n",
+            "i"
+          ],
+          "title": "Who",
+          "type": "string"
+        }
+      },
+      "title": "Condition",
+      "type": "object"
+    },
+    "ExtraDescriptionProto": {
+      "properties": {
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "keywords",
+        "text"
+      ],
+      "title": "ExtraDescriptionProto",
+      "type": "object"
+    },
+    "IfBlock": {
+      "description": "`if`/`else`: se la condizione e' vera le azioni di `then`, altrimenti quelle di `else`.",
+      "properties": {
+        "if": {
+          "$ref": "#/$defs/Condition"
+        },
+        "then": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/IfBlock"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Then",
+          "type": "array"
+        },
+        "else": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/IfBlock"
+              }
+            ]
+          },
+          "title": "Else",
+          "type": "array"
+        }
+      },
+      "required": [
+        "if",
+        "then"
+      ],
+      "title": "IfBlock",
+      "type": "object"
+    },
+    "RoomExitProto": {
+      "properties": {
+        "target_vnum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Vnum"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "keywords": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Keywords"
+        },
+        "is_male": {
+          "default": false,
+          "title": "Is Male",
+          "type": "boolean"
+        },
+        "door_flag": {
+          "default": "NONE",
+          "title": "Door Flag",
+          "type": "string"
+        },
+        "is_open": {
+          "default": true,
+          "title": "Is Open",
+          "type": "boolean"
+        },
+        "is_locked": {
+          "default": false,
+          "title": "Is Locked",
+          "type": "boolean"
+        },
+        "key_vnum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Key Vnum"
+        },
+        "open_cmd": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Open Cmd"
+        },
+        "climb": {
+          "default": false,
+          "title": "Climb",
+          "type": "boolean"
+        }
+      },
+      "title": "RoomExitProto",
+      "type": "object"
+    },
+    "RoomProto": {
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "sector_type": {
+          "default": "INSIDE",
+          "title": "Sector Type",
+          "type": "string"
+        },
+        "flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Flags",
+          "type": "array"
+        },
+        "heal_rate": {
+          "default": 100,
+          "title": "Heal Rate",
+          "type": "integer"
+        },
+        "mana_rate": {
+          "default": 100,
+          "title": "Mana Rate",
+          "type": "integer"
+        },
+        "climate": {
+          "anyOf": [
+            {
+              "enum": [
+                "temperate",
+                "desert",
+                "arctic"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Climate"
+        },
+        "clan_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Clan Id"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "exits": {
+          "additionalProperties": {
+            "$ref": "#/$defs/RoomExitProto"
+          },
+          "default": {},
+          "title": "Exits",
+          "type": "object"
+        },
+        "extra_descriptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExtraDescriptionProto"
+          },
+          "title": "Extra Descriptions",
+          "type": "array"
+        },
+        "triggers": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Triggers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "vnum",
+        "name",
+        "description"
+      ],
+      "title": "RoomProto",
+      "type": "object"
+    },
+    "Trigger": {
+      "description": "Un trigger: quando succede `type` (e `argument` e `chance` lo permettono) chi lo possiede esegue le `actions`.",
+      "properties": {
+        "type": {
+          "enum": [
+            "speech",
+            "greet",
+            "give",
+            "random",
+            "death",
+            "fight",
+            "hitprcnt",
+            "act",
+            "tell",
+            "bribe",
+            "get",
+            "drop",
+            "wear",
+            "enter",
+            "exit"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "argument": {
+          "default": "",
+          "title": "Argument",
+          "type": "string"
+        },
+        "chance": {
+          "default": 100,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Chance",
+          "type": "integer"
+        },
+        "actions": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/IfBlock"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Actions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "actions"
+      ],
+      "title": "Trigger",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "area": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Area"
+    },
+    "rooms": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RoomProto"
+      },
+      "title": "Rooms",
+      "type": "array"
+    }
+  },
+  "title": "LoaderRoomsFile",
+  "type": "object"
+}
