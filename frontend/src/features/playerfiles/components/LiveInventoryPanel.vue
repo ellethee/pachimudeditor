@@ -51,7 +51,6 @@
       row-key="ref"
       dense
       :loading="loading"
-      hide-pagination
       single-sort
       :initial-sort="[]"
       :auto-height="false"

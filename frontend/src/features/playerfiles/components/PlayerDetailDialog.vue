@@ -84,7 +84,6 @@
               :columns="listColumns(list)"
               row-key="__row"
               dense
-              hide-pagination
               single-sort
               :initial-sort="[]"
               :auto-height="false"
