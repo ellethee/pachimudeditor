@@ -124,7 +124,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useQuasar } from 'quasar'
 import { mdiFilterVariant } from '@quasar/extras/mdi-v7'
 import type { IEnumOption } from '../types/objects'
 import { RANGE_KEYS, activeCount, emptyFilters, rangeInvalid } from '../helpers/list-query'
@@ -147,8 +146,8 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [value: IObjectFilters] }>()
 
 const { t } = useI18n()
-const $q = useQuasar()
-const open = ref(!$q.screen.lt.sm)
+/** Chiusa di default (si apre se ci sono già filtri attivi, es. ripristinati dall'URL). */
+const open = ref(activeCount(props.modelValue) > 0)
 /** Opzioni mostrate dai select con inserimento (filtrate dal testo digitato). */
 const shown = ref<Record<'wear' | 'extra' | 'apply', string[]>>({
   wear: [...props.wearNames],
