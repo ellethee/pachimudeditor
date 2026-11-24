@@ -15,19 +15,18 @@
           <q-space />
           <q-btn flat no-caps :icon="mdiRefresh" :label="t('boards.refresh')" :loading="loading" data-testid="boards-refresh" @click="load" />
         </div>
-        <q-table
-          flat
-          bordered
-          dense
+        <pachi-table2
           row-key="boardId"
           :rows="boardRows"
           :columns="boardColumns"
           :loading="loading"
-          :pagination="{ rowsPerPage: 50 }"
+          single-sort
+          :initial-sort="[]"
+          dense
           :no-data-label="t('boards.empty')"
           data-testid="boards-table"
         >
-          <template #body="p">
+          <template #body="{ slotProps: p }">
             <q-tr :props="p" class="cursor-pointer" data-testid="board-row" @click="openBoard(p.row)">
               <q-td key="boardId" :props="p">
                 {{ p.row.boardId }}
@@ -41,7 +40,7 @@
               <q-td key="limit" :props="p">{{ p.row.maxMessages ?? '' }}</q-td>
             </q-tr>
           </template>
-        </q-table>
+        </pachi-table2>
       </template>
 
       <template v-else>
@@ -63,19 +62,18 @@
           />
         </div>
         <div class="text-caption text-grey" data-testid="board-moderation-note">{{ moderationNote }}</div>
-        <q-table
-          flat
-          bordered
-          dense
+        <pachi-table2
           row-key="id"
           :rows="messages"
           :columns="messageColumns"
           :loading="loadingMessages"
-          :pagination="{ rowsPerPage: 25 }"
+          single-sort
+          :initial-sort="[]"
+          dense
           :no-data-label="t('boards.noMessages')"
           data-testid="board-messages"
         >
-          <template #body="p">
+          <template #body="{ slotProps: p }">
             <q-tr :props="p" class="cursor-pointer" data-testid="board-message" @click="p.expand = !p.expand">
               <q-td key="number" :props="p">{{ p.row.number }}</q-td>
               <q-td key="author" :props="p">{{ p.row.author }}</q-td>
@@ -102,7 +100,7 @@
               <q-td colspan="100%" class="text-body2" style="white-space: pre-wrap" data-testid="board-message-text">{{ p.row.text }}</q-td>
             </q-tr>
           </template>
-        </q-table>
+        </pachi-table2>
       </template>
     </template>
 
@@ -114,15 +112,14 @@
           <q-input v-model="mailSearch" dense outlined clearable class="col-12 col-sm-4" :label="t('boards.mail.search')" data-testid="mail-search" />
           <div class="text-subtitle2" data-testid="mail-total">{{ t('boards.mail.total', { count: mail?.total ?? 0 }) }}</div>
         </div>
-        <q-table
-          flat
-          bordered
-          dense
+        <pachi-table2
           row-key="recipient"
           :rows="mailRows"
           :columns="mailColumns"
           :loading="loadingMail"
-          :pagination="{ rowsPerPage: 50 }"
+          single-sort
+          :initial-sort="[]"
+          dense
           :no-data-label="t('boards.mail.empty')"
           data-testid="mail-table"
         />
@@ -141,6 +138,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import { mdiArrowLeft, mdiDelete, mdiDeleteSweep, mdiRefresh } from '@quasar/extras/mdi-v7'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import { describeError } from '../../content/helpers/describe-error'
 import { useLive } from '../../playerfiles/helpers/live-state'
 import { clearLiveBoard, deleteLiveBoardMessage } from '../../playerfiles/services/live-api'
@@ -164,7 +162,7 @@ const mail = ref<IMailOut | null>(null)
 const mailSearch = ref('')
 const loadingMail = ref(false)
 
-/** Colonne di una tabella `q-table` con le etichette `boards.<group>.<name>`. */
+/** Colonne di una tabella con le etichette `boards.<group>.<name>`. */
 function cols(group: string, names: string[]) {
   return names.map((name) => ({ name, label: t(`boards.${group}.${name}`), field: name, align: 'left' as const, sortable: true }))
 }

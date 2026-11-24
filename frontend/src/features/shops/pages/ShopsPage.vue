@@ -22,19 +22,18 @@
     <q-banner v-if="error" rounded class="bg-negative text-white" data-testid="shops-error">{{ error }}</q-banner>
     <content-problems-panel />
 
-    <q-table
-      flat
-      bordered
-      dense
+    <pachi-table2
       row-key="vnum"
       :rows="rows"
       :columns="columns"
       :loading="loading"
-      :pagination="{ rowsPerPage: 50 }"
+      single-sort
+      :initial-sort="[]"
+      dense
       :no-data-label="t('shops.empty')"
       data-testid="shops-table"
     >
-      <template #body="p">
+      <template #body="{ slotProps: p }">
         <q-tr :props="p" class="cursor-pointer" data-testid="shop-row" @click="open(p.row)">
           <q-td key="vnum" :props="p">{{ p.row.vnum }}</q-td>
           <q-td key="name" :props="p">
@@ -70,7 +69,7 @@
           </q-td>
         </q-tr>
       </template>
-    </q-table>
+    </pachi-table2>
   </div>
 </template>
 
@@ -85,6 +84,7 @@ import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { mdiClipboardCheckOutline, mdiMagnify, mdiRefresh, mdiReload } from '@quasar/extras/mdi-v7'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import ContentProblemsPanel from '../../content/components/ContentProblemsPanel.vue'
 import { useContentLive } from '../../content/composables/use-content-live'
 import { describeError } from '../../content/helpers/describe-error'

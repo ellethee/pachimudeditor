@@ -23,8 +23,8 @@
     <q-banner v-if="error" rounded class="bg-negative text-white" data-testid="inns-error">{{ error }}</q-banner>
     <content-problems-panel />
 
-    <q-table flat bordered dense row-key="vnum" :rows="rows" :columns="columns" :loading="loading" :pagination="{ rowsPerPage: 50 }" :no-data-label="t('inns.empty')" data-testid="inns-table">
-      <template #body="p">
+    <pachi-table2 row-key="vnum" :rows="rows" :columns="columns" :loading="loading" single-sort :initial-sort="[]" dense :no-data-label="t('inns.empty')" data-testid="inns-table">
+      <template #body="{ slotProps: p }">
         <q-tr :props="p" class="cursor-pointer" data-testid="inn-row" @click="open(p.row)">
           <q-td key="vnum" :props="p">{{ p.row.vnum }}</q-td>
           <q-td key="name" :props="p">{{ p.row.name }}</q-td>
@@ -58,7 +58,7 @@
           </q-td>
         </q-tr>
       </template>
-    </q-table>
+    </pachi-table2>
 
     <q-dialog v-model="creating">
       <q-card style="min-width: 360px" data-testid="inn-create-dialog">
@@ -104,6 +104,7 @@ import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { mdiClipboardCheckOutline, mdiMagnify, mdiPlus, mdiRefresh, mdiReload } from '@quasar/extras/mdi-v7'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import ContentProblemsPanel from '../../content/components/ContentProblemsPanel.vue'
 import { useContentLive } from '../../content/composables/use-content-live'
 import { describeError } from '../../content/helpers/describe-error'
