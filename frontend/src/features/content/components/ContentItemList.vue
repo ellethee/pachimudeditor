@@ -1,27 +1,21 @@
 <template>
-  <q-table
-    flat
-    bordered
-    dense
+  <pachi-table2
     row-key="id"
     :rows="rows"
     :columns="columns"
     :loading="loading"
-    :filter="filter"
-    :pagination="{ rowsPerPage: 15 }"
-    :rows-per-page-options="[15, 30, 0]"
+    single-sort
+    :initial-sort="[]"
+    dense
+    :auto-height="false"
     :no-data-label="t('content.empty')"
     :data-testid="testid"
     @row-click="(_e: Event, row: IListRow) => emit('select', row.id)"
   >
-    <template #top>
+    <template #toolbar-actions>
       <q-btn color="primary" no-caps :icon="mdiPlus" :label="createLabel" :disable="readOnly" data-testid="item-create" @click="emit('create')" />
-      <q-space />
-      <q-input v-model="filter" dense outlined clearable :placeholder="t('content.search')" style="min-width: 160px">
-        <template #prepend><q-icon :name="mdiMagnify" /></template>
-      </q-input>
     </template>
-    <template #body="{ row }">
+    <template #body="{ slotProps: { row } }">
       <q-tr :class="{ 'bg-blue-1': row.id === selected }" class="cursor-pointer" :props="{ row }" data-testid="item-row" @click="emit('select', row.id)">
         <q-td key="id">{{ row.id }}</q-td>
         <q-td key="info">{{ row.info }}</q-td>
@@ -32,15 +26,15 @@
         </q-td>
       </q-tr>
     </template>
-  </q-table>
+  </pachi-table2>
 </template>
 
 <script setup lang="ts">
 /** Elenco di elementi a strati (skill, social): id, una riga di sintesi e lo strato (modificato qui / di serie). */
-import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { QTableColumn } from 'quasar'
-import { mdiMagnify, mdiPlus } from '@quasar/extras/mdi-v7'
+import { mdiPlus } from '@quasar/extras/mdi-v7'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import { useWorld } from '../../shared/helpers/world-state'
 import type { ContentLayer } from '../types/content-files'
 
@@ -57,7 +51,6 @@ const emit = defineEmits<{ select: [id: string]; create: [] }>()
 
 const { t } = useI18n()
 const { readOnly } = useWorld()
-const filter = ref('')
 const columns: QTableColumn<IListRow>[] = [
   { name: 'id', label: 'Id', field: 'id', align: 'left', sortable: true },
   { name: 'info', label: '', field: 'info', align: 'left' },

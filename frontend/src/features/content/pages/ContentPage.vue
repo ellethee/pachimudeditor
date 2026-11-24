@@ -2,29 +2,22 @@
   <div class="q-pa-md column q-gutter-y-md">
     <restart-banner ref="banner" />
 
-    <q-table
-      flat
-      bordered
-      dense
+    <pachi-table2
       row-key="file"
       :rows="rows"
       :columns="columns"
       :loading="loading"
-      :filter="filter"
-      :pagination="{ rowsPerPage: 25, sortBy: 'name' }"
-      :rows-per-page-options="[10, 25, 50, 0]"
+      single-sort
+      :initial-sort="[{ column: 'name', direction: 'asc' }]"
+      dense
       :no-data-label="t('content.empty')"
     >
-      <template #top>
+      <template #toolbar-actions>
         <q-btn color="primary" no-caps :icon="mdiPlus" :label="t(`content.${kind}.create`)" :disable="readOnly" @click="openCreate" />
         <q-btn flat round :icon="mdiRefresh" :aria-label="t('content.reload')" @click="load" />
-        <q-space />
-        <q-input v-model="filter" dense outlined clearable :placeholder="t('content.search')" style="min-width: 220px">
-          <template #prepend><q-icon :name="mdiMagnify" /></template>
-        </q-input>
       </template>
 
-      <template #body-cell-status="{ row }">
+      <template #body-cell-status="{ slotProps: { row } }">
         <q-td class="text-center">
           <q-badge v-if="!row.valid" color="negative" :label="t('content.status.invalid')">
             <q-tooltip>{{ row.error }}</q-tooltip>
@@ -34,7 +27,7 @@
         </q-td>
       </template>
 
-      <template #body-cell-actions="{ row }">
+      <template #body-cell-actions="{ slotProps: { row } }">
         <q-td class="text-right" auto-width>
           <q-btn dense flat round :icon="mdiPencil" :disable="!row.valid || readOnly" @click="openEdit(row)" :aria-label="t('content.actions.edit')">
             <q-tooltip>{{ t('content.actions.edit') }}</q-tooltip>
@@ -47,7 +40,7 @@
           </q-btn>
         </q-td>
       </template>
-    </q-table>
+    </pachi-table2>
   </div>
 </template>
 
@@ -62,7 +55,6 @@ import { useQuasar } from 'quasar'
 import type { QTableColumn } from 'quasar'
 import {
   mdiDelete,
-  mdiMagnify,
   mdiPauseCircleOutline,
   mdiPencil,
   mdiPlayCircleOutline,
@@ -73,6 +65,7 @@ import { PachiEditDialog } from '@ilpachi/pachi-kit/edit-dialog'
 import type { AwaitableData, ISectionDefinition } from '@ilpachi/pachi-kit/edit-dialog'
 import { FieldsSection } from '@ilpachi/pachi-kit/fields'
 import type { IFieldRow } from '@ilpachi/pachi-kit/fields'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import RestartBanner from '../components/RestartBanner.vue'
 import { createContent, deleteContent, getContentOptions, listContent, setContentDisabled, updateContent } from '../services/content-api'
 import { describeError } from '../helpers/describe-error'
@@ -97,7 +90,6 @@ const { readOnly } = useWorld()
 
 const rows = ref<IContentItem[]>([])
 const loading = ref(false)
-const filter = ref('')
 const banner = ref<InstanceType<typeof RestartBanner> | null>(null)
 let options: IContentOptions | null = null
 

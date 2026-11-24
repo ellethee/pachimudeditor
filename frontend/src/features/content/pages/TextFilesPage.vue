@@ -3,28 +3,22 @@
     <content-live-bar ref="bar" :kind="kind" />
     <div class="row q-col-gutter-lg">
       <div class="col-12 col-md-4">
-        <q-table
-          flat
-          bordered
-          dense
+        <pachi-table2
           row-key="key"
           :rows="rows"
           :columns="columns"
           :loading="loading"
-          :filter="filter"
-          :pagination="{ rowsPerPage: 15 }"
-          :rows-per-page-options="[15, 30, 0]"
+          single-sort
+          :initial-sort="[]"
+          dense
+          :auto-height="false"
           :no-data-label="t('content.empty')"
           data-testid="files-list"
         >
-          <template #top>
+          <template #toolbar-actions>
             <q-btn color="primary" no-caps :icon="mdiPlus" :label="t('content.files.create')" :disable="readOnly" data-testid="file-create" @click="startCreate" />
-            <q-space />
-            <q-input v-model="filter" dense outlined clearable :placeholder="t('content.search')" style="min-width: 160px">
-              <template #prepend><q-icon :name="mdiMagnify" /></template>
-            </q-input>
           </template>
-          <template #body="{ row }">
+          <template #body="{ slotProps: { row } }">
             <q-tr :class="{ 'bg-blue-1': row.key === currentKey }" class="cursor-pointer" :props="{ row }" data-testid="file-row" @click="open(row)">
               <q-td key="path">{{ row.path }}</q-td>
               <q-td key="layer" class="text-right" auto-width>
@@ -33,7 +27,7 @@
               </q-td>
             </q-tr>
           </template>
-        </q-table>
+        </pachi-table2>
       </div>
       <div class="col-12 col-md-8">
         <q-card v-if="current" flat bordered class="q-pa-md column q-gutter-y-sm" data-testid="file-editor">
@@ -93,7 +87,8 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import type { QTableColumn } from 'quasar'
-import { mdiContentSave, mdiDelete, mdiMagnify, mdiPlus } from '@quasar/extras/mdi-v7'
+import { mdiContentSave, mdiDelete, mdiPlus } from '@quasar/extras/mdi-v7'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import ContentLiveBar from '../components/ContentLiveBar.vue'
 import { useWorld } from '../../shared/helpers/world-state'
 import { describeError } from '../helpers/describe-error'
@@ -118,7 +113,6 @@ const { readOnly } = useWorld()
 
 const rows = ref<IRow[]>([])
 const loading = ref(false)
-const filter = ref('')
 const current = ref<IFileContent | null>(null)
 const area = ref<FileArea>(props.areas[0] ?? 'tables')
 const isNew = ref(false)
