@@ -68,6 +68,7 @@ const en: PachiMessages<typeof it> = {
       who: 'Applies to',
       whoN: 'who caused the event ($n)',
       whoI: 'the mob itself ($i)',
+      whoHint: 'Who the level, hp, sex, race, class, vnum and the other conditions are checked on: by default who caused the event (the player), not the mob.',
       race: 'Race',
       class: 'Class',
       carries: 'Carries (vnum or word)',

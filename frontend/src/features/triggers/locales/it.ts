@@ -65,6 +65,7 @@ export default {
       who: 'Riguarda',
       whoN: 'chi causa l\'evento ($n)',
       whoI: 'il mob stesso ($i)',
+      whoHint: 'Chi viene valutato da livello, hp, sesso, razza, classe, vnum, tempo e le altre condizioni: di default chi causa l\'evento (il giocatore), non il mob.',
       race: 'Razza',
       class: 'Classe',
       carries: 'Ha addosso (vnum o parola)',

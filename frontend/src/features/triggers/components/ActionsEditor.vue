@@ -97,6 +97,7 @@
             map-options
             :options="whoOptions"
             :label="t('triggers.cond.who')"
+            :hint="t('triggers.cond.whoHint')"
             :readonly="readonly"
             data-testid="cond-who"
             @update:model-value="setCond(i, 'who', $event === 'n' ? undefined : $event)"
