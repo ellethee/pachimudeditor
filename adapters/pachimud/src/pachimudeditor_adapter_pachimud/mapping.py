@@ -109,30 +109,51 @@ def shop_value(raw_shop: Any) -> Any:
     return to_commented(shop.model_dump(exclude_defaults=True))
 
 
-def triggers_value(raw_triggers: Any, current: Any = None) -> Any:
-    """Il campo `extra.triggers` come va scritto nel file: lista validata con `LoaderTrigger` (422 `pachimud.invalid_choice|range|length`
-    sul campo, es. `triggers.0.chance`), ridotta ai soli campi diversi dal default (`type` e `actions` restano).
-    Se e' equivalente a `current` (il valore gia' nel file, anche con i default scritti a mano) restituisce `current`: nessun diff."""
+def _trigger_dump(item: Any) -> dict[str, Any]:
+    """Un trigger validato come dizionario del file: solo i campi diversi dal default (`type` e `actions` restano), `if`/`else`/`class` con il nome del file."""
+    return item.model_dump(exclude_defaults=True, by_alias=True)
+
+
+def triggers_value(raw_triggers: Any, current: Any = None, owner: str = "mob", field: str = "triggers") -> Any:
+    """Il campo `triggers` di un mob/stanza (o `scripts` di un oggetto) come va scritto nel file: lista validata con `LoaderTrigger`
+    (422 `pachimud.invalid_choice|range|length` sul campo, es. `triggers[0].chance`; `invalid_choice` anche per un tipo che `owner`
+    non ammette), ridotta ai soli campi diversi dal default. Ogni trigger equivalente a quello gia' nel file (`current`, anche con i
+    default scritti a mano) resta quello (commenti e formato intatti); se sono tutti uguali restituisce `current`: nessun diff."""
     from pydantic import TypeAdapter
 
-    from pachimudeditor_adapter_pachimud.loaders import LoaderTrigger
+    from pachimudeditor_adapter_pachimud.loaders import OWNER_TYPES, LoaderTrigger
 
+    adapter = TypeAdapter(list[LoaderTrigger])
     if raw_triggers is None:
         raw_triggers = []
     if not isinstance(raw_triggers, list):
-        raise api_error(422, "pachimud.invalid_entry", detail="triggers: attesa una lista")
+        raise api_error(422, "pachimud.invalid_entry", detail=f"{field}: attesa una lista")
     try:
-        items = TypeAdapter(list[LoaderTrigger]).validate_python(raw_triggers)
+        items = adapter.validate_python(raw_triggers)
     except ValidationError as error:
-        raise invalid(error, "triggers") from error
+        raise invalid(error, field) from error
+    old: list[Any] = []
     try:
-        if current is not None and [i.model_dump() for i in items] == [
-            i.model_dump() for i in TypeAdapter(list[LoaderTrigger]).validate_python(plain(current))
-        ]:
-            return current
+        old = adapter.validate_python(plain(current)) if current is not None else []
     except ValidationError:  # il file ha gia' un valore non valido: si riscrive
         pass
-    return [to_commented(i.model_dump(exclude_defaults=True) | {"type": i.type, "actions": list(i.actions)}) for i in items]
+    same = [n < len(old) and i.model_dump() == old[n].model_dump() for n, i in enumerate(items)]
+    if all(same) and len(items) == len(old) and current is not None:
+        return current
+    for n, i in enumerate(items):
+        if not same[n] and i.type not in OWNER_TYPES[owner]:
+            raise api_error(422, "pachimud.invalid_choice", field=f"{field}[{n}].type", limit=", ".join(OWNER_TYPES[owner]))
+    return [current[n] if same[n] else to_commented(_trigger_dump(i)) for n, i in enumerate(items)]
+
+
+def apply_triggers(raw: Any, value: Any, owner: str, key: str) -> None:
+    """Scrive i trigger (`key` e' `triggers`, o `scripts` per gli oggetti) nella voce: un valore uguale lascia il file com'e', svuotati
+    la chiave sparisce."""
+    new = triggers_value(value, raw.get(key), owner, key)
+    if not new and raw.get(key):
+        del raw[key]
+    else:
+        put(raw, key, new, default=[])
 
 
 def put(raw: Any, key: str, value: Any, *, default: Any = None, required: bool = False) -> None:
@@ -171,6 +192,7 @@ _INVALID_LIMITS = {
 
 def _where(loc: tuple[Any, ...]) -> str:
     """Il percorso di un errore pydantic come `triggers[0].chance` (indice di lista tra parentesi, base 0)."""
+    loc = tuple(p for p in loc if p not in ("str", "block"))  # etichette dell'unione delle azioni
     return "".join(f"[{p}]" if isinstance(p, int) else f"{'.' if i else ''}{p}" for i, p in enumerate(loc))
 
 
@@ -241,7 +263,7 @@ def zone_apply(raw: Any, changes: dict[str, Any]) -> None:
 
 
 def room_out(item: Item, zone_vnum: int) -> RoomOut:
-    """DTO di una stanza; `enabled`, `area` e `climate` del file stanno in `extra`."""
+    """DTO di una stanza; `enabled`, `area`, `climate` e `triggers` del file stanno in `extra`."""
     m = item.model
     return RoomOut(
         id=m.vnum,
@@ -255,7 +277,12 @@ def room_out(item: Item, zone_vnum: int) -> RoomOut:
         mana_rate=m.mana_rate,
         clan_id=m.clan_id,
         owner=m.owner,
-        extra={"enabled": m.enabled, "area": item.area or "", "climate": m.climate},
+        extra={
+            "enabled": m.enabled,
+            "area": item.area or "",
+            "climate": m.climate,
+            "triggers": [t.model_dump(by_alias=True, exclude_none=True) for t in m.triggers],
+        },
     )
 
 
@@ -370,7 +397,7 @@ def mob_out(item: Item, zone_vnum: int) -> MobOut:
             "breath": list(m.breath),
             "breathCost": m.breath_cost,
             "shop": None if m.shop is None else m.shop.model_dump(),
-            "triggers": [t.model_dump() for t in m.triggers],
+            "triggers": [t.model_dump(by_alias=True, exclude_none=True) for t in m.triggers],
             **{s: getattr(m, s) for s in STATS},
         },
     )
@@ -438,6 +465,7 @@ def object_out(item: Item, zone_vnum: int) -> ObjectOut:
             "area": item.area or "",
             "extraDescriptions": [{"keywords": e.keywords, "text": e.text} for e in m.extra_descriptions],
             "typeFields": {n: _plain(getattr(m, n)) for n in type_fields(m.object_type)},
+            "scripts": [t.model_dump(by_alias=True, exclude_none=True) for t in m.scripts],
         },
     )
 

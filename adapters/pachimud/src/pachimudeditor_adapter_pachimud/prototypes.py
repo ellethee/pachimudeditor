@@ -44,7 +44,7 @@ MOB_EXTRA = frozenset(
         *mapping.STATS,
     }
 )
-OBJECT_EXTRA = frozenset({"area", "typeFields", "extraDescriptions"})
+OBJECT_EXTRA = frozenset({"area", "typeFields", "extraDescriptions", "scripts"})
 
 
 class PrototypesMixin(PachimudSupport):
@@ -77,11 +77,7 @@ class PrototypesMixin(PachimudSupport):
         if "shop" in extra:
             mapping.put(raw, "shop", mapping.shop_value(extra["shop"]))
         if "triggers" in extra:
-            value = mapping.triggers_value(extra["triggers"], raw.get("triggers"))
-            if not value and raw.get("triggers"):  # svuotati davvero: la chiave sparisce dal file
-                del raw["triggers"]
-            else:
-                mapping.put(raw, "triggers", value, default=[])
+            mapping.apply_triggers(raw, extra["triggers"], "mob", "triggers")
         return norm_area(extra["area"]) if "area" in extra else ...
 
     async def list_mobs(self, params: MobPageParams) -> PaginatedResponse[MobOut]:
@@ -205,6 +201,8 @@ class PrototypesMixin(PachimudSupport):
             fields = self._object_fields(type_name, [data.value_0, data.value_1, data.value_2, data.value_3], data.extra)
             mapping.object_apply(raw, values, fields)
             mapping.apply_object_extra_descriptions(raw, data.extra)
+            if "scripts" in data.extra:
+                mapping.apply_triggers(raw, data.extra["scripts"], "object", "scripts")
             mapping.check_object(raw)
             file.list_of(create=True).append(raw)
             self.store.save(file)
@@ -229,6 +227,8 @@ class PrototypesMixin(PachimudSupport):
             fields = self._object_fields(new_type, values, extra, lenient="object_type" in changes)
             mapping.object_apply(obj.raw, {k: v for k, v in changes.items() if k != "zone_id"}, fields)
             mapping.apply_object_extra_descriptions(obj.raw, extra)
+            if "scripts" in extra:
+                mapping.apply_triggers(obj.raw, extra["scripts"], "object", "scripts")
             mapping.check_object(obj.raw)
             self._relocate(obj, changes.get("zone_id"), norm_area(extra["area"]) if "area" in extra else ...)
             return await self._after_save(obj, "object")
