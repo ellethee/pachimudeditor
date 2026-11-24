@@ -7,7 +7,7 @@
         <div class="row q-col-gutter-md items-start">
           <q-select
             v-model="row.type"
-            class="col-12 col-sm-5"
+            class="col-12 col-sm-3"
             outlined
             dense
             stack-label
@@ -21,7 +21,7 @@
           />
           <q-input
             v-model="row.argument"
-            class="col-12 col-sm-5"
+            class="col-12 col-sm-6"
             outlined
             dense
             stack-label
@@ -33,7 +33,7 @@
           />
           <q-input
             v-model.number="row.chance"
-            class="col-8 col-sm-1"
+            class="col-8 col-sm-2"
             type="number"
             min="1"
             max="100"

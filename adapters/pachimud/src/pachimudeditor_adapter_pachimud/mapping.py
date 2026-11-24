@@ -8,6 +8,7 @@ mob, i campi specifici del tipo di un oggetto (`typeFields`, con i nomi snake_ca
 oggetti si leggono e scrivono solo quelli numerici (`VALUE_SLOTS`, indici di LeU).
 """
 
+import re
 from typing import Any
 
 from pachifast.i18n import api_error
@@ -123,7 +124,7 @@ def triggers_value(raw_triggers: Any, current: Any = None) -> Any:
     try:
         items = TypeAdapter(list[LoaderTrigger]).validate_python(raw_triggers)
     except ValidationError as error:
-        raise invalid(error) from error
+        raise invalid(error, "triggers") from error
     try:
         if current is not None and [i.model_dump() for i in items] == [
             i.model_dump() for i in TypeAdapter(list[LoaderTrigger]).validate_python(plain(current))
@@ -156,24 +157,39 @@ def new_map(pairs: dict[str, Any]) -> Any:
     return out
 
 
-_INVALID_LIMITS = ("gt", "ge", "lt", "le", "min_length", "max_length", "multiple_of")
-"""Chiavi di `ctx` (pydantic) che descrivono un limite numerico o di lunghezza."""
+_INVALID_LIMITS = {
+    "gt": ">",
+    "ge": "≥",
+    "lt": "<",
+    "le": "≤",
+    "min_length": "lunghezza ≥",
+    "max_length": "lunghezza ≤",
+    "multiple_of": "multiplo di",
+}
+"""Chiavi di `ctx` (pydantic) che descrivono un limite numerico o di lunghezza, col simbolo con cui si mostrano (uguale in it/en)."""
 
 
-def invalid(error: ValidationError) -> Exception:
+def _where(loc: tuple[Any, ...]) -> str:
+    """Il percorso di un errore pydantic come `triggers[0].chance` (indice di lista tra parentesi, base 0)."""
+    return "".join(f"[{p}]" if isinstance(p, int) else f"{'.' if i else ''}{p}" for i, p in enumerate(loc))
+
+
+def invalid(error: ValidationError, prefix: str = "") -> Exception:
     """422 sul primo errore del loader, con testo it/en per i casi comuni di pydantic (campo mancante, tipo, intervallo, lunghezza, scelta,
     campo non ammesso): `pachimud.invalid_missing|type|range|length|choice|unknown` con `field` (e `limit`). Altrimenti
     `pachimud.invalid_entry` con `detail` (i messaggi dei validatori del gioco sono gia' in italiano, senza il prefisso «Value error, »)."""
     first = error.errors()[0]
-    where = ".".join(str(p) for p in first["loc"])
+    where = prefix + _where(first["loc"])
     kind, ctx = str(first["type"]), first.get("ctx") or {}
-    limit = ", ".join(f"{k} {ctx[k]}" for k in _INVALID_LIMITS if k in ctx)
+    limit = ", ".join(f"{sym} {ctx[k]}" for k, sym in _INVALID_LIMITS.items() if k in ctx)
     if kind == "missing":
         return api_error(422, "pachimud.invalid_missing", field=where)
     if kind == "extra_forbidden":
         return api_error(422, "pachimud.invalid_unknown", field=where)
     if kind in ("literal_error", "enum"):
-        return api_error(422, "pachimud.invalid_choice", field=where, limit=ctx.get("expected", ""))
+        return api_error(
+            422, "pachimud.invalid_choice", field=where, limit=re.sub(r"\s+or\s+", ", ", str(ctx.get("expected", "")).replace("'", ""))
+        )
     if limit and kind.split("_")[0] in ("greater", "less", "multiple"):
         return api_error(422, "pachimud.invalid_range", field=where, limit=limit)
     if limit and kind in ("string_too_short", "string_too_long", "too_short", "too_long"):

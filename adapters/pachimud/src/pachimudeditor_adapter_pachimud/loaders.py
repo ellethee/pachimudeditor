@@ -273,7 +273,7 @@ class LoaderTrigger(BaseModel):
     type: Literal["speech", "greet", "give", "random", "death"]
     argument: str = ""
     chance: int = Field(default=100, ge=1, le=100)
-    actions: list[str] = Field(min_length=1)
+    actions: list[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]] = Field(min_length=1)
 
 
 class LoaderMob(BaseModel):
