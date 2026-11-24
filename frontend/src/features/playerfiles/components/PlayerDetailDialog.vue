@@ -86,7 +86,6 @@
               dense
               single-sort
               :initial-sort="[]"
-              :auto-height="false"
               :no-data-label="t('playerFiles.empty')"
               :data-testid="`list-${list.name}`"
             />

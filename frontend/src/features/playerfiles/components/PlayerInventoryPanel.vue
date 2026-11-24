@@ -83,7 +83,6 @@
       :loading="loading"
       single-sort
       :initial-sort="[]"
-      :auto-height="false"
       :no-data-label="t('playerFiles.inventory.empty')"
       data-testid="inventory-table"
     >

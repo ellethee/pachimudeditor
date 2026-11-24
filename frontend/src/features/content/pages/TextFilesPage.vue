@@ -11,7 +11,6 @@
           single-sort
           :initial-sort="[]"
           dense
-          :auto-height="false"
           :no-data-label="t('content.empty')"
           data-testid="files-list"
         >

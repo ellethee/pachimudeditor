@@ -7,7 +7,6 @@
     single-sort
     :initial-sort="[]"
     dense
-    :auto-height="false"
     :no-data-label="t('content.empty')"
     :data-testid="testid"
     @row-click="(_e: Event, row: IListRow) => emit('select', row.id)"

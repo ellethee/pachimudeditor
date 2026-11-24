@@ -10,7 +10,6 @@
           :loading="loading"
           single-sort
           :initial-sort="[]"
-          :auto-height="false"
           :no-data-label="t('players.inventory.empty')"
         >
           <template #body-cell-actions="{ slotProps: { row } }">
