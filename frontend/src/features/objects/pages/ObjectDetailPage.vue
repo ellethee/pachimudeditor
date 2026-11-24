@@ -26,9 +26,7 @@
         />
       </div>
       <div class="col-12 col-lg-4">
-        <q-card flat bordered>
-          <q-card-section class="text-h6">{{ t('objects.detail.references') }}</q-card-section>
-          <q-separator />
+        <collapsible-card :title="t('objects.detail.references')" storage-key="object-references" testid="object-references">
           <q-list dense>
             <q-item-label header>{{ t('objects.detail.resets', { count: usage.length }) }}</q-item-label>
             <q-item v-for="(use, i) in usage" :key="i" clickable :to="useLink(use)">
@@ -39,7 +37,7 @@
             </q-item>
             <q-item v-if="usage.length === 0"><q-item-section class="text-grey">{{ t('objects.detail.none') }}</q-item-section></q-item>
           </q-list>
-        </q-card>
+        </collapsible-card>
       </div>
     </div>
   </div>
@@ -61,6 +59,7 @@ import { describeError } from '../helpers/describe-error'
 import { deleteObject, getObject, getObjectUsage, updateObject } from '../services/objects-api'
 import type { IObjectEnums, IObjects, IResetUsage } from '../types/objects'
 import SectionsForm from '../../shared/components/SectionsForm.vue'
+import CollapsibleCard from '../../shared/components/CollapsibleCard.vue'
 import StyleHints from '../../shared/components/StyleHints.vue'
 import ItemSpellHints from '../components/ItemSpellHints.vue'
 import { guardOf } from '../../shared/helpers/record-guard'

@@ -25,9 +25,7 @@
         />
       </div>
       <div class="col-12 col-lg-4">
-        <q-card flat bordered>
-          <q-card-section class="text-h6">{{ t('mobs.detail.references') }}</q-card-section>
-          <q-separator />
+        <collapsible-card :title="t('mobs.detail.references')" storage-key="mob-references" testid="mob-references">
           <q-list dense>
             <q-item-label header>{{ t('mobs.detail.resets', { count: usage.length }) }}</q-item-label>
             <q-item v-for="use in usage" :key="use.resetCommandId" clickable :to="{ path: `/zones/${use.zoneId}`, query: { tab: 'resets' } }">
@@ -38,7 +36,7 @@
             </q-item>
             <q-item v-if="usage.length === 0"><q-item-section class="text-grey">{{ t('mobs.detail.none') }}</q-item-section></q-item>
           </q-list>
-        </q-card>
+        </collapsible-card>
       </div>
     </div>
   </div>
@@ -60,6 +58,7 @@ import { describeError } from '../helpers/describe-error'
 import { deleteMob, getMob, getMobUsage, updateMob } from '../services/mobs-api'
 import type { IMobs, IResetUsage } from '../types/mobs'
 import SectionsForm from '../../shared/components/SectionsForm.vue'
+import CollapsibleCard from '../../shared/components/CollapsibleCard.vue'
 import StyleHints from '../../shared/components/StyleHints.vue'
 import { guardOf } from '../../shared/helpers/record-guard'
 import { useWorld } from '../../shared/helpers/world-state'

@@ -29,9 +29,7 @@
       </div>
 
       <div class="col-12 col-lg-4">
-        <q-card flat bordered>
-          <q-card-section class="text-h6">{{ t('rooms.detail.references') }}</q-card-section>
-          <q-separator />
+        <collapsible-card :title="t('rooms.detail.references')" storage-key="room-references" testid="room-references">
           <q-list separator>
             <q-expansion-item default-opened :icon="mdiLogin" :label="t('rooms.detail.incoming', { count: incoming.length })">
               <q-list dense>
@@ -56,7 +54,7 @@
               </q-list>
             </q-expansion-item>
           </q-list>
-        </q-card>
+        </collapsible-card>
       </div>
     </div>
   </div>
@@ -78,6 +76,7 @@ import { useRoomsStore } from '../stores/use-rooms-store'
 import { describeError } from '../utils/error-helper'
 import type { IIncomingExit, IResetUsage, IRoomDetail } from '../types/rooms'
 import SectionsForm from '../../shared/components/SectionsForm.vue'
+import CollapsibleCard from '../../shared/components/CollapsibleCard.vue'
 import StyleHints from '../../shared/components/StyleHints.vue'
 import { useWorld } from '../../shared/helpers/world-state'
 
