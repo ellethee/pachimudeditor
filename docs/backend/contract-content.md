@@ -46,6 +46,8 @@ Con `read_only` ogni scrittura risponde 409 `world.read_only`.
 - `GET|PUT|DELETE /content/files/{area}/{path}`: `{path, layer, text}`; `PUT` body `{text}` crea o sostituisce nello strato dell'utente (un `.yaml` deve leggersi ed essere una mappa o una lista).
   Percorso: lettere, cifre, `_ - . /`, estensione dell'area, niente `..`: altrimenti 422 `content.invalid_path`; 422 `content.too_large` (`max` in KB); 422 `content.invalid` se il testo non e' UTF-8 valido.
 
+- `GET /content/schemas/{name}` con `name` = `pachimud`, `character-class`, `race`, `zone`, `rooms`, `mobs`, `objects`, `resets` -> il JSON Schema (Draft 2020-12, con `$defs`/`$ref`) del file YAML del gioco, copia versionata in `adapters/pachimud/.../schemas/` di quello generato da `pachimud json-schema`; altro nome: 422. Serve all'editor YAML (validazione, completamento, hover); il test `test_json_schemas_match_the_game` (con `PACHIMUD_GAME_ROOT`) ne controlla l'allineamento.
+
 
 ## Negozi
 
