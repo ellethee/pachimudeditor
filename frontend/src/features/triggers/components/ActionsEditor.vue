@@ -179,8 +179,8 @@
         color="primary"
         :icon="mdiSourceBranch"
         :label="t('triggers.addIf')"
-        :disable="depth >= MAX_IF_DEPTH"
-        :title="depth >= MAX_IF_DEPTH ? t('triggers.maxDepth', { max: MAX_IF_DEPTH }) : undefined"
+        :disable="depth > MAX_IF_DEPTH"
+        :title="depth > MAX_IF_DEPTH ? t('triggers.maxDepth', { max: MAX_IF_DEPTH }) : undefined"
         data-testid="if-add"
         @click="emit('update:modelValue', [...modelValue, { if: {}, then: [''] }])"
       />
