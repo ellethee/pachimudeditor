@@ -71,17 +71,6 @@ export interface IMobs {
 /** Corpo di creazione/modifica (senza `id`). */
 export type IMobsInput = Omit<IMobs, 'id' | 'isTrainer'>
 
-/** Un trigger di un mob pachimud (`extra.triggers`). */
-export interface ITrigger {
-  type: 'speech' | 'greet' | 'give' | 'random' | 'death'
-  /** Vuoto = qualsiasi. */
-  argument: string
-  /** 1-100. */
-  chance: number
-  /** Comandi del mob, in ordine. */
-  actions: string[]
-}
-
 export interface IPaginatedMobs {
   items: IMobs[]
   total: number

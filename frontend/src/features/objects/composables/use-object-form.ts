@@ -10,6 +10,7 @@ import { createExtraEditor } from '../../shared/helpers/extra-fields'
 import { settleClearedFields } from '../../shared/helpers/optional-fields'
 import { guardOf, guardSection } from '../../shared/helpers/record-guard'
 import { useWorld } from '../../shared/helpers/world-state'
+import { buildTriggersSection, collectTriggers } from '../../triggers/helpers/section'
 import { buildGeneralRows, buildStatsRows } from '../helpers/field-rows'
 import { getEnums, nextObjectVnum } from '../services/objects-api'
 import type { IObjectEnums, IObjects, IObjectsInput } from '../types/objects'
@@ -92,7 +93,10 @@ export function useObjectForm() {
       guard.corrupted
         ? applyDescriptors(rows, 'object', fieldOf, t).map((row) => row.map((def) => ({ ...def, disable: true, readonly: true })))
         : applyDescriptors(rows, 'object', fieldOf, t)
+    // `extra.scripts` (pachimud): scheda propria con azioni e if/else
+    const hasScripts = extraFieldsOf('object').some((desc) => desc.name === 'scripts')
     const extraEditor = createExtraEditor({
+      exclude: hasScripts ? ['scripts'] : [],
       t,
       te,
       descriptors: extraFieldsOf('object'),
@@ -131,6 +135,9 @@ export function useObjectForm() {
         container: { type: 'expansion', title: t('objects.sections.stats'), defaultOpened: true },
       },
     ]
+    if (hasScripts) {
+      sections.push(buildTriggersSection('object', record?.extra, record?.vnum ?? null, locked, t('triggers.sections.scripts'), t('triggers.invalid'), 25))
+    }
     if (extraEditor) sections.push(extraEditor.section)
     const banner = guardSection(guard)
     if (banner) sections.unshift(banner)
@@ -160,6 +167,11 @@ export function useObjectForm() {
       // `extra` (campi specifici del mondo) solo con le chiavi cambiate
       const extra = extraEditor?.collect(results.extra)
       if (extra) body.extra = extra
+      if (hasScripts) {
+        // inviati solo se cambiati: un salvataggio che non li tocca lascia il campo com'è nel file
+        const next = collectTriggers('object', results, record?.extra)
+        if (next) body.extra = { ...body.extra, scripts: next }
+      }
       return body
     }
 

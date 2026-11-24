@@ -36,7 +36,7 @@ from pachimudeditor_adapter_pachimud.base import PachimudSupport
 from pachimudeditor_adapter_pachimud.loaders import LoaderRoom
 from pachimudeditor_adapter_pachimud.store import Item, plain
 
-ROOM_EXTRA = frozenset({"enabled", "area", "climate"})
+ROOM_EXTRA = frozenset({"enabled", "area", "climate", "triggers"})
 EXIT_EXTRA = frozenset({"isMale", "openCmd", "climb"})
 
 
@@ -87,6 +87,8 @@ class RoomsMixin(PachimudSupport):
             mapping.put(item.raw, "enabled", bool(extra["enabled"]), default=True)
         if "climate" in extra:
             mapping.put(item.raw, "climate", extra["climate"] or None)
+        if "triggers" in extra:
+            mapping.apply_triggers(item.raw, extra["triggers"], "room", "triggers")
         return norm_area(extra["area"]) if "area" in extra else ...
 
     # ------------------------------------------------------------------ stanze
@@ -123,6 +125,8 @@ class RoomsMixin(PachimudSupport):
                 mapping.put(raw, "enabled", bool(data.extra["enabled"]), default=True)
             if "climate" in data.extra:
                 mapping.put(raw, "climate", data.extra["climate"] or None)
+            if "triggers" in data.extra:
+                mapping.apply_triggers(raw, data.extra["triggers"], "room", "triggers")
             LoaderRoom.model_validate(plain(raw))
             file.list_of(create=True).append(raw)
             self.store.save(file)

@@ -11,8 +11,7 @@ import { guardOf, guardSection } from '../../shared/helpers/record-guard'
 import { settleClearedFields } from '../../shared/helpers/optional-fields'
 import { useWorld } from '../../shared/helpers/world-state'
 import InnField from '../../inns/components/InnField.vue'
-import TriggersField from '../components/TriggersField.vue'
-import { settledTriggers } from '../helpers/triggers'
+import { buildTriggersSection, collectTriggers } from '../../triggers/helpers/section'
 import ShopField from '../../shops/components/ShopField.vue'
 import { normalizeShop, shopProblems } from '../../shops/helpers/shop-defaults'
 import { buildCombatRows, buildIdentityRows, buildRoleRows } from '../helpers/field-rows'
@@ -196,32 +195,7 @@ export function useMobForm() {
       })
     }
     if (hasTriggers) {
-      const triggers = settledTriggers(record?.extra?.triggers)
-      sections.push({
-        key: 'triggers',
-        title: t('mobs.sections.triggers'),
-        component: markRaw(FieldsSection),
-        props: {
-          rows: [
-            [
-              {
-                field: 'triggers',
-                label: t('mobs.sections.triggers'),
-                component: markRaw(TriggersField),
-                readonly: locked,
-                mobVnum: record?.vnum ?? null,
-                rules: [
-                  (value: unknown) =>
-                    settledTriggers(value).every((x) => x.actions.length > 0 && x.chance >= 1 && x.chance <= 100 && Number.isInteger(x.chance)) ? true : t('mobs.triggers.noActions'),
-                ],
-              },
-            ],
-          ],
-        },
-        initialValue: { triggers },
-        order: 37,
-        container: { type: 'expansion', title: t('mobs.sections.triggers'), defaultOpened: triggers.length > 0 },
-      })
+      sections.push(buildTriggersSection('mob', record?.extra, record?.vnum ?? null, locked, t('triggers.sections.triggers'), t('triggers.invalid'), 37))
     }
     if (extraEditor) sections.push(extraEditor.section)
     const banner = guardSection(guard)
@@ -260,8 +234,8 @@ export function useMobForm() {
       }
       if (hasTriggers) {
         // inviati solo se cambiati: un salvataggio che non li tocca lascia il campo com'è nel file
-        const next = settledTriggers((results.triggers as { triggers?: unknown } | undefined)?.triggers)
-        if (JSON.stringify(next) !== JSON.stringify(settledTriggers(record?.extra?.triggers))) body.extra = { ...body.extra, triggers: next }
+        const next = collectTriggers('mob', results, record?.extra)
+        if (next) body.extra = { ...body.extra, triggers: next }
       }
       if (hasInn) {
         const next = !!(results.inn as { receptionist?: unknown } | undefined)?.receptionist

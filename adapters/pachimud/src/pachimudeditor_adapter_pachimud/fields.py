@@ -26,14 +26,14 @@ EXTRA: dict[ResourceType, list[ExtraFieldDescriptor]] = {
         xf("zoneId"), xf("description", "text"), xf("folder", ro=True), xf("climate", "enum", "climate"), xf("prototypesOnly", "boolean"),
         xf("extendsZone", "number", nullable=True),
     ],
-    "room": [xf("enabled", "boolean"), xf("area"), xf("climate", "enum", "climate", nullable=True)],
+    "room": [xf("enabled", "boolean"), xf("area"), xf("climate", "enum", "climate", nullable=True), xf("triggers", "json")],
     "mob": [
         xf("area"), xf("name"), xf("attacks", "number"), xf("persona", "text"), xf("strength", "number"), xf("dexterity", "number"), xf("constitution", "number"),
         xf("intelligence", "number"), xf("wisdom", "number"), xf("charisma", "number"),
         xf("postmaster", "boolean"), xf("receptionist", "boolean"), xf("weaponImmunity", "number", nullable=True),
         xf("breath", "flags"), xf("breathCost", "number"), xf("shop", "json"), xf("triggers", "json"),
     ],
-    "object": [xf("area"), xf("extraDescriptions", "json"), xf("typeFields", "json")],
+    "object": [xf("area"), xf("extraDescriptions", "json"), xf("typeFields", "json"), xf("scripts", "json")],
     "exit": [xf("isMale", "boolean"), xf("openCmd", "enum", "openCmd", nullable=True), xf("climb", "boolean")],
 }  # fmt: skip
 """Risorsa -> chiavi di `extra` emesse."""

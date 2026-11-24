@@ -12,9 +12,9 @@ un file valido per il gioco lo e' anche qui e viceversa. Regole del gioco che co
 """
 
 import re
-from typing import Annotated, Any, Literal, Optional
+from typing import Annotated, Any, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, TypeAdapter, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag, StringConstraints, TypeAdapter, field_validator, model_validator
 
 from pachimudeditor.common.enums import Direction, DoorFlag, SectorType, Sex, ZoneResetMode
 
@@ -176,6 +176,98 @@ class LoaderExtraDescription(BaseModel):
     text: str
 
 
+TRIGGER_TYPES = (
+    "speech",
+    "greet",
+    "give",
+    "random",
+    "death",
+    "fight",
+    "hitprcnt",
+    "act",
+    "tell",
+    "bribe",
+    "get",
+    "drop",
+    "wear",
+    "enter",
+    "exit",
+)
+"""Tutti gli eventi dei trigger (come `TriggerType` del gioco)."""
+OWNER_TYPES: dict[str, tuple[str, ...]] = {
+    "mob": ("speech", "greet", "give", "random", "death", "fight", "hitprcnt", "act", "tell", "bribe"),
+    "object": ("get", "drop", "wear", "give"),
+    "room": ("enter", "exit", "speech"),
+}
+"""Gli eventi ammessi per chi possiede il trigger (`OWNER_TYPES` del gioco)."""
+MAX_IF_DEPTH = 3
+"""Quanti `if` possono stare uno dentro l'altro."""
+
+
+class LoaderCondition(BaseModel):
+    """Le verifiche di un `if` (copia di `Condition` del gioco); le chiavi sconosciute si tengono: le segnala `content.validate`."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    chance: Optional[int] = Field(default=None, ge=1, le=100)
+    level: Union[int, str, None] = None
+    hp: Union[int, str, None] = None
+    sex: Optional[Literal["male", "female", "other"]] = None
+    race: Optional[str] = None
+    class_: Optional[str] = Field(default=None, alias="class")
+    carries: Optional[str] = None
+    is_player: Optional[bool] = None
+    who: Literal["n", "i"] = "n"
+
+
+class LoaderIfBlock(BaseModel):
+    """Un blocco `{if, then, else}` tra le azioni di un trigger."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    if_: LoaderCondition = Field(alias="if")
+    then: list["LoaderAction"] = Field(min_length=1)
+    else_: list["LoaderAction"] = Field(default_factory=list, alias="else")
+
+
+LoaderAction = Annotated[
+    Union[
+        Annotated[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)], Tag("str")],
+        Annotated[LoaderIfBlock, Tag("block")],
+    ],
+    Discriminator(lambda v: "block" if isinstance(v, (dict, LoaderIfBlock)) else "str"),
+]
+"""Un'azione: un comando (stringa non vuota) o un blocco `if`; il discriminatore tiene leggibile il percorso degli errori."""
+LoaderIfBlock.model_rebuild()
+
+
+def if_depth(actions: list[Any]) -> int:
+    """Quanti `if` stanno uno dentro l'altro, al massimo."""
+    return max((1 + if_depth([*a.then, *a.else_]) for a in actions if isinstance(a, LoaderIfBlock)), default=0)
+
+
+class LoaderTrigger(BaseModel):
+    """Un trigger di mob, oggetto (`scripts`) o stanza (copia di `Trigger` del gioco): a `type` il proprietario esegue le `actions`."""
+
+    type: Literal[
+        "speech", "greet", "give", "random", "death", "fight", "hitprcnt", "act", "tell", "bribe", "get", "drop", "wear", "enter", "exit"
+    ]
+    argument: str = ""
+    chance: int = Field(default=100, ge=1, le=100)
+    actions: list[LoaderAction] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _check(self) -> "LoaderTrigger":
+        """`hitprcnt` e `bribe` vogliono un numero positivo (`hitprcnt` fino a 100); al massimo 3 `if` annidati."""
+        if self.type in ("hitprcnt", "bribe") and not (self.argument.strip().isdigit() and int(self.argument) >= 1):
+            raise ValueError(f"il trigger {self.type} vuole in argument un numero positivo")
+        if self.type == "hitprcnt" and int(self.argument) > 100:
+            raise ValueError("hitprcnt: la percentuale e' al massimo 100")
+        if if_depth(self.actions) > MAX_IF_DEPTH:
+            raise ValueError(f"al massimo {MAX_IF_DEPTH} if uno dentro l'altro")
+        return self
+
+
 class LoaderRoom(BaseModel):
     """Una voce di `rooms*.yaml`."""
 
@@ -194,6 +286,7 @@ class LoaderRoom(BaseModel):
     """Clima della stanza; vuoto = quello della zona."""
     exits: dict[str, LoaderExit] = {}
     extra_descriptions: list[LoaderExtraDescription] = []
+    triggers: list[LoaderTrigger] = []
 
     @field_validator("sector_type")
     @classmethod
@@ -261,19 +354,6 @@ class LoaderShop(BaseModel):
         if unknown:
             raise ValueError(f"messaggi sconosciuti {sorted(unknown)}, attesi tra: {', '.join(SHOP_MESSAGE_KEYS)}")
         return value
-
-
-TRIGGER_TYPES = ("speech", "greet", "give", "random", "death")
-"""Gli eventi dei trigger dei mob (fase 1 del gioco)."""
-
-
-class LoaderTrigger(BaseModel):
-    """Un trigger di un mob (copia di `Trigger` del gioco): a `type` il mob esegue le `actions`."""
-
-    type: Literal["speech", "greet", "give", "random", "death"]
-    argument: str = ""
-    chance: int = Field(default=100, ge=1, le=100)
-    actions: list[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]] = Field(min_length=1)
 
 
 class LoaderMob(BaseModel):
@@ -367,6 +447,7 @@ class ObjectBaseProto(BaseModel):
     wear_flags: list[str] = []
     affects: dict[str, int] = {}
     extra_descriptions: list[LoaderExtraDescription] = []
+    scripts: list[LoaderTrigger] = []
 
     @field_validator("affects")
     @classmethod

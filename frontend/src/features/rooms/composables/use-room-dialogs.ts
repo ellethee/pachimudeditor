@@ -9,6 +9,7 @@ import { applyDescriptors, enumNames } from '../../shared/helpers/descriptor-row
 import { createExtraEditor } from '../../shared/helpers/extra-fields'
 import { LOCKED_DIALOG_CLASS, guardOf, guardSection } from '../../shared/helpers/record-guard'
 import { useWorld } from '../../shared/helpers/world-state'
+import { buildTriggersSection, collectTriggers } from '../../triggers/helpers/section'
 import ExitsSection from '../components/ExitsSection.vue'
 import ExtraDescriptionsSection from '../components/ExtraDescriptionsSection.vue'
 import {
@@ -189,7 +190,10 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
     const exitEditable = exitExtra.filter((field) => !field.readOnly).map((field) => field.name)
     const guard = guardOf(detail?.extra)
     const locked = readOnly.value || guard.corrupted
+    // `extra.triggers` (pachimud): scheda propria con azioni e if/else
+    const hasTriggers = extraFieldsOf('room').some((desc) => desc.name === 'triggers')
     const extraEditor = createExtraEditor({
+      exclude: hasTriggers ? ['triggers'] : [],
       t,
       te,
       descriptors: extraFieldsOf('room'),
@@ -247,6 +251,9 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
         container: { type: 'card', flat: true, bordered: true, class: 'q-pa-md' },
       },
     ]
+    if (hasTriggers) {
+      sections.push(buildTriggersSection('room', detail?.extra, detail?.vnum ?? null, locked, t('triggers.sections.triggers'), t('triggers.invalid'), 35))
+    }
     if (extraEditor) sections.push(extraEditor.section)
     const banner = guardSection(guard)
     if (banner) sections.unshift(banner)
@@ -278,6 +285,11 @@ export function useRoomDialogs(onSaved: () => void | Promise<void>) {
         // `extra` (campi specifici del mondo) solo con le chiavi cambiate
         const extra = extraEditor?.collect(results.extra)
         if (extra) body.extra = extra
+        if (hasTriggers) {
+          // inviati solo se cambiati: un salvataggio che non li tocca lascia il campo com'è nel file
+          const next = collectTriggers('room', results, detail?.extra)
+          if (next) body.extra = { ...body.extra, triggers: next }
+        }
         if (roomId === null) {
           roomId = (await createRoom(body, quiet)).id
         } else {

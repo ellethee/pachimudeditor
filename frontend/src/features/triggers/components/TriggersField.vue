@@ -1,7 +1,7 @@
 <template>
   <div class="column q-gutter-y-md" data-testid="triggers-field">
-    <q-banner dense rounded class="bg-grey-3 text-dark" data-testid="triggers-hint">{{ t('mobs.triggers.hint') }}</q-banner>
-    <div v-if="rows.length === 0" class="text-caption text-grey-8" data-testid="triggers-none">{{ t('mobs.triggers.none') }}</div>
+    <q-banner dense rounded class="bg-grey-3 text-dark" data-testid="triggers-hint">{{ t(`triggers.hint.${owner}`) }}</q-banner>
+    <div v-if="rows.length === 0" class="text-caption text-grey-8" data-testid="triggers-none">{{ t(`triggers.none.${owner}`) }}</div>
     <q-card v-for="(row, index) in rows" :key="row.key" flat bordered data-testid="trigger-row">
       <q-card-section class="column q-gutter-y-sm">
         <div class="row q-col-gutter-md items-start">
@@ -14,7 +14,7 @@
             emit-value
             map-options
             :options="typeOptions"
-            :label="t('mobs.triggers.type')"
+            :label="t('triggers.type')"
             :readonly="readonly"
             data-testid="trigger-type"
             @update:model-value="changed"
@@ -25,9 +25,11 @@
             outlined
             dense
             stack-label
-            :label="t('mobs.triggers.argument')"
-            :hint="t('mobs.triggers.argumentHint')"
+            :label="t('triggers.argument')"
+            :hint="t(`triggers.argumentHints.${row.type}`, '')"
             :readonly="readonly"
+            :error="!argumentOk(row)"
+            :error-message="t('triggers.badArgument')"
             data-testid="trigger-argument"
             @update:model-value="changed"
           />
@@ -40,27 +42,22 @@
             outlined
             dense
             stack-label
-            :label="t('mobs.triggers.chance')"
+            :label="t('triggers.chance')"
             :readonly="readonly"
             :error="!validChance(row.chance)"
-            :error-message="t('mobs.triggers.badChance')"
+            :error-message="t('triggers.badChance')"
             data-testid="trigger-chance"
             @update:model-value="changed"
           />
-          <q-btn v-if="!readonly" flat round dense color="negative" :icon="mdiDelete" :title="t('mobs.triggers.remove')" data-testid="trigger-remove" @click="remove(index)" />
+          <q-btn v-if="!readonly" flat round dense color="negative" :icon="mdiDelete" :title="t('triggers.remove')" data-testid="trigger-remove" @click="remove(index)" />
         </div>
-        <q-input
+        <div class="text-caption text-grey-8">{{ t('triggers.actions') }}</div>
+        <actions-editor
           v-model="row.actions"
-          type="textarea"
-          autogrow
-          outlined
-          dense
-          stack-label
-          :label="t('mobs.triggers.actions')"
+          :owner="owner"
           :readonly="readonly"
-          :error="actionList(row).length === 0"
-          :error-message="t('mobs.triggers.noActions')"
-          input-style="font-family: monospace"
+          :races="races"
+          :classes="classes"
           data-testid="trigger-actions"
           @update:model-value="changed"
         />
@@ -79,26 +76,33 @@
       </q-card-section>
     </q-card>
     <div v-if="!readonly">
-      <q-btn flat no-caps color="primary" :icon="mdiPlus" :label="t('mobs.triggers.add')" data-testid="trigger-add" @click="add" />
+      <q-btn flat no-caps color="primary" :icon="mdiPlus" :label="t(`triggers.add.${owner}`)" data-testid="trigger-add" @click="add" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 /**
- * Scheda «Trigger» di un mob pachimud: il campo `triggers:` (`extra.triggers`), una lista di trigger con evento, argomento, probabilità e
- * azioni (un comando per riga). Sotto ogni trigger compaiono i problemi `trigger-command-unknown` / `trigger-variable-unknown` dell'ultimo
- * controllo dei contenuti (`content.validate`) che riguardano questo mob. Componente custom di `FieldsSection`.
+ * Scheda «Trigger» di un mob o di una stanza e «Script» di un oggetto pachimud (`extra.triggers` / `extra.scripts`): una lista di
+ * trigger con evento, argomento, probabilità e azioni (comandi e blocchi `if`/`else`, vedi `ActionsEditor`). Sotto ogni trigger
+ * compaiono i problemi dell'ultimo controllo dei contenuti (`content.validate`) che riguardano quella voce. Componente custom di
+ * `FieldsSection`.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { mdiDelete, mdiPlus } from '@quasar/extras/mdi-v7'
 import { useContentLive } from '../../content/composables/use-content-live'
 import type { IContentIssue } from '../../content/types/content-files'
+import { listClasses, listRaces } from '../../mobs/services/mobs-api'
 import { settledTriggers, triggerIndexOf, TRIGGER_TYPES } from '../helpers/triggers'
-import type { ITrigger } from '../types/mobs'
+import type { ITrigger, TAction, TriggerOwner } from '../types/triggers'
+import ActionsEditor from './ActionsEditor.vue'
 
-const props = withDefaults(defineProps<{ modelValue?: unknown; readonly?: boolean; mobVnum?: number | null }>(), { readonly: false, mobVnum: null })
+const props = withDefaults(defineProps<{ modelValue?: unknown; readonly?: boolean; owner?: TriggerOwner; vnum?: number | null }>(), {
+  readonly: false,
+  owner: 'mob',
+  vnum: null,
+})
 const emit = defineEmits<{ 'update:modelValue': [value: ITrigger[]] }>()
 
 const { t, te } = useI18n()
@@ -109,37 +113,42 @@ interface IRow {
   type: string
   argument: string
   chance: number
-  actions: string
+  actions: TAction[]
 }
 
 let seq = 0
-/** Le righe del form (le azioni come testo, una per riga). */
+/** Le righe del form. */
 function toRows(value: unknown): IRow[] {
-  return (Array.isArray(value) ? (value as ITrigger[]) : []).map((x) => ({
-    key: seq++,
-    type: x.type,
-    argument: x.argument ?? '',
-    chance: x.chance ?? 100,
-    actions: (x.actions ?? []).join('\n'),
-  }))
+  return settledTriggers(value).map((x) => ({ key: seq++, ...x }))
 }
 
 const rows = ref<IRow[]>(toRows(props.modelValue))
-const typeOptions = computed(() => TRIGGER_TYPES.map((value) => ({ value, label: t(`mobs.triggers.types.${value}`) })))
+const typeOptions = computed(() => TRIGGER_TYPES[props.owner].map((value) => ({ value, label: t(`triggers.types.${value}`) })))
 
-/** Le azioni di una riga: righe non vuote, senza spazi ai bordi. */
-function actionList(row: IRow): string[] {
-  return row.actions.split('\n').map((s) => s.trim()).filter(Boolean)
-}
+/** Razze e classi del mondo, per i suggerimenti delle condizioni (senza cataloghi si scrive l'id a mano). */
+const races = ref<{ id: string; name: string }[]>([])
+const classes = ref<{ id: string; name: string }[]>([])
+onMounted(async () => {
+  if (props.readonly) return
+  races.value = await listRaces().catch(() => [])
+  classes.value = await listClasses().catch(() => [])
+})
 
 /** `true` se la probabilità è un intero da 1 a 100. */
 function validChance(value: unknown): boolean {
   return Number.isInteger(value) && (value as number) >= 1 && (value as number) <= 100
 }
 
+/** `hitprcnt` e `bribe` vogliono un numero positivo (`hitprcnt` fino a 100). */
+function argumentOk(row: IRow): boolean {
+  if (row.type !== 'hitprcnt' && row.type !== 'bribe') return true
+  const text = row.argument.trim()
+  return /^\d+$/.test(text) && Number(text) >= 1 && (row.type !== 'hitprcnt' || Number(text) <= 100)
+}
+
 /** Il valore da salvare (campi nell'ordine del backend). */
 function current(): ITrigger[] {
-  return rows.value.map((r) => ({ type: r.type, argument: r.argument ?? '', chance: r.chance, actions: actionList(r) }) as ITrigger)
+  return settledTriggers(rows.value.map((r) => ({ type: r.type, argument: r.argument ?? '', chance: r.chance, actions: r.actions })))
 }
 
 function changed(): void {
@@ -147,7 +156,7 @@ function changed(): void {
 }
 
 function add(): void {
-  rows.value.push({ key: seq++, type: 'speech', argument: '', chance: 100, actions: '' })
+  rows.value.push({ key: seq++, type: TRIGGER_TYPES[props.owner][0]!, argument: '', chance: 100, actions: [''] })
   changed()
 }
 
@@ -164,11 +173,11 @@ watch(
   },
 )
 
-/** I problemi di trigger del mob, con l'indice del trigger. */
+/** I problemi di trigger (o di condizioni dentro i trigger) della voce, con l'indice del trigger. */
 const mine = computed(() =>
   issues.value
     .map((issue, i) => ({ issue, target: targets.value[i] }))
-    .filter((x) => x.issue.code.startsWith('trigger-') && x.target?.kind === 'mob' && x.target.vnum === props.mobVnum)
+    .filter((x) => x.target?.kind === props.owner && x.target.vnum === props.vnum && triggerIndexOf(x.issue.message) >= 0)
     .map((x) => ({ issue: x.issue, index: triggerIndexOf(x.issue.message) })),
 )
 
