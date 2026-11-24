@@ -78,16 +78,16 @@
               :hint="t('playerFiles.edit.listHint')"
               :data-testid="`edit-list-${list.name}`"
             />
-            <q-table
+            <pachi-table2
               v-else
               :rows="listRows(list.name)"
               :columns="listColumns(list)"
               row-key="__row"
               dense
-              flat
-              bordered
-              :rows-per-page-options="[0]"
               hide-pagination
+              single-sort
+              :initial-sort="[]"
+              :auto-height="false"
               :no-data-label="t('playerFiles.empty')"
               :data-testid="`list-${list.name}`"
             />
@@ -157,6 +157,7 @@ import { useDialogPluginComponent, useQuasar } from 'quasar'
 import type { QTableColumn } from 'quasar'
 import { mdiLightningBolt, mdiPencil } from '@quasar/extras/mdi-v7'
 import { PachiDialog } from '@ilpachi/pachi-kit/dialog'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import { describeError } from '../../players/helpers/describe-error'
 import JsonField from '../../shared/components/JsonField.vue'
 import { useWorld } from '../../shared/helpers/world-state'

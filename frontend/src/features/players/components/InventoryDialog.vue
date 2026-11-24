@@ -2,19 +2,19 @@
   <pachi-dialog ref="dialogRef" :title="t('players.inventory.title', { name: characterName })" min-width="640px" max-width="95vw" @hide="onDialogHide()">
       <div>
         <q-banner v-if="error" class="bg-negative text-white q-mb-sm" rounded>{{ error }}</q-banner>
-        <q-table
+        <pachi-table2
           :rows="items"
           :columns="columns"
           row-key="id"
           dense
-          flat
-          bordered
           :loading="loading"
-          :rows-per-page-options="[0]"
           hide-pagination
+          single-sort
+          :initial-sort="[]"
+          :auto-height="false"
           :no-data-label="t('players.inventory.empty')"
         >
-          <template #body-cell-actions="{ row }">
+          <template #body-cell-actions="{ slotProps: { row } }">
             <q-td auto-width>
               <q-btn
                 v-if="row.containerInstanceId === null"
@@ -29,7 +29,7 @@
               <q-btn flat round dense :icon="mdiDelete" :aria-label="t('players.inventory.remove')" :disable="readOnly" @click="remove(row)" />
             </q-td>
           </template>
-        </q-table>
+        </pachi-table2>
       </div>
       <template #actions>
         <div class="row full-width justify-between">
@@ -56,6 +56,7 @@ import {
   setItemSlot,
 } from '../services/players-api'
 import type { IInventoryItem, IObjectRef } from '../types/players'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import { PachiDialog } from '@ilpachi/pachi-kit/dialog'
 import PickerDialog from './PickerDialog.vue'
 

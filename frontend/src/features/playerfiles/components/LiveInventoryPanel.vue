@@ -45,25 +45,25 @@
       </div>
     </div>
 
-    <q-table
+    <pachi-table2
       :rows="inventory?.items ?? []"
       :columns="columns"
       row-key="ref"
       dense
-      flat
-      bordered
       :loading="loading"
-      :rows-per-page-options="[0]"
       hide-pagination
+      single-sort
+      :initial-sort="[]"
+      :auto-height="false"
       :no-data-label="t('playerFiles.inventory.empty')"
       data-testid="live-inventory-table"
     >
-      <template #body-cell-name="{ row }">
+      <template #body-cell-name="{ slotProps: { row } }">
         <q-td :data-testid="`live-inventory-name-${row.ref}`">
           <span :style="{ paddingLeft: `${row.depth * 16}px` }">{{ row.shortDescription || row.name || '—' }}</span>
         </q-td>
       </template>
-      <template #body-cell-actions="{ row }">
+      <template #body-cell-actions="{ slotProps: { row } }">
         <q-td auto-width>
           <template v-if="canEdit">
             <q-btn flat round dense color="primary" :icon="mdiPencil" :aria-label="t('playerFiles.liveInv.editItem', { name: row.shortDescription })" :data-testid="`live-inventory-edit-${row.ref}`" @click="edit(row.ref)">
@@ -75,7 +75,7 @@
           </template>
         </q-td>
       </template>
-    </q-table>
+    </pachi-table2>
   </div>
 </template>
 
@@ -91,6 +91,7 @@ import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import type { QTableColumn } from 'quasar'
 import { mdiDelete, mdiPencil, mdiPlus, mdiRefresh } from '@quasar/extras/mdi-v7'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import { describeError } from '../../players/helpers/describe-error'
 import { listObjects } from '../../objects/services/objects-api'
 import { errorCode } from '../helpers/error-code'

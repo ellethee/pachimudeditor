@@ -75,20 +75,20 @@
       </div>
     </div>
 
-    <q-table
+    <pachi-table2
       :rows="inventory?.items ?? []"
       :columns="columns"
       row-key="id"
       dense
-      flat
-      bordered
       :loading="loading"
-      :rows-per-page-options="[0]"
       hide-pagination
+      single-sort
+      :initial-sort="[]"
+      :auto-height="false"
       :no-data-label="t('playerFiles.inventory.empty')"
       data-testid="inventory-table"
     >
-      <template #body-cell-name="{ row }">
+      <template #body-cell-name="{ slotProps: { row } }">
         <q-td>
           <span :style="{ paddingLeft: `${row.depth * 16}px` }">{{ row.name || '—' }}</span>
           <q-chip v-if="!row.known" dense color="grey-6" text-color="white" class="q-ml-sm">
@@ -96,7 +96,7 @@
           </q-chip>
         </q-td>
       </template>
-      <template #body-cell-where="{ row }">
+      <template #body-cell-where="{ slotProps: { row } }">
         <q-td>
           <q-select
             v-if="canWrite && row.depth === 0"
@@ -114,7 +114,7 @@
           <span v-else>{{ whereOf(row) }}</span>
         </q-td>
       </template>
-      <template #body-cell-actions="{ row }">
+      <template #body-cell-actions="{ slotProps: { row } }">
         <q-td auto-width>
           <q-btn
             flat
@@ -131,7 +131,7 @@
           </q-btn>
         </q-td>
       </template>
-    </q-table>
+    </pachi-table2>
   </div>
 </template>
 
@@ -145,6 +145,7 @@ import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import type { QTableColumn } from 'quasar'
 import { mdiDelete, mdiPlus } from '@quasar/extras/mdi-v7'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import { describeError } from '../../players/helpers/describe-error'
 import { listObjects } from '../../objects/services/objects-api'
 import { errorCode } from '../helpers/error-code'

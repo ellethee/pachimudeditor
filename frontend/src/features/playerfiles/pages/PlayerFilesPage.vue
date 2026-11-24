@@ -62,6 +62,8 @@
       :can-edit="typed"
       :extra-params="extraParams"
       hide-toolbar
+      single-sort
+      :initial-sort="[{ column: 'name', direction: 'asc' }]"
       error-banner
       dense
       data-testid="players-table"
