@@ -1,7 +1,9 @@
 <template>
   <div class="column q-gutter-md">
     <q-banner v-if="error" rounded class="bg-negative text-white" data-testid="form-error">{{ error }}</q-banner>
-    <sections-container ref="container" :sections="sections" :common-props="readonly ? { readonly: true } : {}" />
+    <pachi-scroll-area :offset="readonly ? 0 : FOOTER_HEIGHT">
+      <sections-container ref="container" :sections="sections" :common-props="readonly ? { readonly: true } : {}" />
+    </pachi-scroll-area>
     <q-banner v-if="error && !readonly" dense rounded class="bg-negative text-white" data-testid="form-error-bottom">{{ error }}</q-banner>
     <div v-if="!readonly" class="row items-center q-gutter-sm">
       <q-btn
@@ -27,8 +29,12 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { mdiContentSave } from '@quasar/extras/mdi-v7'
+import { PachiScrollArea } from '@ilpachi/pachifastquasar'
 import { SectionsContainer } from '@ilpachi/pachi-kit/edit-dialog'
 import type { ISectionDefinition, SectionsContainerExpose } from '@ilpachi/pachi-kit/edit-dialog'
+
+/** Altezza (px) riservata sotto il contenuto scorrevole: errore in fondo, gap e riga Salva / Annulla modifiche. */
+const FOOTER_HEIGHT = 72
 
 defineProps<{
   sections: ISectionDefinition[]
