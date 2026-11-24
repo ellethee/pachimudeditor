@@ -10,7 +10,6 @@ export default [
       descriptionKey: 'transfer.description',
       icon: mdiSwapVertical,
       order: 70,
-      pageScroll: true,
     },
     component: () => import('./pages/TransferPage.vue'),
   },
