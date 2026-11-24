@@ -79,7 +79,7 @@ describe('bacheche', () => {
   it('la posta mostra solo i conteggi, mai il testo', async () => {
     await goto(s.page, '/boards')
     await s.page.getByTestId('boards-tab-mail').click()
-    await s.page.getByTestId('mail-table').waitFor()
+    await s.page.getByTestId('mail-table').getByText('aldo').waitFor() // la tabella compare prima dei dati
     assert.match(await s.page.getByTestId('mail-total').innerText(), /3/)
     const text = await s.page.getByTestId('mail-table').innerText()
     assert.match(text, /aldo/)
