@@ -31,6 +31,7 @@ app.command("serve")(serve.serve)
 app.command("info")(info.info)
 app.command("schema")(schema.schema)
 app.command("build-frontend")(frontend.build_frontend)
+app.command("dev")(frontend.dev)
 
 
 @app.callback()

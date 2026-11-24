@@ -444,3 +444,19 @@ def test_schema_command_stdout_and_write(workdir: Path) -> None:
     assert out.exit_code == 0 and '"title": "pachimudeditor.yaml"' in out.output
     assert runner.invoke(app, ["schema", "--write", "--workdir", str(workdir)]).exit_code == 0
     assert (workdir / "pachimudeditor.schema.json").is_file()
+
+
+def test_dev_runs_pnpm_dev_with_proxy(workdir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`dev` lancia `pnpm dev` nel frontend con `QCLI_PROXY_TARGET` da `--api-url`; `--skip-install` salta l'install."""
+    fe = _frontend_checkout(workdir)
+    monkeypatch.setattr(frontend.shutil, "which", lambda _name: "/usr/bin/pnpm")
+    calls: list[tuple[list[str], dict[str, str]]] = []
+
+    def fake_run(cmd: list[str], cwd: Path, check: bool, env: dict[str, str] | None = None) -> None:
+        """Registra comando e ambiente."""
+        calls.append((cmd, env or {}))
+
+    monkeypatch.setattr(frontend.subprocess, "run", fake_run)
+    result = runner.invoke(app, ["dev", "--frontend-dir", str(fe), "--api-url", "http://x:1", "--skip-install"])
+    assert result.exit_code == 0, result.output
+    assert [c for c, _ in calls] == [["/usr/bin/pnpm", "dev"]] and calls[0][1]["QCLI_PROXY_TARGET"] == "http://x:1"

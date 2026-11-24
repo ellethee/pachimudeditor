@@ -24,6 +24,7 @@ uv run ruff check . && uv run ruff format --check .   # gruppo dev "ruff": uv ru
 (cd frontend && pnpm install && pnpm run typecheck)   # typecheck = quasar prepare + vue-tsc
 (cd frontend && pnpm dev)                              # dev server Quasar
 uv run pachimudeditor build-frontend      # pnpm build + copia in src/pachimudeditor/static (git-ignored)
+uv run pachimudeditor dev                 # dev server del frontend (pnpm dev, :9010, proxy /api -> :8123; --api-url, QCLI_*/VITE_* come build-frontend)
 
 (cd e2e && pnpm install && pnpm test)                  # Playwright su stack isolato (porta 8124); richiede frontend buildato
 (cd e2e && pnpm test tests/zones.test.ts)              # un solo file e2e

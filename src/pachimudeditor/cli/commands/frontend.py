@@ -1,4 +1,4 @@
-"""`pachimudeditor build-frontend`: solo sviluppo, builda la SPA e la copia in `pachimudeditor/static`."""
+"""`pachimudeditor build-frontend` e `dev`: solo sviluppo, builda la SPA (o la serve in dev) dal checkout."""
 
 import os
 import shutil
@@ -85,3 +85,35 @@ def build_frontend(
     target = PACKAGE_DIR / "static"
     copy_spa(root / "dist" / "spa", target)
     console.print(f"SPA copiata in {target}", highlight=False)
+
+
+@handle_errors
+def dev(
+    ctx: typer.Context,
+    workdir: WorkdirOption = None,
+    frontend_dir: Annotated[Path | None, typer.Option("--frontend-dir", help="Cartella dei sorgenti del frontend.")] = None,
+    api_url: Annotated[
+        str | None,
+        typer.Option("--api-url", help="Backend a cui il dev server inoltra /api (default: QCLI_PROXY_TARGET o http://localhost:8123)."),
+    ] = None,
+    skip_install: Annotated[bool, typer.Option("--skip-install", help="Non eseguire `pnpm install`.")] = False,
+) -> None:
+    """Avvia il dev server del frontend (`pnpm dev`, http://localhost:9010) con hot reload.
+
+    Serve il backend a parte (`pachimudeditor serve`, porta 8123). Le variabili `QCLI_*`/`VITE_*` si leggono come per `build-frontend`.
+    """
+    pnpm = shutil.which("pnpm")
+    if pnpm is None:
+        raise typer.BadParameter("pnpm non trovato nel PATH.")
+    root = find_frontend_dir(frontend_dir)
+    dev_env = read_build_env(use_workdir(workdir or ctx.obj))
+    if api_url:
+        dev_env["QCLI_PROXY_TARGET"] = api_url
+    if not skip_install:
+        subprocess.run([pnpm, "install", "--frozen-lockfile"], cwd=root, check=True)
+    if dev_env:
+        console.print(f"Variabili: {', '.join(sorted(dev_env))}", highlight=False)
+    try:
+        subprocess.run([pnpm, "dev"], cwd=root, check=True, env={**os.environ, **dev_env})
+    except KeyboardInterrupt:
+        console.print("Dev server fermato.", highlight=False)

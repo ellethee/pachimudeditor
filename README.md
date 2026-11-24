@@ -62,6 +62,7 @@ Senza nessun mondo configurato il server parte lo stesso (`/api/worlds` vuoto) e
 | `pachimudeditor worlds list\|check` | mondi configurati (id/kind/capability/sola lettura) e salute (path, numero di zone, per pachimud revisione e stato dello schema con gli avvisi), piu' i kind disponibili e quelli da installare; `check` esce 1 se fallisce |
 | `pachimudeditor live (--world ID \| --socket PATH) [--token-env VAR] <comando>` | client sottile del canale live verso un MUD acceso (`status`, `ping`, `info`, `who`, `player get\|set`, `zone list\|reset`, `load mob\|obj`, `echo`): JSON su stdout, exit code 0-5; token solo da variabile d'ambiente (vedi `docs/backend/live-control-protocol.md`) |
 | `pachimudeditor build-frontend [--skip-install] [--frontend-dir D]` | solo sviluppo: `pnpm install/build` + copia in `src/pachimudeditor/static` |
+| `pachimudeditor dev [--api-url U] [--skip-install] [--frontend-dir D]` | solo sviluppo: dev server del frontend (`pnpm dev`, http://localhost:9010, hot reload), `/api` inoltrato a `--api-url` (default :8123); il backend va avviato a parte con `serve` |
 | `pachimudeditor info [-w DIR]` | versioni, adapter installati/mancanti, cartella di lavoro, file di config, frontend presente |
 | `pachimudeditor --version`, `--workdir` (globale) | |
 
