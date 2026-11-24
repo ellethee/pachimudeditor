@@ -11,6 +11,11 @@ export interface ICondition {
   class?: string
   carries?: string
   is_player?: boolean
+  time?: number | string
+  is_night?: boolean
+  is_fighting?: boolean
+  has_effect?: string
+  vnum?: number | string
   who?: 'n' | 'i'
   [unknown: string]: unknown
 }
