@@ -11,6 +11,8 @@ import { guardOf, guardSection } from '../../shared/helpers/record-guard'
 import { settleClearedFields } from '../../shared/helpers/optional-fields'
 import { useWorld } from '../../shared/helpers/world-state'
 import InnField from '../../inns/components/InnField.vue'
+import TriggersField from '../components/TriggersField.vue'
+import { settledTriggers } from '../helpers/triggers'
 import ShopField from '../../shops/components/ShopField.vue'
 import { normalizeShop, shopProblems } from '../../shops/helpers/shop-defaults'
 import { buildCombatRows, buildIdentityRows, buildRoleRows } from '../helpers/field-rows'
@@ -109,8 +111,10 @@ export function useMobForm() {
     const hasShop = extraFieldsOf('mob').some((desc) => desc.name === 'shop')
     // `extra.receptionist` (pachimud): la locanda ha una sezione propria, ben visibile e con la spiegazione
     const hasInn = extraFieldsOf('mob').some((desc) => desc.name === 'receptionist')
+    // `extra.triggers` (pachimud): scheda propria con le azioni una per riga e i problemi del controllo sulla riga
+    const hasTriggers = extraFieldsOf('mob').some((desc) => desc.name === 'triggers')
     const extraEditor = createExtraEditor({
-      exclude: [...(hasShop ? ['shop'] : []), ...(hasInn ? ['receptionist'] : [])],
+      exclude: [...(hasShop ? ['shop'] : []), ...(hasTriggers ? ['triggers'] : []), ...(hasInn ? ['receptionist'] : [])],
       t,
       te,
       descriptors: extraFieldsOf('mob'),
@@ -191,6 +195,34 @@ export function useMobForm() {
         container: { type: 'expansion', title: t('inns.sectionTitle'), defaultOpened: receptionist },
       })
     }
+    if (hasTriggers) {
+      const triggers = settledTriggers(record?.extra?.triggers)
+      sections.push({
+        key: 'triggers',
+        title: t('mobs.sections.triggers'),
+        component: markRaw(FieldsSection),
+        props: {
+          rows: [
+            [
+              {
+                field: 'triggers',
+                label: t('mobs.sections.triggers'),
+                component: markRaw(TriggersField),
+                readonly: locked,
+                mobVnum: record?.vnum ?? null,
+                rules: [
+                  (value: unknown) =>
+                    settledTriggers(value).every((x) => x.actions.length > 0 && x.chance >= 1 && x.chance <= 100 && Number.isInteger(x.chance)) ? true : t('mobs.triggers.noActions'),
+                ],
+              },
+            ],
+          ],
+        },
+        initialValue: { triggers },
+        order: 37,
+        container: { type: 'expansion', title: t('mobs.sections.triggers'), defaultOpened: triggers.length > 0 },
+      })
+    }
     if (extraEditor) sections.push(extraEditor.section)
     const banner = guardSection(guard)
     if (banner) sections.unshift(banner)
@@ -225,6 +257,11 @@ export function useMobForm() {
         // `null` toglie il negozio; confrontato con quello salvato per non toccare il file se non è cambiato
         const next = (results.shop as { shop?: unknown } | undefined)?.shop ?? null
         if (JSON.stringify(next) !== JSON.stringify(record?.extra?.shop ?? null)) body.extra = { ...body.extra, shop: next }
+      }
+      if (hasTriggers) {
+        // inviati solo se cambiati: un salvataggio che non li tocca lascia il campo com'è nel file
+        const next = settledTriggers((results.triggers as { triggers?: unknown } | undefined)?.triggers)
+        if (JSON.stringify(next) !== JSON.stringify(settledTriggers(record?.extra?.triggers))) body.extra = { ...body.extra, triggers: next }
       }
       if (hasInn) {
         const next = !!(results.inn as { receptionist?: unknown } | undefined)?.receptionist
