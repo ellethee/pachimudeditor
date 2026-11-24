@@ -169,6 +169,7 @@ export async function startStack(port = Number(process.env.E2E_PORT ?? 8124), op
   )
 
   let fakeLive: ChildProcess | undefined
+  process.env.E2E_DEFINITIONS_PATH = env.PACHIMUD_DEFINITIONS_PATH // per i test che hanno bisogno delle righe dei file (ereditata da `node --test`)
   const fakePachimud = options.noWorlds ? undefined : await startFakeLive(workdir, 'pachimud')
   if (HAS_DIKUMOD && !options.noWorlds) {
     fakeLive = await startFakeLive(workdir)
