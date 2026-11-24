@@ -70,6 +70,8 @@ export default {
       'shop-hours': 'Orari del negozio fuori da 0..28 o con la chiusura prima dell\'apertura.',
       'shop-arbitrage': 'Il negozio paga di più di quanto vende: si guadagna comprando e rivendendo.',
       'shop-keeper-room': 'Il negoziante è caricato in stanze diverse da quella del negozio.',
+      'trigger-command-unknown': 'Un trigger di un mob usa un comando che non esiste.',
+      'trigger-variable-unknown': 'Un trigger di un mob usa una variabile sconosciuta (valgono $n, $i, $t, $o, $$).',
       'summon-range-missing': 'Un intervallo di evocazione include un vnum senza mob.',
       'yaml-syntax': 'Un file YAML non valido: il gioco non lo legge.',
       'load-failed': 'Il gioco non riesce a caricare i file (nessun dettaglio per riga).',

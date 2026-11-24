@@ -53,6 +53,8 @@ Un negozio non e' un file: e' il campo `shop:` del mob (`extra.shop` di `/api/mo
 `open2`, `close2`, `no_money_reaction`, `attacked_reaction`, `messages{chiave:{lingua:testo}}`, `handler`). Si modifica con `PUT /mobs/{id}` `{extra: {shop: {...}}}` (validato come `ShopProto`: 422
 `pachimud.invalid_entry`; `null` toglie il negozio). Il vecchio `shopId` (`shop_id`) il gioco lo ignora.
 
+I trigger di un mob sono il campo `triggers:` (`extra.triggers` di `/api/mobs`): lista di `{type: speech|greet|give|random|death, argument: str, chance: 1..100, actions: str[] (almeno una)}`. `PUT /mobs/{id}` `{extra: {triggers: [...]}}`; non inviare la chiave lascia il campo com'e'; tipo/probabilita'/azioni non validi sono 422 `pachimud.invalid_choice|invalid_range|invalid_length`. I problemi `trigger-command-unknown` e `trigger-variable-unknown` di `content.validate` (file e riga dell'azione, `trigger N` 0-based nel messaggio) si risolvono al mob con `POST /content/checks/locate`.
+
 - `GET /content/shops` -> `ShopItem[]` per i mob con `shop` o con `shop_id`, in ordine di vnum: `{vnum, name, zoneId, zoneName, hasShop, legacyShopId, produces[{vnum, name|null}], trades[], profitBuy,
   profitSell, room, roomName, open1, close1, open2, close2, handler}`. `name: null` = l'oggetto non esiste (il controllo del gioco lo segnala: `shop-object-missing`).
 - `GET /content/boards` (capability `supports_boards`) -> `{boardTable, mailTable, boards[{boardId, count, objects[{vnum, name, zoneId, zoneName}], maxMessages|null, orphan}]}`: gli oggetti BOARD dei YAML (`board_id`, o il vnum come fa il gioco) piu' i `board_id` con messaggi nel DB (`orphan` = nessun oggetto); `boardTable`/`mailTable` falsi se la tabella opzionale manca (nessun errore).

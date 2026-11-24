@@ -108,6 +108,32 @@ def shop_value(raw_shop: Any) -> Any:
     return to_commented(shop.model_dump(exclude_defaults=True))
 
 
+def triggers_value(raw_triggers: Any, current: Any = None) -> Any:
+    """Il campo `extra.triggers` come va scritto nel file: lista validata con `LoaderTrigger` (422 `pachimud.invalid_choice|range|length`
+    sul campo, es. `triggers.0.chance`), ridotta ai soli campi diversi dal default (`type` e `actions` restano).
+    Se e' equivalente a `current` (il valore gia' nel file, anche con i default scritti a mano) restituisce `current`: nessun diff."""
+    from pydantic import TypeAdapter
+
+    from pachimudeditor_adapter_pachimud.loaders import LoaderTrigger
+
+    if raw_triggers is None:
+        raw_triggers = []
+    if not isinstance(raw_triggers, list):
+        raise api_error(422, "pachimud.invalid_entry", detail="triggers: attesa una lista")
+    try:
+        items = TypeAdapter(list[LoaderTrigger]).validate_python(raw_triggers)
+    except ValidationError as error:
+        raise invalid(error) from error
+    try:
+        if current is not None and [i.model_dump() for i in items] == [
+            i.model_dump() for i in TypeAdapter(list[LoaderTrigger]).validate_python(plain(current))
+        ]:
+            return current
+    except ValidationError:  # il file ha gia' un valore non valido: si riscrive
+        pass
+    return [to_commented(i.model_dump(exclude_defaults=True) | {"type": i.type, "actions": list(i.actions)}) for i in items]
+
+
 def put(raw: Any, key: str, value: Any, *, default: Any = None, required: bool = False) -> None:
     """Scrive `raw[key] = value` toccando solo cio' che cambia: `None` toglie la chiave, un valore uguale al default non
     aggiunge rumore (salvo `required`), un valore invariato lascia intatti commenti e formato."""
@@ -328,6 +354,7 @@ def mob_out(item: Item, zone_vnum: int) -> MobOut:
             "breath": list(m.breath),
             "breathCost": m.breath_cost,
             "shop": None if m.shop is None else m.shop.model_dump(),
+            "triggers": [t.model_dump() for t in m.triggers],
             **{s: getattr(m, s) for s in STATS},
         },
     )
@@ -337,7 +364,7 @@ MOB_ORDER = (
     "vnum", "keywords", "name", "short_description", "long_description", "detailed_description", "level", "thac0", "attacks", "armor_class",
     "hp_dice", "damage_dice", "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma", "gold", "experience",
     "sex", "flags", "alignment", "race_id", "class_id", "debuff_skill_id", "persona", "shop_id", "shop", "quest_ids", "is_banker",
-    "postmaster", "receptionist", "weapon_immunity", "breath", "breath_cost", "teaches_class_ids", "teaches_skill_ids",
+    "postmaster", "receptionist", "weapon_immunity", "breath", "breath_cost", "teaches_class_ids", "teaches_skill_ids", "triggers",
 )  # fmt: skip
 """Ordine dei campi di un mob nuovo (quello dei file del gioco)."""
 

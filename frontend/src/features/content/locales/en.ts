@@ -73,6 +73,8 @@ const en: PachiMessages<typeof it> = {
       'shop-hours': 'Shop hours outside 0..28 or closing before opening.',
       'shop-arbitrage': 'The shop pays more than it sells for: buying and reselling makes money.',
       'shop-keeper-room': 'The shopkeeper is loaded in rooms other than the shop room.',
+      'trigger-command-unknown': 'A mob trigger uses a command that does not exist.',
+      'trigger-variable-unknown': 'A mob trigger uses an unknown variable (valid ones: $n, $i, $t, $o, $$).',
       'summon-range-missing': 'A summon range includes a vnum with no mob.',
       'yaml-syntax': 'An invalid YAML file: the game does not read it.',
       'load-failed': 'The game cannot load the files (no per-line detail).',
