@@ -31,7 +31,7 @@ describe('conversione tra mondi', () => {
   })
 
   it('anteprima: tabelle e perdite, nessuna scrittura', async () => {
-    await s.page.getByTestId('convert-zone-search').fill('mud school')
+    await s.page.getByPlaceholder(/filtra|filter/i).fill('mud school')
     await tableRow(s.page, 'mud school').locator('.q-checkbox').click()
     await s.page.getByTestId('convert-preview').click()
     await s.page.getByTestId('convert-report').waitFor()

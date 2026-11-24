@@ -14,26 +14,19 @@
           </div>
           <div v-if="pair" class="text-caption text-grey-8" data-testid="convert-converter">{{ t(`convert.converter.${pair.converter}`) }}</div>
 
-          <q-table
-            v-model:selected="selected"
-            v-model:filter="filter"
-            flat
-            bordered
-            dense
+          <div class="text-subtitle1">{{ t('convert.source.zones') }}</div>
+          <pachi-table2
             row-key="id"
             selection="multiple"
             :rows="zones"
             :columns="columns"
             :loading="loadingZones"
-            :rows-per-page-options="[10, 25, 0]"
-            :title="t('convert.source.zones')"
+            single-sort
+            :initial-sort="[]"
+            dense
             data-testid="convert-zones"
-            @update:selected="resetReport"
-          >
-            <template #top-right>
-              <q-input v-model="filter" dense outlined clearable :placeholder="t('convert.source.search')" data-testid="convert-zone-search" />
-            </template>
-          </q-table>
+            @update:selected="onSelected"
+          />
         </q-card-section>
       </q-card>
 
@@ -97,6 +90,7 @@ import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { mdiMagnify, mdiOpenInNew, mdiTransfer } from '@quasar/extras/mdi-v7'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import ConvertReport from '../components/ConvertReport.vue'
 import { describeError } from '../helpers/describe-error'
 import { getPairs, listZonesOf, preview, run } from '../services/convert-api'
@@ -113,7 +107,6 @@ const sourceId = ref<string | null>(null)
 const targetId = ref<string | null>(null)
 const zones = ref<IZoneRef[]>([])
 const selected = ref<IZoneRef[]>([])
-const filter = ref('')
 const loadingZones = ref(false)
 const mode = ref<VnumMode>('keep')
 const offset = ref(0)
@@ -161,6 +154,12 @@ function body(): IConvertRequest {
     dryRun: true,
     confirm: false,
   }
+}
+
+/** Zone scelte nella tabella: cambiato il piano, il rapporto non vale piu'. */
+function onSelected(rows: IZoneRef[]): void {
+  selected.value = rows
+  resetReport()
 }
 
 /** Azzera rapporto e conferma (cambiato qualcosa del piano). */
