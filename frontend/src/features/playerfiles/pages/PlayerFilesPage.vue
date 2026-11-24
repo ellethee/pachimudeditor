@@ -31,11 +31,10 @@
         style="min-width: 260px"
         :label="t('playerFiles.search')"
         data-testid="players-search"
-        @update:model-value="reload"
       >
         <template #prepend><q-icon :name="mdiMagnify" /></template>
       </q-input>
-      <q-btn flat round :icon="mdiRefresh" :aria-label="t('playerFiles.reload')" @click="reload">
+      <q-btn flat round :icon="mdiRefresh" :aria-label="t('playerFiles.reload')" @click="load">
         <q-tooltip>{{ t('playerFiles.reload') }}</q-tooltip>
       </q-btn>
       <template v-if="live.enabled.value">
@@ -55,57 +54,56 @@
       </template>
     </div>
 
-    <q-table
-      v-if="info"
-      v-model:pagination="pagination"
-      :rows="rows"
+    <pachi-table2
+      v-if="info && ready"
+      ref="table"
+      url="/api/world/players"
       :columns="columns"
-      row-key="id"
+      :can-edit="typed"
+      :extra-params="extraParams"
+      hide-toolbar
+      error-banner
       dense
-      flat
-      bordered
-      binary-state-sort
-      :loading="loading"
-      :rows-per-page-options="[10, 25, 50, 100]"
-      :no-data-label="t('playerFiles.empty')"
       data-testid="players-table"
-      @request="onRequest"
       @row-dblclick="(_evt: Event, row: IPlayerSummary) => open(row)"
     >
-      <template #body-cell-name="{ row, value }">
-        <q-td>
-          <span class="text-weight-medium">{{ value }}</span>
+      <template #error="{ error: loadError, retry }">
+        <table-error :error="loadError" :retry="retry" />
+      </template>
+      <template #body-cell-name="{ slotProps }">
+        <q-td :props="slotProps">
+          <span class="text-weight-medium">{{ slotProps.value }}</span>
           <q-chip
-            v-if="row.online === true"
+            v-if="slotProps.row.online === true"
             dense
-            :color="row.extra.liveState === 'playing' ? 'positive' : 'orange'"
+            :color="slotProps.row.extra.liveState === 'playing' ? 'positive' : 'orange'"
             text-color="white"
             class="q-ml-sm"
-            :data-testid="`player-online-${row.id}`"
+            :data-testid="`player-online-${slotProps.row.id}`"
           >
-            {{ row.extra.liveState === 'playing' || !row.extra.liveState ? t('playerFiles.live.online') : t('playerFiles.live.state.' + String(row.extra.liveState)) }}
+            {{ slotProps.row.extra.liveState === 'playing' || !slotProps.row.extra.liveState ? t('playerFiles.live.online') : t('playerFiles.live.state.' + String(slotProps.row.extra.liveState)) }}
           </q-chip>
-          <q-chip v-if="row.problem" dense color="negative" text-color="white" class="q-ml-sm" data-testid="player-problem">
-            {{ problemLabel(row.problem) }}
+          <q-chip v-if="slotProps.row.problem" dense color="negative" text-color="white" class="q-ml-sm" data-testid="player-problem">
+            {{ problemLabel(slotProps.row.problem) }}
           </q-chip>
         </q-td>
       </template>
-      <template #body-cell-actions="{ row }">
-        <q-td auto-width>
+      <template #body-cell-actions="{ slotProps }">
+        <q-td :props="slotProps" auto-width>
           <q-btn
             flat
             round
             dense
             :icon="mdiCardAccountDetails"
-            :aria-label="t('playerFiles.open', { name: row.name })"
-            :data-testid="`player-open-${row.id}`"
-            @click="open(row)"
+            :aria-label="t('playerFiles.open', { name: slotProps.row.name })"
+            :data-testid="`player-open-${slotProps.row.id}`"
+            @click="open(slotProps.row)"
           >
-            <q-tooltip>{{ t('playerFiles.open', { name: row.name }) }}</q-tooltip>
+            <q-tooltip>{{ t('playerFiles.open', { name: slotProps.row.name }) }}</q-tooltip>
           </q-btn>
         </q-td>
       </template>
-    </q-table>
+    </pachi-table2>
   </div>
 </template>
 
@@ -113,11 +111,14 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
-import type { QTableColumn, QTableProps } from 'quasar'
+import type { QTableColumn } from 'quasar'
 import { mdiAlertOutline, mdiCardAccountDetails, mdiMagnify, mdiRefresh, mdiServerNetwork } from '@quasar/extras/mdi-v7'
 import { describeError } from '../../players/helpers/describe-error'
 import { formatCell } from '../helpers/format'
-import { getPlayersInfo, getPlayersStatus, listPlayers } from '../services/player-files-api'
+import { PachiTable2 } from '@ilpachi/pachi-kit/table'
+import type { PachiTable2Exposed } from '@ilpachi/pachi-kit/table'
+import TableError from '../../shared/components/TableError.vue'
+import { getPlayersInfo, getPlayersStatus } from '../services/player-files-api'
 import type { IPlayerSummary, IPlayersInfo, IPlayersStatus } from '../types/player-files'
 import PlayerDetailDialog from '../components/PlayerDetailDialog.vue'
 import LiveServerDialog from '../components/LiveServerDialog.vue'
@@ -130,11 +131,16 @@ const live = useLive()
 
 const info = ref<IPlayersInfo>()
 const status = ref<IPlayersStatus>()
-const rows = ref<IPlayerSummary[]>([])
-const loading = ref(false)
+const table = ref<PachiTable2Exposed<IPlayerSummary> | null>(null)
+/** La tabella compare dopo il descrittore e lo stato live (la colonna `online` dipende dal canale). */
+const ready = ref(false)
 const error = ref('')
 const search = ref<string | null>('')
-const pagination = ref({ page: 1, rowsPerPage: 25, sortBy: 'name', descending: false, rowsNumber: 0 })
+/** Serve solo a tipizzare la tabella su `IPlayerSummary` (stesso espediente di `AccountsPanel`). */
+const typed = (_row: IPlayerSummary): boolean => true
+
+/** La ricerca viaggia come parametro extra (la barra della tabella è nascosta). */
+const extraParams = computed<Record<string, unknown>>(() => (search.value ? { search: search.value } : {}))
 
 /** Etichetta tradotta di una chiave dichiarata dall'adapter (ripiega sul nome). */
 function labelOf(key: string, fallback: string): string {
@@ -163,40 +169,9 @@ const columns = computed<QTableColumn<IPlayerSummary>[]>(() => [
   { name: 'actions', label: '', field: 'id', align: 'right' as const },
 ])
 
-/** Carica una pagina dell'elenco con la paginazione corrente. */
-async function load(): Promise<void> {
-  loading.value = true
-  error.value = ''
-  try {
-    const p = pagination.value
-    const params: Record<string, string | number> = { page: p.page, pageSize: p.rowsPerPage }
-    if (p.sortBy) params.orderBy = `${p.descending ? '-' : ''}${p.sortBy}`
-    if (search.value) params.search = search.value
-    const page = await listPlayers(params)
-    rows.value = page.items
-    pagination.value.rowsNumber = page.total
-  } catch (e) {
-    error.value = await describeError(e)
-  } finally {
-    loading.value = false
-  }
-}
-
-/** Torna alla prima pagina e ricarica (ricerca o ricarica manuale). */
-function reload(): void {
-  pagination.value.page = 1
-  void load()
-}
-
-/**
- * Cambio di pagina, ordinamento o dimensione (paginazione lato server).
- *
- * @param props - richiesta della tabella
- */
-function onRequest(props: Parameters<NonNullable<QTableProps['onRequest']>>[0]): void {
-  const { page, rowsPerPage, sortBy, descending } = props.pagination
-  pagination.value = { ...pagination.value, page, rowsPerPage, sortBy: sortBy ?? 'name', descending }
-  void load()
+/** Ricarica l'elenco (pulsante, chiusura dei dialoghi: le modifiche cambiano i valori). */
+function load(): void {
+  void table.value?.api.reload()
 }
 
 /**
@@ -205,7 +180,7 @@ function onRequest(props: Parameters<NonNullable<QTableProps['onRequest']>>[0]):
  * @param row - riga scelta
  */
 function open(row: IPlayerSummary): void {
-  $q.dialog({ component: PlayerDetailDialog, componentProps: { playerId: row.id, playerName: row.name } }).onDismiss(() => void load()) // le modifiche cambiano i valori dell'elenco
+  $q.dialog({ component: PlayerDetailDialog, componentProps: { playerId: row.id, playerName: row.name } }).onDismiss(load) // le modifiche cambiano i valori dell'elenco
 }
 
 /** Colore del chip dello stato del canale live. */
@@ -222,7 +197,7 @@ const liveLabel = computed(() => {
 function openLive(): void {
   $q.dialog({ component: LiveServerDialog }).onDismiss(() => {
     void live.refresh()
-    void load()
+    load()
   })
 }
 
@@ -240,7 +215,7 @@ async function init(): Promise<void> {
     .catch(() => undefined) // stato non rilevabile: resta l'avviso generico
   await ensureWorlds()
   if (live.enabled.value) await live.refresh() // prima dell'elenco: `online` dipende dal canale
-  await load()
+  ready.value = true
 }
 
 onMounted(() => void init())
