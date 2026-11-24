@@ -31,7 +31,7 @@ EXTRA: dict[ResourceType, list[ExtraFieldDescriptor]] = {
         xf("area"), xf("name"), xf("attacks", "number"), xf("persona", "text"), xf("strength", "number"), xf("dexterity", "number"), xf("constitution", "number"),
         xf("intelligence", "number"), xf("wisdom", "number"), xf("charisma", "number"),
         xf("postmaster", "boolean"), xf("receptionist", "boolean"), xf("weaponImmunity", "number", nullable=True),
-        xf("breath", "flags"), xf("breathCost", "number"), xf("shop", "json"),
+        xf("breath", "flags"), xf("breathCost", "number"), xf("shop", "json"), xf("triggers", "json"),
     ],
     "object": [xf("area"), xf("extraDescriptions", "json"), xf("typeFields", "json")],
     "exit": [xf("isMale", "boolean"), xf("openCmd", "enum", "openCmd", nullable=True), xf("climb", "boolean")],

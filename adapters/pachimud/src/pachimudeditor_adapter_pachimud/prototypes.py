@@ -29,7 +29,7 @@ from pachimudeditor_adapter_pachimud.rooms import check_extra, move_raw, norm_ar
 from pachimudeditor_adapter_pachimud.store import Item, plain
 
 MOB_EXTRA = frozenset(
-    {"area", "name", "attacks", "persona", "postmaster", "receptionist", "weaponImmunity", "breath", "breathCost", "shop", *mapping.STATS}
+    {"area", "name", "attacks", "persona", "postmaster", "receptionist", "weaponImmunity", "breath", "breathCost", "shop", "triggers", *mapping.STATS}
 )
 OBJECT_EXTRA = frozenset({"area", "typeFields", "extraDescriptions"})
 
@@ -63,6 +63,8 @@ class PrototypesMixin(PachimudSupport):
             mapping.put(raw, "breath_cost", int(extra["breathCost"]), default=30)
         if "shop" in extra:
             mapping.put(raw, "shop", mapping.shop_value(extra["shop"]))
+        if "triggers" in extra:
+            mapping.put(raw, "triggers", mapping.triggers_value(extra["triggers"], raw.get("triggers")), default=[])
         return norm_area(extra["area"]) if "area" in extra else ...
 
     async def list_mobs(self, params: MobPageParams) -> PaginatedResponse[MobOut]:

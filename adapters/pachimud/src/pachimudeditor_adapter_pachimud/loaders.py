@@ -263,6 +263,19 @@ class LoaderShop(BaseModel):
         return value
 
 
+TRIGGER_TYPES = ("speech", "greet", "give", "random", "death")
+"""Gli eventi dei trigger dei mob (fase 1 del gioco)."""
+
+
+class LoaderTrigger(BaseModel):
+    """Un trigger di un mob (copia di `Trigger` del gioco): a `type` il mob esegue le `actions`."""
+
+    type: Literal["speech", "greet", "give", "random", "death"]
+    argument: str = ""
+    chance: int = Field(default=100, ge=1, le=100)
+    actions: list[str] = Field(min_length=1)
+
+
 class LoaderMob(BaseModel):
     """Una voce di `mobs*.yaml`."""
 
@@ -305,6 +318,7 @@ class LoaderMob(BaseModel):
     breath_cost: int = 30
     teaches_class_ids: Optional[list[str]] = None
     teaches_skill_ids: Optional[list[str]] = None
+    triggers: list[LoaderTrigger] = []
 
     @field_validator("hp_dice", "damage_dice")
     @classmethod
