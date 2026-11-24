@@ -125,7 +125,9 @@ def triggers_value(raw_triggers: Any, current: Any = None) -> Any:
     except ValidationError as error:
         raise invalid(error) from error
     try:
-        if current is not None and [i.model_dump() for i in items] == [i.model_dump() for i in TypeAdapter(list[LoaderTrigger]).validate_python(plain(current))]:
+        if current is not None and [i.model_dump() for i in items] == [
+            i.model_dump() for i in TypeAdapter(list[LoaderTrigger]).validate_python(plain(current))
+        ]:
             return current
     except ValidationError:  # il file ha gia' un valore non valido: si riscrive
         pass

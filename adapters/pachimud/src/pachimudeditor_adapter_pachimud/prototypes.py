@@ -29,7 +29,20 @@ from pachimudeditor_adapter_pachimud.rooms import check_extra, move_raw, norm_ar
 from pachimudeditor_adapter_pachimud.store import Item, plain
 
 MOB_EXTRA = frozenset(
-    {"area", "name", "attacks", "persona", "postmaster", "receptionist", "weaponImmunity", "breath", "breathCost", "shop", "triggers", *mapping.STATS}
+    {
+        "area",
+        "name",
+        "attacks",
+        "persona",
+        "postmaster",
+        "receptionist",
+        "weaponImmunity",
+        "breath",
+        "breathCost",
+        "shop",
+        "triggers",
+        *mapping.STATS,
+    }
 )
 OBJECT_EXTRA = frozenset({"area", "typeFields", "extraDescriptions"})
 

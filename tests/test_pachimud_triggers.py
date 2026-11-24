@@ -17,7 +17,9 @@ async def test_triggers_roundtrip_and_untouched(client: httpx.AsyncClient) -> No
     """Si scrivono e si rileggono; un PUT che non li tocca o li ripete uguali non cambia il file; `[]` li toglie."""
     mob = await by_vnum(client, "mobs", 1000)
     assert mob["extra"]["triggers"] == []
-    out = data(await client.put(f"/api/mobs/{mob['id']}", json={"extra": {"triggers": [TRIGGER, {"type": "death", "actions": ["say Ahi"]}]}}))
+    out = data(
+        await client.put(f"/api/mobs/{mob['id']}", json={"extra": {"triggers": [TRIGGER, {"type": "death", "actions": ["say Ahi"]}]}})
+    )
     assert out["extra"]["triggers"][0] == TRIGGER and out["extra"]["triggers"][1]["chance"] == 100
     written = _text()
     assert "triggers:" in written and "chance: 100" not in written
