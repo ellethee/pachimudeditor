@@ -114,6 +114,19 @@ def _trigger_dump(item: Any) -> dict[str, Any]:
     return item.model_dump(exclude_defaults=True, by_alias=True)
 
 
+def _mp_verb(actions: list[Any]) -> str | None:
+    """Il primo comando MP vero (solo dei mob) tra le azioni, anche dentro gli `if`/`else`."""
+    from pachimudeditor_adapter_pachimud.loaders import MP_VERBS, LoaderIfBlock
+
+    for a in actions:
+        if isinstance(a, LoaderIfBlock):
+            if verb := _mp_verb([*a.then, *a.else_]):
+                return verb
+        elif (word := a.split()[0]) in MP_VERBS:
+            return word
+    return None
+
+
 def triggers_value(raw_triggers: Any, current: Any = None, owner: str = "mob", field: str = "triggers") -> Any:
     """Il campo `triggers` di un mob/stanza (o `scripts` di un oggetto) come va scritto nel file: lista validata con `LoaderTrigger`
     (422 `pachimud.invalid_choice|range|length` sul campo, es. `triggers[0].chance`; `invalid_choice` anche per un tipo che `owner`
@@ -143,6 +156,12 @@ def triggers_value(raw_triggers: Any, current: Any = None, owner: str = "mob", f
     for n, i in enumerate(items):
         if not same[n] and i.type not in OWNER_TYPES[owner]:
             raise api_error(422, "pachimud.invalid_choice", field=f"{field}[{n}].type", limit=", ".join(OWNER_TYPES[owner]))
+        if not same[n] and owner != "mob" and (verb := _mp_verb(i.actions)):
+            raise api_error(
+                422,
+                "pachimud.invalid_entry",
+                detail=f"{field}[{n}]: il comando '{verb}' vale solo per i mob (oggetti e stanze hanno mpecho, mpechoat, mpechoaround)",
+            )
     return [current[n] if same[n] else to_commented(_trigger_dump(i)) for n, i in enumerate(items)]
 
 

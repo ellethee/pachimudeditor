@@ -172,3 +172,33 @@ async def test_room_triggers(client: httpx.AsyncClient) -> None:
     )
     data(await client.put(url, json={"extra": {"triggers": []}}))
     assert "triggers:" not in _text_of("rooms")
+
+
+async def test_trigger_phase3(client: httpx.AsyncClient) -> None:
+    """Fase 3: `random` per oggetti e stanze, nuove condizioni (round trip e 422), comandi MP solo per i mob."""
+    cond = {"time": ">= 20", "is_night": True, "is_fighting": False, "has_effect": "sanctuary", "vnum": 1000}
+    mob = await by_vnum(client, "mobs", 1000)
+    murl = f"/api/mobs/{mob['id']}"
+    mp = {"type": "random", "chance": 10, "actions": [{"if": cond, "then": ["mpload obj 1000 inv", "mpat 1002 mpecho Ciao"]}]}
+    out = data(await client.put(murl, json={"extra": {"triggers": [mp]}}))["extra"]["triggers"]
+    assert out[0]["actions"][0]["if"] == {**cond, "who": "n"}
+    put = lambda trigger: client.put(murl, json={"extra": {"triggers": [trigger]}}, headers={"Accept-Language": "it"})  # noqa: E731
+    for bad in ({"time": 24}, {"time": "tardi"}, {"vnum": "x"}):
+        res = await put({"type": "fight", "actions": [{"if": bad, "then": ["say x"]}]})
+        assert error_code(res, 422) == "pachimud.invalid_entry" and ("time" in res.text or "vnum" in res.text)
+    data(await client.put(murl, json={"extra": {"triggers": []}}))
+
+    obj = await by_vnum(client, "objects", 1000)
+    ourl = f"/api/objects/{obj['id']}"
+    data(await client.put(ourl, json={"extra": {"scripts": [{"type": "random", "chance": 5, "actions": ["mpecho Brilla."]}]}}))
+    res = await client.put(ourl, json={"extra": {"scripts": [{"type": "get", "actions": ["mpkill $n"]}]}})
+    assert error_code(res, 422) == "pachimud.invalid_entry" and "mpkill" in res.text
+    data(await client.put(ourl, json={"extra": {"scripts": []}}))
+
+    room = await by_vnum(client, "rooms", 1002)
+    rurl = f"/api/rooms/{room['id']}"
+    data(await client.put(rurl, json={"extra": {"triggers": [{"type": "random", "actions": ["mpecho Un fruscio."]}]}}))
+    nested = {"if": {"chance": 5}, "then": ["mpgoto 1000"]}
+    res = await client.put(rurl, json={"extra": {"triggers": [{"type": "enter", "actions": [nested]}]}})
+    assert error_code(res, 422) == "pachimud.invalid_entry" and "mpgoto" in res.text
+    data(await client.put(rurl, json={"extra": {"triggers": []}}))

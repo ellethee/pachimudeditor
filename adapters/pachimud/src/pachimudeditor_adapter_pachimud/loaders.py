@@ -196,10 +196,14 @@ TRIGGER_TYPES = (
 """Tutti gli eventi dei trigger (come `TriggerType` del gioco)."""
 OWNER_TYPES: dict[str, tuple[str, ...]] = {
     "mob": ("speech", "greet", "give", "random", "death", "fight", "hitprcnt", "act", "tell", "bribe"),
-    "object": ("get", "drop", "wear", "give"),
-    "room": ("enter", "exit", "speech"),
+    "object": ("get", "drop", "wear", "give", "random"),
+    "room": ("enter", "exit", "speech", "random"),
 }
 """Gli eventi ammessi per chi possiede il trigger (`OWNER_TYPES` del gioco)."""
+MP_VERBS = ("mptransfer", "mpgoto", "mpat", "mpload", "mppurge", "mpkill", "mpforce")
+"""Comandi MP veri: solo per i mob (oggetti e stanze hanno `mpecho`, `mpechoat`, `mpechoaround`)."""
+CMP = re.compile(r"\s*(==|!=|<=|>=|<|>)?\s*(-?\d+)\s*")
+"""Un confronto numerico di una condizione: `10`, `>= 10`, `!= 3` (come `CMP` del gioco)."""
 MAX_IF_DEPTH = 3
 """Quanti `if` possono stare uno dentro l'altro."""
 
@@ -217,7 +221,25 @@ class LoaderCondition(BaseModel):
     class_: Optional[str] = Field(default=None, alias="class")
     carries: Optional[str] = None
     is_player: Optional[bool] = None
+    time: Union[int, str, None] = None
+    is_night: Optional[bool] = None
+    is_fighting: Optional[bool] = None
+    has_effect: Optional[str] = None
+    vnum: Union[int, str, None] = None
     who: Literal["n", "i"] = "n"
+
+    @model_validator(mode="after")
+    def _check(self) -> "LoaderCondition":
+        """`time` e `vnum` sono un numero o un confronto; `time` e' un'ora 0-23."""
+        for name in ("time", "vnum"):
+            value = getattr(self, name)
+            if value is None:
+                continue
+            if not (m := CMP.fullmatch(str(value))):
+                raise ValueError(f"{name}: '{value}' non e' un numero o un confronto (es. '>= 10')")
+            if name == "time" and not 0 <= int(m[2]) <= 23:
+                raise ValueError(f"time: '{value}' deve essere un'ora tra 0 e 23")
+        return self
 
 
 class LoaderIfBlock(BaseModel):
