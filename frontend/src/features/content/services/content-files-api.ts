@@ -34,6 +34,14 @@ export async function listFiles(area: FileArea): Promise<IFileEntry[]> {
 }
 
 /**
+ * Il JSON Schema di un file YAML del gioco (`zone`, `rooms`, `mobs`, `objects`, `resets`, `race`, `character-class`, `pachimud`).
+ * @param name nome dello schema
+ */
+export async function getSchema(name: string): Promise<object> {
+  return http().Get<object>(`/schemas/${encodeURIComponent(name)}`, SILENT)
+}
+
+/**
  * Il testo di un file.
  * @param area area
  * @param path percorso relativo all'area
