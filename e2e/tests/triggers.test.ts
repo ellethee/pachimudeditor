@@ -90,6 +90,34 @@ describe('trigger dei mob', () => {
     assert.equal(hit.status, 422)
   })
 
+  it('fase 3: nuove condizioni (ora, notte, combattimento, effetto, vnum) e comandi MP del mob', async () => {
+    await reset()
+    await goto(s.page, `/mobs/${MOB_VNUM}`)
+    await s.page.getByText('Trigger', { exact: true }).first().click()
+    await s.page.getByTestId('trigger-add').click()
+    const actions = s.page.getByTestId('trigger-actions')
+    await actions.getByTestId('action-text').first().fill('mpgoto 1002')
+    await s.page.getByText('Uso: mpgoto <vnum stanza>').waitFor()
+    await actions.getByTestId('if-add').last().click()
+    const block = actions.getByTestId('if-block').first()
+    await block.getByTestId('cond-time').fill('>= 20')
+    await block.getByTestId('cond-vnum').fill('1000')
+    await block.getByTestId('cond-is-night').click()
+    await block.getByTestId('cond-has-effect').fill('sanctuary')
+    await block.getByTestId('if-then').first().getByTestId('action-text').first().fill('mpload obj 1000 inv')
+    await block.getByTestId('cond-time').fill('25')
+    await s.page.getByText('Un\'ora da 0 a 23').waitFor()
+    await block.getByTestId('cond-time').fill('>= 20')
+    await saveForm(s.page)
+    const mob = await api.byVnum('mobs', MOB_VNUM)
+    const saved = (await api.call('GET', `/api/mobs/${mob.id}`)).data.extra.triggers
+    assert.deepEqual(
+      { ...saved[0].actions[1].if, who: undefined },
+      { time: '>= 20', vnum: 1000, is_night: true, has_effect: 'sanctuary', who: undefined },
+    )
+    assert.equal(await rawI18nKey(s.page), null)
+  })
+
   it('tipo e probabilità non validi sono 422 con code stabile', async () => {
     const mob = await api.byVnum('mobs', MOB_VNUM)
     const put = (t: object) => api.call('PUT', `/api/mobs/${mob.id}`, { extra: { triggers: [t] } })

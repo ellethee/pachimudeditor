@@ -75,6 +75,19 @@ describe('script degli oggetti e trigger delle stanze', () => {
     assert.equal(JSON.stringify(bad.body).includes('pachimud.invalid_choice'), true)
   })
 
+  it('fase 3: random per oggetti e stanze si salva, un comando MP e\' 422', async () => {
+    const obj = await api.byVnum('objects', OBJ_VNUM)
+    const ok = await api.call('PUT', `/api/objects/${obj.id}`, { extra: { scripts: [{ type: 'random', chance: 5, actions: ['mpecho Brilla.'] }] } })
+    assert.equal(ok.status, 200)
+    const bad = await api.call('PUT', `/api/objects/${obj.id}`, { extra: { scripts: [{ type: 'get', actions: ['mpkill $n'] }] } })
+    assert.equal(bad.status, 422)
+    assert.equal(JSON.stringify(bad.body).includes('mpkill'), true)
+    const room = await api.byVnum('rooms', ROOM_VNUM)
+    const r = await api.call('PUT', `/api/rooms/${room.id}`, { extra: { triggers: [{ type: 'random', actions: ['mpecho Un fruscio.'] }] } })
+    assert.equal(r.status, 200)
+    await reset()
+  })
+
   it('i problemi del controllo compaiono sulla riga giusta e il click apre la voce', async () => {
     const obj = await api.byVnum('objects', OBJ_VNUM)
     await api.call('PUT', `/api/objects/${obj.id}`, {
