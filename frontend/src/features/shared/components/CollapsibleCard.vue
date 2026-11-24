@@ -1,35 +1,34 @@
 <template>
   <q-card flat bordered :data-testid="testid">
-    <q-card-section class="row items-center no-wrap q-py-sm">
-      <div class="text-h6 col ellipsis"><slot name="title">{{ title }}</slot></div>
+    <q-card-section class="row items-center no-wrap q-py-sm" :class="{ 'q-pa-xs': !open }">
+      <div v-show="open" class="text-h6 col ellipsis"><slot name="title">{{ title }}</slot></div>
       <q-btn
         flat
         dense
         round
-        :icon="open ? mdiChevronUp : mdiChevronDown"
+        :icon="open ? mdiChevronRight : mdiChevronLeft"
         :aria-label="open ? t('card.collapse') : t('card.expand')"
         :aria-expanded="open"
         data-testid="card-toggle"
         @click="toggle"
       />
     </q-card-section>
-    <q-slide-transition>
-      <div v-show="open">
-        <q-separator />
-        <slot />
-      </div>
-    </q-slide-transition>
+    <div v-show="open">
+      <q-separator />
+      <slot />
+    </div>
   </q-card>
 </template>
 
 <script setup lang="ts">
 /**
- * Scheda con titolo e icona per ridurla a solo intestazione. Lo stato aperto/chiuso e' ricordato nel browser per `storageKey`
+ * Scheda laterale con titolo e un'icona per restringerla a una striscia con il solo pulsante di riapertura (il padre allarga la
+ * colonna accanto reagendo a `update:open`). Lo stato aperto/chiuso e' ricordato nel browser per `storageKey`
  * (comodita' per utente: se il localStorage non e' disponibile resta aperta).
  */
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { mdiChevronDown, mdiChevronUp } from '@quasar/extras/mdi-v7'
+import { mdiChevronLeft, mdiChevronRight } from '@quasar/extras/mdi-v7'
 
 const props = withDefaults(defineProps<{ title?: string; storageKey?: string | undefined; defaultOpen?: boolean; testid?: string | undefined }>(), {
   title: '',
@@ -51,10 +50,13 @@ function initial(): boolean {
 }
 
 const open = ref(initial())
+const emit = defineEmits<{ 'update:open': [open: boolean] }>()
+emit('update:open', open.value)
 
 /** Apre/chiude e ricorda la scelta. */
 function toggle(): void {
   open.value = !open.value
+  emit('update:open', open.value)
   if (!props.storageKey) return
   try {
     localStorage.setItem(`card:${props.storageKey}`, open.value ? '1' : '0')

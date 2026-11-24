@@ -12,7 +12,7 @@
     <q-banner v-if="failed" rounded class="bg-negative text-white" data-testid="mob-not-found">{{ t('mobs.detail.notFound') }}</q-banner>
 
     <div v-else-if="mob && form" class="row q-col-gutter-lg">
-      <div class="col-12 col-lg-8">
+      <div :class="refsOpen ? 'col-12 col-lg-8' : 'col-12 col-lg'">
         <style-hints kind="mob" :record="mob" />
         <sections-form
           :key="formKey"
@@ -24,8 +24,8 @@
           @save="save"
         />
       </div>
-      <div class="col-12 col-lg-4">
-        <collapsible-card :title="t('mobs.detail.references')" storage-key="mob-references" testid="mob-references">
+      <div :class="refsOpen ? 'col-12 col-lg-4' : 'col-12 col-lg-auto'">
+        <collapsible-card :title="t('mobs.detail.references')" storage-key="mob-references" testid="mob-references" @update:open="refsOpen = $event">
           <q-list dense>
             <q-item-label header>{{ t('mobs.detail.resets', { count: usage.length }) }}</q-item-label>
             <q-item v-for="use in usage" :key="use.resetCommandId" clickable :to="{ path: `/zones/${use.zoneId}`, query: { tab: 'resets' } }">
@@ -64,6 +64,8 @@ import { guardOf } from '../../shared/helpers/record-guard'
 import { useWorld } from '../../shared/helpers/world-state'
 
 const { t } = useI18n()
+/** La scheda dei riferimenti e' aperta: altrimenti si riduce a una striscia e il form accanto si allarga. */
+const refsOpen = ref(true)
 const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
