@@ -85,6 +85,7 @@
               row-key="__row"
               dense
               single-sort
+              hide-pagination
               :initial-sort="[]"
               :no-data-label="t('playerFiles.empty')"
               :data-testid="`list-${list.name}`"

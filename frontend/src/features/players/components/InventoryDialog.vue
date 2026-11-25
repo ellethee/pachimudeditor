@@ -9,6 +9,7 @@
           dense
           :loading="loading"
           single-sort
+          hide-pagination
           :initial-sort="[]"
           :no-data-label="t('players.inventory.empty')"
         >

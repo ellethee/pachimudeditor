@@ -52,6 +52,7 @@
       dense
       :loading="loading"
       single-sort
+      hide-pagination
       :initial-sort="[]"
       :no-data-label="t('playerFiles.inventory.empty')"
       data-testid="live-inventory-table"
