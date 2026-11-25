@@ -62,6 +62,7 @@ const host = shallowRef<HTMLElement | null>(null)
 const view = shallowRef<EditorView | null>(null)
 const mode = shallowRef<Compartment | null>(null)
 const lang = shallowRef<Compartment | null>(null)
+let langTicket = 0
 
 onMounted(async () => {
   const [{ EditorView, keymap, lineNumbers, highlightActiveLine, drawSelection, tooltips }, { EditorState, Compartment }, cmds, language, lint, ac] = await Promise.all([
@@ -98,6 +99,7 @@ onMounted(async () => {
       ],
     }),
   })
+  lint.forceLinting(view.value)
 })
 
 watch(
@@ -113,7 +115,13 @@ watch(
   async ([schema, language]) => {
     const v = view.value
     if (!v || !lang.value) return
-    v.dispatch({ effects: lang.value.reconfigure((await languageExtension(language, schema)) as never) })
+    const ticket = ++langTicket
+    const ext = (await languageExtension(language, schema)) as never
+    if (ticket !== langTicket) return // un cambio piu' recente e' gia' in corso: scarta il risultato superato
+    v.dispatch({ effects: lang.value.reconfigure(ext) })
+    // il linter appena configurato non parte da solo sul testo gia' presente: forza il primo controllo
+    const { forceLinting } = await import('@codemirror/lint')
+    forceLinting(v)
   },
 )
 

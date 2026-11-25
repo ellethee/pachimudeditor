@@ -38,6 +38,13 @@ describe('file grezzi delle zone', () => {
     assert.equal(await s.page.getByTestId('zonefile-row').filter({ hasText: 'ZonaVuota' }).count(), 0) // filtro per zona
   })
 
+  it('UI: la prima modifica dopo l\'apertura viene sottolineata dallo schema', async () => {
+    const text = (await api.get(URL)).data.text
+    await editorText().fill(text.replace('level: 1', 'level: molto'))
+    await s.page.locator('.cm-lintRange').first().waitFor({ timeout: 8000 })
+    await editorText().fill(text) // ripristina: nessuna modifica pendente
+  })
+
   it('UI: modifica valida e salva', async () => {
     await editorText().fill(original.replace('un ratto', 'un topo'))
     await s.page.getByTestId('zonefile-dirty').waitFor()
