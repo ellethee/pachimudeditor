@@ -49,6 +49,13 @@ Con `read_only` ogni scrittura risponde 409 `world.read_only`.
 - `GET /content/schemas/{name}` con `name` = `pachimud`, `character-class`, `race`, `zone`, `rooms`, `mobs`, `objects`, `resets` -> il JSON Schema (Draft 2020-12, con `$defs`/`$ref`) del file YAML del gioco, copia versionata in `adapters/pachimud/.../schemas/` di quello generato da `pachimud json-schema`; altro nome: 422. Serve all'editor YAML (validazione, completamento, hover); il test `test_json_schemas_match_the_game` (con `PACHIMUD_GAME_ROOT`) ne controlla l'allineamento.
 
 
+**File YAML grezzi delle zone** (`zones/<cartella>/zone.yaml`, `rooms*.yaml`, `mobs*.yaml`, `objects*.yaml`, `resets*.yaml`, anche in sottocartelle; come li legge il gioco):
+
+- `GET /content/zonefiles` -> `[{path, zone, name, kind, schemaName, size, etag}]` (anche i file rotti). `path` e' relativo a `zones/` (`ZonaAlfa/mobs.yaml`); `kind` = `zone|rooms|mobs|objects|resets`; `schemaName` e' il nome per `GET /content/schemas/{name}` (`zone`, `rooms`, `mobs`, `objects`, `resets`); `etag` = impronta del contenuto.
+- `GET /content/zonefiles/{path}` -> come sopra piu' `text`. 404 `pachimud.zonefile_not_found` se il percorso non e' fra i file che il gioco legge (cosi' `..`, percorsi assoluti e file estranei non passano).
+- `PUT /content/zonefiles/{path}` body `{text, etag?}` -> come il `GET`. Solo file **esistenti** (niente creazione/cancellazione). Se `etag` e' dato e il file e' cambiato dopo la lettura: 409 `pachimud.zonefile_changed`. Prima di scrivere: (1) il testo si legge come YAML: 422 `pachimud.yaml_invalid` (`detail` «riga R, colonna C: ...», params `line`, `column`); (2) si valida con i modelli del gioco (stesse regole di `PUT /mobs`, trigger inclusi; per `rooms|mobs|objects` ogni voce di `rooms:|mobs:|objects:`, per `zone`/`resets` il documento): 422 `pachimud.zonefile_invalid` con `detail` sulla prima violazione («riga 7, mobs[0].level: ...», e il numero delle altre), params `line`, `field` e `issues[{field, line, message}]` (al piu' 20). Se non e' valido il file non viene toccato. Un testo identico non riscrive il file; altrimenti scrittura atomica e cache invalidata (la lettura successiva di zone/stanze/mob rilegge il disco). 422 `content.too_large` oltre 512 KB; mondo `read_only`: 409 `world.read_only`.
+
+
 ## Negozi
 
 Un negozio non e' un file: e' il campo `shop:` del mob (`extra.shop` di `/api/mobs`, chiavi del file: `produces[]`, `trades[]`, `profit_buy`, `profit_sell`, `room`, `open1`, `close1`,

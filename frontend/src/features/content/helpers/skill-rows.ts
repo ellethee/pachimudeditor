@@ -1,4 +1,6 @@
+import { markRaw } from 'vue'
 import type { IFieldRow } from '@ilpachi/pachi-kit/fields'
+import YamlField from '../../shared/components/YamlField.vue'
 import type { Translate } from './field-rows'
 import type { ISkill, ISocial } from '../types/content-files'
 
@@ -74,9 +76,7 @@ export function buildSkillRows(t: Translate, editing: boolean): { general: IFiel
           field: 'advanced',
           label: t('content.skills.fields.advanced'),
           hint: t('content.skills.fields.advancedHint'),
-          type: 'textarea',
-          autogrow: true,
-          inputStyle: 'font-family: monospace; min-height: 12em',
+          component: markRaw(YamlField),
         },
       ],
     ],

@@ -1,0 +1,25 @@
+/** Messaggi italiani della feature (lingua di riferimento). */
+export default {
+  zonefiles: {
+    title: 'File grezzi delle zone',
+    description: 'Modifica come testo YAML i file delle zone (zone, stanze, mob, oggetti, reset)',
+    empty: 'Nessun file.',
+    pick: 'Scegli un file dall’elenco.',
+    unsavedTitle: 'Modifiche non salvate',
+    unsavedMessage: 'Ci sono modifiche non salvate: scartarle?',
+    saved: 'File salvato.',
+    modified: 'Modificato',
+    allZones: 'Tutte le zone',
+    allKinds: 'Tutti i tipi',
+    filterZone: 'Zona',
+    filterKind: 'Tipo',
+    columns: { zone: 'Zona', file: 'File', kind: 'Tipo', size: 'Dimensione' },
+    kinds: { zone: 'Zona', rooms: 'Stanze', mobs: 'Mob', objects: 'Oggetti', resets: 'Reset' },
+    issues: 'Violazioni dello schema (prime {n})',
+    issueLine: 'riga {line}',
+    changedTitle: 'Il file è cambiato sul disco',
+    changedMessage: 'Il file è stato modificato altrove dopo averlo aperto: le tue modifiche non sono state scritte.',
+    reloadDisk: 'Ricarica dal disco',
+    link: 'File grezzi',
+  },
+}

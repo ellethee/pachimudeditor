@@ -131,8 +131,10 @@ describe('dikumod', { skip: HAS_DIKUMOD ? false : 'dati Diku Modificato non trov
     assert.equal(await s.page.getByLabel('Nome *').inputValue(), 'La carrozza di ALMA')
     // il settore proprio del mondo ha la precedenza sull'approssimazione
     await s.page.getByText('Campi specifici del mondo').click()
-    await s.page.getByLabel('Teleport (time, target, mask, count)').waitFor()
-    assert.match(await s.page.getByLabel('Teleport (time, target, mask, count)').inputValue(), /"target": 6/)
+    // il campo JSON e' un editor di codice (CodeMirror): niente input, si legge il contenuto
+    const tele = s.page.locator('.pachi-json-field').filter({ hasText: 'Teleport (time, target, mask, count)' }).locator('.cm-content')
+    await tele.waitFor()
+    assert.match(await tele.innerText(), /"target": 6/)
     await s.page.getByLabel('Settore del mondo').waitFor()
     assert.equal(await rawI18nKey(s.page), null)
   })

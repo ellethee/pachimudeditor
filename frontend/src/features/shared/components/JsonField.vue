@@ -1,27 +1,19 @@
 <template>
-  <q-input
-    v-model="text"
-    type="textarea"
-    autogrow
-    outlined
-    dense
-    stack-label
-    input-class="pachi-json-field"
-    :label="label"
-    :hint="error || hint"
-    :error="!!error"
-    :readonly="readonly"
-    @update:model-value="onInput"
-  />
+  <div class="pachi-json-field">
+    <div v-if="label" class="text-caption text-grey-7 q-mb-xs">{{ label }}</div>
+    <code-editor v-model="text" language="json" height="8em" :readonly="readonly" :error="error" @update:model-value="onInput" />
+    <div v-if="hint && !error" class="text-caption text-grey-7 q-mt-xs">{{ hint }}</div>
+  </div>
 </template>
 
 <script setup lang="ts">
 /**
- * Editor JSON di ripiego per i valori di `extra` di forma sconosciuta (oggetti, liste non di stringhe, `null`).
+ * Editor JSON (CodeEditor) di ripiego per i valori di `extra` di forma sconosciuta (oggetti, liste non di stringhe, `null`).
  * Emette il valore già interpretato solo se il testo è JSON valido; `validate()` segnala l'errore.
  */
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import CodeEditor from './CodeEditor.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -67,8 +59,7 @@ watch(
  *
  * @param raw - testo del campo
  */
-function onInput(raw: string | number | null): void {
-  const source = String(raw ?? '')
+function onInput(source: string): void {
   if (source.trim() === '') {
     error.value = ''
     emit('update:modelValue', undefined)
@@ -78,9 +69,18 @@ function onInput(raw: string | number | null): void {
     const parsed: unknown = JSON.parse(source)
     error.value = ''
     emit('update:modelValue', parsed)
-  } catch {
-    error.value = t('extra.jsonInvalid')
+  } catch (e) {
+    error.value = parseError(e)
   }
+}
+
+/**
+ * Messaggio di errore di parsing (con riga/colonna se il motore JS le fornisce).
+ *
+ * @param e - eccezione di `JSON.parse`
+ */
+function parseError(e: unknown): string {
+  return `${t('extra.jsonInvalid')} (${e instanceof Error ? e.message : String(e)})`
 }
 
 /** Valida il testo corrente (usato dal form prima del salvataggio). */
@@ -90,18 +90,11 @@ function validate(): boolean {
     JSON.parse(text.value)
     error.value = ''
     return true
-  } catch {
-    error.value = t('extra.jsonInvalid')
+  } catch (e) {
+    error.value = parseError(e)
     return false
   }
 }
 
 defineExpose({ validate })
 </script>
-
-<style lang="scss">
-.pachi-json-field {
-  font-family: var(--pachi-mono, monospace);
-  font-size: 12px;
-}
-</style>

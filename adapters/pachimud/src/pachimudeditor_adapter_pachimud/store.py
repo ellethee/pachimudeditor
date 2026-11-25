@@ -234,6 +234,10 @@ class YamlStore:
                     found[path] = stamp
         return found
 
+    def files_on_disk(self) -> dict[Path, FileKind]:
+        """Tutti i file YAML delle zone (anche rotti) con il loro tipo, letti dal disco."""
+        return {p: k for p in sorted(self._candidates()) if (k := self._kind_of(p.name)) is not None}
+
     @staticmethod
     def _kind_of(name: str) -> FileKind | None:
         """Il tipo di file dal nome (`zone.yaml` o prefisso del gioco)."""
