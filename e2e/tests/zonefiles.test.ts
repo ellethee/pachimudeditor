@@ -45,6 +45,17 @@ describe('file grezzi delle zone', () => {
     await editorText().fill(text) // ripristina: nessuna modifica pendente
   })
 
+  it('UI: un file lungo scorre nell\'editor, la pagina non sfora', async () => {
+    await editorText().fill('mobs:\n' + '# riga\n'.repeat(300))
+    const m = await s.page.evaluate(() => {
+      const sc = document.querySelector('.cm-scroller') as HTMLElement
+      const save = document.querySelector('[data-testid=zonefile-save]') as HTMLElement
+      return { doc: document.documentElement.scrollHeight, win: innerHeight, scrolls: sc.scrollHeight > sc.clientHeight, saveBottom: save.getBoundingClientRect().bottom }
+    })
+    assert.ok(m.doc <= m.win + 1 && m.scrolls && m.saveBottom <= m.win, JSON.stringify(m))
+    await editorText().fill(original)
+  })
+
   it('UI: modifica valida e salva', async () => {
     await editorText().fill(original.replace('un ratto', 'un topo'))
     await s.page.getByTestId('zonefile-dirty').waitFor()

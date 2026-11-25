@@ -34,19 +34,19 @@
         </pachi-table2>
       </div>
       <div class="col-12 col-md-8">
-        <q-card v-if="current" flat bordered class="q-pa-md column q-gutter-y-sm" data-testid="zonefile-editor">
+        <q-card v-if="current" v-fit-height="{ offset: 24 }" flat bordered class="q-pa-md column no-wrap q-gutter-y-sm" data-testid="zonefile-editor">
           <div class="row items-center q-gutter-sm">
             <div class="text-h6">{{ current.path }}</div>
             <q-badge v-if="dirty" color="warning" text-color="black" :label="t('zonefiles.modified')" data-testid="zonefile-dirty" />
           </div>
-          <code-editor ref="editor" v-model="text" language="yaml" :schema="schema" :readonly="readOnly" :error="error" height="28em" data-testid="zonefile-text" />
+          <code-editor ref="editor" v-model="text" language="yaml" :schema="schema" :readonly="readOnly" :error="error" fill data-testid="zonefile-text" />
           <q-banner v-if="changed" dense rounded class="bg-warning text-black" data-testid="zonefile-changed">
             {{ t('zonefiles.changedMessage') }}
             <template #action>
               <q-btn flat no-caps :label="t('zonefiles.reloadDisk')" data-testid="zonefile-reload" @click="reloadFromDisk" />
             </template>
           </q-banner>
-          <div v-if="issues.length" class="text-caption" data-testid="zonefile-issues">
+          <div v-if="issues.length" class="text-caption scroll" style="max-height: 8em" data-testid="zonefile-issues">
             <div class="text-weight-medium">{{ t('zonefiles.issues', { n: issues.length }) }}</div>
             <ul class="q-my-none">
               <li v-for="(issue, i) in issues" :key="i">
@@ -78,6 +78,7 @@ import type { QTableColumn } from 'quasar'
 import { onBeforeRouteLeave, useRoute } from 'vue-router'
 import { mdiContentSave } from '@quasar/extras/mdi-v7'
 import { PachiTable2 } from '@ilpachi/pachi-kit/table'
+import { vFitHeight } from '../../shared/directives/fit-height'
 import CodeEditor from '../../shared/components/CodeEditor.vue'
 import { useWorld } from '../../shared/helpers/world-state'
 import { describeError } from '../../content/helpers/describe-error'

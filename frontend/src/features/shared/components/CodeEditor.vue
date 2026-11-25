@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div ref="host" class="code-editor" :class="{ 'code-editor--dark': $q.dark.isActive, 'code-editor--error': !!error }" :style="{ minHeight: height }" />
+  <div :class="{ 'code-editor-fill': fill }">
+    <div ref="host" class="code-editor" :class="{ 'code-editor--dark': $q.dark.isActive, 'code-editor--error': !!error }" :style="{ minHeight: fill ? '8em' : height }" />
     <div v-if="error" class="text-negative text-caption q-mt-xs" data-testid="code-editor-error">{{ error }}</div>
   </div>
 </template>
@@ -34,8 +34,10 @@ const props = withDefaults(
     readonly?: boolean
     /** Altezza minima CSS dell'editor. */
     height?: string
+    /** Riempie lo spazio del genitore (flex) e scorre all'interno invece di crescere col testo. */
+    fill?: boolean
   }>(),
-  { language: 'yaml', error: '', schema: null, readonly: false, height: '16em' },
+  { language: 'yaml', error: '', schema: null, readonly: false, height: '16em', fill: false },
 )
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const $q = useQuasar()
@@ -190,6 +192,23 @@ onBeforeUnmount(() => view.value?.destroy())
 </script>
 
 <style>
+.code-editor-fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+.code-editor-fill > .code-editor {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.code-editor-fill .cm-editor {
+  height: 100%;
+}
+.code-editor-fill .cm-scroller {
+  overflow: auto;
+}
 .code-editor {
   border: 1px solid rgba(0, 0, 0, 0.24);
   border-radius: 4px;
