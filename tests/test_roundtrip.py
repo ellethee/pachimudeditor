@@ -50,7 +50,7 @@ def test_expected_columns_match_copied_models() -> None:
         for name, spec in columns.items():
             if name != "id":
                 assert spec.null == table.c[name].nullable, f"{table_name}.{name}"
-    assert set(EXPECTED) == set(Base.metadata.tables) == {"account", "player_character", "board_message", "mail_message"}
+    assert set(EXPECTED) == set(Base.metadata.tables) == {"account", "player_character", "board_message", "mail_message", "room_objects"}
 
 
 def _world(tmp_path: Path, zone_dir: Path) -> PachimudAdapter:

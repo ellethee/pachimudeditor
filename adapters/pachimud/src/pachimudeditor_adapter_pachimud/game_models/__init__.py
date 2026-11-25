@@ -8,7 +8,7 @@ Nel DB del gioco restano `account`, `player_character`, `board_message` e `mail_
 Importare questo pacchetto registra tutte le tabelle su `Base` (necessario per le relazioni con nome in stringa).
 """
 
-from pachimudeditor_adapter_pachimud.game_models import account, character, messages  # noqa: F401
+from pachimudeditor_adapter_pachimud.game_models import account, character, messages, room  # noqa: F401
 from pachimudeditor_adapter_pachimud.game_models.base import Base
 
 __all__ = ["Base"]
