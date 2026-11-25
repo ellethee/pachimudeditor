@@ -29,7 +29,7 @@
         </pachi-table2>
       </div>
       <div class="col-12 col-md-8">
-        <q-card v-if="current" flat bordered class="q-pa-md column q-gutter-y-sm" data-testid="file-editor">
+        <q-card v-if="current" v-fit-height="{ offset: 24 }" flat bordered class="q-pa-md column no-wrap q-gutter-y-sm" data-testid="file-editor">
           <div class="row items-center">
             <div class="text-h6">{{ current.path }}</div>
             <q-badge v-if="current.layer === 'base'" class="q-ml-md" color="grey" outline :label="t('content.layer.baseHint')" />
@@ -55,7 +55,7 @@
             :hint="t('content.files.pathHint', { ext: area === 'texts' ? '.txt' : '.yaml' })"
             data-testid="file-path"
           />
-          <code-editor v-model="text" :language="isYaml ? 'yaml' : 'text'" :readonly="readOnly" data-testid="file-text" />
+          <code-editor v-model="text" :language="isYaml ? 'yaml' : 'text'" :readonly="readOnly" fill data-testid="file-text" />
           <q-banner v-if="error" dense rounded class="bg-negative text-white" data-testid="file-error">{{ error }}</q-banner>
           <div class="row items-center q-gutter-sm">
             <q-btn color="primary" no-caps :icon="mdiContentSave" :label="t('forms.save')" :loading="saving" :disable="!dirty || readOnly" data-testid="file-save" @click="save" />
@@ -81,6 +81,7 @@ import type { QTableColumn } from 'quasar'
 import { mdiContentSave, mdiDelete, mdiPlus } from '@quasar/extras/mdi-v7'
 import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import ContentLiveBar from '../components/ContentLiveBar.vue'
+import { vFitHeight } from '../../shared/directives/fit-height'
 import CodeEditor from '../../shared/components/CodeEditor.vue'
 import { useWorld } from '../../shared/helpers/world-state'
 import { describeError } from '../helpers/describe-error'

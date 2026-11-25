@@ -111,6 +111,14 @@ describe('contenuti a strati', () => {
     await s.page.getByTestId('file-text').locator('.cm-content').fill('chiave: [aperta\n')
     await s.page.getByTestId('file-save').click()
     await s.page.getByTestId('file-error').filter({ hasText: 'riga' }).waitFor()
+    // un file lungo scorre nell'editor e la pagina non sfora
+    await s.page.getByTestId('file-text').locator('.cm-content').fill('chiave: valore\n' + '# riga\n'.repeat(300))
+    const m = await s.page.evaluate(() => {
+      const sc = document.querySelector('.cm-scroller') as HTMLElement
+      const save = document.querySelector('[data-testid=file-save]') as HTMLElement
+      return { doc: document.documentElement.scrollHeight, win: innerHeight, scrolls: sc.scrollHeight > sc.clientHeight, saveBottom: save.getBoundingClientRect().bottom }
+    })
+    assert.ok(m.doc <= m.win + 1 && m.scrolls && m.saveBottom <= m.win, JSON.stringify(m))
     await s.page.getByTestId('file-text').locator('.cm-content').fill('chiave: valore\n')
     await s.page.getByTestId('file-save').click()
     await s.page.getByTestId('file-row').filter({ hasText: 'it/pw_prova.yaml' }).waitFor()
