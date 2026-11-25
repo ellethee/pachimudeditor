@@ -567,6 +567,21 @@
           "default": null,
           "title": "Vnum"
         },
+        "var": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Var"
+        },
         "who": {
           "default": "n",
           "enum": [
@@ -2138,6 +2153,9 @@
             "act",
             "tell",
             "bribe",
+            "all_greet",
+            "entry",
+            "command",
             "get",
             "drop",
             "wear",
@@ -2151,6 +2169,11 @@
           "default": "",
           "title": "Argument",
           "type": "string"
+        },
+        "block": {
+          "default": false,
+          "title": "Block",
+          "type": "boolean"
         },
         "chance": {
           "default": 100,

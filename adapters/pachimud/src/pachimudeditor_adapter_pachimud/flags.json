@@ -138,7 +138,7 @@
         "en": "Objects on the floor survive a reboot."
       },
       "origin": "leu",
-      "implemented": false
+      "implemented": true
     },
     {
       "name": "NO_TRACK",
@@ -258,7 +258,7 @@
         "en": "No regeneration."
       },
       "origin": "leu",
-      "implemented": false
+      "implemented": true
     },
     {
       "name": "NO_TAKE_ALL",

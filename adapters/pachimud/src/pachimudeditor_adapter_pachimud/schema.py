@@ -39,7 +39,7 @@ REVISIONS: tuple[str, ...] = (
     "37151e482628", "f608a52c9ecf", "a3c7d1e95b20", "c4d8e2b1f6a7", "d2f5a8c1e3b9", "62dcb871813e",
     "e5a1c9d37b42", "a7b2d94c1e60", "b8c3e05d2f71", "a9e3c4d7f152", "c4d8e1a7b930", "d1a5b9c3e7f2",
     "e3b7c1d5a902", "f6a2c8d4e1b7", "a7d1e5c9b3f4", "b8e2d4f6a1c3", "c9f3a5b7d2e4", "d1a4b6c8e2f5",
-    "e2b5c7d9f1a3", "f3c6d8e0a2b4", "a4f7c1d9b3e6",
+    "e2b5c7d9f1a3", "f3c6d8e0a2b4", "a4f7c1d9b3e6", "b5d9f1a3c7e8", "b5d9e1f3a7c2",
 )  # fmt: skip
 """Revisioni alembic del gioco note, dalla piu' vecchia (`alembic/versions` del repo pachimud)."""
 
@@ -66,6 +66,8 @@ REVISION_NOTES: dict[str, str] = {
     "e2b5c7d9f1a3": "le monete in banca stanno in player_character.bank_gold",
     "f3c6d8e0a2b4": "tabelle board_message (bacheche) e mail_message (posta)",
     "a4f7c1d9b3e6": "player_character.rented_at e rent_cost (pensione)",
+    "b5d9f1a3c7e8": "tabella room_objects (oggetti a terra delle stanze SAVE_ROOM)",
+    "b5d9e1f3a7c2": "player_character.hometown (stanza di word of recall)",
 }
 HEAD = REVISIONS[-1]
 """L'ultima revisione nota."""
@@ -179,6 +181,7 @@ EXPECTED: dict[str, dict[str, Col]] = {
         "bank_gold": _c("int", default=0),
         "rented_at": _c("datetime", null=True, since=26),
         "rent_cost": _c("int", default=0, since=26),
+        "hometown": _c("int", null=True, since=28),
         "created_at": _c("datetime", default=_now),
         "last_played_at": _c("datetime", null=True),
     },
@@ -197,6 +200,10 @@ EXPECTED: dict[str, dict[str, Col]] = {
         "text": _c("str", since=25),
         "created_at": _c("datetime", default=_now, since=25),
     },
+    "room_objects": {
+        "room_vnum": _ID,
+        "objects": _c("list", since=27),
+    },
 }
 """Tabella -> colonna -> specifica, per la revisione `HEAD`."""
 
@@ -210,6 +217,9 @@ OPTIONAL_TABLES: dict[str, str] = {
     "mail_message": "posta",
 }
 """Tabella -> capability che spegne se manca."""
+
+UNUSED_TABLES: tuple[str, ...] = ("room_objects",)
+"""Tabelle del gioco che l'editor non legge (qui solo per il confronto coi modelli): se mancano non si segnala nulla."""
 
 CLASS_NAMES: dict[str, str] = {"account": "Account", "player_character": "PlayerCharacter"}
 """Tabella -> nome della classe mappata (gli stessi nomi dei modelli del gioco)."""
@@ -392,6 +402,8 @@ def check_schema(tables: Mapping[str, Table], revision: str | None) -> tuple[Sch
 
     for table_name, columns in EXPECTED.items():
         table = tables.get(table_name)
+        if table is None and table_name in UNUSED_TABLES:
+            continue
         if table is None:
             missing_tables.append(table_name)
             if table_name in CORE_TABLES:

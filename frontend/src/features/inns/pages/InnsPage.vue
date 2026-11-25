@@ -234,6 +234,9 @@ async function create(): Promise<void> {
     $q.notify({ type: 'positive', message: t('inns.created', { vnum }) })
     if (spawnedInZoneId !== null && spawnedInZoneId !== zoneId.value) $q.notify({ type: 'info', message: t('inns.spawnOtherZone') })
     if (spawnError) $q.notify({ type: 'warning', message: t('inns.spawnFailed', { error: spawnError }) })
+    // con il reset appena scritto il gioco acceso rilegge la zona, cosi' il locandiere compare senza un riavvio
+    const spawnZone = zones.value.find((z) => z.id === spawnedInZoneId)
+    if (spawnZone && canReload.value) await reloadZoneLive(spawnZone.vnum)
     await load()
     void router.push(`/mobs/${vnum}`)
   } catch (e) {

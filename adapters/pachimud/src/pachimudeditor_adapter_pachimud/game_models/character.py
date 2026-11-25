@@ -177,6 +177,8 @@ class PlayerCharacter(Base):
     """Quando il personaggio e' andato in pensione con `rent` (vuoto: non e' in pensione)."""
     rent_cost: Mapped[int] = mapped_column(default=0, nullable=False)
     """Costo giornaliero della pensione (`rent`)."""
+    hometown: Mapped[int | None] = mapped_column(default=None, nullable=True)
+    """Stanza a cui riporta `word of recall` (`player.hometown` di LeU)."""
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=lambda: datetime.now(UTC))
     inventory: Mapped[list[dict]] = json_dict_list_column(default=list, nullable=False)
     """Oggetti trasportati e indossati: lista di `{vnum, overrides, equipped_slot, state, contents}` (vedi il gioco)."""
