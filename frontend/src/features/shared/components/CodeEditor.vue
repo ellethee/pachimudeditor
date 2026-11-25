@@ -59,9 +59,34 @@ async function languageExtension(language: 'yaml' | 'json' | 'text', schema: obj
 }
 
 const host = shallowRef<HTMLElement | null>(null)
+/**
+ * Colori della sintassi e modalita' (cursore, selezione) per il tema chiaro o scuro.
+ *
+ * @param dark - true per il tema scuro
+ */
+async function themeExtension(dark: boolean): Promise<unknown[]> {
+  const [{ HighlightStyle, syntaxHighlighting, defaultHighlightStyle }, { tags: t }, { EditorView }] = await Promise.all([
+    import('@codemirror/language'),
+    import('@lezer/highlight'),
+    import('@codemirror/view'),
+  ])
+  if (!dark) return [syntaxHighlighting(defaultHighlightStyle, { fallback: true })]
+  const style = HighlightStyle.define([
+    { tag: [t.propertyName, t.definition(t.propertyName), t.keyword], color: '#82aaff' },
+    { tag: [t.string, t.special(t.string)], color: '#c3e88d' },
+    { tag: [t.number, t.bool, t.null, t.atom], color: '#f78c6c' },
+    { tag: [t.comment, t.meta], color: '#9e9e9e', fontStyle: 'italic' },
+    { tag: [t.punctuation, t.separator, t.operator], color: '#b0bec5' },
+    { tag: [t.typeName, t.labelName, t.className], color: '#ffcb6b' },
+    { tag: t.invalid, color: '#ff5370' },
+  ])
+  return [EditorView.theme({}, { dark: true }), syntaxHighlighting(style)]
+}
+
 const view = shallowRef<EditorView | null>(null)
 const mode = shallowRef<Compartment | null>(null)
 const lang = shallowRef<Compartment | null>(null)
+const theme = shallowRef<Compartment | null>(null)
 let langTicket = 0
 
 onMounted(async () => {
@@ -76,6 +101,7 @@ onMounted(async () => {
   if (!host.value) return
   mode.value = new Compartment()
   lang.value = new Compartment()
+  theme.value = new Compartment()
   view.value = new EditorView({
     parent: host.value,
     state: EditorState.create({
@@ -87,7 +113,7 @@ onMounted(async () => {
         tooltips({ parent: host.value }), // dentro l'host: il tema chiaro/scuro e la larghezza massima si applicano anche ai tooltip
         cmds.history(),
         language.indentOnInput(),
-        language.syntaxHighlighting(language.defaultHighlightStyle, { fallback: true }),
+        theme.value.of((await themeExtension($q.dark.isActive)) as never),
         ac.autocompletion(),
         keymap.of([...cmds.defaultKeymap, ...cmds.historyKeymap, ...ac.completionKeymap, ...lint.lintKeymap]),
         EditorView.lineWrapping,
@@ -122,6 +148,15 @@ watch(
     // il linter appena configurato non parte da solo sul testo gia' presente: forza il primo controllo
     const { forceLinting } = await import('@codemirror/lint')
     forceLinting(v)
+  },
+)
+
+watch(
+  () => $q.dark.isActive,
+  async (dark) => {
+    const v = view.value
+    if (!v || !theme.value) return
+    v.dispatch({ effects: theme.value.reconfigure((await themeExtension(dark)) as never) })
   },
 )
 
