@@ -16,6 +16,7 @@
           :columns="columns"
           :loading="loading"
           hide-toolbar
+          hide-pagination
           single-sort
           :initial-sort="[]"
           dense
