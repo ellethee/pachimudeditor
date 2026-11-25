@@ -6,6 +6,7 @@ MESSAGES: dict[str, str] = {
     "content.id_taken": "A content item with id «{id}» already exists.",
     "content.id_mismatch": "The body id («{body_id}») differs from the path id («{id}»): the id cannot be changed.",
     "content.invalid": "Invalid content: {detail}",
+    "content.base_readonly": "«{id}» is a built-in game item: it cannot be deleted, but you can edit it (a copy is made) or disable it.",
     "content.race_in_use": "Cannot delete race «{id}»: it is used by {count} mob prototypes. Change their race first or disable it.",
     "content.class_in_use": "Cannot delete class «{id}»: it is used by {count} mob prototypes. Change their class first or disable it.",
     "content.invalid_path": "Path «{path}» not allowed: use letters, digits, «_», «-», «.» and «/», no «..», with the area's extension.",

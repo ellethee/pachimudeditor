@@ -10,8 +10,9 @@ Il game server carica gli YAML una sola volta all'avvio: le modifiche hanno effe
 
 import os
 import re
+import shutil
 import tempfile
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -102,6 +103,8 @@ class StoredFile:
     path: Path
     raw: dict[str, Any]
     renamed_disabled: bool = False
+    base: bool = False
+    """True se il file sta nello strato di base del gioco (sola lettura: modificarlo ne crea la copia nello strato dell'utente)."""
 
 
 class YamlDirStore:
@@ -122,8 +125,10 @@ class YamlDirStore:
         *,
         validate: Validator | None = None,
         disabled_by_flag: str | None = None,
+        base_roots: Callable[[], Sequence[Path]] | None = None,
     ) -> None:
-        """Vedi la classe per il significato dei parametri."""
+        """Vedi la classe per il significato dei parametri; `base_roots` = cartelle `definitions` di base (sola lettura), sotto `root`."""
+        self._base_roots = base_roots
         self._root = root
         self.directory = directory
         self.model = model
@@ -157,12 +162,37 @@ class YamlDirStore:
         """I file leggibili (quelli con YAML rotto sono restituiti con `raw` vuoto e id = nome file)."""
         out: list[StoredFile] = []
         for file in self._files():
-            try:
-                raw = self._read(file)
-            except Exception:
-                raw = {}
-            out.append(StoredFile(file, raw, file.name.endswith(DISABLED_SUFFIX)))
-        return out
+            out.append(self._load(file))
+        seen = {self.stem(f.path) for f in out}
+        for file in self._base_files():
+            if self.stem(file) not in seen:  # un file dell'utente con lo stesso id prevale su quello di base
+                seen.add(self.stem(file))
+                out.append(self._load(file, base=True))
+        return sorted(out, key=lambda f: f.path.name)
+
+    def _load(self, file: Path, *, base: bool = False) -> StoredFile:
+        """Il file letto; con YAML rotto `raw` e' vuoto."""
+        try:
+            raw = self._read(file)
+        except Exception:
+            raw = {}
+        return StoredFile(file, raw, file.name.endswith(DISABLED_SUFFIX), base)
+
+    def _base_files(self) -> list[Path]:
+        """I file attivi degli strati di base (lo strato piu' vicino all'utente prevale)."""
+        found: dict[str, Path] = {}
+        for root in self._base_roots() if self._base_roots else ():
+            folder = root / self.directory
+            if folder.is_dir():
+                found.update({p.name: p for p in folder.iterdir() if p.is_file() and p.name.endswith(".yaml")})
+        return list(found.values())
+
+    def _copy_up(self, stored: StoredFile) -> StoredFile:
+        """Copia un file di base nello strato dell'utente (commenti compresi) e ne restituisce la copia."""
+        self.path.mkdir(parents=True, exist_ok=True)
+        target = self.path / stored.path.name
+        shutil.copyfile(stored.path, target)
+        return self._load(target)
 
     @staticmethod
     def stem(file: Path) -> str:
@@ -178,14 +208,14 @@ class YamlDirStore:
         for suffix in (".yaml", DISABLED_SUFFIX):
             direct = self.path / f"{item_id}{suffix}"
             if direct.is_file():
-                try:
-                    return StoredFile(direct, self._read(direct), suffix == DISABLED_SUFFIX)
-                except Exception:
-                    return StoredFile(direct, {}, suffix == DISABLED_SUFFIX)
+                return self._load(direct)
+        for file in self._base_files():
+            if self.stem(file) == item_id:
+                return self._load(file, base=True)
         for stored in self.stored():
             if stored.raw.get(self.id_field) == item_id:
                 return stored
-        return None
+        return None  # `stored()` include gli strati di base
 
     def check_id(self, item_id: str) -> str:
         """`item_id` se ammesso dalla regex, altrimenti 422 `content.invalid_id`."""
@@ -237,6 +267,8 @@ class YamlDirStore:
         merged = {**stored.raw}
         merge_dicts(merged, payload)
         self.parse(merged)
+        if stored.base:
+            stored = self._copy_up(stored)
         with stored.path.open("r", encoding="utf-8") as handle:
             text = handle.read()
         document = new_yaml().load(text)
@@ -254,6 +286,8 @@ class YamlDirStore:
             raise api_error(404, "content.not_found", id=item_id)
         if self.disabled_by_flag:
             return self.update(item_id, {self.disabled_by_flag: True if disabled else None})
+        if stored.base:
+            stored = self._copy_up(stored)
         target_name = f"{self.stem(stored.path)}{DISABLED_SUFFIX if disabled else '.yaml'}"
         target = stored.path.with_name(target_name)
         if target != stored.path:
@@ -267,6 +301,8 @@ class YamlDirStore:
         stored = self.locate(item_id)
         if stored is None:
             raise api_error(404, "content.not_found", id=item_id)
+        if stored.base:
+            raise api_error(409, "content.base_readonly", id=item_id)
         stored.path.unlink()
 
     def _write(self, file: Path, document: Any, *, explicit_start: bool = False) -> None:

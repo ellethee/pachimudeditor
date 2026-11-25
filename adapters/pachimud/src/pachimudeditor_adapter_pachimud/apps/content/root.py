@@ -55,6 +55,11 @@ def _definitions_root(adapter: PachimudDep) -> Path:
     return root
 
 
+def _base_roots(adapter: PachimudDep) -> tuple[Path, ...]:
+    """Gli strati di base (sola lettura) di razze e classi: tutti tranne quello dell'utente."""
+    return tuple(adapter.params.layers[:-1])
+
+
 def _validate_race(raw: Mapping[str, Any]) -> list[str]:
     """Regole extra per una razza: nomi di flag e taglia esistenti (il game server ignora in silenzio i refusi)."""
     problems: list[str] = []
@@ -82,12 +87,21 @@ def _validate_class(raw: Mapping[str, Any]) -> list[str]:
 
 def _races_store(adapter: PachimudDep) -> YamlDirStore:
     """Lo store delle razze del mondo attivo."""
-    return YamlDirStore(lambda: _definitions_root(adapter), "races", LoaderRace, "race_id", validate=_validate_race)
+    return YamlDirStore(
+        lambda: _definitions_root(adapter), "races", LoaderRace, "race_id", validate=_validate_race, base_roots=lambda: _base_roots(adapter)
+    )
 
 
 def _classes_store(adapter: PachimudDep) -> YamlDirStore:
     """Lo store delle classi del mondo attivo."""
-    return YamlDirStore(lambda: _definitions_root(adapter), "classes", LoaderClass, "class_id", validate=_validate_class)
+    return YamlDirStore(
+        lambda: _definitions_root(adapter),
+        "classes",
+        LoaderClass,
+        "class_id",
+        validate=_validate_class,
+        base_roots=lambda: _base_roots(adapter),
+    )
 
 
 RacesDep = Annotated[YamlDirStore, Depends(_races_store)]
