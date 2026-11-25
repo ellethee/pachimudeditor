@@ -152,6 +152,8 @@ export async function saveDialog(page: Page): Promise<void> {
 export async function saveForm(page: Page): Promise<void> {
   // l'overlay di caricamento (richieste in corso) copre il pulsante: lo si attende prima di cliccare
   await page.locator('.q-loading__backdrop').waitFor({ state: 'detached', timeout: 60_000 })
+  // la notifica di un salvataggio precedente (ancora visibile) sarebbe scambiata per quella di questo
+  await page.locator('.q-notification.bg-positive').first().waitFor({ state: 'detached', timeout: 15_000 })
   await page.getByTestId('form-save').click()
   await page.locator('.q-notification.bg-positive').first().waitFor({ timeout: 60_000 }) // su dati reali Diku Modificato il salvataggio di una stanza con uscite richiede ~2 s (riscrittura e rilettura del file)
 }
