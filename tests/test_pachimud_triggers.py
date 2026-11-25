@@ -202,3 +202,46 @@ async def test_trigger_phase3(client: httpx.AsyncClient) -> None:
     res = await client.put(rurl, json={"extra": {"triggers": [{"type": "enter", "actions": [nested]}]}})
     assert error_code(res, 422) == "pachimud.invalid_entry" and "mpgoto" in res.text
     data(await client.put(rurl, json={"extra": {"triggers": []}}))
+
+
+async def test_f9_events_block_var_and_verbs(client: httpx.AsyncClient) -> None:
+    """Gioco F9: eventi `all_greet`/`entry`/`command` (solo mob; `command` vuole l'argomento), `block`, condizione `var`, verbi `mpset`/`mpunset`/`mpadd`; oggetti e stanze usano `mptransfer`/`mpload`/`mpset` ma non `mppurge self`."""
+    mob = await by_vnum(client, "mobs", 1000)
+    murl = f"/api/mobs/{mob['id']}"
+    cond = {"var": {"visite": ">= 3", "stato": "attivo"}}
+    command = {
+        "type": "command",
+        "argument": "pull",
+        "block": True,
+        "actions": [{"if": cond, "then": ["mpadd visite 1"], "else": ["mpset stato attivo"]}],
+    }
+    out = data(
+        await client.put(
+            murl,
+            json={
+                "extra": {
+                    "triggers": [
+                        command,
+                        {"type": "all_greet", "actions": ["say ${stato}"]},
+                        {"type": "entry", "actions": ["mpunset stato"]},
+                    ]
+                }
+            },
+        )
+    )
+    triggers = out["extra"]["triggers"]
+    assert triggers[0]["block"] is True and triggers[0]["actions"][0]["if"]["var"] == cond["var"]
+    assert "block: true" in _text() and "var:" in _text()
+    res = await client.put(murl, json={"extra": {"triggers": [{"type": "command", "actions": ["say x"]}]}})
+    assert error_code(res, 422) == "pachimud.invalid_entry" and "command" in res.text
+    data(await client.put(murl, json={"extra": {"triggers": []}}))
+
+    obj = await by_vnum(client, "objects", 1000)
+    ourl = f"/api/objects/{obj['id']}"
+    ok = {"type": "get", "actions": ["mptransfer $n 1002", "mpload mob 1000", "mpset visto si", "mppurge"]}
+    data(await client.put(ourl, json={"extra": {"scripts": [ok]}}))
+    res = await client.put(ourl, json={"extra": {"scripts": [{"type": "get", "actions": ["mppurge self"]}]}})
+    assert error_code(res, 422) == "pachimud.invalid_entry" and "mppurge" in res.text
+    res = await client.put(ourl, json={"extra": {"scripts": [{"type": "entry", "actions": ["mpecho x"]}]}})
+    assert error_code(res, 422) == "pachimud.invalid_choice"
+    data(await client.put(ourl, json={"extra": {"scripts": []}}))

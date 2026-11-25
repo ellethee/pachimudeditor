@@ -109,20 +109,25 @@ def shop_value(raw_shop: Any) -> Any:
     return to_commented(shop.model_dump(exclude_defaults=True))
 
 
+def trigger_out(item: Any) -> dict[str, Any]:
+    """Un trigger letto dal file come lo vede il client: `block` compare solo se vero (e' falso quasi sempre)."""
+    return item.model_dump(by_alias=True, exclude_none=True, exclude=None if item.block else {"block"})
+
+
 def _trigger_dump(item: Any) -> dict[str, Any]:
     """Un trigger validato come dizionario del file: solo i campi diversi dal default (`type` e `actions` restano), `if`/`else`/`class` con il nome del file."""
     return item.model_dump(exclude_defaults=True, by_alias=True)
 
 
 def _mp_verb(actions: list[Any]) -> str | None:
-    """Il primo comando MP vero (solo dei mob) tra le azioni, anche dentro gli `if`/`else`."""
-    from pachimudeditor_adapter_pachimud.loaders import MP_VERBS, LoaderIfBlock
+    """Il primo comando che oggetti e stanze non possono usare (mpgoto, mpkill, mpforce, mppurge self) tra le azioni, anche dentro gli `if`/`else`."""
+    from pachimudeditor_adapter_pachimud.loaders import MOB_ONLY_MP, LoaderIfBlock
 
     for a in actions:
         if isinstance(a, LoaderIfBlock):
             if verb := _mp_verb([*a.then, *a.else_]):
                 return verb
-        elif (word := a.split()[0]) in MP_VERBS:
+        elif (word := a.split()[0]) in MOB_ONLY_MP or a.split()[:2] == ["mppurge", "self"]:
             return word
     return None
 
@@ -160,7 +165,7 @@ def triggers_value(raw_triggers: Any, current: Any = None, owner: str = "mob", f
             raise api_error(
                 422,
                 "pachimud.invalid_entry",
-                detail=f"{field}[{n}]: il comando '{verb}' vale solo per i mob (oggetti e stanze hanno mpecho, mpechoat, mpechoaround)",
+                detail=f"{field}[{n}]: il comando '{verb}' non e' ammesso a oggetti e stanze (solo i mob usano mpgoto, mpkill, mpforce e mppurge self)",
             )
     return [current[n] if same[n] else to_commented(_trigger_dump(i)) for n, i in enumerate(items)]
 
@@ -300,7 +305,7 @@ def room_out(item: Item, zone_vnum: int) -> RoomOut:
             "enabled": m.enabled,
             "area": item.area or "",
             "climate": m.climate,
-            "triggers": [t.model_dump(by_alias=True, exclude_none=True) for t in m.triggers],
+            "triggers": [trigger_out(t) for t in m.triggers],
         },
     )
 
@@ -416,7 +421,7 @@ def mob_out(item: Item, zone_vnum: int) -> MobOut:
             "breath": list(m.breath),
             "breathCost": m.breath_cost,
             "shop": None if m.shop is None else m.shop.model_dump(),
-            "triggers": [t.model_dump(by_alias=True, exclude_none=True) for t in m.triggers],
+            "triggers": [trigger_out(t) for t in m.triggers],
             **{s: getattr(m, s) for s in STATS},
         },
     )
@@ -484,7 +489,7 @@ def object_out(item: Item, zone_vnum: int) -> ObjectOut:
             "area": item.area or "",
             "extraDescriptions": [{"keywords": e.keywords, "text": e.text} for e in m.extra_descriptions],
             "typeFields": {n: _plain(getattr(m, n)) for n in type_fields(m.object_type)},
-            "scripts": [t.model_dump(by_alias=True, exclude_none=True) for t in m.scripts],
+            "scripts": [trigger_out(t) for t in m.scripts],
         },
     )
 

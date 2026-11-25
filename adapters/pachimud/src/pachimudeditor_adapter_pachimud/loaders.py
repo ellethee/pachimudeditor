@@ -14,7 +14,18 @@ un file valido per il gioco lo e' anche qui e viceversa. Regole del gioco che co
 import re
 from typing import Annotated, Any, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag, StringConstraints, TypeAdapter, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Discriminator,
+    Field,
+    Tag,
+    StringConstraints,
+    TypeAdapter,
+    field_validator,
+    model_validator,
+)
 
 from pachimudeditor.common.enums import Direction, DoorFlag, SectorType, Sex, ZoneResetMode
 
@@ -187,6 +198,9 @@ TRIGGER_TYPES = (
     "act",
     "tell",
     "bribe",
+    "all_greet",
+    "entry",
+    "command",
     "get",
     "drop",
     "wear",
@@ -195,13 +209,15 @@ TRIGGER_TYPES = (
 )
 """Tutti gli eventi dei trigger (come `TriggerType` del gioco)."""
 OWNER_TYPES: dict[str, tuple[str, ...]] = {
-    "mob": ("speech", "greet", "give", "random", "death", "fight", "hitprcnt", "act", "tell", "bribe"),
+    "mob": ("speech", "greet", "give", "random", "death", "fight", "hitprcnt", "act", "tell", "bribe", "all_greet", "entry", "command"),
     "object": ("get", "drop", "wear", "give", "random"),
     "room": ("enter", "exit", "speech", "random"),
 }
 """Gli eventi ammessi per chi possiede il trigger (`OWNER_TYPES` del gioco)."""
-MP_VERBS = ("mptransfer", "mpgoto", "mpat", "mpload", "mppurge", "mpkill", "mpforce")
-"""Comandi MP veri: solo per i mob (oggetti e stanze hanno `mpecho`, `mpechoat`, `mpechoaround`)."""
+MP_VERBS = ("mptransfer", "mpgoto", "mpat", "mpload", "mppurge", "mpkill", "mpforce", "mpset", "mpunset", "mpadd")
+"""Comandi MP veri (oltre a `mpecho`, `mpechoat`, `mpechoaround`, validi per tutti)."""
+MOB_ONLY_MP = ("mpgoto", "mpkill", "mpforce")
+"""I comandi MP che richiedono un corpo: oggetti e stanze non li usano (e nemmeno `mppurge self`)."""
 CMP = re.compile(r"\s*(==|!=|<=|>=|<|>)?\s*(-?\d+)\s*")
 """Un confronto numerico di una condizione: `10`, `>= 10`, `!= 3` (come `CMP` del gioco)."""
 MAX_IF_DEPTH = 3
@@ -226,6 +242,10 @@ class LoaderCondition(BaseModel):
     is_fighting: Optional[bool] = None
     has_effect: Optional[str] = None
     vnum: Union[int, str, None] = None
+    var: Optional[
+        dict[str, Annotated[str, BeforeValidator(lambda v: str(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else v)]]
+    ] = None
+    """Variabili di stato di chi ha il trigger (`mpset`): nome -> valore o confronto numerico."""
     who: Literal["n", "i"] = "n"
 
     @model_validator(mode="after")
@@ -272,9 +292,28 @@ class LoaderTrigger(BaseModel):
     """Un trigger di mob, oggetto (`scripts`) o stanza (copia di `Trigger` del gioco): a `type` il proprietario esegue le `actions`."""
 
     type: Literal[
-        "speech", "greet", "give", "random", "death", "fight", "hitprcnt", "act", "tell", "bribe", "get", "drop", "wear", "enter", "exit"
+        "speech",
+        "greet",
+        "give",
+        "random",
+        "death",
+        "fight",
+        "hitprcnt",
+        "act",
+        "tell",
+        "bribe",
+        "all_greet",
+        "entry",
+        "command",
+        "get",
+        "drop",
+        "wear",
+        "enter",
+        "exit",
     ]
     argument: str = ""
+    block: bool = False
+    """Solo `command`: se scatta, il comando del giocatore non viene eseguito."""
     chance: int = Field(default=100, ge=1, le=100)
     actions: list[LoaderAction] = Field(min_length=1)
 
@@ -283,6 +322,8 @@ class LoaderTrigger(BaseModel):
         """`hitprcnt` e `bribe` vogliono un numero positivo (`hitprcnt` fino a 100); al massimo 3 `if` annidati."""
         if self.type in ("hitprcnt", "bribe") and not (self.argument.strip().isdigit() and int(self.argument) >= 1):
             raise ValueError(f"il trigger {self.type} vuole in argument un numero positivo")
+        if self.type == "command" and not self.argument.strip():
+            raise ValueError("il trigger command vuole in argument il nome del comando")
         if self.type == "hitprcnt" and int(self.argument) > 100:
             raise ValueError("hitprcnt: la percentuale e' al massimo 100")
         if if_depth(self.actions) > MAX_IF_DEPTH:

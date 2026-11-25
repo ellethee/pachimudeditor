@@ -150,6 +150,18 @@
             @update:model-value="setCond(i, 'has_effect', String($event ?? '').trim() || undefined)"
           />
           <q-input
+            :model-value="varText(action.if.var)"
+            class="col-12 col-sm-6"
+            outlined
+            dense
+            stack-label
+            :label="t('triggers.cond.var')"
+            :hint="t('triggers.cond.varHint')"
+            :readonly="readonly"
+            data-testid="cond-var"
+            @update:model-value="setCond(i, 'var', parseVar(String($event ?? '')))"
+          />
+          <q-input
             :model-value="action.if.carries ?? ''"
             class="col-12 col-sm-3"
             outlined
@@ -240,7 +252,7 @@ const props = withDefaults(
 const emit = defineEmits<{ 'update:modelValue': [value: TAction[]] }>()
 const { t } = useI18n()
 
-const KNOWN = ['chance', 'level', 'hp', 'sex', 'race', 'class', 'carries', 'is_player', 'who', 'time', 'is_night', 'is_fighting', 'has_effect', 'vnum']
+const KNOWN = ['chance', 'level', 'hp', 'sex', 'race', 'class', 'carries', 'is_player', 'who', 'time', 'is_night', 'is_fighting', 'has_effect', 'vnum', 'var']
 
 /** Suggerimento sotto una riga di azione: la sintassi di un comando MP (mob) o l'avviso che oggetti e stanze non lo ammettono. */
 function actionHint(action: string): string | undefined {
@@ -275,6 +287,22 @@ function filterOptions(key: 'race' | 'class', text: string, update: (fn: () => v
 /** Le chiavi di una condizione che l'editor non conosce (si conservano e si possono togliere). */
 function unknownKeys(cond: ICondition): string[] {
   return Object.keys(cond).filter((k) => !KNOWN.includes(k))
+}
+
+/** Il testo di `var`: `nome=valore; altro=>= 3`. */
+function varText(value: Record<string, string> | undefined): string {
+  return Object.entries(value ?? {}).map(([k, v]) => `${k}=${v}`).join('; ')
+}
+
+/** Da `nome=valore; altro=>= 3` alla mappa `var` (vuoto = assente). */
+function parseVar(text: string): Record<string, string> | undefined {
+  const out: Record<string, string> = {}
+  for (const part of text.split(';')) {
+    const at = part.indexOf('=')
+    const name = (at < 0 ? part : part.slice(0, at)).trim()
+    if (name) out[name] = at < 0 ? '' : part.slice(at + 1).trim()
+  }
+  return Object.keys(out).length ? out : undefined
 }
 
 /** `level`/`hp`: un numero intero resta numero, un confronto resta testo, vuoto = assente. */

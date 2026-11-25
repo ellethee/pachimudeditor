@@ -33,6 +33,16 @@
             data-testid="trigger-argument"
             @update:model-value="changed"
           />
+          <q-toggle
+            v-if="row.type === 'command'"
+            v-model="row.block"
+            class="col-12"
+            dense
+            :label="t('triggers.block')"
+            :disable="readonly"
+            data-testid="trigger-block"
+            @update:model-value="changed"
+          />
           <q-input
             v-model.number="row.chance"
             class="col-8 col-sm-2"
@@ -112,6 +122,7 @@ interface IRow {
   key: number
   type: string
   argument: string
+  block?: boolean
   chance: number
   actions: TAction[]
 }
@@ -141,6 +152,7 @@ function validChance(value: unknown): boolean {
 
 /** `hitprcnt` e `bribe` vogliono un numero positivo (`hitprcnt` fino a 100). */
 function argumentOk(row: IRow): boolean {
+  if (row.type === 'command') return row.argument.trim() !== ''
   if (row.type !== 'hitprcnt' && row.type !== 'bribe') return true
   const text = row.argument.trim()
   return /^\d+$/.test(text) && Number(text) >= 1 && (row.type !== 'hitprcnt' || Number(text) <= 100)
@@ -148,7 +160,7 @@ function argumentOk(row: IRow): boolean {
 
 /** Il valore da salvare (campi nell'ordine del backend). */
 function current(): ITrigger[] {
-  return settledTriggers(rows.value.map((r) => ({ type: r.type, argument: r.argument ?? '', chance: r.chance, actions: r.actions })))
+  return settledTriggers(rows.value.map((r) => ({ type: r.type, argument: r.argument ?? '', block: r.type === 'command' ? r.block : undefined, chance: r.chance, actions: r.actions })))
 }
 
 function changed(): void {

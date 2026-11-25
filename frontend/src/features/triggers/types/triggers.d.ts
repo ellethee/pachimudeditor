@@ -16,6 +16,8 @@ export interface ICondition {
   is_fighting?: boolean
   has_effect?: string
   vnum?: number | string
+  /** Variabili di stato (`mpset`): nome -> valore o confronto numerico. */
+  var?: Record<string, string>
   who?: 'n' | 'i'
   [unknown: string]: unknown
 }
@@ -35,6 +37,8 @@ export interface ITrigger {
   type: string
   /** Vuoto = qualsiasi. */
   argument: string
+  /** Solo `command`: il comando del giocatore non viene eseguito. */
+  block?: boolean
   /** 1-100. */
   chance: number
   actions: TAction[]
