@@ -1,6 +1,9 @@
 """File YAML grezzi delle zone pachimud: elenco, lettura, scrittura validata, percorsi, sola lettura e rilettura."""
 
 import httpx
+import pytest
+
+from pachimudeditor.common.adapters.registry import get_registry
 
 from tests.helpers import data, error_code
 from tests.support.stack import zones_dir
@@ -69,3 +72,12 @@ async def test_paths_and_missing_files(client: httpx.AsyncClient) -> None:
         assert error_code(await client.get(f"{URL}/{rel}"), 404) == "pachimud.zonefile_not_found"
         assert error_code(await client.put(f"{URL}/{rel}", json={"text": "rooms: []\n"}), 404) == "pachimud.zonefile_not_found"
     assert not (zones_dir() / "ZonaAlfa" / "rooms_nuovo.yaml").exists()
+
+
+async def test_read_only_world(client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mondo `read_only`: elenco e lettura ok, il PUT e' 409 `world.read_only` e il file non cambia."""
+    monkeypatch.setattr(get_registry().get("pachimud").config, "read_only", True)
+    old = (zones_dir() / MOBS).read_text()
+    assert data(await client.get(URL)) and data(await client.get(f"{URL}/{MOBS}"))["text"] == old
+    assert error_code(await client.put(f"{URL}/{MOBS}", json={"text": old + "# x\n"}), 409) == "world.read_only"
+    assert (zones_dir() / MOBS).read_text() == old
