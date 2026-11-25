@@ -596,11 +596,11 @@
       "name": "GUILDMASTER",
       "aliases": [],
       "description": {
-        "it": "Segnaposto: un maestro e' chi ha `teaches_class_ids` o `teaches_skill_ids`.",
-        "en": "Placeholder: a guildmaster has `teaches_class_ids` or `teaches_skill_ids`."
+        "it": "Maestro: sta al suo posto come un negoziante (non vaga); insegna chi ha `teaches_class_ids` o `teaches_skill_ids`.",
+        "en": "Guildmaster: stays at its post like a shopkeeper (does not wander); it teaches if it has `teaches_class_ids` or `teaches_skill_ids`."
       },
       "origin": "pachimud",
-      "implemented": false
+      "implemented": true
     }
   ],
   "object_extra": [
