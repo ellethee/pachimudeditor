@@ -1,12 +1,16 @@
 <template>
-  <div ref="host" class="yaml-editor" :class="{ 'yaml-editor--dark': $q.dark.isActive }" :style="{ minHeight: height }" />
+  <div>
+    <div ref="host" class="code-editor" :class="{ 'code-editor--dark': $q.dark.isActive, 'code-editor--error': !!error }" :style="{ minHeight: height }" />
+    <div v-if="error" class="text-negative text-caption q-mt-xs" data-testid="code-editor-error">{{ error }}</div>
+  </div>
 </template>
 
 <script setup lang="ts">
 /**
- * Editor YAML (CodeMirror 6, caricato in lazy). Con `schema` (JSON Schema) sottolinea gli errori con il messaggio, completa chiavi e
- * valori `enum` e mostra la `description` in hover; senza schema è un semplice editor YAML con colori e numeri di riga.
- * Il testo è `v-model`; il tema segue `$q.dark`. Se il caricamento fallisce resta un riquadro vuoto (il testo non si perde: è nel modello).
+ * Editor di codice (CodeMirror 6, caricato in lazy) per YAML, JSON o testo semplice (`language`). Con `schema` (JSON Schema; solo
+ * yaml/json) sottolinea gli errori con il messaggio, completa chiavi e valori `enum` e mostra la `description` in hover; senza schema
+ * colora e (json) segnala gli errori di sintassi. `error` è un messaggio di errore del genitore (es. «riga 3, colonna 5: ...»).
+ * Il testo è `v-model` (nessuna logica di salvataggio qui); il tema segue `$q.dark`. Se il caricamento fallisce resta un riquadro vuoto (il testo non si perde: è nel modello).
  */
 import { onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import type { EditorView } from '@codemirror/view'
@@ -19,18 +23,40 @@ type JSONSchema7 = Parameters<typeof import('codemirror-json-schema/yaml').yamlS
 
 const props = withDefaults(
   defineProps<{
-    /** Testo YAML. */
+    /** Testo del file. */
     modelValue: string
+    /** Linguaggio: `yaml` (default), `json` o `text` (monospace senza colori). */
+    language?: 'yaml' | 'json' | 'text'
+    /** Errore (di parsing o di salvataggio) da mostrare sotto l'editor, con riga/colonna se il genitore le conosce. */
+    error?: string
     /** JSON Schema per validazione, completamento e hover (assente = solo sintassi). */
     schema?: object | null
     readonly?: boolean
     /** Altezza minima CSS dell'editor. */
     height?: string
   }>(),
-  { schema: null, readonly: false, height: '16em' },
+  { language: 'yaml', error: '', schema: null, readonly: false, height: '16em' },
 )
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const $q = useQuasar()
+
+/**
+ * Estensioni del linguaggio (e dello schema, se c'è).
+ *
+ * @param language - linguaggio dell'editor
+ * @param schema - JSON Schema opzionale
+ */
+async function languageExtension(language: 'yaml' | 'json' | 'text', schema: object | null): Promise<unknown[]> {
+  if (language === 'text') return []
+  const resolved = schema ? (inlineRefs(schema) as JSONSchema7) : null
+  if (language === 'json') {
+    if (resolved) return (await import('codemirror-json-schema')).jsonSchema(resolved) as unknown[]
+    const [{ json, jsonParseLinter }, { linter }] = await Promise.all([import('@codemirror/lang-json'), import('@codemirror/lint')])
+    return [json(), linter(jsonParseLinter())]
+  }
+  if (resolved) return (await import('codemirror-json-schema/yaml')).yamlSchema(resolved) as unknown[]
+  return [(await import('@codemirror/lang-yaml')).yaml()]
+}
 
 const host = shallowRef<HTMLElement | null>(null)
 const view = shallowRef<EditorView | null>(null)
@@ -38,20 +64,17 @@ const mode = shallowRef<Compartment | null>(null)
 const lang = shallowRef<Compartment | null>(null)
 
 onMounted(async () => {
-  const [{ EditorView, keymap, lineNumbers, highlightActiveLine, drawSelection, tooltips }, { EditorState, Compartment }, cmds, language, lint, ac, yamlLang, yamlSchema] = await Promise.all([
+  const [{ EditorView, keymap, lineNumbers, highlightActiveLine, drawSelection, tooltips }, { EditorState, Compartment }, cmds, language, lint, ac] = await Promise.all([
     import('@codemirror/view'),
     import('@codemirror/state'),
     import('@codemirror/commands'),
     import('@codemirror/language'),
     import('@codemirror/lint'),
     import('@codemirror/autocomplete'),
-    import('@codemirror/lang-yaml'),
-    import('codemirror-json-schema/yaml'),
   ])
   if (!host.value) return
   mode.value = new Compartment()
   lang.value = new Compartment()
-  const schemaExt = (): unknown[] => (props.schema ? yamlSchema.yamlSchema(inlineRefs(props.schema) as JSONSchema7) : [yamlLang.yaml()])
   view.value = new EditorView({
     parent: host.value,
     state: EditorState.create({
@@ -68,7 +91,7 @@ onMounted(async () => {
         keymap.of([...cmds.defaultKeymap, ...cmds.historyKeymap, ...ac.completionKeymap, ...lint.lintKeymap]),
         EditorView.lineWrapping,
         mode.value.of([EditorState.readOnly.of(props.readonly), EditorView.editable.of(!props.readonly)]),
-        lang.value.of(schemaExt() as never),
+        lang.value.of((await languageExtension(props.language, props.schema)) as never),
         EditorView.updateListener.of((u) => {
           if (u.docChanged) emit('update:modelValue', u.state.doc.toString())
         }),
@@ -86,12 +109,11 @@ watch(
 )
 
 watch(
-  () => props.schema,
-  async (schema) => {
+  () => [props.schema, props.language] as const,
+  async ([schema, language]) => {
     const v = view.value
     if (!v || !lang.value) return
-    const [yamlLang, yamlSchema] = await Promise.all([import('@codemirror/lang-yaml'), import('codemirror-json-schema/yaml')])
-    v.dispatch({ effects: lang.value.reconfigure(schema ? yamlSchema.yamlSchema(inlineRefs(schema) as JSONSchema7) : [yamlLang.yaml()]) })
+    v.dispatch({ effects: lang.value.reconfigure((await languageExtension(language, schema)) as never) })
   },
 )
 
@@ -109,46 +131,49 @@ onBeforeUnmount(() => view.value?.destroy())
 </script>
 
 <style>
-.yaml-editor {
+.code-editor {
   border: 1px solid rgba(0, 0, 0, 0.24);
   border-radius: 4px;
   font-size: 13px;
 }
-.yaml-editor .cm-editor {
+.code-editor .cm-editor {
   min-height: inherit;
   background: #fff;
   color: #212121;
 }
-.yaml-editor .cm-editor.cm-focused {
+.code-editor--error {
+  border-color: var(--q-negative);
+}
+.code-editor .cm-editor.cm-focused {
   outline: 2px solid var(--q-primary);
 }
-.yaml-editor .cm-gutters {
+.code-editor .cm-gutters {
   background: #f5f5f5;
   color: #757575;
   border-right: 1px solid #e0e0e0;
 }
-.yaml-editor .cm-scroller {
+.code-editor .cm-scroller {
   font-family: monospace;
 }
-.yaml-editor .cm-tooltip {
+.code-editor .cm-tooltip {
   max-width: min(60ch, 90vw);
 }
-.yaml-editor--dark {
+.code-editor--dark {
   border-color: rgba(255, 255, 255, 0.28);
 }
-.yaml-editor--dark .cm-editor {
+.code-editor--dark .cm-editor {
   background: #1d1d1d;
   color: #e0e0e0;
 }
-.yaml-editor--dark .cm-gutters {
+.code-editor--dark .cm-gutters {
   background: #262626;
   color: #9e9e9e;
   border-color: #424242;
 }
-.yaml-editor--dark .cm-activeLine {
+.code-editor--dark .cm-activeLine {
   background: rgba(255, 255, 255, 0.06);
 }
-.yaml-editor--dark .cm-tooltip {
+.code-editor--dark .cm-tooltip {
   background: #2b2b2b;
   color: #e0e0e0;
   border-color: #555;

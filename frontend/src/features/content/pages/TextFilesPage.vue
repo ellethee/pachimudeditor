@@ -55,17 +55,7 @@
             :hint="t('content.files.pathHint', { ext: area === 'texts' ? '.txt' : '.yaml' })"
             data-testid="file-path"
           />
-          <yaml-editor v-if="isYaml" v-model="text" :readonly="readOnly" data-testid="file-text" />
-          <q-input
-            v-else
-            v-model="text"
-            type="textarea"
-            outlined
-            autogrow
-            :readonly="readOnly"
-            input-style="font-family: monospace; min-height: 16em"
-            data-testid="file-text"
-          />
+          <code-editor v-model="text" :language="isYaml ? 'yaml' : 'text'" :readonly="readOnly" data-testid="file-text" />
           <q-banner v-if="error" dense rounded class="bg-negative text-white" data-testid="file-error">{{ error }}</q-banner>
           <div class="row items-center q-gutter-sm">
             <q-btn color="primary" no-caps :icon="mdiContentSave" :label="t('forms.save')" :loading="saving" :disable="!dirty || readOnly" data-testid="file-save" @click="save" />
@@ -91,7 +81,7 @@ import type { QTableColumn } from 'quasar'
 import { mdiContentSave, mdiDelete, mdiPlus } from '@quasar/extras/mdi-v7'
 import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import ContentLiveBar from '../components/ContentLiveBar.vue'
-import YamlEditor from '../../shared/components/YamlEditor.vue'
+import CodeEditor from '../../shared/components/CodeEditor.vue'
 import { useWorld } from '../../shared/helpers/world-state'
 import { describeError } from '../helpers/describe-error'
 import { deleteFile, getFile, listFiles, putFile } from '../services/content-files-api'
