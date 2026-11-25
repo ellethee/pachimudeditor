@@ -1,5 +1,6 @@
 /** Etichette italiane degli enum del backend (`enumLabels.<enum>.<valore>`). */
 export default {
+  card: { collapse: 'Riduci', expand: 'Espandi' },
   forms: { save: 'Salva', revert: 'Annulla modifiche' },
   style: {
     title: 'Consigli di stile (non bloccano il salvataggio)',

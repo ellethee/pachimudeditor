@@ -55,7 +55,9 @@
             :hint="t('content.files.pathHint', { ext: area === 'texts' ? '.txt' : '.yaml' })"
             data-testid="file-path"
           />
+          <yaml-editor v-if="isYaml" v-model="text" :readonly="readOnly" data-testid="file-text" />
           <q-input
+            v-else
             v-model="text"
             type="textarea"
             outlined
@@ -89,6 +91,7 @@ import type { QTableColumn } from 'quasar'
 import { mdiContentSave, mdiDelete, mdiPlus } from '@quasar/extras/mdi-v7'
 import { PachiTable2 } from '@ilpachi/pachi-kit/table'
 import ContentLiveBar from '../components/ContentLiveBar.vue'
+import YamlEditor from '../../shared/components/YamlEditor.vue'
 import { useWorld } from '../../shared/helpers/world-state'
 import { describeError } from '../helpers/describe-error'
 import { deleteFile, getFile, listFiles, putFile } from '../services/content-files-api'
@@ -127,6 +130,11 @@ const columns: QTableColumn<IRow>[] = [
   { name: 'layer', label: '', field: 'layer', align: 'right' },
 ]
 const currentKey = computed(() => (current.value && !isNew.value ? `${area.value}/${current.value.path}` : null))
+/** Il file in modifica è YAML (editor con colori); i `.txt` restano testo semplice. */
+const isYaml = computed(() => {
+  const path = (isNew.value ? newPath.value : (current.value?.path ?? '')).trim()
+  return path ? path.endsWith('.yaml') : area.value !== 'texts'
+})
 const dirty = computed(() => text.value !== original.value || (isNew.value && newPath.value.trim() !== ''))
 
 /** Carica gli elenchi di tutte le aree. */

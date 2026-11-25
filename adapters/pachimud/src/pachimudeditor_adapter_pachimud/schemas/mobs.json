@@ -1,0 +1,730 @@
+{
+  "$defs": {
+    "Condition": {
+      "additionalProperties": true,
+      "description": "Le verifiche di un `if`: valgono tutte insieme (e). Quelle su una creatura guardano `$n` (o il mob con `who: i`).",
+      "properties": {
+        "chance": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chance"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Level"
+        },
+        "hp": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hp"
+        },
+        "sex": {
+          "anyOf": [
+            {
+              "enum": [
+                "male",
+                "female",
+                "other"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sex"
+        },
+        "race": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Race"
+        },
+        "class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Class"
+        },
+        "carries": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Carries"
+        },
+        "is_player": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Player"
+        },
+        "time": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time"
+        },
+        "is_night": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Night"
+        },
+        "is_fighting": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Fighting"
+        },
+        "has_effect": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Has Effect"
+        },
+        "vnum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vnum"
+        },
+        "who": {
+          "default": "n",
+          "enum": [
+            "n",
+            "i"
+          ],
+          "title": "Who",
+          "type": "string"
+        }
+      },
+      "title": "Condition",
+      "type": "object"
+    },
+    "IfBlock": {
+      "description": "`if`/`else`: se la condizione e' vera le azioni di `then`, altrimenti quelle di `else`.",
+      "properties": {
+        "if": {
+          "$ref": "#/$defs/Condition"
+        },
+        "then": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/IfBlock"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Then",
+          "type": "array"
+        },
+        "else": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/IfBlock"
+              }
+            ]
+          },
+          "title": "Else",
+          "type": "array"
+        }
+      },
+      "required": [
+        "if",
+        "then"
+      ],
+      "title": "IfBlock",
+      "type": "object"
+    },
+    "LoaderMob": {
+      "properties": {
+        "vnum": {
+          "title": "Vnum",
+          "type": "integer"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "",
+          "description": "Nome del mob mostrato nei messaggi (come `short_description`)",
+          "title": "Name"
+        },
+        "short_description": {
+          "title": "Short Description",
+          "type": "string"
+        },
+        "long_description": {
+          "title": "Long Description",
+          "type": "string"
+        },
+        "detailed_description": {
+          "title": "Detailed Description",
+          "type": "string"
+        },
+        "level": {
+          "title": "Level",
+          "type": "integer"
+        },
+        "thac0": {
+          "title": "Thac0",
+          "type": "integer"
+        },
+        "attacks": {
+          "default": 1,
+          "title": "Attacks",
+          "type": "integer"
+        },
+        "armor_class": {
+          "title": "Armor Class",
+          "type": "integer"
+        },
+        "hp_dice": {
+          "title": "Hp Dice",
+          "type": "string"
+        },
+        "damage_dice": {
+          "title": "Damage Dice",
+          "type": "string"
+        },
+        "strength": {
+          "default": 0,
+          "title": "Strength",
+          "type": "integer"
+        },
+        "dexterity": {
+          "default": 0,
+          "title": "Dexterity",
+          "type": "integer"
+        },
+        "constitution": {
+          "default": 0,
+          "title": "Constitution",
+          "type": "integer"
+        },
+        "intelligence": {
+          "default": 0,
+          "title": "Intelligence",
+          "type": "integer"
+        },
+        "wisdom": {
+          "default": 0,
+          "title": "Wisdom",
+          "type": "integer"
+        },
+        "charisma": {
+          "default": 0,
+          "title": "Charisma",
+          "type": "integer"
+        },
+        "gold": {
+          "default": 0,
+          "title": "Gold",
+          "type": "integer"
+        },
+        "experience": {
+          "default": 0,
+          "title": "Experience",
+          "type": "integer"
+        },
+        "sex": {
+          "default": "NEUTRAL",
+          "title": "Sex",
+          "type": "string"
+        },
+        "flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Flags",
+          "type": "array"
+        },
+        "alignment": {
+          "default": 0,
+          "title": "Alignment",
+          "type": "integer"
+        },
+        "race_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Race Id"
+        },
+        "class_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Class Id"
+        },
+        "debuff_skill_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Debuff Skill Id"
+        },
+        "persona": {
+          "default": "",
+          "title": "Persona",
+          "type": "string"
+        },
+        "shop_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shop Id"
+        },
+        "shop": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ShopProto"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "quest_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Quest Ids",
+          "type": "array"
+        },
+        "is_banker": {
+          "default": false,
+          "title": "Is Banker",
+          "type": "boolean"
+        },
+        "postmaster": {
+          "default": false,
+          "title": "Postmaster",
+          "type": "boolean"
+        },
+        "receptionist": {
+          "default": false,
+          "title": "Receptionist",
+          "type": "boolean"
+        },
+        "weapon_immunity": {
+          "anyOf": [
+            {
+              "maximum": 4,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weapon Immunity"
+        },
+        "breath": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Breath",
+          "type": "array"
+        },
+        "breath_cost": {
+          "default": 30,
+          "title": "Breath Cost",
+          "type": "integer"
+        },
+        "teaches_class_ids": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Teaches Class Ids"
+        },
+        "teaches_skill_ids": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Teaches Skill Ids"
+        },
+        "triggers": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "title": "Triggers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "vnum",
+        "keywords",
+        "short_description",
+        "long_description",
+        "detailed_description",
+        "level",
+        "thac0",
+        "armor_class",
+        "hp_dice",
+        "damage_dice"
+      ],
+      "title": "LoaderMob",
+      "type": "object"
+    },
+    "ShopProto": {
+      "description": "Un negozio: cosa vende, cosa compra, a che prezzo e quando e' aperto.",
+      "properties": {
+        "produces": {
+          "default": [],
+          "items": {
+            "type": "integer"
+          },
+          "title": "Produces",
+          "type": "array"
+        },
+        "profit_buy": {
+          "default": 1.0,
+          "title": "Profit Buy",
+          "type": "number"
+        },
+        "profit_sell": {
+          "default": 0.0,
+          "title": "Profit Sell",
+          "type": "number"
+        },
+        "trades": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Trades",
+          "type": "array"
+        },
+        "room": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Room"
+        },
+        "open1": {
+          "default": 0,
+          "title": "Open1",
+          "type": "integer"
+        },
+        "close1": {
+          "default": 28,
+          "title": "Close1",
+          "type": "integer"
+        },
+        "open2": {
+          "default": 0,
+          "title": "Open2",
+          "type": "integer"
+        },
+        "close2": {
+          "default": 0,
+          "title": "Close2",
+          "type": "integer"
+        },
+        "no_money_reaction": {
+          "default": "puke",
+          "enum": [
+            "puke",
+            "grin",
+            "none"
+          ],
+          "title": "No Money Reaction",
+          "type": "string"
+        },
+        "attacked_reaction": {
+          "default": "warn",
+          "enum": [
+            "warn",
+            "insult",
+            "none"
+          ],
+          "title": "Attacked Reaction",
+          "type": "string"
+        },
+        "messages": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "default": {},
+          "title": "Messages",
+          "type": "object"
+        },
+        "handler": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Handler"
+        }
+      },
+      "title": "ShopProto",
+      "type": "object"
+    },
+    "Trigger": {
+      "description": "Un trigger: quando succede `type` (e `argument` e `chance` lo permettono) chi lo possiede esegue le `actions`.",
+      "properties": {
+        "type": {
+          "enum": [
+            "speech",
+            "greet",
+            "give",
+            "random",
+            "death",
+            "fight",
+            "hitprcnt",
+            "act",
+            "tell",
+            "bribe",
+            "get",
+            "drop",
+            "wear",
+            "enter",
+            "exit"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "argument": {
+          "default": "",
+          "title": "Argument",
+          "type": "string"
+        },
+        "chance": {
+          "default": 100,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Chance",
+          "type": "integer"
+        },
+        "actions": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/IfBlock"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Actions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "actions"
+      ],
+      "title": "Trigger",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "area": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Area"
+    },
+    "mobs": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/LoaderMob"
+      },
+      "title": "Mobs",
+      "type": "array"
+    }
+  },
+  "title": "LoaderMobsFile",
+  "type": "object"
+}

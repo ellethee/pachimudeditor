@@ -1,6 +1,8 @@
 // Configurazione di Quasar: il preset di @ilpachi/pachifastquasar fa tutto (boot, stili, alias, env, proxy).
 // Gli override opzionali si passano come primo argomento, le opzioni del preset come secondo.
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file
+import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
 import { loadEnv } from "vite";
 import { definePachiQuasarConfig } from "@ilpachi/pachifastquasar/quasar";
 
@@ -8,9 +10,18 @@ import { definePachiQuasarConfig } from "@ilpachi/pachifastquasar/quasar";
 // lasciando la precedenza a una variabile d'ambiente già impostata.
 const env = loadEnv("development", new URL("./src", import.meta.url).pathname, "QCLI_");
 
-// I temi opt-in (QCLI_APP_THEMES=true) hanno un CSS a parte, presente solo nelle versioni di pachifastquasar che li
-// supportano: senza il flag la build non lo importa e funziona anche con le versioni pubblicate piu' vecchie.
-const themes = (process.env.QCLI_APP_THEMES ?? env.QCLI_APP_THEMES) === "true";
+// I temi sono attivi di default quando la versione installata di pachifastquasar li ha (esporta `themes.css`); con
+// QCLI_APP_THEMES=false si disattivano, con una versione piu' vecchia (senza CSS dei temi) la build resta com'era.
+const themesCss = (() => {
+  try {
+    return createRequire(import.meta.url).resolve("@ilpachi/pachifastquasar/themes.css");
+  } catch {
+    return undefined;
+  }
+})();
+const requested = process.env.QCLI_APP_THEMES ?? env.QCLI_APP_THEMES;
+const themes = requested === undefined ? themesCss !== undefined && existsSync(themesCss) : requested === "true";
+if (themes && requested === undefined) process.env.QCLI_APP_THEMES = "true";
 
 export default definePachiQuasarConfig(
   {

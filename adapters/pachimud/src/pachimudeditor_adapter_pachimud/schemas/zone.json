@@ -1,0 +1,90 @@
+{
+  "properties": {
+    "zone_id": {
+      "title": "Zone Id",
+      "type": "string"
+    },
+    "vnum": {
+      "title": "Vnum",
+      "type": "integer"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "builder": {
+      "title": "Builder",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "bottom_vnum": {
+      "title": "Bottom Vnum",
+      "type": "integer"
+    },
+    "top_vnum": {
+      "title": "Top Vnum",
+      "type": "integer"
+    },
+    "max_level": {
+      "default": 50,
+      "title": "Max Level",
+      "type": "integer"
+    },
+    "lifespan_minutes": {
+      "default": 30,
+      "title": "Lifespan Minutes",
+      "type": "integer"
+    },
+    "reset_mode": {
+      "default": "ALWAYS",
+      "title": "Reset Mode",
+      "type": "string"
+    },
+    "climate": {
+      "default": "temperate",
+      "enum": [
+        "temperate",
+        "desert",
+        "arctic"
+      ],
+      "title": "Climate",
+      "type": "string"
+    },
+    "enabled": {
+      "default": true,
+      "title": "Enabled",
+      "type": "boolean"
+    },
+    "prototypes_only": {
+      "default": false,
+      "title": "Prototypes Only",
+      "type": "boolean"
+    },
+    "extends_zone": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Extends Zone"
+    }
+  },
+  "required": [
+    "zone_id",
+    "vnum",
+    "name",
+    "builder",
+    "bottom_vnum",
+    "top_vnum"
+  ],
+  "title": "LoaderZone",
+  "type": "object"
+}

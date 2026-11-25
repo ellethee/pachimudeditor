@@ -377,3 +377,13 @@ def test_flag_catalog_matches_the_game() -> None:
 
     game = Path(os.environ["PACHIMUD_GAME_ROOT"]) / "src/pachimud/config/schema/json-schema/flags.json"
     assert json.loads(game.read_text(encoding="utf-8")) == json.loads(FLAGS_CATALOG.read_text(encoding="utf-8"))
+
+
+@pytest.mark.skipif(not os.environ.get("PACHIMUD_GAME_ROOT"), reason="PACHIMUD_GAME_ROOT non impostata: confronto col MUD saltato")
+def test_json_schemas_match_the_game() -> None:
+    """I JSON Schema in `schemas/` dell'adapter coincidono con quelli generati dal gioco (`pachimud json-schema`): se differiscono, vanno ricopiati."""
+    from pachimudeditor_adapter_pachimud.apps.content.root import SCHEMAS_DIR
+
+    game = Path(os.environ["PACHIMUD_GAME_ROOT"]) / "src/pachimud/config/schema/json-schema"
+    for copy in SCHEMAS_DIR.glob("*.json"):
+        assert json.loads((game / copy.name).read_text(encoding="utf-8")) == json.loads(copy.read_text(encoding="utf-8")), copy.name

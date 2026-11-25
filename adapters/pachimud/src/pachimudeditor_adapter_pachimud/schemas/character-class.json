@@ -1,0 +1,350 @@
+{
+  "$defs": {
+    "ClassMana": {
+      "description": "`mana_limit` di LeU (`limits.c`): per ogni classe `base` + `per_level` * (livello // `level_divisor`); la somma si\ndivide per il numero di classi. `only_class_cap`: se e' l'unica classe, il massimo e' questo (barbaro: 100).",
+      "properties": {
+        "base": {
+          "default": 0,
+          "title": "Base",
+          "type": "integer"
+        },
+        "per_level": {
+          "default": 0,
+          "title": "Per Level",
+          "type": "integer"
+        },
+        "level_divisor": {
+          "default": 1,
+          "title": "Level Divisor",
+          "type": "integer"
+        },
+        "only_class_cap": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Only Class Cap"
+        }
+      },
+      "title": "ClassMana",
+      "type": "object"
+    },
+    "ClassTitle": {
+      "description": "Titolo di un livello (`struct title_type` di LeU): maschile e femminile.",
+      "properties": {
+        "male": {
+          "title": "Male",
+          "type": "string"
+        },
+        "female": {
+          "title": "Female",
+          "type": "string"
+        }
+      },
+      "required": [
+        "male",
+        "female"
+      ],
+      "title": "ClassTitle",
+      "type": "object"
+    },
+    "HpGain": {
+      "description": "Punti ferita guadagnati a ogni livello (`advance_level` di LeU, `limits.c`): sotto `until_level` un tiro di\n`dice` = (n, m), cioe' `number(n, m)`; da `until_level` in su `flat_after`. Si aggiunge il bonus di Costituzione\n(al massimo `con_bonus_cap`, `None` = intero) e il totale si divide per il numero di classi del personaggio.",
+      "properties": {
+        "dice": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Dice",
+          "type": "array"
+        },
+        "until_level": {
+          "title": "Until Level",
+          "type": "integer"
+        },
+        "flat_after": {
+          "title": "Flat After",
+          "type": "integer"
+        },
+        "con_bonus_cap": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Con Bonus Cap"
+        }
+      },
+      "required": [
+        "dice",
+        "until_level",
+        "flat_after"
+      ],
+      "title": "HpGain",
+      "type": "object"
+    },
+    "LevelLoss": {
+      "description": "`drop_level` di LeU: punti ferita persi quando si scende di un livello in questa classe.",
+      "properties": {
+        "below": {
+          "title": "Below",
+          "type": "integer"
+        },
+        "low": {
+          "title": "Low",
+          "type": "integer"
+        },
+        "high": {
+          "title": "High",
+          "type": "integer"
+        },
+        "minimum": {
+          "title": "Minimum",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "below",
+        "low",
+        "high",
+        "minimum"
+      ],
+      "title": "LevelLoss",
+      "type": "object"
+    },
+    "StartHp": {
+      "description": "Punti ferita di partenza (`roll_abilities` di LeU): `10` + un tiro di `dice` + `bonus`, diviso per le classi.",
+      "properties": {
+        "dice": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Dice",
+          "type": "array"
+        },
+        "bonus": {
+          "default": 0,
+          "title": "Bonus",
+          "type": "integer"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group"
+        }
+      },
+      "required": [
+        "dice"
+      ],
+      "title": "StartHp",
+      "type": "object"
+    }
+  },
+  "description": "Una classe, come in LeU: `index` e' il suo `*_LEVEL_IND` (il bit multiclasse e' `1 << index`).",
+  "properties": {
+    "class_id": {
+      "default": "",
+      "title": "Class Id",
+      "type": "string"
+    },
+    "disabled": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": false,
+      "title": "Disabled"
+    },
+    "index": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Index"
+    },
+    "abbreviation": {
+      "default": "",
+      "title": "Abbreviation",
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "attrs_priority": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Attrs Priority",
+      "type": "array"
+    },
+    "exp_per_level": {
+      "default": [],
+      "items": {
+        "type": "integer"
+      },
+      "title": "Exp Per Level",
+      "type": "array"
+    },
+    "titles": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ClassTitle"
+      },
+      "title": "Titles",
+      "type": "array"
+    },
+    "thac0": {
+      "default": [],
+      "items": {
+        "type": "integer"
+      },
+      "title": "Thac0",
+      "type": "array"
+    },
+    "hp_gain": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HpGain"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "level_loss": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LevelLoss"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "start_hp": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StartHp"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "mana": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ClassMana"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "magic_order": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Magic Order"
+    },
+    "pure_move_bonus": {
+      "default": 0,
+      "title": "Pure Move Bonus",
+      "type": "integer"
+    },
+    "variant": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Variant"
+    },
+    "start_alignment": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Start Alignment"
+    },
+    "saving_throws": {
+      "additionalProperties": {
+        "items": {
+          "type": "integer"
+        },
+        "type": "array"
+      },
+      "default": {},
+      "title": "Saving Throws",
+      "type": "object"
+    }
+  },
+  "title": "LoaderClass",
+  "type": "object"
+}

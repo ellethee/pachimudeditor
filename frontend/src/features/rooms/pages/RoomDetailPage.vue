@@ -15,7 +15,7 @@
     </q-banner>
 
     <div v-else-if="room && editor" class="row q-col-gutter-lg">
-      <div class="col-12 col-lg-8">
+      <div :class="refsOpen ? 'col-12 col-lg-8' : 'col-12 col-lg'">
         <style-hints kind="room" :record="room" />
         <sections-form
           :key="formKey"
@@ -28,10 +28,8 @@
         />
       </div>
 
-      <div class="col-12 col-lg-4">
-        <q-card flat bordered>
-          <q-card-section class="text-h6">{{ t('rooms.detail.references') }}</q-card-section>
-          <q-separator />
+      <div :class="refsOpen ? 'col-12 col-lg-4' : 'col-12 col-lg-auto'">
+        <collapsible-card :title="t('rooms.detail.references')" storage-key="room-references" testid="room-references" @update:open="refsOpen = $event">
           <q-list separator>
             <q-expansion-item default-opened :icon="mdiLogin" :label="t('rooms.detail.incoming', { count: incoming.length })">
               <q-list dense>
@@ -56,7 +54,7 @@
               </q-list>
             </q-expansion-item>
           </q-list>
-        </q-card>
+        </collapsible-card>
       </div>
     </div>
   </div>
@@ -78,10 +76,13 @@ import { useRoomsStore } from '../stores/use-rooms-store'
 import { describeError } from '../utils/error-helper'
 import type { IIncomingExit, IResetUsage, IRoomDetail } from '../types/rooms'
 import SectionsForm from '../../shared/components/SectionsForm.vue'
+import CollapsibleCard from '../../shared/components/CollapsibleCard.vue'
 import StyleHints from '../../shared/components/StyleHints.vue'
 import { useWorld } from '../../shared/helpers/world-state'
 
 const { t, te } = useI18n()
+/** La scheda dei riferimenti e' aperta: altrimenti si riduce a una striscia e il form accanto si allarga. */
+const refsOpen = ref(true)
 const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()

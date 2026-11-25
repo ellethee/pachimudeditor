@@ -1,5 +1,6 @@
 /** English labels of the backend enums (`enumLabels.<enum>.<value>`). */
 export default {
+  card: { collapse: 'Collapse', expand: 'Expand' },
   forms: { save: 'Save', revert: 'Discard changes' },
   style: {
     title: 'Style advice (does not block saving)',

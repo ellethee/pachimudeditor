@@ -103,7 +103,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useQuasar } from 'quasar'
 import { mdiFilterVariant } from '@quasar/extras/mdi-v7'
 import { activeCount, emptyFilters, rangeInvalid } from '../helpers/list-filters'
 import type { IFilterControl, IFilterOption, IListFilters, IRange } from '../helpers/list-filters'
@@ -119,8 +118,6 @@ const props = defineProps<{ modelValue: IListFilters; controls: IFilterControl[]
 const emit = defineEmits<{ 'update:modelValue': [value: IListFilters] }>()
 
 const { t } = useI18n()
-const $q = useQuasar()
-const open = ref(!$q.screen.lt.sm)
 /** Opzioni mostrate dai select con inserimento libero (filtrate dal testo digitato). */
 const typed = ref<Record<string, string>>({})
 
@@ -136,6 +133,8 @@ const freeSelect = { 'use-input': true, 'new-value-mode': 'add-unique', 'input-d
 
 const shown = computed(() => props.controls.filter((control) => !control.hidden))
 const active = computed(() => activeCount(shown.value, props.modelValue))
+/** Chiusa di default (si apre se ci sono già filtri attivi, es. ripristinati dall'URL). */
+const open = ref(active.value > 0)
 
 /**
  * Emette i filtri con le modifiche indicate.

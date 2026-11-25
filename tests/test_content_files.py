@@ -132,6 +132,12 @@ async def test_files_list_read_write_delete(api: httpx.AsyncClient, layers: tupl
     assert error_code(await api.delete("/api/content/files/locales/it/fight.yaml"), 404) == "content.not_found"
 
 
+async def test_json_schemas(api: httpx.AsyncClient) -> None:
+    """I JSON Schema dei file YAML del gioco: quelli noti si servono, un nome sconosciuto e' 422."""
+    assert "properties" in data(await api.get("/api/content/schemas/mobs"))
+    assert (await api.get("/api/content/schemas/nope")).status_code == 422
+
+
 async def test_files_reject_bad_paths_and_yaml(api: httpx.AsyncClient, layers: tuple[Path, Path]) -> None:
     """Niente `..`, estensioni sbagliate, social nelle tabelle, YAML rotto o non UTF-8, file enormi; nulla viene scritto."""
     for rel in ("..%2Fskills%2Ffireball.yaml", "it/../../x.yaml", "it/x.txt", "socials.yaml", "a b.yaml"):
