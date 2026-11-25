@@ -127,6 +127,22 @@ watch(
   },
 )
 
+/**
+ * Porta il cursore alla riga (e colonna) indicate, 1-based, e le mostra.
+ *
+ * @param line - numero di riga
+ * @param column - numero di colonna (default 1)
+ */
+function goToLine(line: number, column = 1): void {
+  const v = view.value
+  if (!v) return
+  const l = v.state.doc.line(Math.min(Math.max(line, 1), v.state.doc.lines))
+  const anchor = l.from + Math.min(Math.max(column - 1, 0), l.length)
+  v.dispatch({ selection: { anchor }, scrollIntoView: true })
+  v.focus()
+}
+defineExpose({ goToLine })
+
 onBeforeUnmount(() => view.value?.destroy())
 </script>
 

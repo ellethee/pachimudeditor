@@ -7,6 +7,15 @@
       <h1 class="text-h5 q-my-none">{{ zone ? `${zone.vnum} — ${zone.name}` : t('zones.detail.title') }}</h1>
       <q-space />
       <q-btn
+        v-if="zone && supports('supportsContentRaces') && zone.extra?.folder"
+        outline
+        color="primary"
+        :icon="mdiFileCodeOutline"
+        :label="t('zonefiles.link')"
+        :to="{ path: '/zones/files', query: { zone: String(zone.extra.folder) } }"
+        data-testid="zone-raw-files"
+      />
+      <q-btn
         v-if="zone && canReload"
         outline
         color="primary"
@@ -95,7 +104,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuasar } from 'quasar'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
-import { mdiArrowLeft, mdiDoor, mdiMap, mdiRefresh, mdiSkull, mdiSword } from '@quasar/extras/mdi-v7'
+import { mdiArrowLeft, mdiDoor, mdiFileCodeOutline, mdiMap, mdiRefresh, mdiSkull, mdiSword } from '@quasar/extras/mdi-v7'
 import { useZoneDialogs } from '../composables/use-zone-dialogs'
 import { getZone, updateZone } from '../services/zones-api'
 import { useLive, refreshLiveStatus } from '../../playerfiles/helpers/live-state'
