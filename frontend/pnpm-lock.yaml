@@ -200,8 +200,8 @@ importers:
         specifier: ^0.1.1
         version: 0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@6.0.3)))(vue@3.5.44(typescript@6.0.3))
       '@ilpachi/pachi-kit':
-        specifier: ^0.2.0
-        version: 0.2.0(@ilpachi/pachi-i18n@0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@6.0.3)))(vue@3.5.44(typescript@6.0.3)))(@ilpachi/use-alova@2.1.2(alova@3.5.5)(vue@3.5.44(typescript@6.0.3)))(@quasar/extras@2.1.0)(alova@3.5.5)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@6.0.3)))(vue@3.5.44(typescript@6.0.3))
+        specifier: ^0.2.1
+        version: 0.2.1(@ilpachi/pachi-i18n@0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@6.0.3)))(vue@3.5.44(typescript@6.0.3)))(@ilpachi/use-alova@2.1.2(alova@3.5.5)(vue@3.5.44(typescript@6.0.3)))(@quasar/extras@2.1.0)(alova@3.5.5)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@6.0.3)))(vue@3.5.44(typescript@6.0.3))
       '@ilpachi/pachifastquasar':
         specifier: ^0.2.1
         version: 0.2.1(038954f30ba029c9c790b89276cb4d7b)
@@ -760,12 +760,12 @@ packages:
       vue: ^3.5.0
       vue-i18n: ^11.0.0
 
-  '@ilpachi/pachi-kit@0.2.0':
-    resolution: {integrity: sha512-UNSrhp0uYiJxFtey4vZCoOKUFgTMls4UsZB1N2sK1Me498DAc6Iz8EQRr2zYJO/pl81bqtEPCyLbOPX9U9cbEw==}
+  '@ilpachi/pachi-kit@0.2.1':
+    resolution: {integrity: sha512-hH/RBkLARIDkrs/K7gzvMa7VxACXJ2dcQabBuSGEH5o00AJ5VTyUqvc7w8NpBliLRbah5JMw5IeGKCROcf2wdw==}
     engines: {node: '>=20'}
     peerDependencies:
       '@ilpachi/pachi-i18n': '>=0.1.0 <1.0.0'
-      '@ilpachi/use-alova': ^2.1.1
+      '@ilpachi/use-alova': ^2.1.2
       '@quasar/extras': ^2.0.0
       alova: ^3.3.0
       quasar: ^2.20.0
@@ -3322,7 +3322,7 @@ snapshots:
       vue: 3.5.44(typescript@6.0.3)
       vue-i18n: 11.4.14(vue@3.5.44(typescript@6.0.3))
 
-  '@ilpachi/pachi-kit@0.2.0(@ilpachi/pachi-i18n@0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@6.0.3)))(vue@3.5.44(typescript@6.0.3)))(@ilpachi/use-alova@2.1.2(alova@3.5.5)(vue@3.5.44(typescript@6.0.3)))(@quasar/extras@2.1.0)(alova@3.5.5)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@6.0.3)))(vue@3.5.44(typescript@6.0.3))':
+  '@ilpachi/pachi-kit@0.2.1(@ilpachi/pachi-i18n@0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@6.0.3)))(vue@3.5.44(typescript@6.0.3)))(@ilpachi/use-alova@2.1.2(alova@3.5.5)(vue@3.5.44(typescript@6.0.3)))(@quasar/extras@2.1.0)(alova@3.5.5)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@6.0.3)))(vue@3.5.44(typescript@6.0.3))':
     dependencies:
       '@ilpachi/pachi-i18n': 0.1.1(@quasar/extras@2.1.0)(quasar@2.35.1)(vue-i18n@11.4.14(vue@3.5.44(typescript@6.0.3)))(vue@3.5.44(typescript@6.0.3))
       '@quasar/extras': 2.1.0

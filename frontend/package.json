@@ -26,7 +26,7 @@
     "@ilpachi/fastquasar-profile": "^0.1.1",
     "@ilpachi/fastquasar-settings": "^0.1.1",
     "@ilpachi/pachi-i18n": "^0.1.1",
-    "@ilpachi/pachi-kit": "^0.2.0",
+    "@ilpachi/pachi-kit": "^0.2.1",
     "@ilpachi/pachifastquasar": "^0.2.1",
     "@ilpachi/use-alova": "^2.1.2",
     "@quasar/extras": "^2.0.1",
