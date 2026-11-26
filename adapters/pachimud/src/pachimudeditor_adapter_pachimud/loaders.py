@@ -82,6 +82,12 @@ class LoaderZone(BaseModel):
     enabled: bool = True
     prototypes_only: bool = False
     extends_zone: Optional[int] = None
+    email: str = ""
+    """Email dell'autore (il gioco non la usa)."""
+    difficulty: str = ""
+    """Difficolta' media per cui la zona e' pensata (testo libero)."""
+    civilized: bool = False
+    """Zona civilizzata: ci si parla in Comune."""
 
     @field_validator("reset_mode")
     @classmethod
@@ -95,6 +101,8 @@ class LoaderResetContent(BaseModel):
 
     obj_vnum: int
     max_existing: int | None = None
+    repop_percent: list[Annotated[float, Field(ge=0, le=100)]] = []
+    """Probabilita' (%) per la 1a, 2a, 3a... copia nel mondo (l'ultima vale per le successive)."""
     contains: list["LoaderResetContent"] = []
 
 
@@ -118,6 +126,7 @@ class LoaderResetMob(BaseModel):
     max_existing: int
     room_vnum: int
     room_limit: int
+    repop_percent: list[Annotated[float, Field(ge=0, le=100)]] = []
     inventory: list[LoaderResetObjectInventory] = []
 
 
@@ -201,26 +210,48 @@ TRIGGER_TYPES = (
     "all_greet",
     "entry",
     "command",
+    "init",
+    "reset",
+    "hour",
+    "listen",
+    "exit",
     "get",
     "drop",
     "wear",
+    "fightwashit",
+    "wield",
+    "throw",
+    "remove",
+    "put",
+    "ocommand",
     "enter",
-    "exit",
+    "open",
+    "rcommand",
 )
 """Tutti gli eventi dei trigger (come `TriggerType` del gioco)."""
 OWNER_TYPES: dict[str, tuple[str, ...]] = {
-    "mob": ("speech", "greet", "give", "random", "death", "fight", "hitprcnt", "act", "tell", "bribe", "all_greet", "entry", "command"),
-    "object": ("get", "drop", "wear", "give", "random"),
-    "room": ("enter", "exit", "speech", "random"),
-}
+    "mob": (
+        "speech", "greet", "give", "random", "death", "fight", "hitprcnt", "act", "tell", "bribe", "all_greet", "entry", "command", "init",
+        "reset", "hour", "listen", "exit",
+    ),
+    "object": (
+        "get", "drop", "wear", "give", "random", "init", "reset", "greet", "exit", "listen", "fight", "fightwashit", "wield", "throw",
+        "remove", "put", "ocommand",
+    ),
+    "room": ("enter", "exit", "speech", "random", "init", "reset", "hour", "listen", "open", "rcommand"),
+}  # fmt: skip
 """Gli eventi ammessi per chi possiede il trigger (`OWNER_TYPES` del gioco)."""
-MP_VERBS = ("mptransfer", "mpgoto", "mpat", "mpload", "mppurge", "mpkill", "mpforce", "mpset", "mpunset", "mpadd")
-"""Comandi MP veri (oltre a `mpecho`, `mpechoat`, `mpechoaround`, validi per tutti)."""
-MOB_ONLY_MP = ("mpgoto", "mpkill", "mpforce")
+MP_VERBS = (
+    "mptransfer", "mpgoto", "mpat", "mpload", "mppurge", "mpkill", "mpforce", "mpset", "mpunset", "mpadd", "mpdamage", "mpheal", "mpgiveexp",
+    "mpgivemoney", "mpcast", "mpscast", "block", "mpopen", "mpclose", "mpcommand", "mpjunk", "mpscrap", "mpprendo", "mpposo", "mpimpugno",
+    "mpaggressive", "mpposition",
+)  # fmt: skip
+"""Comandi MP veri (oltre a `mpecho*`/`mpasound`, validi per tutti)."""
+MOB_ONLY_MP = ("mpgoto", "mpkill", "mpforce", "mpcast", "mpscast", "mpcommand", "mpjunk", "mpscrap", "mpprendo", "mpposo", "mpimpugno")
 """I comandi MP che richiedono un corpo: oggetti e stanze non li usano (e nemmeno `mppurge self`)."""
 CMP = re.compile(r"\s*(==|!=|<=|>=|<|>)?\s*(-?\d+)\s*")
 """Un confronto numerico di una condizione: `10`, `>= 10`, `!= 3` (come `CMP` del gioco)."""
-MAX_IF_DEPTH = 3
+MAX_IF_DEPTH = 25
 """Quanti `if` possono stare uno dentro l'altro."""
 
 
@@ -292,25 +323,8 @@ class LoaderTrigger(BaseModel):
     """Un trigger di mob, oggetto (`scripts`) o stanza (copia di `Trigger` del gioco): a `type` il proprietario esegue le `actions`."""
 
     type: Literal[
-        "speech",
-        "greet",
-        "give",
-        "random",
-        "death",
-        "fight",
-        "hitprcnt",
-        "act",
-        "tell",
-        "bribe",
-        "all_greet",
-        "entry",
-        "command",
-        "get",
-        "drop",
-        "wear",
-        "enter",
-        "exit",
-    ]
+        "speech", "greet", "give", "random", "death", "fight", "hitprcnt", "act", "tell", "bribe", "all_greet", "entry", "command", "init", "reset", "hour", "listen", "exit", "get", "drop", "wear", "fightwashit", "wield", "throw", "remove", "put", "ocommand", "enter", "open", "rcommand",
+    ]  # fmt: skip
     argument: str = ""
     block: bool = False
     """Solo `command`: se scatta, il comando del giocatore non viene eseguito."""
@@ -324,11 +338,48 @@ class LoaderTrigger(BaseModel):
             raise ValueError(f"il trigger {self.type} vuole in argument un numero positivo")
         if self.type == "command" and not self.argument.strip():
             raise ValueError("il trigger command vuole in argument il nome del comando")
+        if (
+            self.type == "hour"
+            and self.argument.strip() not in ("", "-1")
+            and not (self.argument.strip().isdigit() and 1 <= int(self.argument) <= 24)
+        ):
+            raise ValueError("hour: argument vuoto o -1 (ogni ora) oppure un'ora da 1 a 24")
+        if self.type in ("ocommand", "rcommand") and not re.fullmatch(r"[pi] \S+( \S+)*", self.argument.strip()):
+            raise ValueError(f"{self.type}: argument vuole 'p' o 'i' e poi l'azione e il bersaglio (es. 'i premo borchia')")
         if self.type == "hitprcnt" and int(self.argument) > 100:
             raise ValueError("hitprcnt: la percentuale e' al massimo 100")
         if if_depth(self.actions) > MAX_IF_DEPTH:
             raise ValueError(f"al massimo {MAX_IF_DEPTH} if uno dentro l'altro")
         return self
+
+
+CURRENT_SECTORS = ("WATER_SWIM", "WATER_NOSWIM", "UNDERWATER")
+"""I settori in cui vale la corrente d'acqua."""
+
+
+class RoomCurrent(BaseModel):
+    """Corrente d'acqua: ogni `speed` pulse trascina verso `direction`."""
+
+    speed: int = Field(default=30, ge=1)
+    direction: str = "NORTH"
+
+    @field_validator("direction")
+    @classmethod
+    def _check_direction(cls, v: str) -> str:
+        """Nome di `Direction`."""
+        return enum_name(Direction, v)
+
+
+class RoomTeleport(BaseModel):
+    """Stanza teletrasporto: ogni `time` pulse porta chi e' in stanza nella stanza `room`."""
+
+    time: int = Field(default=60, ge=1)
+    room: int
+    look: bool = False
+    countdown: Optional[int] = Field(default=None, ge=1)
+    random_time: bool = False
+    no_mob: bool = False
+    no_objects: bool = False
 
 
 class LoaderRoom(BaseModel):
@@ -350,6 +401,17 @@ class LoaderRoom(BaseModel):
     exits: dict[str, LoaderExit] = {}
     extra_descriptions: list[LoaderExtraDescription] = []
     triggers: list[LoaderTrigger] = []
+    spec: Optional[str] = None
+    """Procedura speciale (nome del catalogo `specs.json`)."""
+    current: Optional[RoomCurrent] = None
+    teleport: Optional[RoomTeleport] = None
+
+    @model_validator(mode="after")
+    def _check_current_sector(self) -> "LoaderRoom":
+        """La corrente d'acqua vale solo nei settori d'acqua."""
+        if self.current is not None and self.sector_type not in CURRENT_SECTORS:
+            raise ValueError(f"la corrente d'acqua vale solo nei settori {', '.join(CURRENT_SECTORS)}, non in {self.sector_type}")
+        return self
 
     @field_validator("sector_type")
     @classmethod
@@ -376,8 +438,13 @@ SHOP_MESSAGE_KEYS = ("no_such_item1", "no_such_item2", "do_not_buy", "missing_ca
 GAME_OBJECT_TYPES: tuple[str, ...] = (
     "LIGHT", "SCROLL", "WAND", "STAFF", "WEAPON", "FIREWEAPON", "MISSILE", "TREASURE", "ARMOR", "POTION", "WORN", "OTHER",
     "TRASH", "TRAP", "CONTAINER", "NOTE", "DRINKCON", "KEY", "FOOD", "MONEY", "PEN", "BOAT", "AUDIO", "BOARD", "TREE", "ROCK", "FOUNTAIN",
+    "LIFESAVER", "BOOK", "CORPSE", "PORTAL", "FURNISHING", "PRECIOUS", "RAW_MATERIAL", "PROCESSED_MATERIAL", "CRAFTED", "MERCHANT",
+    "MOUNT_FOOD", "ALCHEMY", "OINTMENT",
 )  # fmt: skip
 """I nomi dei tipi oggetto del gioco (`ObjectType`), per i `trades` di un negozio."""
+
+
+_SPAN = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d-(?:[01]\d|2[0-3]):[0-5]\d$")
 
 
 class LoaderShop(BaseModel):
@@ -396,6 +463,21 @@ class LoaderShop(BaseModel):
     attacked_reaction: Literal["warn", "insult", "none"] = "warn"
     messages: dict[str, dict[str, str]] = {}
     handler: Optional[str] = None
+    hours: list[str] = []
+    """Fasce `hh:mm-hh:mm` (ora di gioco, al massimo due): se ci sono valgono al posto di `open1`..`close2`."""
+    inventory_closed: bool = False
+    """Chiuso per inventario: il negoziante non tratta con nessuno."""
+
+    @field_validator("hours")
+    @classmethod
+    def _check_hours(cls, value: list[str]) -> list[str]:
+        """Al massimo due fasce `hh:mm-hh:mm`."""
+        if len(value) > 2:
+            raise ValueError("al massimo due fasce orarie")
+        for span in value:
+            if not _SPAN.match(span):
+                raise ValueError(f"fascia oraria {span!r} non valida, atteso 'hh:mm-hh:mm' (es. '08:00-13:00')")
+        return value
 
     @field_validator("trades")
     @classmethod
@@ -417,6 +499,18 @@ class LoaderShop(BaseModel):
         if unknown:
             raise ValueError(f"messaggi sconosciuti {sorted(unknown)}, attesi tra: {', '.join(SHOP_MESSAGE_KEYS)}")
         return value
+
+
+MobPosition = Literal["SLEEPING", "RESTING", "SITTING", "STANDING"]
+"""Le posizioni di partenza ammesse per un mob."""
+
+
+class MobNoise(BaseModel):
+    """Mob rumoroso: suono vicino (stanza) e lontano (stanze adiacenti)."""
+
+    near: str = ""
+    far: str = ""
+    chance: int = Field(default=3, ge=1, le=100)
 
 
 class LoaderMob(BaseModel):
@@ -462,6 +556,45 @@ class LoaderMob(BaseModel):
     teaches_class_ids: Optional[list[str]] = None
     teaches_skill_ids: Optional[list[str]] = None
     triggers: list[LoaderTrigger] = []
+    position: MobPosition = "STANDING"
+    """Posizione di default (a ogni reset e a fine combattimento)."""
+    clan_id: Optional[str] = None
+    """Clan del mob: i mob dello stesso clan non si attaccano; `0` o vuoto = nessuno."""
+    noise: Optional[MobNoise] = None
+    affects: list[str] = []
+    """Effetti permanenti (`FLYING`, `SANCTUARY`...)."""
+    immunity: list[str] = []
+    resistance: list[str] = []
+    vulnerability: list[str] = []
+    """Nomi di `ResistanceFlags`, sommati a quelli della razza."""
+    spec: Optional[str] = None
+    """Procedura speciale (nome del catalogo `specs.json`)."""
+
+    @field_validator("position", mode="before")
+    @classmethod
+    def _upper_position(cls, v: object) -> object:
+        """Maiuscole."""
+        return v.strip().upper() if isinstance(v, str) else v
+
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _clan_text(cls, v: object) -> object:
+        """Un numero vale come testo; `0` o vuoto = nessun clan."""
+        return None if v in (None, "", 0, "0") else str(v)
+
+    @field_validator("affects")
+    @classmethod
+    def _check_affects(cls, v: list[str]) -> list[str]:
+        """Nomi in maiuscolo."""
+        return [a.strip().upper() for a in v]
+
+    @field_validator("immunity", "resistance", "vulnerability")
+    @classmethod
+    def _check_resistances(cls, v: list[str]) -> list[str]:
+        """Nomi di `ResistanceFlags`."""
+        from pachimudeditor_adapter_pachimud.race_enums import ResistanceFlags
+
+        return [enum_name(ResistanceFlags, a) for a in v]
 
     @field_validator("hp_dice", "damage_dice")
     @classmethod
@@ -505,12 +638,32 @@ class ObjectBaseProto(BaseModel):
     action_description: Optional[str] = None
     weight: int = 0
     cost: int = 0
-    rent: int = 0
+    rent: int = Field(default=0, ge=-1)
+    """Affitto al giorno; -1 = non affittabile."""
+    durability: int = Field(default=-1, ge=-1)
+    min_level: Optional[int] = Field(default=None, ge=1, le=70)
+    max_level: Optional[int] = Field(default=None, ge=1, le=70)
+    sex: str = "NEUTRAL"
+    material: Optional[Literal["METAL", "MINERAL", "ORGANIC"]] = None
+    spec: Optional[str] = None
     extra_flags: list[str] = []
     wear_flags: list[str] = []
     affects: dict[str, int] = {}
     extra_descriptions: list[LoaderExtraDescription] = []
     scripts: list[LoaderTrigger] = []
+
+    @field_validator("sex")
+    @classmethod
+    def _check_sex(cls, value: str) -> str:
+        """Nome di `Sex`."""
+        return enum_name(Sex, value)
+
+    @model_validator(mode="after")
+    def _check_levels(self) -> "ObjectBaseProto":
+        """`min_level` non supera `max_level`."""
+        if self.min_level is not None and self.max_level is not None and self.min_level > self.max_level:
+            raise ValueError("min_level non puo' superare max_level")
+        return self
 
     @field_validator("affects")
     @classmethod
@@ -553,6 +706,8 @@ class WeaponProto(ObjectBaseProto):
     dice_count: int = 1
     die_size: int = 4
     weapon_type: int = 3
+    break_chance: int = Field(default=0, ge=0, le=100)
+    """Probabilita' (%) che l'arma si spezzi lanciata."""
 
 
 class FireWeaponProto(ObjectBaseProto):
@@ -579,6 +734,8 @@ class ArmorProto(ObjectBaseProto):
 
     object_type: Literal["ARMOR"]
     armor_class: int = 0
+    max_armor_class: Optional[int] = None
+    decay_percent: int = Field(default=0, ge=0, le=100)
 
 
 class ContainerProto(ObjectBaseProto):
@@ -660,6 +817,7 @@ class BoardProto(ObjectBaseProto):
 GENERIC_TYPES: tuple[str, ...] = (
     "TREASURE", "WORN", "OTHER", "TRASH",
     "NOTE", "PEN", "BOAT", "TREE", "ROCK", "FOUNTAIN",
+    "LIFESAVER", "FURNISHING", "PRECIOUS", "RAW_MATERIAL", "PROCESSED_MATERIAL", "CRAFTED", "MERCHANT", "MOUNT_FOOD",
 )  # fmt: skip
 
 
@@ -669,7 +827,49 @@ class GenericProto(ObjectBaseProto):
     object_type: Literal[
         "TREASURE", "WORN", "OTHER", "TRASH",
         "NOTE", "PEN", "BOAT", "TREE", "ROCK", "FOUNTAIN",
+        "LIFESAVER", "FURNISHING", "PRECIOUS", "RAW_MATERIAL", "PROCESSED_MATERIAL", "CRAFTED", "MERCHANT", "MOUNT_FOOD",
     ]  # fmt: skip
+
+
+class PortalProto(ObjectBaseProto):
+    """Portale magico: `enter <portale>` porta alla stanza `destination`."""
+
+    object_type: Literal["PORTAL"]
+    duration: int = Field(default=-1, ge=-1)
+    destination: Optional[int] = None
+
+
+class BookProto(ObjectBaseProto):
+    """Libro (la lingua e' dichiarata, senza comportamento)."""
+
+    object_type: Literal["BOOK"]
+    language: str = "common"
+
+
+class CorpseProto(ObjectBaseProto):
+    """Cadavere come tipo dell'oggetto."""
+
+    object_type: Literal["CORPSE"]
+    souls: int = Field(default=0, ge=0)
+
+
+class OintmentProto(ObjectBaseProto):
+    """Unguento (dichiarato, senza comportamento)."""
+
+    object_type: Literal["OINTMENT"]
+    level: int = 1
+    max_uses: int = 1
+    uses: int = 1
+    spell: Optional[str] = None
+
+
+class AlchemyProto(ObjectBaseProto):
+    """Composto alchemico (dichiarato, senza comportamento)."""
+
+    object_type: Literal["ALCHEMY"]
+    applies_to: int = 0
+    duration: int = 0
+    effect: int = 0
 
 
 ObjectProto = Annotated[
@@ -688,6 +888,11 @@ ObjectProto = Annotated[
     | AudioProto
     | TrapProto
     | BoardProto
+    | PortalProto
+    | BookProto
+    | CorpseProto
+    | OintmentProto
+    | AlchemyProto
     | GenericProto,
     Field(discriminator="object_type"),
 ]
@@ -708,6 +913,11 @@ TYPE_MODELS: dict[str, type[ObjectBaseProto]] = {
     "KEY": KeyProto,
     "AUDIO": AudioProto,
     "TRAP": TrapProto,
+    "PORTAL": PortalProto,
+    "BOOK": BookProto,
+    "CORPSE": CorpseProto,
+    "OINTMENT": OintmentProto,
+    "ALCHEMY": AlchemyProto,
     **{t: GenericProto for t in GENERIC_TYPES},
 }
 """`object_type` -> modello dei campi di quel tipo."""

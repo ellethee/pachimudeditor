@@ -90,6 +90,21 @@
         <q-input v-model.number="shop.open2" class="col-6 col-sm-3" type="number" min="0" max="23" outlined dense stack-label :label="t('shops.open2')" :readonly="readonly" data-testid="shop-open2" @update:model-value="changed" />
         <q-input v-model.number="shop.close2" class="col-6 col-sm-3" type="number" min="0" max="28" outlined dense stack-label :label="t('shops.close2')" :readonly="readonly" data-testid="shop-close2" @update:model-value="changed" />
       </div>
+      <div class="row q-col-gutter-md items-center">
+        <q-input
+          :model-value="shop.hours.join(', ')"
+          class="col-12 col-sm-8"
+          outlined
+          dense
+          stack-label
+          :label="t('shops.hoursSpans')"
+          :hint="t('shops.hoursSpansHint')"
+          :readonly="readonly"
+          data-testid="shop-hours"
+          @update:model-value="setHours"
+        />
+        <q-toggle v-model="shop.inventory_closed" class="col-12 col-sm-4" dense :label="t('shops.inventoryClosed')" :disable="readonly" data-testid="shop-inventory-closed" @update:model-value="changed" />
+      </div>
       <div class="row q-col-gutter-md">
         <q-select
           v-model="shop.no_money_reaction"
@@ -247,6 +262,11 @@ function setRoom(value: string | number | null): void {
 }
 
 /** Hook Python: vuoto = nessuno. */
+function setHours(value: string | number | null): void {
+  if (shop.value) shop.value.hours = String(value ?? '').split(',').map((h) => h.trim()).filter(Boolean)
+  changed()
+}
+
 function setHandler(value: string | number | null): void {
   if (shop.value) shop.value.handler = value ? String(value) : null
   changed()

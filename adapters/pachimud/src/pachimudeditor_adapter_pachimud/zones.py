@@ -28,12 +28,12 @@ from pachimudeditor.common.adapters.models import (
 )
 from pachimudeditor.common.enums import ZoneResetMode
 from pachimudeditor.sdk import conflict, rules
-from pachimudeditor_adapter_pachimud import mapping, resets
+from pachimudeditor_adapter_pachimud import mapping, resets, simple_extra
 from pachimudeditor_adapter_pachimud.base import PachimudResetLookup, PachimudSupport, make_page, paginate_list
 from pachimudeditor_adapter_pachimud.loaders import LoaderZone
 from pachimudeditor_adapter_pachimud.store import YamlFile, ZoneEntry, plain
 
-ZONE_EXTRA = frozenset({"zoneId", "description", "folder", "climate", "prototypesOnly", "extendsZone"})
+ZONE_EXTRA = frozenset({"zoneId", "description", "folder", "climate", "prototypesOnly", "extendsZone", *simple_extra.keys("zone")})
 
 
 def slug(name: str) -> str:
@@ -91,6 +91,7 @@ class ZonesMixin(PachimudSupport):
                 **({"climate": extra["climate"]} if extra.get("climate") not in (None, "temperate") else {}),
                 **({"prototypes_only": True} if extra.get("prototypesOnly") else {}),
                 **({"extends_zone": extra["extendsZone"]} if extra.get("extendsZone") else {}),
+                **simple_extra.values("zone", extra),
                 "bottom_vnum": values["bottom_vnum"],
                 "top_vnum": values["top_vnum"],
                 "max_level": values["max_level"],
@@ -163,6 +164,7 @@ class ZonesMixin(PachimudSupport):
                 mapping.put(zone.file.doc, "prototypes_only", bool(extra["prototypesOnly"]), default=False)
             if "extendsZone" in extra:
                 mapping.put(zone.file.doc, "extends_zone", extra["extendsZone"] or None)
+            simple_extra.apply("zone", zone.file.doc, extra)
             zone.revalidate()
             self.store.save(zone.file)
             return mapping.zone_out(self.zone_or_404(zone.vnum))

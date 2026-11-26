@@ -688,7 +688,7 @@ class ObjectIn(NeutralIn):
     object_type: ObjectType = ObjectType.OTHER
     weight: int = Field(default=0, ge=0)
     cost: int = Field(default=0, ge=0)
-    rent: int = Field(default=0, ge=0)
+    rent: int = Field(default=0, ge=-1)
     value_0: int | None = None
     value_1: int | None = None
     value_2: int | None = None
@@ -712,7 +712,7 @@ class ObjectPatch(NeutralPatch):
     object_type: ObjectType | None = None
     weight: int | None = Field(default=None, ge=0)
     cost: int | None = Field(default=None, ge=0)
-    rent: int | None = Field(default=None, ge=0)
+    rent: int | None = Field(default=None, ge=-1)
     value_0: int | None = None
     value_1: int | None = None
     value_2: int | None = None

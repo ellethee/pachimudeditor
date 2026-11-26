@@ -22,7 +22,7 @@ from pachimudeditor.common.adapters.models import (
 )
 from pachimudeditor.common.enums import ObjectType
 from pachimudeditor.sdk import conflict, mob_query, object_query
-from pachimudeditor_adapter_pachimud import mapping
+from pachimudeditor_adapter_pachimud import mapping, simple_extra
 from pachimudeditor_adapter_pachimud.base import PachimudSupport
 from pachimudeditor_adapter_pachimud.loaders import LoaderMob, type_fields
 from pachimudeditor_adapter_pachimud.rooms import check_extra, move_raw, norm_area
@@ -42,9 +42,10 @@ MOB_EXTRA = frozenset(
         "shop",
         "triggers",
         *mapping.STATS,
+        *simple_extra.keys("mob"),
     }
 )
-OBJECT_EXTRA = frozenset({"area", "typeFields", "extraDescriptions", "scripts"})
+OBJECT_EXTRA = frozenset({"area", "typeFields", "extraDescriptions", "scripts", *simple_extra.keys("object")})
 
 
 class PrototypesMixin(PachimudSupport):
@@ -78,6 +79,7 @@ class PrototypesMixin(PachimudSupport):
             mapping.put(raw, "shop", mapping.shop_value(extra["shop"]))
         if "triggers" in extra:
             mapping.apply_triggers(raw, extra["triggers"], "mob", "triggers")
+        simple_extra.apply("mob", raw, extra)
         return norm_area(extra["area"]) if "area" in extra else ...
 
     async def list_mobs(self, params: MobPageParams) -> PaginatedResponse[MobOut]:
@@ -203,6 +205,7 @@ class PrototypesMixin(PachimudSupport):
             mapping.apply_object_extra_descriptions(raw, data.extra)
             if "scripts" in data.extra:
                 mapping.apply_triggers(raw, data.extra["scripts"], "object", "scripts")
+            simple_extra.apply("object", raw, data.extra)
             mapping.check_object(raw)
             file.list_of(create=True).append(raw)
             self.store.save(file)
@@ -229,6 +232,7 @@ class PrototypesMixin(PachimudSupport):
             mapping.apply_object_extra_descriptions(obj.raw, extra)
             if "scripts" in extra:
                 mapping.apply_triggers(obj.raw, extra["scripts"], "object", "scripts")
+            simple_extra.apply("object", obj.raw, extra)
             mapping.check_object(obj.raw)
             self._relocate(obj, changes.get("zone_id"), norm_area(extra["area"]) if "area" in extra else ...)
             return await self._after_save(obj, "object")

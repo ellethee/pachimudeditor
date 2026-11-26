@@ -26,6 +26,9 @@ export default {
     open2: 'Riapre alle',
     close2: 'Richiude alle',
     closeHint: '28 = sempre aperto',
+    hoursSpans: 'Fasce orarie (ora di gioco, al massimo 2)',
+    hoursSpansHint: 'hh:mm-hh:mm separate da virgola, es. 08:00-13:00, 15:00-20:00; se presenti valgono al posto di apre/chiude',
+    inventoryClosed: 'Chiuso per inventario',
     noMoneyReaction: 'Se non hai soldi',
     attackedReaction: 'Se lo attacchi',
     reactions: {

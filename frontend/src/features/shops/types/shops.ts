@@ -16,6 +16,9 @@ export interface IShopData {
   /** Testi propri: chiave del messaggio -> lingua -> testo (`{player}`, `{coins}`). */
   messages: Record<string, Record<string, string>>
   handler: string | null
+  /** Fasce `hh:mm-hh:mm` in ora di gioco (al massimo 2): valgono al posto di open/close. */
+  hours: string[]
+  inventory_closed: boolean
 }
 
 /** Un oggetto sempre in vendita. */
@@ -45,6 +48,8 @@ export interface IShopItem {
   open2: number
   close2: number
   handler: string | null
+  hours?: string[]
+  inventoryClosed?: boolean
 }
 
 /** Valori ammessi dai campi del negozio. */

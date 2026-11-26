@@ -1,0 +1,1462 @@
+{
+  "mob": [
+    {
+      "name": "acido_corrosivo",
+      "clessidra": "spec_AcidoCorrosivo",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `AcidoCorrosivo`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `AcidoCorrosivo`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "agente_mercenari",
+      "clessidra": "spec_AgenteMercenari",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `AgenteMercenari`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `AgenteMercenari`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "albero_gigante_canalone",
+      "clessidra": "spec_AlberoGiganteCanalone",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `AlberoGiganteCanalone`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `AlberoGiganteCanalone`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "alchimista",
+      "clessidra": "spec_Alchimista",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Alchimista`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Alchimista`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "arciere",
+      "clessidra": "spec_Arciere",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Arciere`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Arciere`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "banco_metalli",
+      "clessidra": "spec_BancoMetalli",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `BancoMetalli`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `BancoMetalli`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "beholder",
+      "clessidra": "spec_Beholder",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Beholder`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Beholder`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "berserk",
+      "clessidra": "spec_Berserk",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Berserk`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Berserk`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "briganti_mercante",
+      "clessidra": "spec_BrigantiMercante",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `BrigantiMercante`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `BrigantiMercante`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "cacciatore_di_taglie",
+      "clessidra": "spec_CacciatoreDiTaglie",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `CacciatoreDiTaglie`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `CacciatoreDiTaglie`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "cittadino",
+      "clessidra": "spec_Cittadino",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Cittadino`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Cittadino`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "collezionista_rari",
+      "clessidra": "spec_CollezionistaRari",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `CollezionistaRari`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `CollezionistaRari`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "comandante_guarnigione",
+      "clessidra": "spec_ComandanteGuarnigione",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `ComandanteGuarnigione`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `ComandanteGuarnigione`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "corpo_empyrea",
+      "clessidra": "spec_CorpoEmpyrea",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `CorpoEmpyrea`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `CorpoEmpyrea`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "creatura_sabbia",
+      "clessidra": "spec_CreaturaSabbia",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `CreaturaSabbia`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `CreaturaSabbia`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "diavolo_della_fossa",
+      "clessidra": "spec_DiavoloDellaFossa",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `DiavoloDellaFossa`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `DiavoloDellaFossa`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "dispone_monete_random",
+      "clessidra": "spec_DisponeMoneteRandom",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `DisponeMoneteRandom`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `DisponeMoneteRandom`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "distruggi_corpi",
+      "clessidra": "spec_DistruggiCorpi",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `DistruggiCorpi`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `DistruggiCorpi`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "elfo_scuro",
+      "clessidra": "spec_ElfoScuro",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `ElfoScuro`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `ElfoScuro`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "esplode_alla_morte",
+      "clessidra": "spec_EsplodeAllaMorte",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `EsplodeAllaMorte`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `EsplodeAllaMorte`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "fabbro",
+      "clessidra": "spec_Fabbro",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Fabbro`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Fabbro`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "fastidioso",
+      "clessidra": "spec_Fastidioso",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Fastidioso`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Fastidioso`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "getto_acido",
+      "clessidra": "spec_GettoAcido",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GettoAcido`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GettoAcido`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "gigante_nuvole",
+      "clessidra": "spec_GiganteNuvole",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GiganteNuvole`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GiganteNuvole`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "gigante_tempeste",
+      "clessidra": "spec_GiganteTempeste",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GiganteTempeste`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GiganteTempeste`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "giocoliere",
+      "clessidra": "spec_Giocoliere",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Giocoliere`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Giocoliere`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "golem_ferro",
+      "clessidra": "spec_GolemFerro",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GolemFerro`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GolemFerro`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "greel",
+      "clessidra": "spec_Greel",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Greel`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Greel`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "grick",
+      "clessidra": "spec_Grick",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Grick`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Grick`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "guardia_capitale",
+      "clessidra": "spec_GuardiaCapitale",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GuardiaCapitale`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GuardiaCapitale`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "guardia_cittadina",
+      "clessidra": "spec_GuardiaCittadina",
+      "status": "implemented",
+      "requires": [],
+      "description": {
+        "it": "Attacca chi e' stato segnato come assassino (`PLR_KILLER`).",
+        "en": "Attacks anyone marked as a killer (`PLR_KILLER`)."
+      }
+    },
+    {
+      "name": "guardiano_combattente",
+      "clessidra": "spec_GuardianoCombattente",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GuardianoCombattente`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GuardianoCombattente`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "guardiano_gilda",
+      "clessidra": "spec_GuardianoGilda",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GuardianoGilda`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GuardianoGilda`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "guardiano_mausoleo_famiglia",
+      "clessidra": "spec_GuardianoMausoleoFamiglia",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GuardianoMausoleoFamiglia`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GuardianoMausoleoFamiglia`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "guardiano_ordine_civico_lystar",
+      "clessidra": "spec_GuardianoOrdineCivicoLystar",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GuardianoOrdineCivicoLystar`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GuardianoOrdineCivicoLystar`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "guardiano_razza",
+      "clessidra": "spec_GuardianoRazza",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GuardianoRazza`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GuardianoRazza`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "guardiano_regina_uomini_serpente",
+      "clessidra": "spec_GuardianoReginaUominiSerpente",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GuardianoReginaUominiSerpente`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GuardianoReginaUominiSerpente`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "guida_turistica",
+      "clessidra": "spec_GuidaTuristica",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `GuidaTuristica`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `GuidaTuristica`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "idra",
+      "clessidra": "spec_Idra",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Idra`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Idra`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "incantesimi_freddo",
+      "clessidra": "spec_IncantesimiFreddo",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `IncantesimiFreddo`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `IncantesimiFreddo`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "kraken",
+      "clessidra": "spec_Kraken",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Kraken`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Kraken`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "lamia",
+      "clessidra": "spec_Lamia",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Lamia`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Lamia`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "lancia_ragnatele",
+      "clessidra": "spec_LanciaRagnatele",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `LanciaRagnatele`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `LanciaRagnatele`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "locandiere",
+      "clessidra": "spec_Locandiere",
+      "status": "alias",
+      "requires": [
+        "receptionist"
+      ],
+      "description": {
+        "it": "E' il locandiere: serve `receptionist: true`.",
+        "en": "The innkeeper: needs `receptionist: true`."
+      }
+    },
+    {
+      "name": "lucertola_folgorante",
+      "clessidra": "spec_LucertolaFolgorante",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `LucertolaFolgorante`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `LucertolaFolgorante`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "maestro_alchimista",
+      "clessidra": "spec_MaestroAlchimista",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_araldica",
+      "clessidra": "spec_MaestroAraldica",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_cacciatore",
+      "clessidra": "spec_MaestroCacciatore",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_conoscenze_oggetti",
+      "clessidra": "spec_MaestroConoscenzeOggetti",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_equitazione",
+      "clessidra": "spec_MaestroEquitazione",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_gilda",
+      "clessidra": "spec_MaestroGilda",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_magico",
+      "clessidra": "spec_MaestroMagico",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_marinaio",
+      "clessidra": "spec_MaestroMarinaio",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_mimo",
+      "clessidra": "spec_MaestroMimo",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_ofiologo",
+      "clessidra": "spec_MaestroOfiologo",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_ornitologo",
+      "clessidra": "spec_MaestroOrnitologo",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_poliglotta",
+      "clessidra": "spec_MaestroPoliglotta",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_sapiente",
+      "clessidra": "spec_MaestroSapiente",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_specialista",
+      "clessidra": "spec_MaestroSpecialista",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_storia",
+      "clessidra": "spec_MaestroStoria",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "maestro_viandante",
+      "clessidra": "spec_MaestroViandante",
+      "status": "alias",
+      "requires": [
+        "teaches_class_ids",
+        "teaches_skill_ids",
+        "flag:GUILDMASTER"
+      ],
+      "description": {
+        "it": "E' un maestro: serve `teaches_class_ids`, `teaches_skill_ids` o il flag `GUILDMASTER`.",
+        "en": "A teacher: needs `teaches_class_ids`, `teaches_skill_ids` or the `GUILDMASTER` flag."
+      }
+    },
+    {
+      "name": "mangia_idioti",
+      "clessidra": "spec_MangiaIdioti",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `MangiaIdioti`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `MangiaIdioti`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "medusa",
+      "clessidra": "spec_Medusa",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Medusa`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Medusa`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "melma_verde",
+      "clessidra": "spec_MelmaVerde",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `MelmaVerde`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `MelmaVerde`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "mob_lancia_incantesimo",
+      "clessidra": "spec_MobLanciaIncantesimo",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `MobLanciaIncantesimo`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `MobLanciaIncantesimo`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "mob_succhia_energia",
+      "clessidra": "spec_MobSucchiaEnergia",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `MobSucchiaEnergia`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `MobSucchiaEnergia`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "mostro_fango",
+      "clessidra": "spec_MostroFango",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `MostroFango`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `MostroFango`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "negoziante",
+      "clessidra": "spec_Negoziante",
+      "status": "alias",
+      "requires": [
+        "shop"
+      ],
+      "description": {
+        "it": "E' un negoziante: serve il campo `shop`.",
+        "en": "A shopkeeper: needs the `shop` field."
+      }
+    },
+    {
+      "name": "negoziante_animali",
+      "clessidra": "spec_NegozianteAnimali",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `NegozianteAnimali`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `NegozianteAnimali`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "negoziante_cavalcature",
+      "clessidra": "spec_NegozianteCavalcature",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `NegozianteCavalcature`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `NegozianteCavalcature`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "negoziante_finimenti",
+      "clessidra": "spec_NegozianteFinimenti",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `NegozianteFinimenti`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `NegozianteFinimenti`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "nosferatu",
+      "clessidra": "spec_Nosferatu",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Nosferatu`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Nosferatu`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "ombra",
+      "clessidra": "spec_Ombra",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Ombra`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Ombra`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "paralizzante1",
+      "clessidra": "spec_Paralizzante1",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Paralizzante1`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Paralizzante1`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "paralizzante2",
+      "clessidra": "spec_Paralizzante2",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Paralizzante2`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Paralizzante2`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "postino",
+      "clessidra": "spec_Postino",
+      "status": "alias",
+      "requires": [
+        "postmaster"
+      ],
+      "description": {
+        "it": "E' il postino: serve `postmaster: true`.",
+        "en": "The postmaster: needs `postmaster: true`."
+      }
+    },
+    {
+      "name": "predatore_etereo",
+      "clessidra": "spec_PredatoreEtereo",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `PredatoreEtereo`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `PredatoreEtereo`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "raccogli_tesori",
+      "clessidra": "spec_RaccogliTesori",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `RaccogliTesori`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `RaccogliTesori`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "replicante",
+      "clessidra": "spec_Replicante",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Replicante`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Replicante`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "rigenerante",
+      "clessidra": "spec_Rigenerante",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Rigenerante`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Rigenerante`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "scappa_con_teletrasporto",
+      "clessidra": "spec_ScappaConTeletrasporto",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `ScappaConTeletrasporto`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `ScappaConTeletrasporto`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "sciame_mortale",
+      "clessidra": "spec_SciameMortale",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `SciameMortale`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `SciameMortale`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "seppia",
+      "clessidra": "spec_Seppia",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Seppia`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Seppia`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "soffio_acido",
+      "clessidra": "spec_SoffioAcido",
+      "status": "alias",
+      "requires": [],
+      "description": {
+        "it": "Soffia in combattimento: equivale a `breath: [acid]`.",
+        "en": "Breathes in combat: same as `breath: [acid]`."
+      }
+    },
+    {
+      "name": "soffio_elettrico",
+      "clessidra": "spec_SoffioElettrico",
+      "status": "alias",
+      "requires": [],
+      "description": {
+        "it": "Soffia in combattimento: equivale a `breath: [lightning]`.",
+        "en": "Breathes in combat: same as `breath: [lightning]`."
+      }
+    },
+    {
+      "name": "soffio_gassoso",
+      "clessidra": "spec_SoffioGassoso",
+      "status": "alias",
+      "requires": [],
+      "description": {
+        "it": "Soffia in combattimento: equivale a `breath: [gas]`.",
+        "en": "Breathes in combat: same as `breath: [gas]`."
+      }
+    },
+    {
+      "name": "soffio_gelido",
+      "clessidra": "spec_SoffioGelido",
+      "status": "alias",
+      "requires": [],
+      "description": {
+        "it": "Soffia in combattimento: equivale a `breath: [frost]`.",
+        "en": "Breathes in combat: same as `breath: [frost]`."
+      }
+    },
+    {
+      "name": "soffio_infuocato",
+      "clessidra": "spec_SoffioInfuocato",
+      "status": "alias",
+      "requires": [],
+      "description": {
+        "it": "Soffia in combattimento: equivale a `breath: [fire]`.",
+        "en": "Breathes in combat: same as `breath: [fire]`."
+      }
+    },
+    {
+      "name": "soffio_risucchiante",
+      "clessidra": "spec_SoffioRisucchiante",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `SoffioRisucchiante`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `SoffioRisucchiante`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "stalliere",
+      "clessidra": "spec_Stalliere",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Stalliere`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Stalliere`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "succhia_energia",
+      "clessidra": "spec_SucchiaEnergia",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `SucchiaEnergia`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `SucchiaEnergia`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "trasforma_runati",
+      "clessidra": "spec_TrasformaRunati",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `TrasformaRunati`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `TrasformaRunati`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "tritone",
+      "clessidra": "spec_Tritone",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Tritone`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Tritone`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "vampiri_empyrea",
+      "clessidra": "spec_VampiriEmpyrea",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `VampiriEmpyrea`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `VampiriEmpyrea`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "velenoso",
+      "clessidra": "spec_Velenoso",
+      "status": "implemented",
+      "requires": [],
+      "description": {
+        "it": "In combattimento morde e avvelena (come `snake` di LeU).",
+        "en": "Bites and poisons in combat (like LeU's `snake`)."
+      }
+    },
+    {
+      "name": "viverna_rossa",
+      "clessidra": "spec_VivernaRossa",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `VivernaRossa`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `VivernaRossa`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "viverna_verde",
+      "clessidra": "spec_VivernaVerde",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `VivernaVerde`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `VivernaVerde`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "yogoloth",
+      "clessidra": "spec_Yogoloth",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Yogoloth`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Yogoloth`: reserved name, not implemented yet."
+      }
+    }
+  ],
+  "object": [
+    {
+      "name": "bacheca",
+      "clessidra": "spec_Bacheca",
+      "status": "alias",
+      "requires": [
+        "type:BOARD"
+      ],
+      "description": {
+        "it": "L'oggetto e' una bacheca: serve `object_type: BOARD`.",
+        "en": "The object is a bulletin board: needs `object_type: BOARD`."
+      }
+    },
+    {
+      "name": "brinante",
+      "clessidra": "spec_Brinante",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Brinante`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Brinante`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "ciambella",
+      "clessidra": "spec_Ciambella",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Ciambella`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Ciambella`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "cristallo_nero",
+      "clessidra": "spec_CristalloNero",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `CristalloNero`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `CristalloNero`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "extra_servo_inferi",
+      "clessidra": "spec_ExtraServoInferi",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `ExtraServoInferi`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `ExtraServoInferi`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "fischietto",
+      "clessidra": "spec_Fischietto",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Fischietto`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Fischietto`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "fontana_curatrice",
+      "clessidra": "spec_FontanaCuratrice",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `FontanaCuratrice`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `FontanaCuratrice`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "fontana_magica",
+      "clessidra": "spec_FontanaMagica",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `FontanaMagica`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `FontanaMagica`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "oggetto_dannato",
+      "clessidra": "spec_OggettoDannato",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `OggettoDannato`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `OggettoDannato`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "pergamena_apprendimento",
+      "clessidra": "spec_PergamenaApprendimento",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `PergamenaApprendimento`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `PergamenaApprendimento`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "portale",
+      "clessidra": "spec_Portale",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Portale`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Portale`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "portale_grigio",
+      "clessidra": "spec_PortaleGrigio",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `PortaleGrigio`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `PortaleGrigio`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "richiede_conoscenza",
+      "clessidra": "spec_RichiedeConoscenza",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `RichiedeConoscenza`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `RichiedeConoscenza`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "sapone",
+      "clessidra": "spec_Sapone",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Sapone`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Sapone`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "scheletro_gnomo",
+      "clessidra": "spec_ScheletroGnomo",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `ScheletroGnomo`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `ScheletroGnomo`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "slot_machine",
+      "clessidra": "spec_SlotMachine",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `SlotMachine`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `SlotMachine`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "spada_malvagia",
+      "clessidra": "spec_SpadaMalvagia",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `SpadaMalvagia`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `SpadaMalvagia`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "trabucco",
+      "clessidra": "spec_Trabucco",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Trabucco`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Trabucco`: reserved name, not implemented yet."
+      }
+    }
+  ],
+  "room": [
+    {
+      "name": "allestimento_cavalcatura",
+      "clessidra": "spec_AllestimentoCavalcatura",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `AllestimentoCavalcatura`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `AllestimentoCavalcatura`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "apriti_sesamo",
+      "clessidra": "spec_ApritiSesamo",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `ApritiSesamo`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `ApritiSesamo`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "banca",
+      "clessidra": "spec_Banca",
+      "status": "alias",
+      "requires": [
+        "flag:BANK"
+      ],
+      "description": {
+        "it": "La stanza e' una banca: serve il flag `BANK`.",
+        "en": "The room is a bank: needs the `BANK` flag."
+      }
+    },
+    {
+      "name": "biblioteca",
+      "clessidra": "spec_Biblioteca",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Biblioteca`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Biblioteca`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "castello_arpa",
+      "clessidra": "spec_CastelloArpa",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `CastelloArpa`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `CastelloArpa`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "castello_fine_quest",
+      "clessidra": "spec_CastelloFineQuest",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `CastelloFineQuest`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `CastelloFineQuest`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "castello_grata",
+      "clessidra": "spec_CastelloGrata",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `CastelloGrata`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `CastelloGrata`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "castello_stanza_cavaliere",
+      "clessidra": "spec_CastelloStanzaCavaliere",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `CastelloStanzaCavaliere`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `CastelloStanzaCavaliere`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "discarica",
+      "clessidra": "spec_Discarica",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Discarica`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Discarica`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "eco",
+      "clessidra": "spec_Eco",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Eco`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Eco`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "fine_quest_tempo",
+      "clessidra": "spec_FineQuestTempo",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `FineQuestTempo`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `FineQuestTempo`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "fortezza",
+      "clessidra": "spec_Fortezza",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Fortezza`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Fortezza`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "glifo",
+      "clessidra": "spec_Glifo",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Glifo`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Glifo`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "guarnigione",
+      "clessidra": "spec_Guarnigione",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Guarnigione`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Guarnigione`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "latrina",
+      "clessidra": "spec_Latrina",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Latrina`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Latrina`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "passerella",
+      "clessidra": "spec_Passerella",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Passerella`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Passerella`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "piramide_calendario_magico",
+      "clessidra": "spec_PiramideCalendarioMagico",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `PiramideCalendarioMagico`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `PiramideCalendarioMagico`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "piramide_specchio_maledetto",
+      "clessidra": "spec_PiramideSpecchioMaledetto",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `PiramideSpecchioMaledetto`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `PiramideSpecchioMaledetto`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "rondello_castello_gn",
+      "clessidra": "spec_RondelloCastelloGN",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `RondelloCastelloGN`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `RondelloCastelloGN`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "sala_offerte",
+      "clessidra": "spec_SalaOfferte",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `SalaOfferte`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `SalaOfferte`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "stanza_doni",
+      "clessidra": "spec_StanzaDoni",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `StanzaDoni`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `StanzaDoni`: reserved name, not implemented yet."
+      }
+    },
+    {
+      "name": "taverna",
+      "clessidra": "spec_Taverna",
+      "status": "inert",
+      "requires": [],
+      "description": {
+        "it": "Procedura speciale di Clessidra `Taverna`: nome riservato, non ancora implementato.",
+        "en": "Clessidra special procedure `Taverna`: reserved name, not implemented yet."
+      }
+    }
+  ]
+}

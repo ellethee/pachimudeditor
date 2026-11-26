@@ -49,6 +49,16 @@
           "default": null,
           "title": "Max Existing"
         },
+        "repop_percent": {
+          "default": [],
+          "items": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Repop Percent",
+          "type": "array"
+        },
         "contains": {
           "default": [],
           "items": {
@@ -105,6 +115,16 @@
           "title": "Room Limit",
           "type": "integer"
         },
+        "repop_percent": {
+          "default": [],
+          "items": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Repop Percent",
+          "type": "array"
+        },
         "inventory": {
           "default": [],
           "items": {
@@ -141,6 +161,16 @@
           ],
           "default": null,
           "title": "Max Existing"
+        },
+        "repop_percent": {
+          "default": [],
+          "items": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Repop Percent",
+          "type": "array"
         },
         "contains": {
           "default": [],
@@ -184,6 +214,16 @@
           ],
           "default": null,
           "title": "Max Existing"
+        },
+        "repop_percent": {
+          "default": [],
+          "items": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Repop Percent",
+          "type": "array"
         },
         "contains": {
           "default": [],

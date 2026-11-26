@@ -41,9 +41,9 @@
             @update:model-value="setCond(i, 'chance', $event === '' || $event === null ? undefined : Number($event))"
           />
           <q-input
-            v-for="key in ['level', 'hp', 'time', 'vnum'] as const"
+            v-for="key in COMPARE_KEYS"
             :key="key"
-            :model-value="action.if[key] ?? ''"
+            :model-value="(action.if[key] as string | number | undefined) ?? ''"
             class="col-6 col-sm-2"
             outlined
             dense
@@ -127,7 +127,7 @@
             @update:model-value="setCond(i, key, $event || undefined)"
           />
           <q-toggle
-            v-for="key in ['is_night', 'is_fighting'] as const"
+            v-for="key in TOGGLE_KEYS"
             :key="key"
             :model-value="action.if[key] ?? null"
             class="col-6 col-sm-2"
@@ -148,6 +148,34 @@
             :readonly="readonly"
             data-testid="cond-has-effect"
             @update:model-value="setCond(i, 'has_effect', String($event ?? '').trim() || undefined)"
+          />
+          <q-input
+            v-for="key in TEXT_KEYS"
+            :key="key"
+            :model-value="(action.if[key] as string | undefined) ?? ''"
+            class="col-12 col-sm-3"
+            outlined
+            dense
+            stack-label
+            :label="t(`triggers.cond.${key}`)"
+            :readonly="readonly"
+            :data-testid="`cond-${key}`"
+            @update:model-value="setCond(i, key, String($event ?? '').trim() || undefined)"
+          />
+          <q-select
+            :model-value="action.if.alignment ?? null"
+            class="col-6 col-sm-2"
+            outlined
+            dense
+            stack-label
+            clearable
+            emit-value
+            map-options
+            :options="alignmentOptions"
+            :label="t('triggers.cond.alignment')"
+            :readonly="readonly"
+            data-testid="cond-alignment"
+            @update:model-value="setCond(i, 'alignment', $event ?? undefined)"
           />
           <q-input
             :model-value="varText(action.if.var)"
@@ -173,11 +201,15 @@
             @update:model-value="setCond(i, 'carries', String($event ?? '').trim() || undefined)"
           />
         </div>
-        <div v-if="unknownKeys(action.if).length" class="q-mt-xs">
-          <q-chip v-for="key in unknownKeys(action.if)" :key="key" dense color="negative" text-color="white" :removable="!readonly" data-testid="cond-unknown" @remove="setCond(i, key, undefined)">
-            {{ t('triggers.cond.unknown', { key }) }}
-          </q-chip>
-        </div>
+        <json-field
+          class="q-mt-sm"
+          :model-value="otherOf(action.if)"
+          :label="t('triggers.cond.other')"
+          :hint="t('triggers.cond.otherHint')"
+          :readonly="readonly"
+          data-testid="cond-other"
+          @update:model-value="setOther(i, $event)"
+        />
         <div class="text-caption text-grey-8 q-mt-sm">{{ t('triggers.then') }}</div>
         <actions-editor
           class="q-pl-md"
@@ -233,6 +265,7 @@
 import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { mdiDelete, mdiPlus, mdiSourceBranch } from '@quasar/extras/mdi-v7'
+import JsonField from '../../shared/components/JsonField.vue'
 import { isRoomVerb, MAX_IF_DEPTH, mpUsage, validCompare, validTime } from '../helpers/triggers'
 import type { ICondition, IIfBlock, TAction, TriggerOwner } from '../types/triggers'
 
@@ -252,7 +285,11 @@ const props = withDefaults(
 const emit = defineEmits<{ 'update:modelValue': [value: TAction[]] }>()
 const { t } = useI18n()
 
-const KNOWN = ['chance', 'level', 'hp', 'sex', 'race', 'class', 'carries', 'is_player', 'who', 'time', 'is_night', 'is_fighting', 'has_effect', 'vnum', 'var']
+const COMPARE_KEYS = ['level', 'hp', 'time', 'vnum', 'inroom', 'position', 'gold', 'mana', 'move', 'hit_points'] as const
+const TOGGLE_KEYS = ['is_night', 'is_fighting', 'sameroom', 'cansee', 'isimmort'] as const
+const TEXT_KEYS = ['name', 'text', 'ispresent'] as const
+const KNOWN = ['chance', 'sex', 'race', 'class', 'carries', 'is_player', 'who', 'has_effect', 'var', 'alignment', ...COMPARE_KEYS, ...TOGGLE_KEYS, ...TEXT_KEYS]
+const alignmentOptions = computed(() => ['good', 'neutral', 'evil'].map((value) => ({ value, label: t(`triggers.cond.alignments.${value}`) })))
 
 /** Suggerimento sotto una riga di azione: la sintassi di un comando MP (mob) o l'avviso che oggetti e stanze non lo ammettono. */
 function actionHint(action: string): string | undefined {
@@ -284,9 +321,24 @@ function filterOptions(key: 'race' | 'class', text: string, update: (fn: () => v
   })
 }
 
-/** Le chiavi di una condizione che l'editor non conosce (si conservano e si possono togliere). */
+/** Le chiavi di una condizione che l'editor non ha come campo (`or`, `mobexists`, `stat`...): si modificano come JSON. */
 function unknownKeys(cond: ICondition): string[] {
   return Object.keys(cond).filter((k) => !KNOWN.includes(k))
+}
+
+/** Le condizioni senza campo proprio come oggetto (`undefined` se non ce ne sono). */
+function otherOf(cond: ICondition): Record<string, unknown> | undefined {
+  const keys = unknownKeys(cond)
+  return keys.length ? Object.fromEntries(keys.map((k) => [k, cond[k]])) : undefined
+}
+
+/** Sostituisce le condizioni senza campo proprio con quelle del JSON (un valore che non è un oggetto si ignora). */
+function setOther(index: number, value: unknown): void {
+  if (value !== undefined && (value === null || typeof value !== 'object' || Array.isArray(value))) return
+  const block = props.modelValue[index] as IIfBlock
+  const cond: ICondition = Object.fromEntries(Object.entries(block.if).filter(([k]) => KNOWN.includes(k)))
+  Object.assign(cond, value ?? {})
+  replaceAt(index, { ...block, if: cond })
 }
 
 /** Il testo di `var`: `nome=valore; altro=>= 3`. */

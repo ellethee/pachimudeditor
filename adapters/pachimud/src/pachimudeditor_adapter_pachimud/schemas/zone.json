@@ -29,6 +29,21 @@
       "title": "Top Vnum",
       "type": "integer"
     },
+    "email": {
+      "default": "",
+      "title": "Email",
+      "type": "string"
+    },
+    "difficulty": {
+      "default": "",
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "civilized": {
+      "default": false,
+      "title": "Civilized",
+      "type": "boolean"
+    },
     "max_level": {
       "default": 50,
       "title": "Max Level",

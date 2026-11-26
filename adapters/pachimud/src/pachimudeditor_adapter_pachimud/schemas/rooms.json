@@ -194,6 +194,709 @@
           "default": null,
           "title": "Var"
         },
+        "sameroom": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sameroom"
+        },
+        "cansee": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cansee"
+        },
+        "isimmort": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Isimmort"
+        },
+        "ispresent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ispresent"
+        },
+        "inroom": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inroom"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Position"
+        },
+        "alignment": {
+          "anyOf": [
+            {
+              "enum": [
+                "good",
+                "neutral",
+                "evil"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alignment"
+        },
+        "gold": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gold"
+        },
+        "mana": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mana"
+        },
+        "move": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Move"
+        },
+        "hit_points": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hit Points"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        },
+        "mobexists": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mobexists"
+        },
+        "objexists": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Objexists"
+        },
+        "mobinroom": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mobinroom"
+        },
+        "ovnumhere": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ovnumhere"
+        },
+        "ovnumroom": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ovnumroom"
+        },
+        "otypehere": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Otypehere"
+        },
+        "ovnuminv": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ovnuminv"
+        },
+        "ovnumwear": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ovnumwear"
+        },
+        "ovnumcarry": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ovnumcarry"
+        },
+        "pcinzone": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pcinzone"
+        },
+        "pcinroom": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pcinroom"
+        },
+        "isweather": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Isweather"
+        },
+        "isday": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Isday"
+        },
+        "ismonth": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ismonth"
+        },
+        "ovnum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ovnum"
+        },
+        "objtype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Objtype"
+        },
+        "age": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age"
+        },
+        "numclass": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Numclass"
+        },
+        "manaprcnt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manaprcnt"
+        },
+        "moveprcnt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moveprcnt"
+        },
+        "goldbank": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Goldbank"
+        },
+        "isgroupnumber": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Isgroupnumber"
+        },
+        "ischarmed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ischarmed"
+        },
+        "ismounted": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ismounted"
+        },
+        "isflying": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Isflying"
+        },
+        "isfollow": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Isfollow"
+        },
+        "hashit": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hashit"
+        },
+        "washit": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Washit"
+        },
+        "ifsaves": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ifsaves"
+        },
+        "hasmonoclass": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hasmonoclass"
+        },
+        "isresistant": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Isresistant"
+        },
+        "isimmune": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Isimmune"
+        },
+        "issusceptible": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Issusceptible"
+        },
+        "isholding": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Isholding"
+        },
+        "iswearing": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Iswearing"
+        },
+        "stat": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "propertyNames": {
+                "enum": [
+                  "str",
+                  "int",
+                  "wis",
+                  "con",
+                  "dex",
+                  "cha"
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stat"
+        },
+        "or": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Condition"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Or"
+        },
         "who": {
           "default": "n",
           "enum": [
@@ -266,6 +969,24 @@
         "then"
       ],
       "title": "IfBlock",
+      "type": "object"
+    },
+    "RoomCurrent": {
+      "description": "Corrente d'acqua (Clessidra): ogni `speed` pulse trascina verso `direction` i personaggi e gli oggetti a terra.",
+      "properties": {
+        "speed": {
+          "default": 30,
+          "minimum": 1,
+          "title": "Speed",
+          "type": "integer"
+        },
+        "direction": {
+          "default": "NORTH",
+          "title": "Direction",
+          "type": "string"
+        }
+      },
+      "title": "RoomCurrent",
       "type": "object"
     },
     "RoomExitProto": {
@@ -471,6 +1192,18 @@
           "title": "Extra Descriptions",
           "type": "array"
         },
+        "spec": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Spec"
+        },
         "triggers": {
           "default": [],
           "items": {
@@ -478,6 +1211,28 @@
           },
           "title": "Triggers",
           "type": "array"
+        },
+        "current": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RoomCurrent"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "teleport": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RoomTeleport"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -486,6 +1241,59 @@
         "description"
       ],
       "title": "RoomProto",
+      "type": "object"
+    },
+    "RoomTeleport": {
+      "description": "Stanza teletrasporto (Clessidra): ogni `time` pulse porta chi e' in stanza nella stanza `room`.",
+      "properties": {
+        "time": {
+          "default": 60,
+          "minimum": 1,
+          "title": "Time",
+          "type": "integer"
+        },
+        "room": {
+          "title": "Room",
+          "type": "integer"
+        },
+        "look": {
+          "default": false,
+          "title": "Look",
+          "type": "boolean"
+        },
+        "countdown": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Countdown"
+        },
+        "random_time": {
+          "default": false,
+          "title": "Random Time",
+          "type": "boolean"
+        },
+        "no_mob": {
+          "default": false,
+          "title": "No Mob",
+          "type": "boolean"
+        },
+        "no_objects": {
+          "default": false,
+          "title": "No Objects",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "room"
+      ],
+      "title": "RoomTeleport",
       "type": "object"
     },
     "Trigger": {
@@ -510,7 +1318,19 @@
             "drop",
             "wear",
             "enter",
-            "exit"
+            "exit",
+            "init",
+            "reset",
+            "hour",
+            "listen",
+            "wield",
+            "throw",
+            "remove",
+            "put",
+            "open",
+            "ocommand",
+            "rcommand",
+            "fightwashit"
           ],
           "title": "Type",
           "type": "string"

@@ -26,6 +26,9 @@ export default {
     open2: 'Reopens at',
     close2: 'Closes again at',
     closeHint: '28 = always open',
+    hoursSpans: 'Opening hours (game time, at most 2)',
+    hoursSpansHint: 'hh:mm-hh:mm separated by commas, e.g. 08:00-13:00, 15:00-20:00; when set they replace opens/closes',
+    inventoryClosed: 'Closed for stocktaking',
     noMoneyReaction: 'If you have no money',
     attackedReaction: 'If you attack it',
     reactions: {

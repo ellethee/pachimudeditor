@@ -84,7 +84,8 @@ async def test_zone_crud_and_paging(adapter: WorldAdapter) -> None:
     assert (
         zone.extra == {}
         or adapter.describe().kind != "pachimud"
-        or set(zone.extra) == {"zoneId", "description", "folder", "climate", "prototypesOnly", "extendsZone"}
+        or set(zone.extra)
+        == {"zoneId", "description", "folder", "climate", "prototypesOnly", "extendsZone", "email", "difficulty", "civilized"}
     )  # extra di pachimud: vedi `fields.py`
 
     found = await adapter.list_zones(ZonePageParams(search="Foresta contratto"))

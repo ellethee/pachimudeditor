@@ -44,6 +44,8 @@ class ShopItem(AliasedBaseModel):
     open2: int = 0
     close2: int = 0
     handler: str | None = None
+    hours: list[str] = []
+    inventory_closed: bool = False
 
 
 class ShopOptions(AliasedBaseModel):
@@ -98,6 +100,8 @@ async def list_shops(adapter: PachimudDep) -> list[ShopItem]:
                     "open2": shop.open2,
                     "close2": shop.close2,
                     "handler": shop.handler,
+                    "hours": list(shop.hours),
+                    "inventory_closed": shop.inventory_closed,
                 }
             )
         out.append(item)

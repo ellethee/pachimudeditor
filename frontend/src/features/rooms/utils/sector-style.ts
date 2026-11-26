@@ -17,6 +17,12 @@ export const SECTOR_COLOR: Record<number, string> = {
   10: '#e0b252', // DESERT
   11: '#558b2f', // TREE
   12: '#546e7a', // DARKCITY
+  13: '#cfd8dc', // CLOUD
+  14: '#b0bec5', // TUNDRA
+  15: '#8d6e63', // FORTRESS
+  16: '#81d4fa', // ICE_WATER
+  17: '#ffe082', // BEACH
+  18: '#1b5e20', // JUNGLE
 }
 
 const FALLBACK_COLOR = '#9e9e9e'

@@ -25,7 +25,7 @@ async def test_describe_matches_emitted_extra() -> None:
     assert_describe_matches(info, await emitted_extra_keys(adapter))
     enums = await adapter.enums()
     assert {"sectorType", "objectType", "zoneCommandType"} <= set(enums)
-    assert len(enums["objectType"]) == 27  # i tipi LeU del gioco
+    assert len(enums["objectType"]) == 40  # i tipi del gioco (LeU + Clessidra)
     assert all(o.value != 6 or o.label for o in enums["zoneCommandType"]) and 6 not in {o.value for o in enums["zoneCommandType"]}
     caps = info.capabilities
     assert caps.supports_players and caps.supports_transfer and caps.supports_content_races and not caps.supports_instances
@@ -44,7 +44,7 @@ async def test_new_entities_go_to_area_files(client: httpx.AsyncClient) -> None:
     assert "vnum: 1050" in (zones_dir() / ALFA / "rooms.yaml").read_text()
     # una nuova stanza senza area va nel file base
     plain = data(await client.post("/api/rooms", json={"vnum": 1051, "zoneId": zone["id"], "name": "Base"}), 201)
-    assert plain["extra"] == {"enabled": True, "area": "", "climate": None, "triggers": []}
+    assert plain["extra"] == {"enabled": True, "area": "", "climate": None, "triggers": [], "spec": None, "current": None, "teleport": None}
     # clima della stanza: scelta valida, valore errato 422, vuoto = eredita dalla zona (la chiave sparisce dal file)
     assert data(await client.put(f"/api/rooms/{plain['id']}", json={"extra": {"climate": "desert"}}))["extra"]["climate"] == "desert"
     assert "climate: desert" in (zones_dir() / ALFA / "rooms.yaml").read_text()
@@ -65,17 +65,21 @@ async def test_object_types_and_type_fields(client: httpx.AsyncClient) -> None:
     weapon = data(
         await client.post("/api/objects", json={**base, "extra": {"typeFields": {"dice_count": 3, "die_size": 8, "weapon_type": 11}}}), 201
     )
-    assert weapon["extra"]["typeFields"] == {"dice_count": 3, "die_size": 8, "weapon_type": 11}
+    assert weapon["extra"]["typeFields"] == {"dice_count": 3, "die_size": 8, "weapon_type": 11, "break_chance": 0}
     assert (weapon["value1"], weapon["value2"], weapon["value3"], weapon["value0"]) == (3, 8, 11, None)
     text = (zones_dir() / ALFA / "objects.yaml").read_text()
     assert "object_type: WEAPON" in text and "dice_count: 3" in text
     # i value_N numerici sono scritti sui campi giusti
     armor = data(await client.post("/api/objects", json={**base, "vnum": 1601, "objectType": 2, "value0": 4}), 201)
-    assert armor["extra"]["typeFields"] == {"armor_class": 4}
+    assert armor["extra"]["typeFields"] == {"armor_class": 4, "max_armor_class": None, "decay_percent": 0}
     # campo di un altro tipo: 422 e nulla scritto
     bad = await client.put(f"/api/objects/{armor['id']}", json={"extra": {"typeFields": {"dice_count": 1}}})
     assert error_code(bad, 422) in INVALID
-    assert data(await client.get(f"/api/objects/{armor['id']}"))["extra"]["typeFields"] == {"armor_class": 4}
+    assert data(await client.get(f"/api/objects/{armor['id']}"))["extra"]["typeFields"] == {
+        "armor_class": 4,
+        "max_armor_class": None,
+        "decay_percent": 0,
+    }
     # cambio di tipo: i campi del vecchio tipo spariscono dal file
     changed = data(await client.put(f"/api/objects/{weapon['id']}", json={"objectType": 8, "extra": {"typeFields": {"dice_count": 3}}}))
     assert changed["objectType"] == 8 and changed["extra"]["typeFields"] == {"key_type": 0}
@@ -387,3 +391,83 @@ def test_json_schemas_match_the_game() -> None:
     game = Path(os.environ["PACHIMUD_GAME_ROOT"]) / "src/pachimud/config/schema/json-schema"
     for copy in SCHEMAS_DIR.glob("*.json"):
         assert json.loads((game / copy.name).read_text(encoding="utf-8")) == json.loads(copy.read_text(encoding="utf-8")), copy.name
+
+
+async def test_f10_extra_fields_roundtrip(client: httpx.AsyncClient) -> None:
+    """Gioco F10: campi extra di zona, stanza, mob e oggetto si scrivono e rileggono; `spec` si valida sul catalogo; i default non si scrivono."""
+    zone = await by_vnum(client, "zones", 10)
+    mob = data(
+        await client.post(
+            "/api/mobs",
+            json={
+                "vnum": 1700,
+                "zoneId": zone["id"],
+                "keywords": "x",
+                "shortDescription": "x",
+                "extra": {
+                    "mobPosition": "SITTING",
+                    "clanId": "2011",
+                    "noise": {"near": "Brr", "chance": 5},
+                    "permAffects": ["FLYING"],
+                    "immunities": ["FIRE"],
+                    "spec": "guardia_cittadina",
+                },
+            },
+        ),
+        201,
+    )
+    assert mob["extra"]["mobPosition"] == "SITTING" and mob["extra"]["noise"]["near"] == "Brr" and mob["extra"]["immunities"] == ["FIRE"]
+    res = await client.put(f"/api/mobs/{mob['id']}", json={"extra": {"spec": "non_esiste"}})
+    assert error_code(res, 422) == "pachimud.invalid_choice"
+    cleared = data(await client.put(f"/api/mobs/{mob['id']}", json={"extra": {"mobPosition": "STANDING", "spec": None, "noise": None}}))
+    assert cleared["extra"]["mobPosition"] == "STANDING" and cleared["extra"]["spec"] is None
+
+    room = await by_vnum(client, "rooms", 1002)
+    res = await client.put(f"/api/rooms/{room['id']}", json={"extra": {"current": {"speed": 15, "direction": "SOUTH"}}})
+    assert error_code(res, 422) in INVALID  # la corrente vale solo nei settori d'acqua
+    zone_out = data(await client.put(f"/api/zones/{zone['id']}", json={"extra": {"civilized": True, "email": "a@b.it"}}))
+    assert zone_out["extra"]["civilized"] is True and zone_out["extra"]["email"] == "a@b.it"
+    data(await client.put(f"/api/zones/{zone['id']}", json={"extra": {"civilized": False, "email": ""}}))
+    obj = data(
+        await client.post(
+            "/api/objects",
+            json={
+                "vnum": 1701,
+                "zoneId": zone["id"],
+                "keywords": "x",
+                "shortDescription": "x",
+                "objectType": 6,
+                "extra": {"objectMaterial": "METAL", "minLevel": 5},
+            },
+        ),
+        201,
+    )
+    assert obj["extra"]["objectMaterial"] == "METAL" and obj["extra"]["minLevel"] == 5
+    portal = data(
+        await client.post(
+            "/api/objects",
+            json={
+                "vnum": 1702,
+                "zoneId": zone["id"],
+                "keywords": "p",
+                "shortDescription": "p",
+                "objectType": 30,
+                "extra": {"typeFields": {"destination": 1002}},
+            },
+        ),
+        201,
+    )
+    assert portal["extra"]["typeFields"] == {"duration": -1, "destination": 1002}
+
+
+def test_repop_percent_survives_a_flat_script_rewrite() -> None:
+    """`repop_percent` non passa dallo script piatto dell'editor: `resets.write` lo rimette sulle voci che restano uguali (anche annidate)."""
+    from pachimudeditor_adapter_pachimud import resets
+
+    old_entries = [{"mob_vnum": 1, "room_vnum": 5, "repop_percent": [90, 10], "inventory": [{"obj_vnum": 7, "repop_percent": [50]}]}]
+    new_entries = [{"mob_vnum": 1, "room_vnum": 5, "inventory": [{"obj_vnum": 7}]}, {"mob_vnum": 2, "room_vnum": 5}]
+    found: dict = {}
+    resets._collect_repop(old_entries, "m", (), found)
+    resets._restore_repop(new_entries, "m", (), found)
+    assert new_entries[0]["repop_percent"] == [90, 10] and new_entries[0]["inventory"][0]["repop_percent"] == [50]
+    assert "repop_percent" not in new_entries[1]

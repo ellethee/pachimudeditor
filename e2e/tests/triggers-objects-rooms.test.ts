@@ -48,7 +48,7 @@ describe('script degli oggetti e trigger delle stanze', () => {
     await s.page.getByTestId('trigger-add').click()
     const actions = s.page.getByTestId('trigger-actions')
     await actions.getByTestId('action-text').first().fill('say ciao')
-    await s.page.getByText('solo mpecho, mpechoat e mpechoaround').waitFor()
+    await s.page.getByText('ammettono solo gli mpecho').waitFor()
     await actions.getByTestId('action-text').first().fill('mpechoat $n Senti un brivido.')
     await actions.getByTestId('if-add').last().click()
     await actions.getByTestId('cond-level').fill('< 5')

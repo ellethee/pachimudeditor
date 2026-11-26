@@ -136,6 +136,7 @@ function pct(value: number): number {
 
 /** Orari di apertura (`28` = sempre aperto). */
 function hours(s: IShopItem): string {
+  if (s.hours?.length) return s.hours.join(', ') + (s.inventoryClosed ? ` (${t('shops.inventoryClosed')})` : '')
   const first = s.close1 >= 28 ? t('shops.always') : `${s.open1}–${s.close1}`
   return s.open2 || s.close2 ? `${first}, ${s.open2}–${s.close2}` : first
 }

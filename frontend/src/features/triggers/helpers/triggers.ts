@@ -2,30 +2,50 @@ import type { ICondition, ITrigger, TAction, TriggerOwner } from '../types/trigg
 
 /** Gli eventi ammessi per chi possiede il trigger (come `OWNER_TYPES` del gioco). */
 export const TRIGGER_TYPES: Record<TriggerOwner, readonly string[]> = {
-  mob: ['speech', 'greet', 'give', 'random', 'death', 'fight', 'hitprcnt', 'act', 'tell', 'bribe', 'all_greet', 'entry', 'command'],
-  object: ['get', 'drop', 'wear', 'give', 'random'],
-  room: ['enter', 'exit', 'speech', 'random'],
+  mob: ['speech', 'greet', 'give', 'random', 'death', 'fight', 'hitprcnt', 'act', 'tell', 'bribe', 'all_greet', 'entry', 'command', 'init', 'reset', 'hour', 'listen', 'exit'],
+  object: ['get', 'drop', 'wear', 'give', 'random', 'init', 'reset', 'greet', 'exit', 'listen', 'fight', 'fightwashit', 'wield', 'throw', 'remove', 'put', 'ocommand'],
+  room: ['enter', 'exit', 'speech', 'random', 'init', 'reset', 'hour', 'listen', 'open', 'rcommand'],
 }
 
+/** Gli eventi il cui trigger può fermare l'azione con `block: true`. */
+export const BLOCKABLE = ['command', 'ocommand', 'rcommand', 'open', 'get', 'drop', 'wear', 'wield', 'throw', 'remove', 'put'] as const
+
 /** Le uniche azioni di oggetti e stanze. */
-export const ROOM_VERBS = ['mpecho', 'mpechoat', 'mpechoaround'] as const
+export const ROOM_VERBS = ['mpecho', 'mpechoat', 'mpechoaround', 'mpechozone', 'mpechoworld', 'mpechoworldnozone', 'mpasound'] as const
 
 /** I comandi MP veri: solo per i mob, con la sintassi (suggerimento nell'editor). */
 export const MP_USAGE: Record<string, string> = {
-  mptransfer: 'mptransfer <chi> <vnum stanza>',
+  mptransfer: 'mptransfer <chi|all|tutti|group|gruppo [<chi>]> <vnum stanza>',
   mpgoto: 'mpgoto <vnum stanza>',
   mpat: 'mpat <vnum stanza> <comando>',
   mpload: 'mpload mob <vnum> | mpload obj <vnum> [inv]',
-  mppurge: 'mppurge [self|nome]',
+  mppurge: 'mppurge [self|chi|oggetto]',
   mpkill: 'mpkill <chi>',
-  mpforce: 'mpforce <mob> <comando>',
+  mpforce: 'mpforce <mob|tutti|gruppo <chi>> <comando>',
   mpset: 'mpset <nome> <valore>',
   mpunset: 'mpunset <nome>',
   mpadd: 'mpadd <nome> <numero>',
+  mpdamage: 'mpdamage <chi|all|tutti|group|gruppo [<chi>]> <XdY> [no_scrap] [DANNO_DA_...]',
+  mpheal: 'mpheal <chi|all|tutti|group|gruppo [<chi>]> <XdY>',
+  mpgiveexp: 'mpgiveexp <chi> <px> [gmul|gdiv|single]',
+  mpgivemoney: 'mpgivemoney <chi> <monete> [gmul|gdiv|single]',
+  mpcast: "mpcast '<magia>' [chi]",
+  mpscast: "mpscast '<magia>' [chi]",
+  block: 'block <chi>',
+  mpopen: 'mpopen <vnum stanza1> <vnum stanza2> <direzione 0-5>',
+  mpclose: 'mpclose <vnum stanza1> <vnum stanza2>',
+  mpcommand: 'mpcommand <comando>',
+  mpjunk: 'mpjunk <oggetto>',
+  mpscrap: 'mpscrap <oggetto>',
+  mpprendo: 'mpprendo <oggetto|tutto> [contenitore|tutto]',
+  mpposo: 'mpposo <oggetto|tutto>',
+  mpimpugno: 'mpimpugno <oggetto>',
+  mpaggressive: 'mpaggressive <mob|self> <0|1|on|off>',
+  mpposition: 'mpposition <chi|self> <1-9>',
 }
 
 /** I comandi MP che richiedono un corpo: oggetti e stanze non li usano (né `mppurge self`). */
-export const MOB_ONLY_MP = ['mpgoto', 'mpkill', 'mpforce'] as const
+export const MOB_ONLY_MP = ['mpgoto', 'mpkill', 'mpforce', 'mpcast', 'mpscast', 'mpcommand', 'mpjunk', 'mpscrap', 'mpprendo', 'mpposo', 'mpimpugno'] as const
 
 /**
  * La sintassi del comando MP con cui inizia l'azione (`undefined` se non lo è).
@@ -36,7 +56,7 @@ export function mpUsage(text: string): string | undefined {
 }
 
 /** Quanti `if` possono stare uno dentro l'altro. */
-export const MAX_IF_DEPTH = 3
+export const MAX_IF_DEPTH = 25
 
 /** Un confronto numerico di una condizione (`10`, `>= 10`): come `CMP` del gioco. */
 const CMP = /^\s*(==|!=|<=|>=|<|>)?\s*(-?\d+)\s*$/
@@ -77,13 +97,26 @@ export function ifDepth(actions: TAction[]): number {
 }
 
 /**
+ * `true` se l'argomento va bene per il tipo: `command` non vuoto, `hour` vuoto/-1/1-24, `ocommand`/`rcommand` «p|i azione bersaglio».
+ * @param type evento
+ * @param argument argomento
+ */
+export function argumentValid(type: string, argument: string): boolean {
+  const text = argument.trim()
+  if (type === 'command') return text !== ''
+  if (type === 'hour') return text === '' || text === '-1' || (/^\d+$/.test(text) && Number(text) >= 1 && Number(text) <= 24)
+  if (type === 'ocommand' || type === 'rcommand') return /^[pi] \S+( \S+)*$/.test(text)
+  return true
+}
+
+/**
  * `true` se il trigger è completo: probabilità 1-100, argomento numerico per `hitprcnt`/`bribe`, azioni non vuote (anche nei blocchi)
  * e condizioni `level`/`hp` valide.
  * @param trigger il trigger
  */
 export function triggerComplete(trigger: ITrigger): boolean {
   const number = trigger.argument.trim()
-  const argOk = (trigger.type !== 'command' || trigger.argument.trim() !== '') && (!['hitprcnt', 'bribe'].includes(trigger.type) || (/^\d+$/.test(number) && Number(number) >= 1 && (trigger.type !== 'hitprcnt' || Number(number) <= 100)))
+  const argOk = argumentValid(trigger.type, trigger.argument) && (!['hitprcnt', 'bribe'].includes(trigger.type) || (/^\d+$/.test(number) && Number(number) >= 1 && (trigger.type !== 'hitprcnt' || Number(number) <= 100)))
   const listOk = (list: TAction[]): boolean =>
     list.length > 0 && list.every((a) => (typeof a === 'string' ? a.trim() !== '' : condOk(a.if) && listOk(a.then) && (a.else ?? []).every((x) => listOk([x]))))
   return Number.isInteger(trigger.chance) && trigger.chance >= 1 && trigger.chance <= 100 && argOk && listOk(trigger.actions) && ifDepth(trigger.actions) <= MAX_IF_DEPTH

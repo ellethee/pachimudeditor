@@ -8,6 +8,8 @@ from pathlib import Path
 from pachimudeditor_adapter_pachimud.base import PachimudSupport
 from pachimudeditor_adapter_pachimud.definitions import read_classes, read_races
 from pachimudeditor_adapter_pachimud.loaders import OPEN_COMMANDS
+from pachimudeditor_adapter_pachimud.race_enums import AffectedByFlags, ResistanceFlags
+from pachimudeditor_adapter_pachimud.simple_extra import specs
 from pachimudeditor.common.adapters.models import ContentRef, Option
 from pachimudeditor.common.enums import Direction, DoorFlag, ObjectType, SectorType, Sex, ZoneCommandType, ZoneResetMode
 
@@ -31,6 +33,25 @@ FLAG_ENUMS: dict[str, str] = {
     "object_wear": "pachimudObjectWearFlags",
 }
 """Sezione del catalogo -> nome della lista in `enums()` (l'uscita `exit` e' `doorFlag`)."""
+
+
+def spec_options(kind: str) -> list[Option]:
+    """Le procedure speciali (`spec`) di mob, oggetti o stanze dal catalogo del gioco: stato `inert` = `implemented: False`."""
+    return [
+        Option(
+            value=i,
+            label=str(s["name"]),
+            description=s["description"],
+            origin="clessidra",
+            implemented=s["status"] != "inert",
+        )
+        for i, s in enumerate(specs()[kind])
+    ]
+
+
+def _bit_names(flags: type) -> tuple[str, ...]:
+    """I nomi dei membri 'singoli' (un solo bit) di un IntFlag."""
+    return tuple(m.name for m in flags if m.name and bin(m.value).count("1") == 1)  # type: ignore[attr-defined]
 
 
 @cache
@@ -78,6 +99,14 @@ class MetaMixin(PachimudSupport):
             "climate": name_options(CLIMATES),
             "openCmd": name_options(OPEN_COMMANDS),
             "objectType": enum_options(ObjectType),
+            "mobPosition": name_options(("SLEEPING", "RESTING", "SITTING", "STANDING")),
+            "pachimudAffects": name_options(_bit_names(AffectedByFlags)),
+            "pachimudResistance": name_options(_bit_names(ResistanceFlags)),
+            "pachimudObjectSex": name_options(("NEUTRAL", "MALE", "FEMALE")),
+            "pachimudMaterial": name_options(("METAL", "MINERAL", "ORGANIC")),
+            "pachimudMobSpecs": spec_options("mob"),
+            "pachimudObjectSpecs": spec_options("object"),
+            "pachimudRoomSpecs": spec_options("room"),
             **{enum: flag_options(section) for section, enum in FLAG_ENUMS.items()},
             "zoneCommandType": [o for o in enum_options(ZoneCommandType) if o.value != ZoneCommandType.RANDOMIZE_EXITS],
         }

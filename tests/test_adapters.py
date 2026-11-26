@@ -144,7 +144,7 @@ def test_describe_pachimud_fields() -> None:
     assert room["description"].type == "text" and room["clanId"].nullable
     assert "exits" not in room and room["extra"].type == "dict"  # `extra` e' il campo generico, descritto da `extraFields`
     extra_names = {f.name for r in info.resources if r.type == "room" for f in r.extra_fields}
-    assert extra_names == {"enabled", "area", "climate", "triggers"}
+    assert extra_names == {"enabled", "area", "climate", "triggers", "spec", "current", "teleport"}
 
 
 # --------------------------------------------------------------------------- HTTP
@@ -230,6 +230,9 @@ async def test_extra_of_pachimud(client: httpx.AsyncClient) -> None:
         "climate": "temperate",
         "prototypesOnly": False,
         "extendsZone": None,
+        "email": "",
+        "difficulty": "",
+        "civilized": False,
     }
     response = await client.post("/api/zones", json={"vnum": 77, "name": "X", "extra": {"a": 1}})
     assert error_code(response, 422) == "pachimud.extra_unknown"

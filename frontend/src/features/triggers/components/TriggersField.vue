@@ -34,7 +34,7 @@
             @update:model-value="changed"
           />
           <q-toggle
-            v-if="row.type === 'command'"
+            v-if="(BLOCKABLE as readonly string[]).includes(row.type)"
             v-model="row.block"
             class="col-12"
             dense
@@ -104,7 +104,7 @@ import { mdiDelete, mdiPlus } from '@quasar/extras/mdi-v7'
 import { useContentLive } from '../../content/composables/use-content-live'
 import type { IContentIssue } from '../../content/types/content-files'
 import { listClasses, listRaces } from '../../mobs/services/mobs-api'
-import { settledTriggers, triggerIndexOf, TRIGGER_TYPES } from '../helpers/triggers'
+import { argumentValid, BLOCKABLE, settledTriggers, triggerIndexOf, TRIGGER_TYPES } from '../helpers/triggers'
 import type { ITrigger, TAction, TriggerOwner } from '../types/triggers'
 import ActionsEditor from './ActionsEditor.vue'
 
@@ -152,7 +152,7 @@ function validChance(value: unknown): boolean {
 
 /** `hitprcnt` e `bribe` vogliono un numero positivo (`hitprcnt` fino a 100). */
 function argumentOk(row: IRow): boolean {
-  if (row.type === 'command') return row.argument.trim() !== ''
+  if (!argumentValid(row.type, row.argument)) return false
   if (row.type !== 'hitprcnt' && row.type !== 'bribe') return true
   const text = row.argument.trim()
   return /^\d+$/.test(text) && Number(text) >= 1 && (row.type !== 'hitprcnt' || Number(text) <= 100)
@@ -160,7 +160,7 @@ function argumentOk(row: IRow): boolean {
 
 /** Il valore da salvare (campi nell'ordine del backend). */
 function current(): ITrigger[] {
-  return settledTriggers(rows.value.map((r) => ({ type: r.type, argument: r.argument ?? '', block: r.type === 'command' ? r.block : undefined, chance: r.chance, actions: r.actions })))
+  return settledTriggers(rows.value.map((r) => ({ type: r.type, argument: r.argument ?? '', block: (BLOCKABLE as readonly string[]).includes(r.type) ? r.block : undefined, chance: r.chance, actions: r.actions })))
 }
 
 function changed(): void {

@@ -32,6 +32,7 @@ from pachimudeditor_adapter_pachimud.loaders import (
     split_dice,
     type_fields,
 )
+from pachimudeditor_adapter_pachimud import simple_extra
 from pachimudeditor_adapter_pachimud.store import Item, ZoneEntry, plain
 
 EXIT_STRIDE = 10
@@ -271,6 +272,7 @@ def zone_out(zone: ZoneEntry) -> ZoneOut:
             "climate": m.climate,
             "prototypesOnly": m.prototypes_only,
             "extendsZone": m.extends_zone,
+            **simple_extra.out("zone", m),
         },
     )
 
@@ -280,7 +282,7 @@ def zone_apply(raw: Any, changes: dict[str, Any]) -> None:
     for key, value in changes.items():
         if key == "reset_mode":
             value = ZoneResetMode(value).name
-        put(raw, key, value, required=True)
+        put(raw, key, value, default=50 if key == "max_level" else None, required=key != "max_level")  # il gioco omette il default
 
 
 # --------------------------------------------------------------------------- stanza
@@ -306,6 +308,7 @@ def room_out(item: Item, zone_vnum: int) -> RoomOut:
             "area": item.area or "",
             "climate": m.climate,
             "triggers": [trigger_out(t) for t in m.triggers],
+            **simple_extra.out("room", m),
         },
     )
 
@@ -423,6 +426,7 @@ def mob_out(item: Item, zone_vnum: int) -> MobOut:
             "shop": None if m.shop is None else m.shop.model_dump(),
             "triggers": [trigger_out(t) for t in m.triggers],
             **{s: getattr(m, s) for s in STATS},
+            **simple_extra.out("mob", m),
         },
     )
 
@@ -432,6 +436,7 @@ MOB_ORDER = (
     "hp_dice", "damage_dice", "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma", "gold", "experience",
     "sex", "flags", "alignment", "race_id", "class_id", "debuff_skill_id", "persona", "shop_id", "shop", "quest_ids", "is_banker",
     "postmaster", "receptionist", "weapon_immunity", "breath", "breath_cost", "teaches_class_ids", "teaches_skill_ids", "triggers",
+    "position", "clan_id", "noise", "affects", "immunity", "resistance", "vulnerability", "spec",
 )  # fmt: skip
 """Ordine dei campi di un mob nuovo (quello dei file del gioco)."""
 
@@ -490,6 +495,7 @@ def object_out(item: Item, zone_vnum: int) -> ObjectOut:
             "extraDescriptions": [{"keywords": e.keywords, "text": e.text} for e in m.extra_descriptions],
             "typeFields": {n: _plain(getattr(m, n)) for n in type_fields(m.object_type)},
             "scripts": [trigger_out(t) for t in m.scripts],
+            **simple_extra.out("object", m),
         },
     )
 

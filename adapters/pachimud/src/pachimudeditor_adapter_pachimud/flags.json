@@ -62,7 +62,10 @@
     },
     {
       "name": "NO_SUMMON",
-      "aliases": [],
+      "aliases": [
+        "NO_PORTALS",
+        "NOPORTALI"
+      ],
       "description": {
         "it": "Niente evocazioni, portali o teletrasporti da e verso la stanza.",
         "en": "No summoning, portals or teleports to or from the room."
@@ -279,6 +282,184 @@
       },
       "origin": "pachimud",
       "implemented": true
+    },
+    {
+      "name": "NO_WHERE",
+      "aliases": [
+        "NODOVE"
+      ],
+      "description": {
+        "it": "Chi e' qui non puo' usare `where`.",
+        "en": "`where` cannot be used from here."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "NO_POSITION",
+      "aliases": [
+        "NOPOSIZIONE"
+      ],
+      "description": {
+        "it": "Chi e' qui non si trova con `where` da altre stanze.",
+        "en": "Whoever is here cannot be found with `where` from other rooms."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "NO_FLY",
+      "aliases": [
+        "NOVOLO"
+      ],
+      "description": {
+        "it": "Entrando si perde il volo e non si puo' riottenere.",
+        "en": "Flight is lost on entering and cannot be regained."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "NO_DROPPING",
+      "aliases": [
+        "NOPOSO"
+      ],
+      "description": {
+        "it": "Non si posano oggetti a terra.",
+        "en": "Nothing can be dropped on the floor."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "NO_THROW",
+      "aliases": [
+        "NON_LANCIABILE"
+      ],
+      "description": {
+        "it": "Non si lancia nulla.",
+        "en": "Nothing can be thrown."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "NO_MOB_EXT",
+      "aliases": [
+        "VIETATA_AI_MOB_ESTESA"
+      ],
+      "description": {
+        "it": "Vietata ai mob anche se inseguono o fuggono.",
+        "en": "Closed to mobs even when hunting or fleeing."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "SERVICE",
+      "aliases": [
+        "SERVIZIO"
+      ],
+      "description": {
+        "it": "Stanza di servizio: vale come NO_STEAL, NO_SUMMON, NO_MOB, NO_TRACK, INDOORS, PEACEFUL, NO_THROW, NO_DEATH, BRIGHT.",
+        "en": "Service room: counts as NO_STEAL, NO_SUMMON, NO_MOB, NO_TRACK, INDOORS, PEACEFUL, NO_THROW, NO_DEATH, BRIGHT."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "FISHABLE",
+      "aliases": [
+        "PESCABILE"
+      ],
+      "description": {
+        "it": "Si puo' pescare (marcatore: non c'e' ancora la pesca).",
+        "en": "Fishing is possible (marker: there is no fishing yet)."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "ARENA",
+      "aliases": [],
+      "description": {
+        "it": "Arena: combattimento giocatore contro giocatore.",
+        "en": "Arena: player versus player combat."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_INVADERS",
+      "aliases": [
+        "NOINVASORI"
+      ],
+      "description": {
+        "it": "Niente invasori.",
+        "en": "No invaders."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "HAS_WATER",
+      "aliases": [
+        "CON_ACQUA"
+      ],
+      "description": {
+        "it": "C'e' acqua da bere (fiume, lago).",
+        "en": "Drinkable water is present (river, lake)."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "POISONED_WATER",
+      "aliases": [
+        "CON_ACQUA_AVVELENATA"
+      ],
+      "description": {
+        "it": "L'acqua da bere e' avvelenata.",
+        "en": "The drinkable water is poisoned."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_WALL",
+      "aliases": [
+        "NOMURO"
+      ],
+      "description": {
+        "it": "Niente muro di forza ne' di anime.",
+        "en": "No wall of force or of souls."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_ROOM_TRAPS",
+      "aliases": [
+        "NO_TRAPPOLE_SU_STANZA"
+      ],
+      "description": {
+        "it": "Non si rilasciano trappole su stanza.",
+        "en": "Room traps cannot be set."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "TRANSPORT",
+      "aliases": [
+        "TRASPORTO"
+      ],
+      "description": {
+        "it": "Fa parte di un trasporto pubblico (carrozza, battello).",
+        "en": "Part of a public transport (coach, ferry)."
+      },
+      "origin": "clessidra",
+      "implemented": false
     }
   ],
   "mob": [
@@ -590,6 +771,282 @@
         "en": "Behaves as an archer."
       },
       "origin": "leu",
+      "implemented": false
+    },
+    {
+      "name": "NO_OPINIONS",
+      "aliases": [
+        "NO_OPINIONI"
+      ],
+      "description": {
+        "it": "Non prova mai odio ne' paura.",
+        "en": "Never feels hatred or fear."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "NO_SUMMONABLE",
+      "aliases": [
+        "NON_CONVOCABILE"
+      ],
+      "description": {
+        "it": "Non si puo' convocare.",
+        "en": "Cannot be summoned."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "NO_PORTAL",
+      "aliases": [
+        "NON_PORTALABILE"
+      ],
+      "description": {
+        "it": "Non consente portali su di se'.",
+        "en": "Allows no portals to itself."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "POLICE",
+      "aliases": [
+        "POLIZIOTTO"
+      ],
+      "description": {
+        "it": "Corre in aiuto se chiamato e assiste le guardie.",
+        "en": "Helps when called and assists the guards."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "PROTECTED",
+      "aliases": [
+        "PROTETTO"
+      ],
+      "description": {
+        "it": "Se ucciso, il giocatore ha una taglia.",
+        "en": "A bounty falls on whoever kills it."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "QUEST_GIVER",
+      "aliases": [
+        "DATORE_DI_MISSIONI"
+      ],
+      "description": {
+        "it": "Assegna missioni.",
+        "en": "Gives quests."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_QUEST_TARGET",
+      "aliases": [
+        "NO_OBIETTIVO_MISSIONE"
+      ],
+      "description": {
+        "it": "Non puo' essere l'obiettivo di una missione.",
+        "en": "Cannot be a quest target."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_XP_IF_KNOWN",
+      "aliases": [
+        "NESSUN_PX_SE_CONOSCI"
+      ],
+      "description": {
+        "it": "Nessuna esperienza se ucciso durante il `conosci`.",
+        "en": "No experience if killed during `know`."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "FULL_XP_IF_KNOWN",
+      "aliases": [
+        "PX_PIENI_SE_CONOSCI"
+      ],
+      "description": {
+        "it": "Esperienza piena anche durante il `conosci`.",
+        "en": "Full experience even during `know`."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_RESURRECT",
+      "aliases": [
+        "NON_RESUSCITABILE"
+      ],
+      "description": {
+        "it": "Non si puo' resuscitare.",
+        "en": "Cannot be resurrected."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "WILD_MOB",
+      "aliases": [
+        "MOB_DELLA_WILD"
+      ],
+      "description": {
+        "it": "Appartiene alla wilderness.",
+        "en": "Belongs to the wilderness."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_SKIN",
+      "aliases": [
+        "NON_SCUOIABILE"
+      ],
+      "description": {
+        "it": "Il cadavere non si scuoia.",
+        "en": "The corpse cannot be skinned."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "PERSONAL_MOUNT",
+      "aliases": [
+        "CAVALCATURA_PERSONALE"
+      ],
+      "description": {
+        "it": "E' una cavalcatura personale.",
+        "en": "A personal mount."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_SPELLS",
+      "aliases": [
+        "NON_USA_INCANTESIMI"
+      ],
+      "description": {
+        "it": "Non usa incantesimi.",
+        "en": "Does not use spells."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_PSI",
+      "aliases": [
+        "NON_USA_POTERI_MENTALI"
+      ],
+      "description": {
+        "it": "Non usa poteri mentali.",
+        "en": "Does not use mind powers."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_SKILLS",
+      "aliases": [
+        "NON_USA_ABILITA"
+      ],
+      "description": {
+        "it": "Non usa abilita'.",
+        "en": "Does not use skills."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "POLYGLOT",
+      "aliases": [
+        "POLIGLOTTA"
+      ],
+      "description": {
+        "it": "Conosce tutte le lingue razziali.",
+        "en": "Knows every racial language."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_ROOM_TRAPPER",
+      "aliases": [
+        "NO_TRAPPOLATORE_STANZA"
+      ],
+      "description": {
+        "it": "Non rilascia trappole su stanza.",
+        "en": "Never sets room traps."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_BUBBLE",
+      "aliases": [
+        "NON_BOLLABILE"
+      ],
+      "description": {
+        "it": "Non si imprigiona in una bolla d'aria.",
+        "en": "Cannot be trapped in an air bubble."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NONHUMANOID_CASTER",
+      "aliases": [
+        "NON_UMANOIDE_USA_MAGIA"
+      ],
+      "description": {
+        "it": "Usa incantesimi anche se non e' umanoide.",
+        "en": "Casts spells even if not humanoid."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "SAFE_FROM_INVADERS",
+      "aliases": [
+        "SALVO_DA_INVASORI"
+      ],
+      "description": {
+        "it": "Gli invasori non lo attaccano.",
+        "en": "Invaders do not attack it."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "STAY_SECTOR",
+      "aliases": [
+        "RESTA_IN_SETTORE"
+      ],
+      "description": {
+        "it": "Si muove solo nel suo tipo di settore (mob della wild).",
+        "en": "Moves only in its own sector type (wild mobs)."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NECROMANCER",
+      "aliases": [
+        "NECROMANTE"
+      ],
+      "description": {
+        "it": "Si comporta da necromante.",
+        "en": "Behaves as a necromancer."
+      },
+      "origin": "clessidra",
       "implemented": false
     },
     {
@@ -928,6 +1385,150 @@
         "en": "Cut with a scythe."
       },
       "origin": "leu",
+      "implemented": true
+    },
+    {
+      "name": "NO_RUNES",
+      "aliases": [
+        "NON_RUNABILE"
+      ],
+      "description": {
+        "it": "Non si modifica con le rune.",
+        "en": "Cannot be changed with runes."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "STAY_IN_ZONE",
+      "aliases": [
+        "RESTA_IN_ZONA"
+      ],
+      "description": {
+        "it": "Sparisce se portato fuori dalla sua zona.",
+        "en": "Vanishes when carried out of its zone."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "NO_CONTAINERS",
+      "aliases": [
+        "NO_CONTENITORI"
+      ],
+      "description": {
+        "it": "Non va in nessun contenitore.",
+        "en": "Cannot go into any container."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "NO_FLOOR",
+      "aliases": [
+        "NO_POSO"
+      ],
+      "description": {
+        "it": "Non si lascia a terra in nessun modo.",
+        "en": "Cannot be left on the floor in any way."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "NO_TREAT",
+      "aliases": [
+        "NON_TRATTABILE"
+      ],
+      "description": {
+        "it": "Non si tratta con un composto alchemico.",
+        "en": "Cannot be treated with an alchemical compound."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_DILUTE",
+      "aliases": [
+        "NON_DILUIBILE"
+      ],
+      "description": {
+        "it": "Il composto alchemico non si diluisce.",
+        "en": "The alchemical compound cannot be diluted."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "NO_IDENTIFY",
+      "aliases": [
+        "NON_IDENTIFICABILE"
+      ],
+      "description": {
+        "it": "Non si identifica con l'incantesimo.",
+        "en": "Cannot be identified with the spell."
+      },
+      "origin": "clessidra",
+      "implemented": true
+    },
+    {
+      "name": "NO_COLLECTOR",
+      "aliases": [
+        "NON_RICERCATO_DAL_COLLEZIONISTA"
+      ],
+      "description": {
+        "it": "Il collezionista di rari non lo cerca mai.",
+        "en": "The rare-items collector never seeks it."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "CLAN_ONLY",
+      "aliases": [
+        "RISERVATO_AD_UN_CLAN"
+      ],
+      "description": {
+        "it": "Riservato a un clan.",
+        "en": "Reserved to a clan."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "BARBARIAN_CAN_TAKE",
+      "aliases": [
+        "BARBARO_PRENDE_COMUNQUE"
+      ],
+      "description": {
+        "it": "Il barbaro lo raccoglie anche se anti-barbaro.",
+        "en": "Barbarians can pick it up even if anti-barbarian."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "ANTI_NECROMANCER",
+      "aliases": [
+        "ANTI_NECROMANTE"
+      ],
+      "description": {
+        "it": "Non lo usano i necromanti.",
+        "en": "Not for necromancers."
+      },
+      "origin": "clessidra",
+      "implemented": false
+    },
+    {
+      "name": "META_INVISIBLE",
+      "aliases": [
+        "META_INVISIBILE"
+      ],
+      "description": {
+        "it": "Lo vedono solo gli immortali.",
+        "en": "Visible only to immortals."
+      },
+      "origin": "clessidra",
       "implemented": true
     }
   ],

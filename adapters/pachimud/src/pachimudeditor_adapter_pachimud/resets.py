@@ -153,6 +153,45 @@ def commented(value: Any) -> Any:
     return value
 
 
+def _entry_key(entry: Any, kind: str) -> tuple[Any, ...]:
+    """Chi e' una voce di reset (per ritrovarla dopo la riscrittura): tipo, vnum e, se a terra o di un mob, la stanza."""
+    get = (lambda k: entry.get(k)) if isinstance(entry, dict) else (lambda k: getattr(entry, k, None))
+    vnum = get("mob_vnum") if kind == "m" else get("obj_vnum")
+    return (kind, vnum, get("room_vnum"))
+
+
+def _children(entry: Any) -> list[Any]:
+    """Oggetti dell'inventario e contenuti di una voce di reset."""
+    get = (lambda k: entry.get(k)) if isinstance(entry, dict) else (lambda k: getattr(entry, k, None))
+    return [*(get("inventory") or []), *(get("contains") or [])]
+
+
+def _repop_of(entry: Any) -> list[float]:
+    """`repop_percent` di una voce (lista vuota se assente)."""
+    value = entry.get("repop_percent") if isinstance(entry, dict) else getattr(entry, "repop_percent", None)
+    return list(value or [])
+
+
+def _collect_repop(entries: list[Any], kind: str, prefix: tuple[Any, ...], out: dict[tuple[Any, ...], list[list[float]]]) -> None:
+    """Raccoglie i `repop_percent` per percorso (antenati + voce): il gioco li ha, lo script piatto dell'editor no."""
+    for entry in entries:
+        key = (*prefix, _entry_key(entry, kind))
+        if percent := _repop_of(entry):
+            out.setdefault(key, []).append(percent)
+        _collect_repop(_children(entry), "c", key, out)
+
+
+def _restore_repop(
+    entries: list[dict[str, Any]], kind: str, prefix: tuple[Any, ...], old: dict[tuple[Any, ...], list[list[float]]]
+) -> None:
+    """Rimette `repop_percent` sulle voci ricostruite che corrispondono a una voce di prima (a parita' di percorso, per ordine)."""
+    for entry in entries:
+        key = (*prefix, _entry_key(entry, kind))
+        if old.get(key):
+            entry["repop_percent"] = old[key].pop(0)
+        _restore_repop(_children(entry), "c", key, old)
+
+
 def write(store: YamlStore, zone: ZoneEntry, commands: list[ResetCommandIn]) -> None:
     """Riscrive lo script della zona in `resets.yaml`, svuotando gli altri file di reset (i commenti non si conservano).
 
@@ -164,6 +203,14 @@ def write(store: YamlStore, zone: ZoneEntry, commands: list[ResetCommandIn]) -> 
     if broken:
         raise api_error(409, "pachimud.file_broken", file=broken[0].path.name)
     built = build(commands)
+    # `repop_percent` non passa dallo script piatto: si conserva sulle voci che restano uguali (shortcut: l'editor non lo modifica)
+    old_repop: dict[tuple[Any, ...], list[list[float]]] = {}
+    for f in zone.of_kind("resets"):
+        if f.resets is not None:
+            _collect_repop(f.resets.resets.objects, "o", (), old_repop)
+            _collect_repop(f.resets.resets.mobs, "m", (), old_repop)
+    _restore_repop(built["objects"], "o", (), old_repop)
+    _restore_repop(built["mobs"], "m", (), old_repop)
     files = zone.of_kind("resets")
     primary = next((f for f in files if f.path.name == "resets.yaml"), None) or store.new_file(zone, "resets", None)
     touched = [primary]

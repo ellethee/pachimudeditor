@@ -19,6 +19,8 @@ export function newShop(): IShopData {
     attacked_reaction: 'warn',
     messages: {},
     handler: null,
+    hours: [],
+    inventory_closed: false,
   }
 }
 
@@ -49,6 +51,7 @@ export function shopProblems(shop: IShopData): string[] {
   if (!(shop.profit_buy >= 0) || !(shop.profit_sell >= 0)) problems.push('profit')
   for (const hour of [shop.open1, shop.open2]) if (!Number.isInteger(hour) || hour < 0 || hour > 23) problems.push('hours')
   for (const hour of [shop.close1, shop.close2]) if (!Number.isInteger(hour) || hour < 0 || hour > 28) problems.push('hours')
+  if (shop.hours.length > 2 || shop.hours.some((h) => !/^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/.test(h))) problems.push('hours')
   if (shop.room !== null && (!Number.isInteger(shop.room) || shop.room < 0)) problems.push('room')
   return [...new Set(problems)]
 }

@@ -279,8 +279,9 @@ async def test_non_negative_numbers(client: httpx.AsyncClient) -> None:
     """weight/cost/rent/gold/experience/healRate/manaRate non negativi."""
     zid = await _zone_id(client)
     obj = {"vnum": 1700, "zoneId": zid, "keywords": "a", "shortDescription": "a"}
-    for field in ("weight", "cost", "rent"):
+    for field in ("weight", "cost"):
         assert (await client.post("/api/objects", json={**obj, field: -1})).status_code == 422, field
+    assert (await client.post("/api/objects", json={**obj, "rent": -2})).status_code == 422  # -1 = non affittabile (pachimud)
     mob = {"vnum": 1701, "zoneId": zid, "keywords": "a", "shortDescription": "a"}
     for field in ("gold", "experience"):
         assert (await client.post("/api/mobs", json={**mob, field: -1})).status_code == 422, field

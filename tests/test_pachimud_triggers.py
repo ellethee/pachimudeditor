@@ -119,7 +119,7 @@ async def test_trigger_validation_new(client: httpx.AsyncClient) -> None:
     assert error_code(await put({"type": "bribe", "actions": ["say x"]}), 422) == "pachimud.invalid_entry"
     assert error_code(await put({"type": "hitprcnt", "argument": "101", "actions": ["flee"]}), 422) == "pachimud.invalid_entry"
     deep: dict = {"if": {"chance": 5}, "then": ["say x"]}
-    for _ in range(3):
+    for _ in range(25):
         deep = {"if": {"chance": 5}, "then": [deep]}
     assert error_code(await put({"type": "fight", "actions": [deep]}), 422) == "pachimud.invalid_entry"
     bad = await put({"type": "fight", "actions": [{"if": {"chance": 500}, "then": ["say x"]}]})

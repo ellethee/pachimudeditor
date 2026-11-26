@@ -22,6 +22,14 @@ async def test_enums(client: httpx.AsyncClient) -> None:
         "pachimudMobFlags",
         "pachimudObjectExtraFlags",
         "pachimudObjectWearFlags",
+        "mobPosition",
+        "pachimudAffects",
+        "pachimudResistance",
+        "pachimudObjectSex",
+        "pachimudMaterial",
+        "pachimudMobSpecs",
+        "pachimudObjectSpecs",
+        "pachimudRoomSpecs",
     }
     for options in enums.values():
         assert options and all(isinstance(o["value"], int) and o["label"] for o in options)

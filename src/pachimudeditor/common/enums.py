@@ -63,6 +63,20 @@ class ObjectType(IntEnum):
     BOARD = 24
     TREE = 25
     ROCK = 26
+    # Tipi di Clessidra del gioco pachimud (aggiunti in coda).
+    LIFESAVER = 27
+    BOOK = 28
+    CORPSE = 29
+    PORTAL = 30
+    FURNISHING = 31
+    PRECIOUS = 32
+    RAW_MATERIAL = 33
+    PROCESSED_MATERIAL = 34
+    CRAFTED = 35
+    MERCHANT = 36
+    MOUNT_FOOD = 37
+    ALCHEMY = 38
+    OINTMENT = 39
 
 
 class ZoneCommandType(IntEnum):
@@ -105,6 +119,13 @@ class SectorType(IntEnum):
     DESERT = 10
     TREE = 11
     DARKCITY = 12
+    # Settori di Clessidra del gioco pachimud (aggiunti in coda: valori stabili).
+    CLOUD = 13
+    TUNDRA = 14
+    FORTRESS = 15
+    ICE_WATER = 16
+    BEACH = 17
+    JUNGLE = 18
 
 
 class Direction(IntEnum):
