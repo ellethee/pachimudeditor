@@ -57,6 +57,8 @@ export interface IClass {
   hpMax: number
   weapon: number
   skillAdept: number
+  /** Punti esperienza richiesti per livello (indice = livello). */
+  expPerLevel?: number[]
   file: string
   disabled: boolean
   mobCount: number

@@ -1,5 +1,6 @@
 import { markRaw } from 'vue'
 import type { IFieldRow } from '@ilpachi/pachi-kit/fields'
+import JsonField from '../../shared/components/JsonField.vue'
 import ContentFlagsField from '../components/ContentFlagsField.vue'
 import StatHeading from '../components/StatHeading.vue'
 import type { IClass, IContentOptions, IRace, IStats } from '../types/content'
@@ -121,6 +122,7 @@ export function buildClassCombatRows(t: Translate): IFieldRow[] {
     [num('thac000'), num('thac032')],
     [num('hpMin'), num('hpMax')],
     [num('weapon'), num('skillAdept')],
+    [{ field: 'expPerLevel', label: t('content.classes.fields.expPerLevel'), component: markRaw(JsonField), hint: t('content.classes.fields.expPerLevelHint') }],
   ]
 }
 
