@@ -173,6 +173,9 @@ class AdapterInfo(AliasedBaseModel):
 class WorldAdapter(ABC):
     """Contratto che ogni backend di mondo deve implementare. Tutti i metodi di dati sono `async`."""
 
+    min_object_rent: int = 0
+    """Valore minimo di `rent` di un oggetto: 0 per i mondi ROM/Diku, -1 per pachimud (-1 = non affittabile)."""
+
     # ------------------------------------------------------------------ identita'
 
     @abstractmethod

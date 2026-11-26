@@ -2,6 +2,7 @@
 
 MESSAGES: dict[str, str] = {
     "objects.not_found": "Object not found",
+    "objects.invalid_rent": "Rent cannot be lower than {min} in this world.",
     "objects.vnum_taken": "An object with vnum {vnum} already exists.",
     "objects.in_reset_usage": "Cannot delete: the object is referenced by {count} reset commands ({zones}). Update or remove them first.",
     "objects.vnum_in_use": "Cannot change the vnum: the object is used {count} times (resets or exit keys) in: {zones}.",

@@ -79,6 +79,8 @@ class WorldReport:
 class PachimudAdapter(ZonesMixin, RoomsMixin, PrototypesMixin, MetaMixin, LiveMixin, WorldAdapter):
     """Adapter del gioco pachimud (vedi docstring del modulo)."""
 
+    min_object_rent = -1
+
     # ------------------------------------------------------------------ stato e capability
 
     def unavailable_reason(self) -> str | None:

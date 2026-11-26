@@ -471,3 +471,19 @@ def test_repop_percent_survives_a_flat_script_rewrite() -> None:
     resets._restore_repop(new_entries, "m", (), found)
     assert new_entries[0]["repop_percent"] == [90, 10] and new_entries[0]["inventory"][0]["repop_percent"] == [50]
     assert "repop_percent" not in new_entries[1]
+
+
+async def test_object_rent_minus_one_only_in_pachimud(client: httpx.AsyncClient) -> None:
+    """`rent: -1` (non affittabile) vale in pachimud; sotto -1 e' 422; gli altri mondi (minimo 0) lo rifiutano con `objects.invalid_rent`."""
+    from fastapi import HTTPException
+
+    from pachimudeditor.apps.objects.root import _check_rent
+
+    zone = await by_vnum(client, "zones", 10)
+    base = {"vnum": 1710, "zoneId": zone["id"], "keywords": "x", "shortDescription": "x"}
+    assert data(await client.post("/api/objects", json={**base, "rent": -1}), 201)["rent"] == -1
+    assert (await client.post("/api/objects", json={**base, "vnum": 1711, "rent": -2})).status_code == 422
+    _check_rent(-1, -1)
+    with pytest.raises(HTTPException) as error:
+        _check_rent(-1, 0)
+    assert error.value.status_code == 422

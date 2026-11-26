@@ -3,6 +3,7 @@
 from typing import Annotated
 
 from fastapi import Query
+from pachifast.i18n import api_error
 from pachifast.router_factory import get_router
 from pachifast.schemas.responses import PaginatedResponse
 
@@ -10,6 +11,12 @@ from pachimudeditor.common.adapters.models import ObjectIn, ObjectOut, ObjectPag
 from pachimudeditor.common.adapters.registry import AdapterDep, WriteAdapterDep
 
 router = get_router()
+
+
+def _check_rent(rent: int, minimum: int) -> None:
+    """422 `objects.invalid_rent` se `rent` e' sotto il minimo del mondo (il modello ammette -1, solo pachimud lo usa)."""
+    if rent < minimum:
+        raise api_error(422, "objects.invalid_rent", loc=("body", "rent"), min=minimum)
 
 
 @router.get("", response_model=PaginatedResponse[ObjectOut])
@@ -21,6 +28,7 @@ async def list_objects(params: Annotated[ObjectPageParams, Query()], adapter: Ad
 @router.post("", response_model=ObjectOut, status_code=201)
 async def create_object(data: ObjectIn, adapter: WriteAdapterDep) -> ObjectOut:
     """Crea un object prototype (il vnum deve essere libero)."""
+    _check_rent(data.rent, adapter.min_object_rent)
     return await adapter.create_object(data)
 
 
@@ -34,6 +42,8 @@ async def get_object(object_id: int, adapter: AdapterDep) -> ObjectOut:
 async def update_object(object_id: int, data: ObjectPatch, adapter: WriteAdapterDep) -> ObjectOut:
     """Aggiornamento parziale di un object prototype. Cambiare il vnum e' rifiutato (409
     `objects.vnum_in_use`) finche' un reset o la chiave di un'uscita lo referenzia."""
+    if data.rent is not None:
+        _check_rent(data.rent, adapter.min_object_rent)
     return await adapter.update_object(object_id, data)
 
 
